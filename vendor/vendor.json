@@ -1,0 +1,43 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "SEZulQ/Gm4f6P6/c3waZjXxvl0g=",
+			"path": "github.com/jmoiron/sqlx",
+			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
+			"revisionTime": "2017-04-30T19:46:03Z"
+		},
+		{
+			"checksumSHA1": "xXjxKqs3ECyWO5zjIVb2qgj9rcU=",
+			"path": "github.com/jmoiron/sqlx/reflectx",
+			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
+			"revisionTime": "2017-04-30T19:46:03Z"
+		},
+		{
+			"checksumSHA1": "Wh2YCiWY/VIAEEQGLS7sMB9isXk=",
+			"path": "github.com/lib/pq",
+			"revision": "8837942c3e09574accbc5f150e2c5e057189cace",
+			"revisionTime": "2017-06-03T22:54:54Z"
+		},
+		{
+			"checksumSHA1": "q5SZBWFVC3wOIzftf+l/h5WLG1k=",
+			"path": "github.com/lib/pq/oid",
+			"revision": "8837942c3e09574accbc5f150e2c5e057189cace",
+			"revisionTime": "2017-06-03T22:54:54Z"
+		},
+		{
+			"checksumSHA1": "61HNjGetaBoMp8HBOpuEZRSim8g=",
+			"path": "github.com/mattn/go-sqlite3",
+			"revision": "acfa60124032040b9f5a9406f5a772ee16fe845e",
+			"revisionTime": "2017-07-05T08:25:03Z"
+		},
+		{
+			"checksumSHA1": "Y+HGqEkYM15ir+J93MEaHdyFy0c=",
+			"path": "golang.org/x/net/context",
+			"revision": "054b33e6527139ad5b1ec2f6232c3b175bd9a30c",
+			"revisionTime": "2017-07-05T22:25:54Z"
+		}
+	],
+	"rootPath": "github.com/stitchfix/flotilla-os"
+}
