@@ -6,6 +6,7 @@ import (
     "github.com/jmoiron/sqlx"
     _ "github.com/lib/pq"
     "log"
+    "time"
 )
 
 func getDB() *sqlx.DB {
@@ -43,8 +44,22 @@ func insertDefinitions(db *sqlx.DB) {
       VALUES ($1, $2, $3)
     `
 
+    taskEnvSql := `
+    INSERT INTO task_environments(task_id, name, value)
+      VALUES ($1, $2, $3)
+    `
+
     portsql := `
     INSERT INTO task_def_ports(task_def_id, port) VALUES ($1, $2)
+    `
+
+    taskSql := `
+    INSERT INTO task (
+      run_id, definition_id, cluster_name, exit_code, status,
+      started_at, finished_at, instance_id, instance_dns_name, group_name
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+    )
     `
 
     db.MustExec(defsql, "A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'")
@@ -63,6 +78,25 @@ func insertDefinitions(db *sqlx.DB) {
     db.MustExec(portsql, "D", 10002)
     db.MustExec(portsql, "E", 10003)
     db.MustExec(portsql, "E", 10004)
+
+    t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
+    t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
+    t3, _ := time.Parse(time.RFC3339, "2017-07-04T00:03:00+00:00")
+    t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
+
+    db.MustExec(taskSql, "run0", "A", "clusta", nil, "RUNNING", t1, nil, "id1", "dns1", "groupZ")
+    db.MustExec(taskSql, "run1", "B", "clusta", nil, "RUNNING", t2, nil, "id1", "dns1", "groupY")
+    db.MustExec(taskSql, "run2", "B", "clusta", 1, "STOPPED", t2, t3, "id1", "dns1", "groupY")
+    db.MustExec(taskSql, "run3", "C", "clusta", nil, "QUEUED", nil, nil, "", "", "groupX")
+    db.MustExec(taskSql, "run4", "C", "clusta", 0, "STOPPED", t3, t4, "id1", "dns1", "groupX")
+    db.MustExec(taskSql, "run5", "D", "clustb", nil, "PENDING", nil, nil, "", "", "groupW")
+
+    db.MustExec(taskEnvSql, "run0", "E0", "V0")
+    db.MustExec(taskEnvSql, "run1", "E1", "V1")
+    db.MustExec(taskEnvSql, "run2", "E2", "V2")
+    db.MustExec(taskEnvSql, "run3", "E3_1", "V3_1")
+    db.MustExec(taskEnvSql, "run3", "E3_2", "V3_2")
+    db.MustExec(taskEnvSql, "run3", "E3_3", "V3_3")
 }
 
 func tearDown() {
@@ -251,10 +285,26 @@ func TestSQLStateManager_DeleteDefinition(t *testing.T) {
     sm := setUp()
 
     var err error
-    err = sm.DeleteDefinition("A")
-    t.Log(err)
+    sm.DeleteDefinition("A")
+
     _, err = sm.GetDefinition("A")
     if err == nil {
         t.Errorf("Expected querying definition after delete would return error")
     }
+}
+
+func TestSQLStateManager_ListRuns(t *testing.T) {
+    defer tearDown()
+    sm := setUp()
+
+    expectedTotal := 6
+    rl, _ := sm.ListRuns(1, 0, "started_at", "desc", nil, nil)
+    if rl.Total != expectedTotal {
+        t.Errorf("Expected total to be %v but was %v", expectedTotal, rl.Total)
+    }
+
+    if len(rl.Runs) != 1 {
+        t.Errorf("Expected limit query to limit to 1 but was %v", len(rl.Runs))
+    }
+
 }

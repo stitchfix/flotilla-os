@@ -479,9 +479,65 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // Runs
 //
 
-func (sm *SQLStateManager) ListRuns() {
+func (sm *SQLStateManager) ListRuns(
+    limit int, offset int, sortBy string,
+    order string, filters map[string]string,
+    envFilters map[string]string) (RunList, error) {
 
+    var err error
+    var result RunList
+    var whereClause, orderQuery string
+    where := append(sm.makeWhereClause(filters), sm.makeEnvWhereClause(envFilters)...)
+    if len(where) > 0 {
+        whereClause = fmt.Sprintf("where %s", strings.Join(where, " and "))
+    }
+
+    orderQuery, err = sm.orderBy(&Run{}, sortBy, order)
+    if err != nil {
+        return result, err
+    }
+
+    template := `
+    select
+      coalesce(t.task_arn,'')                    as taskarn,
+      t.run_id                                   as runid,
+      coalesce(t.definition_id,'')               as definitionid,
+      coalesce(t.cluster_name,'')                as clustername,
+      t.exit_code                                as exitcode,
+      coalesce(t.status,'')                      as status,
+      coalesce(t.started_at, DATE '0001-01-01')  as startedat,
+      coalesce(t.finished_at, DATE '0001-01-01') as finishedat,
+      coalesce(t.instance_id,'')                 as instanceid,
+      coalesce(t.instance_dns_name,'')           as instancednsname,
+      coalesce(t.group_name,'')                  as groupname,
+      coalesce(t.user,'')                        as "user",
+      coalesce(t.task_type,'')                   as tasktype,
+      env::TEXT                                  as env
+    from (select * from task) t left outer join
+      (select task_id,
+        array_to_json(
+          array_agg(json_build_object('name',name,'value',coalesce(value,'')))) as env
+            from task_environments group by task_id
+      ) te
+    on t.run_id = te.task_id
+      %s %s limit $1 offset $2
+    `
+
+    sql := fmt.Sprintf(template, whereClause, orderQuery)
+    countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+    err = sm.db.Select(&result.Runs, sql, limit, offset)
+    if err != nil {
+        return result, err
+    }
+    err = sm.db.Get(&result.Total, countSQL, nil, 0)
+    if err != nil {
+        return result, err
+    }
+
+    return result, nil
 }
+
 
 func (sm *SQLStateManager) GetRun() {
 }
@@ -514,6 +570,19 @@ func (d *Definition) ValidOrderField(field string) bool {
 
 func (d *Definition) ValidOrderFields() []string {
 	return []string{"alias", "image", "group_name", "memory"}
+}
+
+func (r *Run) ValidOrderField(field string) bool {
+    for _, f := range r.ValidOrderFields() {
+        if field == f {
+            return true
+        }
+    }
+    return false
+}
+
+func (r *Run) ValidOrderFields() []string {
+    return []string{"run_id","cluster_name","status","started_at","finished_at","group_name"}
 }
 
 func (e *EnvList) Scan(value interface{}) error {
