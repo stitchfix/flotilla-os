@@ -137,3 +137,61 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
             definition B, but was %s`, dl.Definitions[0].DefinitionID)
     }
 }
+
+func TestSQLStateManager_GetDefinition(t *testing.T) {
+    defer tearDown()
+    sm := setUp()
+
+    dE, _ := sm.GetDefinition("E")
+    if dE.DefinitionID != "E" {
+        t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
+    }
+
+    if len(dE.Env) != 0 {
+        t.Errorf("Expected empty environment but got %s", dE.Env)
+    }
+
+    if len(dE.Ports) != 2 {
+        t.Errorf("Expected 2 ports but got %s", dE.Ports)
+    }
+
+    _, err := sm.GetDefinition("Z")
+    if err == nil {
+        t.Errorf("Expected get for non-existent definition Z to return error, was nil")
+    }
+
+}
+
+func TestSQLStateManager_CreateDefinition(t *testing.T) {
+    defer tearDown()
+    sm := setUp()
+
+    var err error
+    d := Definition{
+        Arn: "arn:cupcake",
+        DefinitionID: "id:cupcake",
+        GroupName: "group:cupcake",
+        ContainerName: "container:cupcake",
+        User: "noone",
+        Memory: 512,
+        Alias: "cupcake",
+        Image: "image:cupcake",
+        Command: "echo 'hi'",
+        Env: []EnvVar{
+            {Name: "E1", Value:"V1"},
+        },
+        Ports: []int{12345, 6789},
+    }
+
+    sm.CreateDefinition(d)
+
+    f, err := sm.GetDefinition("id:cupcake")
+    if err != nil {
+        t.Errorf("Expected create definition to create definition with id [id:cupcake]")
+        t.Error(err)
+    }
+
+    if (f.Alias != d.Alias || len(f.Env) != len(d.Env) || len(f.Ports) != len(d.Ports)) {
+        t.Errorf("Expected created definition to match the one passed in for creation")
+    }
+}

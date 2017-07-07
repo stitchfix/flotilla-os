@@ -6,6 +6,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"strings"
+    "encoding/json"
+    "database/sql/driver"
 )
 
 type SQLStateManager struct {
@@ -229,7 +231,20 @@ func (sm *SQLStateManager) ListDefinitions(
 	}
 
 	template := `
-    select td.*, env::TEXT as env, ports as ports from (select * from task_def) td left outer join
+    select
+      coalesce(td.arn,'')       as arn,
+      td.definition_id          as definitionid,
+      td.image                  as image,
+      td.group_name             as groupname,
+      td.container_name         as containername,
+      coalesce(td.user,'')      as "user",
+      td.alias                  as alias,
+      td.memory                 as memory,
+      coalesce(td.command,'')   as command,
+      coalesce(td.task_type,'') as tasktype,
+      env::TEXT                 as env,
+      ports                     as ports
+    from (select * from task_def) td left outer join
       (select task_def_id,
         array_to_json(
           array_agg(json_build_object('name',name,'value',coalesce(value,'')))) as env
@@ -259,15 +274,95 @@ func (sm *SQLStateManager) ListDefinitions(
     return result, nil
 }
 
-func (sm *SQLStateManager) GetDefinition() {
+func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
+    var err error
+    var definition Definition
+
+    sql := `
+    select
+      coalesce(td.arn,'')       as arn,
+      td.definition_id          as definitionid,
+      td.image                  as image,
+      td.group_name             as groupname,
+      td.container_name         as containername,
+      coalesce(td.user,'')      as "user",
+      td.alias                  as alias,
+      td.memory                 as memory,
+      coalesce(td.command,'')   as command,
+      coalesce(td.task_type,'') as tasktype,
+      env::TEXT                 as env,
+      ports                     as ports
+    from (select * from task_def) td left outer join
+      (select task_def_id,
+        array_to_json(
+            array_agg(json_build_object('name',name,'value',coalesce(value,'')))) as env
+        from task_def_environments group by task_def_id
+      ) tde
+    on td.definition_id = tde.task_def_id left outer join
+    (select task_def_id,
+        array_to_json(array_agg(port))::TEXT as ports
+    from task_def_ports group by task_def_id
+    ) tdp
+    on td.definition_id = tdp.task_def_id
+      where definition_id = $1
+    `
+    err = sm.db.Get(&definition, sql, definitionID)
+    return definition, err
 }
 
 func (sm *SQLStateManager) UpdateDefinition() {
 
 }
 
-func (sm *SQLStateManager) CreateDefinition() {
+func (sm *SQLStateManager) CreateDefinition(d Definition) error {
+    var err error
+    insert := `
+    INSERT INTO task_def(
+      arn, definition_id, image, group_name,
+      container_name, "user", alias, memory, command
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+    `
 
+    insertEnv := `
+    INSERT INTO task_def_environments(
+      task_def_id, name, value
+    )
+    VALUES ($1, $2, $3);
+    `
+
+    insertPorts := `
+    INSERT INTO task_def_ports(
+      task_def_id, port
+    ) VALUES ($1, $2);
+    `
+    tx, err := sm.db.Begin()
+    if err != nil {
+        return err
+    }
+
+    if _, err = tx.Exec(insert,
+        d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
+        d.User, d.Alias, d.Memory, d.Command); err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    for _, e := range(d.Env) {
+        if _, err = tx.Exec(insertEnv, d.DefinitionID, e.Name, e.Value); err != nil {
+            tx.Rollback()
+            return err
+        }
+    }
+
+    for _, p := range(d.Ports) {
+        if _, err = tx.Exec(insertPorts, d.DefinitionID, p); err != nil {
+            tx.Rollback()
+            return err
+        }
+    }
+    tx.Commit()
+    return nil
 }
 
 func (sm *SQLStateManager) DeleteDefinition() {
@@ -313,4 +408,29 @@ func (d *Definition) ValidOrderField(field string) bool {
 
 func (d *Definition) ValidOrderFields() []string {
 	return []string{"alias", "image", "group_name", "memory"}
+}
+
+func (e *EnvList) Scan(value interface{}) error {
+    if value != nil {
+        s := []byte(value.(string))
+        json.Unmarshal(s, &e)
+    }
+    return nil
+}
+
+func (e EnvList) Value() (driver.Value, error) {
+    res, _ := json.Marshal(e)
+    return res, nil
+}
+
+func (e *PortsList) Scan(value interface{}) error {
+    if value != nil {
+        s := []byte(value.(string))
+        json.Unmarshal(s, &e)
+    }
+    return nil
+}
+func (e PortsList) Value() (driver.Value, error) {
+    res, _ := json.Marshal(e)
+    return res, nil
 }
