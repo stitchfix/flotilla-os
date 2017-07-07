@@ -310,8 +310,84 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
     return definition, err
 }
 
-func (sm *SQLStateManager) UpdateDefinition() {
+func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) error {
+    var err error
+    existing, err := sm.GetDefinition(definitionID)
+    if err != nil {
+        return err
+    }
 
+    existing.updateWith(updates)
+
+    selectForUpdate := `SELECT * FROM task_def WHERE definition_id = $1 FOR UPDATE;`
+    deleteEnv := `DELETE FROM task_def_environments WHERE task_def_id = $1;`
+    deletePorts := `DELETE FROM task_def_ports WHERE task_def_id = $1;`
+    update := `
+    UPDATE task_def SET
+      arn = $2, image = $3,
+      container_name = $4, "user" = $5,
+      alias = $6, memory = $7,
+      command = $8
+    WHERE definition_id = $1;
+    `
+
+    insertEnv := `
+    INSERT INTO task_def_environments(
+      task_def_id, name, value
+    )
+    VALUES ($1, $2, $3);
+    `
+
+    insertPorts := `
+    INSERT INTO task_def_ports(
+      task_def_id, port
+    ) VALUES ($1, $2);
+    `
+
+    tx, err := sm.db.Begin()
+    if err != nil {
+        return err
+    }
+
+    if _, err = tx.Exec(selectForUpdate, definitionID); err != nil {
+        return err
+    }
+
+    if _, err = tx.Exec(deleteEnv, definitionID); err != nil {
+        return err
+    }
+
+    if _, err = tx.Exec(deletePorts, definitionID); err != nil {
+        return err
+    }
+
+    if _, err = tx.Exec(
+        update, definitionID,
+        existing.Arn, existing.Image, existing.ContainerName,
+        existing.User, existing.Alias, existing.Memory,
+        existing.Command); err != nil {
+        return err
+    }
+
+    if existing.Env != nil {
+        for _, e := range (*existing.Env) {
+            if _, err = tx.Exec(insertEnv, definitionID, e.Name, e.Value); err != nil {
+                tx.Rollback()
+                return err
+            }
+        }
+    }
+
+    if existing.Ports != nil {
+        for _, p := range (*existing.Ports) {
+            if _, err = tx.Exec(insertPorts, definitionID, p); err != nil {
+                tx.Rollback()
+                return err
+            }
+        }
+    }
+
+    return tx.Commit()
 }
 
 func (sm *SQLStateManager) CreateDefinition(d Definition) error {
@@ -348,25 +424,55 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
         return err
     }
 
-    for _, e := range(d.Env) {
-        if _, err = tx.Exec(insertEnv, d.DefinitionID, e.Name, e.Value); err != nil {
-            tx.Rollback()
-            return err
+    if d.Env != nil {
+        for _, e := range (*d.Env) {
+            if _, err = tx.Exec(insertEnv, d.DefinitionID, e.Name, e.Value); err != nil {
+                tx.Rollback()
+                return err
+            }
         }
     }
 
-    for _, p := range(d.Ports) {
-        if _, err = tx.Exec(insertPorts, d.DefinitionID, p); err != nil {
-            tx.Rollback()
-            return err
+    if d.Ports != nil {
+        for _, p := range (*d.Ports) {
+            if _, err = tx.Exec(insertPorts, d.DefinitionID, p); err != nil {
+                tx.Rollback()
+                return err
+            }
         }
     }
-    tx.Commit()
-    return nil
+    return tx.Commit()
 }
 
-func (sm *SQLStateManager) DeleteDefinition() {
+func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
+    var err error
 
+    delTaskEnvs := `
+    DELETE FROM task_environments WHERE task_id in (
+      SELECT run_id as task_id from task WHERE definition_id = $1
+    )
+    `
+
+    statements := []string{
+        "DELETE FROM task_def_environments WHERE task_def_id = $1",
+        "DELETE FROM task_def_ports WHERE task_def_id = $1",
+        delTaskEnvs,
+        "DELETE FROM task WHERE definition_id = $1",
+        "DELETE FROM task_def WHERE definition_id = $1",
+    }
+    tx, err := sm.db.Begin()
+    if err != nil {
+        return err
+    }
+
+    for _, stmt := range(statements) {
+        if _, err = tx.Exec(stmt, definitionID); err != nil {
+            tx.Rollback()
+            return err
+        }
+    }
+
+    return tx.Commit()
 }
 
 //

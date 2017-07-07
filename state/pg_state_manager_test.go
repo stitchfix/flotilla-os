@@ -99,11 +99,11 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
         t.Errorf("Listing returned incorrect definition, expected A but got %s", dA.DefinitionID)
     }
 
-    if len(dA.Env) != 1 {
+    if len(*dA.Env) != 1 {
         t.Errorf("Expected returned definitions to have correctly attached env vars, was %s", dA.Env)
     }
 
-    if len(dA.Ports) != 1 {
+    if len(*dA.Ports) != 1 {
         t.Errorf("Expected returned definitions to have correctly attached ports, was %s", dA.Ports)
     }
 
@@ -147,12 +147,12 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
         t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
     }
 
-    if len(dE.Env) != 0 {
-        t.Errorf("Expected empty environment but got %s", dE.Env)
+    if dE.Env != nil {
+        t.Errorf("Expected empty environment but got %s", *dE.Env)
     }
 
-    if len(dE.Ports) != 2 {
-        t.Errorf("Expected 2 ports but got %s", dE.Ports)
+    if len(*dE.Ports) != 2 {
+        t.Errorf("Expected 2 ports but got %s", *dE.Ports)
     }
 
     _, err := sm.GetDefinition("Z")
@@ -167,20 +167,21 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
     sm := setUp()
 
     var err error
+    memory := 512
     d := Definition{
         Arn: "arn:cupcake",
         DefinitionID: "id:cupcake",
         GroupName: "group:cupcake",
         ContainerName: "container:cupcake",
         User: "noone",
-        Memory: 512,
+        Memory: &memory,
         Alias: "cupcake",
         Image: "image:cupcake",
         Command: "echo 'hi'",
-        Env: []EnvVar{
+        Env: &EnvList{
             {Name: "E1", Value:"V1"},
         },
-        Ports: []int{12345, 6789},
+        Ports: &PortsList{12345, 6789},
     }
 
     sm.CreateDefinition(d)
@@ -191,7 +192,69 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
         t.Error(err)
     }
 
-    if (f.Alias != d.Alias || len(f.Env) != len(d.Env) || len(f.Ports) != len(d.Ports)) {
+    if (f.Alias != d.Alias ||
+        len(*f.Env) != len(*d.Env) ||
+        len(*f.Ports) != len(*d.Ports) ||
+        *f.Memory != *d.Memory) {
         t.Errorf("Expected created definition to match the one passed in for creation")
+    }
+}
+
+func TestSQLStateManager_UpdateDefinition(t *testing.T) {
+    defer tearDown()
+    sm := setUp()
+
+    env := EnvList{
+        {Name:"NEW1", Value:"NEWVAL1"},
+        {Name:"NEW2", Value:"NEWVAL2"},
+    }
+
+    updates := Definition{
+        Image: "updated",
+        Env: &env,
+        Ports: &PortsList{}, // <---- empty, set ports to empty list
+    }
+    sm.UpdateDefinition("A", updates)
+
+    d, _ := sm.GetDefinition("A")
+    if d.Image != "updated" {
+        t.Errorf("Expected image to be updated to [updated] but is %s", d.Image)
+    }
+
+    if d.Ports != nil {
+        t.Errorf("Expected no ports after update")
+    }
+
+    if len(*d.Env) != 2 {
+        t.Errorf("Expected new env to have length 2, was %v", len(*d.Env))
+    }
+
+    updatedEnv := *d.Env
+    matches := 0
+    for i, _ := range(updatedEnv) {
+        updatedVar := updatedEnv[i]
+        for j, _ := range(env) {
+            expectedVar := env[j]
+            if (updatedVar.Name == expectedVar.Name &&
+                updatedVar.Value == expectedVar.Value) {
+                matches++
+            }
+        }
+    }
+    if matches != len(env) {
+        t.Errorf("Not all updated env vars match")
+    }
+}
+
+func TestSQLStateManager_DeleteDefinition(t *testing.T) {
+    defer tearDown()
+    sm := setUp()
+
+    var err error
+    err = sm.DeleteDefinition("A")
+    t.Log(err)
+    _, err = sm.GetDefinition("A")
+    if err == nil {
+        t.Errorf("Expected querying definition after delete would return error")
     }
 }
