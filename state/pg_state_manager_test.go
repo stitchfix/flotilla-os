@@ -17,14 +17,13 @@ func getDB() *sqlx.DB {
 	return db
 }
 
-func setUp() SQLStateManager {
+func setUp() StateManager {
 	db := getDB()
 
 	//
 	// Implicit testing - this will create tables
 	//
-	sm := SQLStateManager{}
-	sm.Initialize(os.Getenv("DATABASE_URL"))
+	sm, _ := NewStateManager("postgres")
 	//
 	//
 	//
