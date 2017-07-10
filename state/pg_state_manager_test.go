@@ -297,8 +297,9 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
     defer tearDown()
     sm := setUp()
 
+    var err error
     expectedTotal := 6
-    rl, _ := sm.ListRuns(1, 0, "started_at", "desc", nil, nil)
+    rl, _ := sm.ListRuns(1, 0, "started_at", "asc", nil, nil)
     if rl.Total != expectedTotal {
         t.Errorf("Expected total to be %v but was %v", expectedTotal, rl.Total)
     }
@@ -307,4 +308,43 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
         t.Errorf("Expected limit query to limit to 1 but was %v", len(rl.Runs))
     }
 
+    r0 := rl.Runs[0]
+    if r0.RunID != "run0" {
+        t.Errorf("Listing with order returned incorrect run, expected run0 but got %s", r0.RunID)
+    }
+
+    if len(*r0.Env) != 1 {
+        t.Errorf("Expected returned runs to have correctly attached env vars, was %s", r0.Env)
+    }
+
+    // Test ordering and offset
+    // - there's only two, so offset 1 should return second one
+    rl, err = sm.ListRuns(1, 1, "cluster_name", "desc", nil, nil)
+    if (rl.Runs[0].ClusterName != "clusta") {
+        t.Errorf("Error ordering with offset - expected clusta but got %s", rl.Runs[0].ClusterName)
+    }
+
+    // Test order validation
+    rl, err = sm.ListRuns(1, 0, "nonexistent_field", "asc", nil, nil)
+    if err == nil {
+        t.Errorf("Sorting by [nonexistent_field] did not produce an error")
+    }
+    rl, err = sm.ListRuns(1, 0, "started_at", "nooop", nil, nil)
+    if err == nil {
+        t.Errorf("Sort order [nooop] is not valid but did not produce an error")
+    }
+
+    // Test filtering on fields
+    rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string]string{"cluster_name":"clustb",}, nil)
+    if (rl.Runs[0].ClusterName != "clustb") {
+        t.Errorf("Error filtering by field - expected clustb but got %s", rl.Runs[0].ClusterName)
+    }
+
+    // Test filtering on environment variables
+    rl, _ = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2":"V2"})
+    if (rl.Runs[0].RunID != "run2") {
+        t.Errorf(
+            `Expected environment variable filters (E2:V2) to yield
+            run run2, but was %s`, rl.Runs[0].RunID)
+    }
 }
