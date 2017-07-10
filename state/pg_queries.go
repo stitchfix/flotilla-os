@@ -123,10 +123,10 @@ select
   on td.definition_id = tdp.task_def_id
 `
 
-const ListDefinitionsSQL = DefinitionSelect+"\n%s %s limit $1 offset $2"
-const GetDefinitionSQL = DefinitionSelect+"\nwhere definition_id = $1"
+const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
+const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 
-const ListRunsSQL = `
+const RunSelect = `
 select
   coalesce(t.task_arn,'')                    as taskarn,
   t.run_id                                   as runid,
@@ -134,8 +134,8 @@ select
   coalesce(t.cluster_name,'')                as clustername,
   t.exit_code                                as exitcode,
   coalesce(t.status,'')                      as status,
-  coalesce(t.started_at, DATE '0001-01-01')  as startedat,
-  coalesce(t.finished_at, DATE '0001-01-01') as finishedat,
+  started_at                                 as startedat,
+  finished_at                                as finishedat,
   coalesce(t.instance_id,'')                 as instanceid,
   coalesce(t.instance_dns_name,'')           as instancednsname,
   coalesce(t.group_name,'')                  as groupname,
@@ -149,5 +149,6 @@ select
           from task_environments group by task_id
     ) te
   on t.run_id = te.task_id
-    %s %s limit $1 offset $2
 `
+const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
+const GetRunSQL = RunSelect + "\nwhere run_id = $1"
