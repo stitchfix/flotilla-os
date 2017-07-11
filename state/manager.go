@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"github.com/go-kit/kit/log"
 )
 
 type StateManager interface {
-	Initialize(resource string) error
+	Initialize(logger log.Logger, resource string) error
 	Cleanup() error
 	ListDefinitions(
 		limit int, offset int, sortBy string,
@@ -27,11 +28,11 @@ type StateManager interface {
 	UpdateRun(runID string, updates Run) error
 }
 
-func NewStateManager(name string) (StateManager, error) {
+func NewStateManager(logger log.Logger, name string) (StateManager, error) {
 	switch name {
 	case "postgres":
 		pgm := &SQLStateManager{}
-		return pgm, pgm.Initialize(os.Getenv("DATABASE_URL"))
+		return pgm, pgm.Initialize(logger, os.Getenv("DATABASE_URL"))
 	default:
 		return nil, errors.New(fmt.Sprintf("No StateManager named [%s] was found", name))
 	}

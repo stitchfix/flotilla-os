@@ -3,6 +3,24 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "bzCBeQrZ+LxbYyJbp7uDILX6t7c=",
+			"path": "github.com/go-kit/kit/log",
+			"revision": "6a894fed38a999e1a0ce384f3a45589f1752d30d",
+			"revisionTime": "2017-07-04T09:37:06Z"
+		},
+		{
+			"checksumSHA1": "KxX/Drph+byPXBFIXaCZaCOAnrU=",
+			"path": "github.com/go-logfmt/logfmt",
+			"revision": "390ab7935ee28ec6b286364bba9b4dd6410cb3d5",
+			"revisionTime": "2016-11-15T14:25:13Z"
+		},
+		{
+			"checksumSHA1": "KZ3QD2QgUS4RcoKiA3mn5pSlJxQ=",
+			"path": "github.com/go-stack/stack",
+			"revision": "54be5f394ed2c3e19dac9134a40a95ba5a017f7b",
+			"revisionTime": "2017-07-10T16:04:46Z"
+		},
+		{
 			"checksumSHA1": "SEZulQ/Gm4f6P6/c3waZjXxvl0g=",
 			"path": "github.com/jmoiron/sqlx",
 			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
@@ -13,6 +31,12 @@
 			"path": "github.com/jmoiron/sqlx/reflectx",
 			"revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
 			"revisionTime": "2017-04-30T19:46:03Z"
+		},
+		{
+			"checksumSHA1": "abKzFXAn0KDr5U+JON1ZgJ2lUtU=",
+			"path": "github.com/kr/logfmt",
+			"revision": "b84e30acd515aadc4b783ad4ff83aff3299bdfe0",
+			"revisionTime": "2014-02-26T03:06:59Z"
 		},
 		{
 			"checksumSHA1": "Wh2YCiWY/VIAEEQGLS7sMB9isXk=",
