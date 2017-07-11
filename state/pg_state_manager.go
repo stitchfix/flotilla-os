@@ -8,17 +8,13 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"strings"
-	"github.com/go-kit/kit/log"
 )
 
 type SQLStateManager struct {
 	db *sqlx.DB
-	logger log.Logger
 }
 
-func (sm *SQLStateManager) Initialize(logger log.Logger, dburl string) error {
-	sm.logger = logger
-
+func (sm *SQLStateManager) Initialize(dburl string) error {
 	var err error
 	if sm.db, err = sqlx.Connect("postgres", dburl); err != nil {
 		return err
@@ -199,7 +195,6 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	if err != nil {
 		return err
 	}
-	sm.logger.Log("definition", definitionID, "msg", "updated")
 	return nil
 }
 

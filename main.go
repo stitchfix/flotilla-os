@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/stitchfix/flotilla-os/state"
 	gklog "github.com/go-kit/kit/log"
-	"os"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/state"
 	"log"
+	"os"
 )
 
 func main() {
@@ -12,12 +13,13 @@ func main() {
 	// Use go-kit for structured logging
 	//
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	logger := flotillaLog.NewLogger(l, nil)
 
-	sm, err := state.NewStateManager(l, "postgres")
+	sm, err := state.NewStateManager("postgres")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	l.Log("state_manager", sm)
-	l.Log("msg", "initialized!")
+	logger.Log("state_manager", sm)
+	logger.Log("msg", "initialized!")
 }

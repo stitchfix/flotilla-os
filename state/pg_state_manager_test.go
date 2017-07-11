@@ -3,7 +3,6 @@ package state
 import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	gklog "github.com/go-kit/kit/log"
 	"log"
 	"os"
 	"testing"
@@ -20,12 +19,10 @@ func getDB() *sqlx.DB {
 
 func setUp() StateManager {
 	db := getDB()
-
-	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
 	//
 	// Implicit testing - this will create tables
 	//
-	sm, _ := NewStateManager(l, "postgres")
+	sm, _ := NewStateManager("postgres")
 	//
 	//
 	//
