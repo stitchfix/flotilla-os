@@ -191,7 +191,11 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		}
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (sm *SQLStateManager) CreateDefinition(d Definition) error {

@@ -19,7 +19,6 @@ func getDB() *sqlx.DB {
 
 func setUp() StateManager {
 	db := getDB()
-
 	//
 	// Implicit testing - this will create tables
 	//
