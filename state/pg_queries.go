@@ -1,5 +1,9 @@
 package state
 
+//
+// CreateTablesSQL postgres specific query for creating task
+// definition, run, and related tables
+//
 const CreateTablesSQL = `
 --
 -- Definitions
@@ -95,6 +99,10 @@ CREATE SEQUENCE IF NOT EXISTS task_status_status_id_seq
 
 ALTER TABLE ONLY task_status ALTER COLUMN status_id SET DEFAULT nextval('task_status_status_id_seq'::regclass);
 `
+
+//
+// DefinitionSelect postgres specific query for definitions
+//
 const DefinitionSelect = `
 select
   coalesce(td.arn,'')       as arn,
@@ -123,9 +131,19 @@ select
   on td.definition_id = tdp.task_def_id
 `
 
+//
+// ListDefinitionsSQL postgres specific query for listing definitions
+//
 const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
+
+//
+// GetDefinitionSQL postgres specific query for getting a single definition
+//
 const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 
+//
+// RunSelect postgres specific query for runs
+//
 const RunSelect = `
 select
   coalesce(t.task_arn,'')                    as taskarn,
@@ -150,5 +168,13 @@ select
     ) te
   on t.run_id = te.task_id
 `
+
+//
+// ListRunsSQL postgres specific query for listing runs
+//
 const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
+
+//
+// GetRunSQL postgres specific query for getting a single run
+//
 const GetRunSQL = RunSelect + "\nwhere run_id = $1"

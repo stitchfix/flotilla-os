@@ -1,13 +1,16 @@
 package state
 
 import (
-	"errors"
 	"fmt"
-	"os"
+	"github.com/stitchfix/flotilla-os/config"
 )
 
-type StateManager interface {
-	Initialize(resource string) error
+//
+// Manager interface for CRUD operations on
+// on definitions and runs
+//
+type Manager interface {
+	Initialize(conf config.Config) error
 	Cleanup() error
 	ListDefinitions(
 		limit int, offset int, sortBy string,
@@ -27,12 +30,21 @@ type StateManager interface {
 	UpdateRun(runID string, updates Run) error
 }
 
-func NewStateManager(name string) (StateManager, error) {
+//
+// NewStateManager sets up and configures a new statemanager
+// - if no `state_manager` is configured, will use postgres
+//
+func NewStateManager(conf config.Config) (Manager, error) {
+	name := conf.GetString("state_manager")
+	if len(name) == 0 {
+		name = "postgres"
+	}
+
 	switch name {
 	case "postgres":
 		pgm := &SQLStateManager{}
-		return pgm, pgm.Initialize(os.Getenv("DATABASE_URL"))
+		return pgm, pgm.Initialize(conf)
 	default:
-		return nil, errors.New(fmt.Sprintf("No StateManager named [%s] was found", name))
+		return nil, fmt.Errorf("No StateManager named [%s] was found", name)
 	}
 }

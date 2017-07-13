@@ -2,14 +2,33 @@ package state
 
 import "time"
 
+//
+// EnvList wraps a list of EnvVar
+// - abstraction to make it easier to read
+//   and write to db
+//
 type EnvList []EnvVar
+
+//
+// PortsList wraps a list of int
+// - abstraction to make it easier to read
+//   and write to db
+//
 type PortsList []int
 
+//
+// EnvVar represents a single environment variable
+// for either a definition or a run
+//
 type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
+//
+// Definition represents a definition of a job
+// - roughly 1-1 with an AWS ECS task definition
+//
 type Definition struct {
 	Arn           string     `json:"arn"`
 	DefinitionID  string     `json:"definition_id"`
@@ -61,11 +80,17 @@ func (d *Definition) updateWith(other Definition) {
 	}
 }
 
+//
+// DefinitionList wraps a list of Definitions
+//
 type DefinitionList struct {
 	Total       int          `json:"total"`
 	Definitions []Definition `json:"definitions"`
 }
 
+//
+// Run represents a single run of a Definition
+//
 type Run struct {
 	TaskArn         string     `json:"task_arn"`
 	RunID           string     `json:"run_id"`
@@ -129,6 +154,9 @@ func (d *Run) updateWith(other Run) {
 	}
 }
 
+//
+// RunList wraps a list of Runs
+//
 type RunList struct {
 	Total int   `json:"total"`
 	Runs  []Run `json:"history"`
