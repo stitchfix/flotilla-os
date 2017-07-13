@@ -1,0 +1,18 @@
+version: 2
+jobs:
+   build:
+     working_directory: /go/src/github.com/stitchfix/flotilla-os
+     docker:
+       - image: circleci/golang:1.8
+         environment:
+           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+       - image: postgres:9.6.2
+         environment:
+           POSTGRES_USER: flotilla
+           POSTGRES_DB: flotilla
+           POSTGRES_PASSWORD: flotilla
+     steps:
+       - checkout
+       - run: go get -u github.com/kardianos/govendor
+       - run: govendor sync
+       - run: go test -v ./...

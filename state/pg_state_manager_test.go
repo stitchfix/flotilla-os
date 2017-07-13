@@ -381,8 +381,10 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	}
 
 	ec := 137
-	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00-07:00")
-	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00-07:00")
+	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
+	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
+	t1 = t1.UTC()
+	t2 = t2.UTC()
 	r2 := Run{
 		TaskArn:      "arn1",
 		RunID:        "run:18",
@@ -420,11 +422,11 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		t.Errorf("Expected exit code %v but was %v", *r2.ExitCode, *f2.ExitCode)
 	}
 
-	if (*f2.StartedAt).String() != (*r2.StartedAt).String() {
+	if (*f2.StartedAt).UTC().String() != (*r2.StartedAt).String() {
 		t.Errorf("Expected started_at %s but was %s", *r2.StartedAt, *f2.StartedAt)
 	}
 
-	if (*f2.FinishedAt).String() != (*r2.FinishedAt).String() {
+	if (*f2.FinishedAt).UTC().String() != (*r2.FinishedAt).String() {
 		t.Errorf("Expected finished_at %s but was %s", *r2.FinishedAt, *f2.FinishedAt)
 	}
 
@@ -439,8 +441,10 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		{Name: "NEW1", Value: "NEWVAL1"},
 		{Name: "NEW2", Value: "NEWVAL2"},
 	}
-	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00-07:00")
-	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00-07:00")
+	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
+	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
+	t1 = t1.UTC()
+	t2 = t2.UTC()
 	u := Run{
 		TaskArn:    "arn1",
 		ExitCode:   &ec,
@@ -456,11 +460,11 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		t.Errorf("Expected update to set exit code to %v but was %v", ec, *r.ExitCode)
 	}
 
-	if (*r.StartedAt).String() != t1.String() {
+	if (*r.StartedAt).UTC().String() != t1.String() {
 		t.Errorf("Expected update to started_at to %s but was %s", t1, *r.StartedAt)
 	}
 
-	if (*r.FinishedAt).String() != t2.String() {
+	if (*r.FinishedAt).UTC().String() != t2.String() {
 		t.Errorf("Expected update to set finished_at to %s but was %s", t1, *r.FinishedAt)
 	}
 
