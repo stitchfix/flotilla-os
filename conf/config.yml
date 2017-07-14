@@ -1,12 +1,24 @@
+# aws region - relevant for aws related components (sqs,ecs)
+aws_default_region: us-east-1
+
+# Database url - relevant for database oriented state managers
+database_url: postgresql://flotilla:flotilla@localhost/flotolla?sslmode=disable
+
+#
+# Configure which managers and clients to use
+#
+state_manager: postgres
+queue_manager: sqs
+
+# Docker image registry info - used for validating images pre-launch
 registry:
   host: https://registry.hub.docker.com
   name: dockerhub
 
+# Log namespace
 log:
-  group_name: flotilla
+  namespace: flotilla
 
-state_manager: postgres
-database_url: postgresql://flotilla:flotilla@localhost/flotolla?sslmode=disable
-
+# Queue namespace
 queue:
-  prefix: flotilla-os-test
+  namespace: dev-flotilla

@@ -4,6 +4,7 @@ import (
 	gklog "github.com/go-kit/kit/log"
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"os"
@@ -30,6 +31,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.Log("state_manager", sm)
+	qm, err := queue.NewQueueManager(c)
+
+	logger.Log("queue_manager", qm.Name())
+	logger.Log("state_manager", sm.Name())
 	logger.Log("msg", "initialized!")
 }

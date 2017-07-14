@@ -6,7 +6,6 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	var err error
 	var c Config
 	c, _ = NewConfig(nil)
 
@@ -18,11 +17,10 @@ func TestNewConfig(t *testing.T) {
 	}
 
 	confDir := "../conf"
-	c, err = NewConfig(&confDir)
-	t.Log(err)
-	if !c.IsSet("queue.prefix") || c.GetString("queue.prefix") != "flotilla-os-test" {
+	c, _ = NewConfig(&confDir)
+	if !c.IsSet("queue.namespace") || c.GetString("queue.namespace") != "dev-flotilla" {
 		t.Errorf(
-			"Expected to read from conf dir [queue.prefix]:[flotilla-os-test], was: %s",
-			c.GetString("queue.prefix"))
+			"Expected to read from conf dir [queue.namespace]:[dev-flotilla], was: %s",
+			c.GetString("queue.namespace"))
 	}
 }

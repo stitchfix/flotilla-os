@@ -5,6 +5,7 @@ jobs:
      docker:
        - image: circleci/golang:1.8
          environment:
+           FLOTILLA_MODE: test
            DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
        - image: postgres:9.6.2
          environment:

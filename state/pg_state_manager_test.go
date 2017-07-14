@@ -5,6 +5,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
 	"log"
+	"os"
 	"testing"
 	"time"
 )
@@ -24,6 +25,7 @@ func setUp() Manager {
 	//
 	// Implicit testing - this will create tables
 	//
+	os.Setenv("state_manager", "postgres")
 	sm, _ := NewStateManager(conf)
 	//
 	//

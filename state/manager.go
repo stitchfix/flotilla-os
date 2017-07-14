@@ -10,6 +10,7 @@ import (
 // on definitions and runs
 //
 type Manager interface {
+	Name() string
 	Initialize(conf config.Config) error
 	Cleanup() error
 	ListDefinitions(
