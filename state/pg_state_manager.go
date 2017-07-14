@@ -19,6 +19,13 @@ type SQLStateManager struct {
 }
 
 //
+// Name is the name of the state manager - matches value in configuration
+//
+func (sm *SQLStateManager) Name() string {
+	return "postgres"
+}
+
+//
 // Initialize creates tables if they do not exist
 //
 func (sm *SQLStateManager) Initialize(conf config.Config) error {
