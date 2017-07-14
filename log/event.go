@@ -6,21 +6,35 @@ import (
 	"time"
 )
 
+//
+// EventSink interface
+//
 type EventSink interface {
 	Receive(keyvals ...interface{}) error
 }
 
+//
+// HTTPEventSink pushes arbitrary key-value
+// events to an external location
+//
 type HTTPEventSink struct {
 	path   string
 	method string
 	client httpclient.Client
 }
 
+//
+// HTTPEvent represents an arbitrary key-value
+// event
+//
 type HTTPEvent struct {
 	Timestamp time.Time              `json:"timestamp"`
 	Message   map[string]interface{} `json:"message"`
 }
 
+//
+// NewHTTPSink initializes and returns an HTTPEventSink
+//
 func NewHTTPSink(host string, path string, method string) HTTPEventSink {
 	return HTTPEventSink{
 		path, method, httpclient.Client{Host: host},
@@ -52,7 +66,9 @@ func (httpsink *HTTPEventSink) constructMessage(keyvals ...interface{}) (map[str
 }
 
 //
-// Receives an event and posts it to external host and path
+// Receive consumes an arbitrary set of keys and values (k1,v1,k2,v2,...),
+// constructs an HTTPEvent from them, and sends them to the configured
+// http endpoint using the configured method
 //
 func (httpsink *HTTPEventSink) Receive(keyvals ...interface{}) error {
 	var err error

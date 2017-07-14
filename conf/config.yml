@@ -1,0 +1,12 @@
+registry:
+  host: https://registry.hub.docker.com
+  name: dockerhub
+
+log:
+  group_name: flotilla
+
+state_manager: postgres
+database_url: postgresql://flotilla:flotilla@localhost/flotolla?sslmode=disable
+
+queue:
+  prefix: flotilla-os-test

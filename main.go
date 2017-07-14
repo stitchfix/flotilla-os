@@ -2,6 +2,7 @@ package main
 
 import (
 	gklog "github.com/go-kit/kit/log"
+	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
@@ -15,7 +16,16 @@ func main() {
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
 	logger := flotillaLog.NewLogger(l, nil)
 
-	sm, err := state.NewStateManager("postgres")
+	//
+	// Wrap viper for configuration
+	//
+	confDir := "conf"
+	c, err := config.NewConfig(&confDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sm, err := state.NewStateManager(c)
 	if err != nil {
 		log.Fatal(err)
 	}

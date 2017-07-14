@@ -3,18 +3,27 @@ package state
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	// Pull in postgres specific drivers
 	_ "github.com/lib/pq"
+	"github.com/stitchfix/flotilla-os/config"
 	"strings"
 )
 
+//
+// SQLStateManager uses postgresql to manage state
+//
 type SQLStateManager struct {
 	db *sqlx.DB
 }
 
-func (sm *SQLStateManager) Initialize(dburl string) error {
+//
+// Initialize creates tables if they do not exist
+//
+func (sm *SQLStateManager) Initialize(conf config.Config) error {
+	dburl := conf.GetString("database_url")
+
 	var err error
 	if sm.db, err = sqlx.Connect("postgres", dburl); err != nil {
 		return err
@@ -56,24 +65,27 @@ func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []strin
 	return wc
 }
 
-func (sm *SQLStateManager) orderBy(obj Orderable, field string, order string) (string, error) {
+func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (string, error) {
 	if order == "asc" || order == "desc" {
-		if obj.ValidOrderField(field) {
+		if obj.validOrderField(field) {
 			return fmt.Sprintf("order by %s %s", field, order), nil
-		} else {
-			return "", errors.New(fmt.Sprintf("Invalid field to order by [%s], must be one of [%s]",
-				field,
-				strings.Join(obj.ValidOrderFields(), ", ")))
 		}
-	} else {
-		return "", errors.New(fmt.Sprintf("Invalid order string, must be one of ('asc', 'desc'), was %s", order))
+		return "", fmt.Errorf("Invalid field to order by [%s], must be one of [%s]",
+			field,
+			strings.Join(obj.validOrderFields(), ", "))
 	}
+	return "", fmt.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
 }
 
 //
-// Definitions
+// ListDefinitions returns a DefinitionList
+// limit: limit the result to this many definitions
+// offset: start the results at this offset
+// sortBy: sort by this field
+// order: 'asc' or 'desc'
+// filters: map of field filters on Definition - joined with AND
+// envFilters: map of environment variable filters - joined with AND
 //
-
 func (sm *SQLStateManager) ListDefinitions(
 	limit int, offset int, sortBy string,
 	order string, filters map[string]string,
@@ -107,6 +119,9 @@ func (sm *SQLStateManager) ListDefinitions(
 	return result, nil
 }
 
+//
+// GetDefinition returns a single definition by id
+//
 func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
 	var err error
 	var definition Definition
@@ -114,6 +129,10 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	return definition, err
 }
 
+//
+// UpdateDefinition updates a definition
+// - updates can be partial
+//
 func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) error {
 	var err error
 	existing, err := sm.GetDefinition(definitionID)
@@ -198,6 +217,10 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	return nil
 }
 
+//
+// CreateDefinition creates the passed in definition object
+// - error if definition already exists
+//
 func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	var err error
 	insert := `
@@ -252,6 +275,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	return tx.Commit()
 }
 
+//
+// DeleteDefinition deletes definition and associated runs and environment variables
+//
 func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	var err error
 
@@ -284,9 +310,14 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 }
 
 //
-// Runs
+// ListRuns returns a RunList
+// limit: limit the result to this many runs
+// offset: start the results at this offset
+// sortBy: sort by this field
+// order: 'asc' or 'desc'
+// filters: map of field filters on Run - joined with AND
+// envFilters: map of environment variable filters - joined with AND
 //
-
 func (sm *SQLStateManager) ListRuns(
 	limit int, offset int, sortBy string,
 	order string, filters map[string]string,
@@ -320,6 +351,9 @@ func (sm *SQLStateManager) ListRuns(
 	return result, nil
 }
 
+//
+// GetRun gets run by id
+//
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	var err error
 	var r Run
@@ -327,6 +361,9 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	return r, err
 }
 
+//
+// UpdateRun updates run with updates - can be partial
+//
 func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 	var err error
 	existing, err := sm.GetRun(runID)
@@ -391,6 +428,9 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 	return tx.Commit()
 }
 
+//
+// CreateRun creates the passed in run
+//
 func (sm *SQLStateManager) CreateRun(r Run) error {
 	var err error
 	insert := `
@@ -434,17 +474,20 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	return tx.Commit()
 }
 
+//
+// Cleanup close any open resources
+//
 func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
-type Orderable interface {
-	ValidOrderField(field string) bool
-	ValidOrderFields() []string
+type orderable interface {
+	validOrderField(field string) bool
+	validOrderFields() []string
 }
 
-func (d *Definition) ValidOrderField(field string) bool {
-	for _, f := range d.ValidOrderFields() {
+func (d *Definition) validOrderField(field string) bool {
+	for _, f := range d.validOrderFields() {
 		if field == f {
 			return true
 		}
@@ -452,12 +495,12 @@ func (d *Definition) ValidOrderField(field string) bool {
 	return false
 }
 
-func (d *Definition) ValidOrderFields() []string {
+func (d *Definition) validOrderFields() []string {
 	return []string{"alias", "image", "group_name", "memory"}
 }
 
-func (r *Run) ValidOrderField(field string) bool {
-	for _, f := range r.ValidOrderFields() {
+func (r *Run) validOrderField(field string) bool {
+	for _, f := range r.validOrderFields() {
 		if field == f {
 			return true
 		}
@@ -465,10 +508,11 @@ func (r *Run) ValidOrderField(field string) bool {
 	return false
 }
 
-func (r *Run) ValidOrderFields() []string {
+func (r *Run) validOrderFields() []string {
 	return []string{"run_id", "cluster_name", "status", "started_at", "finished_at", "group_name"}
 }
 
+// Scan from db
 func (e *EnvList) Scan(value interface{}) error {
 	if value != nil {
 		s := []byte(value.(string))
@@ -477,11 +521,13 @@ func (e *EnvList) Scan(value interface{}) error {
 	return nil
 }
 
+// Value to db
 func (e EnvList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
+// Scan from db
 func (e *PortsList) Scan(value interface{}) error {
 	if value != nil {
 		s := []byte(value.(string))
@@ -489,6 +535,8 @@ func (e *PortsList) Scan(value interface{}) error {
 	}
 	return nil
 }
+
+// Value to db
 func (e PortsList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil

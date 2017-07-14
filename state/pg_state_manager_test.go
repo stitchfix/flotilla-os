@@ -3,26 +3,28 @@ package state
 import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/stitchfix/flotilla-os/config"
 	"log"
-	"os"
 	"testing"
 	"time"
 )
 
-func getDB() *sqlx.DB {
-	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+func getDB(conf config.Config) *sqlx.DB {
+	db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	return db
 }
 
-func setUp() StateManager {
-	db := getDB()
+func setUp() Manager {
+	conf, _ := config.NewConfig(nil)
+
+	db := getDB(conf)
 	//
 	// Implicit testing - this will create tables
 	//
-	sm, _ := NewStateManager("postgres")
+	sm, _ := NewStateManager(conf)
 	//
 	//
 	//
@@ -42,7 +44,7 @@ func insertDefinitions(db *sqlx.DB) {
       VALUES ($1, $2, $3)
     `
 
-	taskEnvSql := `
+	taskEnvSQL := `
     INSERT INTO task_environments(task_id, name, value)
       VALUES ($1, $2, $3)
     `
@@ -51,7 +53,7 @@ func insertDefinitions(db *sqlx.DB) {
     INSERT INTO task_def_ports(task_def_id, port) VALUES ($1, $2)
     `
 
-	taskSql := `
+	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, exit_code, status,
       started_at, finished_at, instance_id, instance_dns_name, group_name
@@ -82,23 +84,24 @@ func insertDefinitions(db *sqlx.DB) {
 	t3, _ := time.Parse(time.RFC3339, "2017-07-04T00:03:00+00:00")
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
-	db.MustExec(taskSql, "run0", "A", "clusta", nil, "RUNNING", t1, nil, "id1", "dns1", "groupZ")
-	db.MustExec(taskSql, "run1", "B", "clusta", nil, "RUNNING", t2, nil, "id1", "dns1", "groupY")
-	db.MustExec(taskSql, "run2", "B", "clusta", 1, "STOPPED", t2, t3, "id1", "dns1", "groupY")
-	db.MustExec(taskSql, "run3", "C", "clusta", nil, "QUEUED", nil, nil, "", "", "groupX")
-	db.MustExec(taskSql, "run4", "C", "clusta", 0, "STOPPED", t3, t4, "id1", "dns1", "groupX")
-	db.MustExec(taskSql, "run5", "D", "clustb", nil, "PENDING", nil, nil, "", "", "groupW")
+	db.MustExec(taskSQL, "run0", "A", "clusta", nil, "RUNNING", t1, nil, "id1", "dns1", "groupZ")
+	db.MustExec(taskSQL, "run1", "B", "clusta", nil, "RUNNING", t2, nil, "id1", "dns1", "groupY")
+	db.MustExec(taskSQL, "run2", "B", "clusta", 1, "STOPPED", t2, t3, "id1", "dns1", "groupY")
+	db.MustExec(taskSQL, "run3", "C", "clusta", nil, "QUEUED", nil, nil, "", "", "groupX")
+	db.MustExec(taskSQL, "run4", "C", "clusta", 0, "STOPPED", t3, t4, "id1", "dns1", "groupX")
+	db.MustExec(taskSQL, "run5", "D", "clustb", nil, "PENDING", nil, nil, "", "", "groupW")
 
-	db.MustExec(taskEnvSql, "run0", "E0", "V0")
-	db.MustExec(taskEnvSql, "run1", "E1", "V1")
-	db.MustExec(taskEnvSql, "run2", "E2", "V2")
-	db.MustExec(taskEnvSql, "run3", "E3_1", "V3_1")
-	db.MustExec(taskEnvSql, "run3", "E3_2", "V3_2")
-	db.MustExec(taskEnvSql, "run3", "E3_3", "V3_3")
+	db.MustExec(taskEnvSQL, "run0", "E0", "V0")
+	db.MustExec(taskEnvSQL, "run1", "E1", "V1")
+	db.MustExec(taskEnvSQL, "run2", "E2", "V2")
+	db.MustExec(taskEnvSQL, "run3", "E3_1", "V3_1")
+	db.MustExec(taskEnvSQL, "run3", "E3_2", "V3_2")
+	db.MustExec(taskEnvSQL, "run3", "E3_3", "V3_3")
 }
 
 func tearDown() {
-	db := getDB()
+	conf, _ := config.NewConfig(nil)
+	db := getDB(conf)
 	db.MustExec(`
     drop table if exists
       task, task_def,
@@ -262,9 +265,9 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 
 	updatedEnv := *d.Env
 	matches := 0
-	for i, _ := range updatedEnv {
+	for i := range updatedEnv {
 		updatedVar := updatedEnv[i]
-		for j, _ := range env {
+		for j := range env {
 			expectedVar := env[j]
 			if updatedVar.Name == expectedVar.Name &&
 				updatedVar.Value == expectedVar.Value {
@@ -474,9 +477,9 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 
 	updatedEnv := *r.Env
 	matches := 0
-	for i, _ := range updatedEnv {
+	for i := range updatedEnv {
 		updatedVar := updatedEnv[i]
-		for j, _ := range env {
+		for j := range env {
 			expectedVar := env[j]
 			if updatedVar.Name == expectedVar.Name &&
 				updatedVar.Value == expectedVar.Value {
