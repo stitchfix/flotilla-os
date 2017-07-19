@@ -10,11 +10,6 @@ database_url: postgresql://flotilla:flotilla@localhost/flotolla?sslmode=disable
 state_manager: postgres
 queue_manager: sqs
 
-# Docker image registry info - used for validating images pre-launch
-registry:
-  host: https://registry.hub.docker.com
-  name: dockerhub
-
 # Log namespace
 log:
   namespace: flotilla
