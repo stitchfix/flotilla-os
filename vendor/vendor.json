@@ -723,6 +723,12 @@
 			"revisionTime": "2017-06-19T10:35:39Z"
 		},
 		{
+			"checksumSHA1": "0HcxW2rnuUptjuOGpvZ1C27YVnU=",
+			"path": "github.com/stitchfix/httpclient",
+			"revision": "631a9dbe35f632f84d692f5326522a5d9baba837",
+			"revisionTime": "2017-05-09T18:52:00Z"
+		},
+		{
 			"checksumSHA1": "dr5+PfIRzXeN+l1VG+s0lea9qz8=",
 			"path": "golang.org/x/net/context",
 			"revision": "02ac38e2528ff4adea90f184d71a3faa04b4b1b0",
