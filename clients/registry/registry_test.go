@@ -1,4 +1,4 @@
-package clients
+package registry
 
 import (
 	"github.com/docker/distribution/reference"
