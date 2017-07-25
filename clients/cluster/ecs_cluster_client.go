@@ -24,7 +24,6 @@ type ECSClusterClient struct {
 }
 
 type resourceClient interface {
-	ListClusters(input *ecs.ListClustersInput) (*ecs.ListClustersOutput, error)
 	DescribeClusters(input *ecs.DescribeClustersInput) (*ecs.DescribeClustersOutput, error)
 	ListContainerInstances(input *ecs.ListContainerInstancesInput) (*ecs.ListContainerInstancesOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
@@ -130,6 +129,10 @@ func (ecc *ECSClusterClient) clusterInstanceResources(clusterName string) (*inst
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(instances) == 0 {
+		return nil, nil // short-circuit to avoid additional spurious api call with zero instances
 	}
 
 	resources, err := ecc.describeInstances(&ecs.DescribeContainerInstancesInput{
