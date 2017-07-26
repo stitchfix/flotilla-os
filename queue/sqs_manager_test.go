@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
-	"os"
 	"testing"
 )
 
@@ -103,7 +102,6 @@ func (qc *testSQSClient) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.Dele
 func setUp(t *testing.T) SQSManager {
 	confDir := "../conf"
 	c, _ := config.NewConfig(&confDir)
-	os.Setenv("queue_manager", "sqs")
 
 	qm := SQSManager{}
 	qm.Initialize(c)

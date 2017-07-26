@@ -24,11 +24,11 @@ import (
 )
 
 //
-// RegistryClient has the sole purpose of validating that an image exists
+// Client has the sole purpose of validating that an image exists
 // and that the use can access it. This -dramatically- reduces the debug
 // cycle, particularly with ill-formed or inaccessible image names
 //
-type RegistryClient interface {
+type Client interface {
 	IsImageValid(imageRef string) (bool, error)
 }
 
@@ -70,7 +70,7 @@ func loadAuthConfigs(c config.Config) (map[string]types.AuthConfig, error) {
 //
 // NewRegistryClient returns a new RegistryClient that knows how to validate image references
 //
-func NewRegistryClient(c config.Config) (RegistryClient, error) {
+func NewRegistryClient(c config.Config) (Client, error) {
 	var (
 		err error
 		rc  registryClient

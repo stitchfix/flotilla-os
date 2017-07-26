@@ -13,9 +13,12 @@ import (
 )
 
 //
-// Default cluster client maintains a cached map[string]instanceResources
-// which is used to check that the resources requested by a definition
-// -at some point- could become available on the specified cluster.
+// ECSClusterClient is the default cluster client and maintains a
+// cached map[string]instanceResources which is used to check that
+// the resources requested by a definition  -at some point- could
+// become available on the specified cluster.
+//
+// [NOTE] This client assumes homogenous clusters
 //
 type ECSClusterClient struct {
 	conf      config.Config
@@ -105,6 +108,7 @@ func (ecc *ECSClusterClient) clusterExists(clusterName string) (bool, error) {
 			&clusterName,
 		},
 	})
+
 	if err != nil {
 		return false, err
 	}
@@ -182,6 +186,14 @@ func (ecc *ECSClusterClient) describeInstances(input *ecs.DescribeContainerInsta
 	result, err := ecc.ecsClient.DescribeContainerInstances(input)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(result.Failures) != 0 {
+		msg := make([]string, len(result.Failures))
+		for i, failure := range result.Failures {
+			msg[i] = *failure.Reason
+		}
+		return nil, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
 	}
 
 	res := make([]instanceResources, len(result.ContainerInstances))

@@ -117,7 +117,7 @@
 			"revisionTime": "2017-07-19T19:08:45Z"
 		},
 		{
-			"checksumSHA1": "/qrYhYWKtQA7Rxthy4YP8EnfIn8=",
+			"checksumSHA1": "Y20DEtMtbfE9qTtmoi2NYV1x7aA=",
 			"path": "github.com/aws/aws-sdk-go/aws/session",
 			"revision": "699c7c805ce98ba33d3cf17037f146b20a023a0d",
 			"revisionTime": "2017-07-19T19:08:45Z"
@@ -177,7 +177,7 @@
 			"revisionTime": "2017-07-19T19:08:45Z"
 		},
 		{
-			"checksumSHA1": "Eb7wQIvWWPD3quZac/ccBul2olk=",
+			"checksumSHA1": "Tu51GVM0Y0bxV5R/PFAGOwmz2oE=",
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
 			"revision": "c99278599107f124d9676c9023f9554261301e67",
 			"revisionTime": "2017-07-19T22:16:24Z"

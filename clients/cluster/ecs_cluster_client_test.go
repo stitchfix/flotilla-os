@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/state"
 	"testing"
 )
 
@@ -21,8 +23,8 @@ func (trc *testResourceClient) DescribeClusters(input *ecs.DescribeClustersInput
 	}
 
 	var res ecs.DescribeClustersOutput
-	if *first == "clusta" {
-		name := "clusta"
+	if *first == "clusta" || *first == "failwhale" {
+		name := *first
 		clstr := ecs.Cluster{
 			ClusterName: &name,
 		}
@@ -42,7 +44,7 @@ func (trc *testResourceClient) ListContainerInstances(input *ecs.ListContainerIn
 		trc.t.Errorf("Expected non-nil and non-empty cluster name")
 	}
 
-	if trc.listCalled > 0 && input.NextToken == nil && *input.NextToken != tok {
+	if trc.listCalled > 0 && (input.NextToken == nil || *input.NextToken != tok) {
 		trc.t.Errorf("Called ListContainerInstances already, yet NextToken provided was nil or incorrect")
 	}
 
@@ -61,7 +63,7 @@ func (trc *testResourceClient) ListContainerInstances(input *ecs.ListContainerIn
 	res.ContainerInstanceArns = []*string{
 		&arn,
 	}
-	trc.listCalled += 1
+	trc.listCalled++
 	return &res, nil
 }
 
@@ -76,8 +78,8 @@ func (trc *testResourceClient) DescribeContainerInstances(input *ecs.DescribeCon
 
 	for _, arn := range input.ContainerInstances {
 		if arn == nil || len(*arn) == 0 {
+			trc.t.Errorf("Expected non-nil and non-empty instance arns")
 		}
-		trc.t.Errorf("Expected non-nil and non-empty instance arns")
 	}
 
 	clusterName := *input.Cluster
@@ -120,6 +122,54 @@ func (trc *testResourceClient) DescribeContainerInstances(input *ecs.DescribeCon
 	return &res, nil
 }
 
-func TestECSClusterClient_CanBeRun(t *testing.T) {
+func setUp() ECSClusterClient {
+	confDir := "../../conf"
+	c, _ := config.NewConfig(&confDir)
+	cc := ECSClusterClient{}
+	cc.Initialize(c)
+	return cc
+}
 
+func TestECSClusterClient_CanBeRun(t *testing.T) {
+	cc := setUp()
+
+	tooMuch := 100
+	justRight := 99
+
+	unrunnable := state.Definition{
+		Memory: &tooMuch,
+	}
+	runnable := state.Definition{
+		Memory: &justRight,
+	}
+
+	trc := &testResourceClient{
+		t:          t,
+		listCalled: 0,
+	}
+	cc.ecsClient = trc
+
+	var yes bool
+	yes, _ = cc.CanBeRun("clusta", unrunnable)
+	if yes {
+		t.Errorf("Definition with %v memory is not runnable, yet got true", tooMuch)
+	}
+
+	trc.listCalled = 0
+	yes, _ = cc.CanBeRun("clusta", runnable)
+	if !yes {
+		t.Errorf("Definition with %v memory is runnable, yet got false", justRight)
+	}
+
+	trc.listCalled = 0
+	yes, _ = cc.CanBeRun("noclusta", runnable)
+	if yes {
+		t.Errorf("Definitions should not be allowed to run on non-existant clusters")
+	}
+
+	trc.listCalled = 0
+	_, err := cc.CanBeRun("failwhale", runnable)
+	if err == nil {
+		t.Errorf("Failwhale cluster should have failures, but was nil")
+	}
 }

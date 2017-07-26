@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	gklog "github.com/go-kit/kit/log"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
@@ -35,10 +34,10 @@ func main() {
 
 	qm, err := queue.NewQueueManager(c)
 
+	rc, err := registry.NewRegistryClient(c)
+
 	logger.Log("queue_manager", qm.Name())
 	logger.Log("state_manager", sm.Name())
+	logger.Log("registry_client", rc)
 	logger.Log("msg", "initialized!")
-
-	rc, err := registry.NewRegistryClient(c)
-	fmt.Println(rc.IsImageValid("docker.vertigo.stitchfix.com:5000/z-etl:latst"))
 }
