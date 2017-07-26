@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 //
@@ -34,6 +35,7 @@ func NewConfig(confDir *string) (Config, error) {
 		}
 	}
 	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	return &conf{v}, nil
 }
 
