@@ -177,6 +177,12 @@
 			"revisionTime": "2017-07-19T19:08:45Z"
 		},
 		{
+			"checksumSHA1": "eJJjXlK7MLOlZhu8741//GZj0ZQ=",
+			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+			"revision": "b41fe4f7f4f766b81f5b0ce67f1358b72ed6d389",
+			"revisionTime": "2017-07-26T02:00:53Z"
+		},
+		{
 			"checksumSHA1": "Tu51GVM0Y0bxV5R/PFAGOwmz2oE=",
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
 			"revision": "c99278599107f124d9676c9023f9554261301e67",

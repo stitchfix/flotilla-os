@@ -21,7 +21,6 @@ import (
 // [NOTE] This client assumes homogenous clusters
 //
 type ECSClusterClient struct {
-	conf      config.Config
 	ecsClient resourceClient
 	clusters  resourceCache
 }
@@ -35,6 +34,13 @@ type resourceClient interface {
 type instanceResources struct {
 	memory int64
 	cpu    int64
+}
+
+//
+// Name is the name of the client
+//
+func (ecc *ECSClusterClient) Name() string {
+	return "ecs"
 }
 
 //

@@ -13,6 +13,7 @@ import (
 // available on the user's chosen cluster
 //
 type Client interface {
+	Name() string
 	Initialize(conf config.Config) error
 	CanBeRun(clusterName string, definition state.Definition) (bool, error)
 }
@@ -28,9 +29,9 @@ func NewClusterClient(conf config.Config) (Client, error) {
 
 	switch name {
 	case "ecs":
-		ecsm := &ECSClusterClient{}
-		return ecsm, ecsm.Initialize(conf)
+		ecsc := &ECSClusterClient{}
+		return ecsc, ecsc.Initialize(conf)
 	default:
-		return nil, fmt.Errorf("No ClusterClient named [%s] was found", name)
+		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
 }
