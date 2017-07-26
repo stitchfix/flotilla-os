@@ -9,6 +9,7 @@ database_url: postgresql://flotilla:flotilla@localhost/flotolla?sslmode=disable
 #
 state_manager: postgres
 queue_manager: sqs
+cluster_client: ecs
 
 # Log namespace
 log:

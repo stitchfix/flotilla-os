@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
 	gklog "github.com/go-kit/kit/log"
-	"github.com/stitchfix/flotilla-os/clients"
+	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
@@ -35,10 +34,10 @@ func main() {
 
 	qm, err := queue.NewQueueManager(c)
 
+	rc, err := registry.NewRegistryClient(c)
+
 	logger.Log("queue_manager", qm.Name())
 	logger.Log("state_manager", sm.Name())
+	logger.Log("registry_client", rc)
 	logger.Log("msg", "initialized!")
-
-	rc, err := clients.NewRegistryClient(c)
-	fmt.Println(rc.IsImageValid("library/postgres:latest"))
 }
