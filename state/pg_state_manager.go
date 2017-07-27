@@ -147,7 +147,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		return err
 	}
 
-	existing.updateWith(updates)
+	existing.UpdateWith(updates)
 
 	selectForUpdate := `SELECT * FROM task_def WHERE definition_id = $1 FOR UPDATE;`
 	deleteEnv := `DELETE FROM task_def_environments WHERE task_def_id = $1;`
@@ -378,7 +378,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 		return err
 	}
 
-	existing.updateWith(updates)
+	existing.UpdateWith(updates)
 
 	selectForUpdate := `SELECT * FROM task WHERE run_id = $1 FOR UPDATE;`
 	deleteEnv := `DELETE FROM task_environments WHERE task_id = $1;`
