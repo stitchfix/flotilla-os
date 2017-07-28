@@ -1,12 +1,12 @@
-package execution
+package engine
 
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/adapters"
 	"github.com/stitchfix/flotilla-os/state"
 	"strings"
 )
@@ -16,16 +16,12 @@ import (
 //
 type ECSExecutionEngine struct {
 	ecsClient ecsServiceClient
-	ec2Client ec2ServiceClient
+	adapter   adapters.ECSAdapter
 }
 
 type ecsServiceClient interface {
 	RunTask(input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
-}
-
-type ec2ServiceClient interface {
-	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
 }
 
 func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
@@ -39,14 +35,20 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 			Region: aws.String(conf.GetString("aws_default_region"))}))
 
 		ee.ecsClient = ecs.New(sess)
-		ee.ec2Client = ec2.New(sess)
 	}
+
+	adapter, err := adapters.NewECSAdapter(conf)
+	if err != nil {
+		return err
+	}
+	ee.adapter = adapter
 	return nil
 }
 
 func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run) (state.Run, error) {
 	var executed state.Run
-	result, err := ee.ecsClient.RunTask(&ee.toRunTaskInput(definition, run))
+	rti := ee.toRunTaskInput(definition, run)
+	result, err := ee.ecsClient.RunTask(&rti)
 	if err != nil {
 		return executed, err
 	}
@@ -111,73 +113,5 @@ func (ee *ECSExecutionEngine) envOverrides(definition state.Definition, run stat
 }
 
 func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {
-	run := state.Run{
-		TaskArn:    *task.TaskArn,
-		GroupName:  *task.Group,
-		StartedAt:  task.StartedAt,
-		FinishedAt: task.StoppedAt,
-	}
-
-	// Ignore error here
-	// TODO - we should log warning
-	//
-	res, _ := ee.ecsClient.DescribeContainerInstances(&ecs.DescribeContainerInstancesInput{
-		Cluster: task.ClusterArn,
-		ContainerInstances: []*string{
-			task.ContainerInstanceArn,
-		},
-	})
-
-	if len(res.ContainerInstances) == 1 {
-		cinstance := *res.ContainerInstances[0]
-		run.InstanceID = *cinstance.Ec2InstanceId
-		r, _ := ee.ec2Client.DescribeInstances(&ec2.DescribeInstancesInput{
-			InstanceIds: []*string{cinstance.Ec2InstanceId},
-		})
-		if len(r.Reservations) == 1 && len(r.Reservations[0].Instances) == 1 {
-			run.InstanceDNSName = *r.Reservations[0].Instances[0].PrivateDnsName
-		}
-	}
-
-	if task.Overrides != nil && len(task.Overrides.ContainerOverrides) > 0 {
-		// map to env vars
-	}
-
-	if *task.DesiredStatus == "STOPPED" {
-		run.Status = "STOPPED"
-	} else {
-		run.Status = *task.LastStatus
-	}
-
-	if len(task.Containers) == 1 {
-		run.ExitCode = task.Containers[0].ExitCode
-	}
-
-	if ee.needsRetried(run, task) {
-
-	}
-
-	return run
-}
-
-func (ee *ECSExecutionEngine) needsRetried(run state.Run, task ecs.Task) bool {
-	/*retry = False
-		if cluster_task.status == 'STOPPED' and cluster_task.exit_code is None:
-		task_reason = run_info.get('stoppedReason')
-		container_reason = '?'
-		if 'containers' in run_info and len(run_info.get('containers')) == 1:
-		container = run_info.get('containers')[0]
-		container_reason = container.get('reason', '?')
-
-		logger.warn(
-			"Got STOPPED task: [{t}] with empty exit code, container reason: [{r}], task reason: [{tr}]".format(
-				t=cluster_task.run_id, r=container_reason, tr=task_reason))
-
-		codes = [
-			'CannotCreateContainerError',
-		'CannotStartContainerError',
-		'CannotPullContainerError'
-	            ]
-		retry = True if any([c in container_reason for c in codes]) else False*/
-	return false
+	return ee.adapter.AdaptTask(task)
 }
