@@ -24,6 +24,9 @@ type ecsServiceClient interface {
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
+//
+// Initialize configures the ECSExecutionEngine and initializes internal clients
+//
 func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	if !conf.IsSet("aws_default_region") {
 		return fmt.Errorf("ECSExecutionEngine needs [aws_default_region] set in config")
@@ -45,6 +48,10 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
+//
+// Execute takes a pre-configured run and definition and submits them for execution
+// to AWS ECS
+//
 func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run) (state.Run, error) {
 	var executed state.Run
 	rti := ee.toRunTaskInput(definition, run)
@@ -64,52 +71,8 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 	return ee.translateTask(*result.Tasks[0]), nil
 }
 
-//
-// toRunTaskInput translates the definition and run into the required arguments
-// to run an ecs task. There are -several- simplifications to be aware of
-//
-// 1. There is currently only ever *1* container per definition
-// 2. There is only ever *1* task launched per run at a time
-// 3. Only environment variable overrides are supported (think of these as parameters)
-//    Once we start copying the definition information (eg. command, memory, cpu) directly
-//    onto the run we will make use of these overrides since it's important to run what
-//    we asked for -at the time- of run creation
-//
 func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run state.Run) ecs.RunTaskInput {
-	n := int64(1)
-
-	overrides := ecs.TaskOverride{
-		ContainerOverrides: []*ecs.ContainerOverride{ee.envOverrides(definition, run)},
-	}
-
-	rti := ecs.RunTaskInput{
-		Cluster:        &run.ClusterName,
-		Count:          &n,
-		StartedBy:      &run.GroupName,
-		TaskDefinition: &definition.Arn,
-		Overrides:      &overrides,
-	}
-	return rti
-}
-
-func (ee *ECSExecutionEngine) envOverrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
-	if run.Env == nil {
-		return nil
-	}
-
-	pairs := make([]*ecs.KeyValuePair, len(*run.Env))
-	for i, ev := range *run.Env {
-		pairs[i] = &ecs.KeyValuePair{
-			Name:  &ev.Name,
-			Value: &ev.Value,
-		}
-	}
-
-	res := ecs.ContainerOverride{
-		Name:        &definition.ContainerName,
-		Environment: pairs,
-	}
-	return &res
+	return ee.adapter.AdaptRun(definition, run)
 }
 
 func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {

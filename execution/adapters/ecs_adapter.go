@@ -11,8 +11,12 @@ import (
 	"strings"
 )
 
+//
+// ECSAdapter translates back and forth from ECS api objects to our representation
+//
 type ECSAdapter interface {
 	AdaptTask(task ecs.Task) state.Run
+	AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput
 }
 
 type ec2ServiceClient interface {
@@ -29,6 +33,10 @@ type ecsAdapter struct {
 	retriable []string
 }
 
+//
+// NewECSAdapter configures and returns an ecs adapter for translating
+// from ECS api specific objects to our representation
+//
 func NewECSAdapter(conf config.Config) (ECSAdapter, error) {
 	adapter := ecsAdapter{}
 
@@ -54,6 +62,9 @@ func NewECSAdapter(conf config.Config) (ECSAdapter, error) {
 	return &adapter, nil
 }
 
+//
+// AdaptTask converts from an ecs task to a generic run
+//
 func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 	run := state.Run{
 		TaskArn:    *task.TaskArn,
@@ -135,4 +146,52 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 		}
 	}
 	return false
+}
+
+//
+// AdaptRun translates the definition and run into the required arguments
+// to run an ecs task. There are -several- simplifications to be aware of
+//
+// 1. There is currently only ever *1* container per definition
+// 2. There is only ever *1* task launched per run at a time
+// 3. Only environment variable overrides are supported (think of these as parameters)
+//    Once we start copying the definition information (eg. command, memory, cpu) directly
+//    onto the run we will make use of these overrides since it's important to run what
+//    we asked for -at the time- of run creation
+//
+func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput {
+	n := int64(1)
+
+	overrides := ecs.TaskOverride{
+		ContainerOverrides: []*ecs.ContainerOverride{a.envOverrides(definition, run)},
+	}
+
+	rti := ecs.RunTaskInput{
+		Cluster:        &run.ClusterName,
+		Count:          &n,
+		StartedBy:      &run.GroupName,
+		TaskDefinition: &definition.Arn,
+		Overrides:      &overrides,
+	}
+	return rti
+}
+
+func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
+	if run.Env == nil {
+		return nil
+	}
+
+	pairs := make([]*ecs.KeyValuePair, len(*run.Env))
+	for i, ev := range *run.Env {
+		pairs[i] = &ecs.KeyValuePair{
+			Name:  &ev.Name,
+			Value: &ev.Value,
+		}
+	}
+
+	res := ecs.ContainerOverride{
+		Name:        &definition.ContainerName,
+		Environment: pairs,
+	}
+	return &res
 }

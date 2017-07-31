@@ -20,6 +20,9 @@ type Engine interface {
 	// Execute(run state.Run) error
 }
 
+//
+// NewExecutionEngine initializes and returns a new Engine
+//
 func NewExecutionEngine(conf config.Config) (Engine, error) {
 	name := conf.GetString("execution_engine")
 	if len(name) == 0 {
