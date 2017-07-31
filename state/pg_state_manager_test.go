@@ -385,7 +385,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 	}
 
-	ec := 137
+	ec := int64(137)
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
 	t1 = t1.UTC()
@@ -441,7 +441,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
 
-	ec := 1
+	ec := int64(1)
 	env := EnvList{
 		{Name: "NEW1", Value: "NEWVAL1"},
 		{Name: "NEW2", Value: "NEWVAL2"},

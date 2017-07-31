@@ -11,6 +11,7 @@ state_manager: postgres
 queue_manager: sqs
 cluster_client: ecs
 logs_client: cloudwatch
+execution_engine: ecs
 
 # Log namespace
 log:

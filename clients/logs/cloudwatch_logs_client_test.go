@@ -109,7 +109,10 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	tlc := testLogsClient{t: t}
 	cwlc.logsClient = &tlc
 	os.Setenv("LOG_NAMESPACE", "non-existing")
-	cwlc.Initialize(c)
+	err := cwlc.Initialize(c)
+	if err != nil {
+		t.Errorf("Failed to initialize logs client %v", err)
+	}
 
 	expectedInitializeCalls := map[string]bool{
 		"DescribeLogGroups":  true,
@@ -162,9 +165,7 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 
 	if tok == nil {
 		t.Errorf("Expected non-nil nextToken")
-	}
-
-	if *tok != expectedNextTok {
+	} else if *tok != expectedNextTok {
 		t.Errorf("Expected next token [%v] but was [%v]", expectedNextTok, *tok)
 	}
 }

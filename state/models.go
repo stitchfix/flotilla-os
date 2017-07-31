@@ -44,7 +44,10 @@ type Definition struct {
 	Ports         *PortsList `json:"ports,omitempty"`
 }
 
-func (d *Definition) updateWith(other Definition) {
+//
+// UpdateWith updates this definition with information from another
+//
+func (d *Definition) UpdateWith(other Definition) {
 	if len(other.Arn) > 0 {
 		d.Arn = other.Arn
 	}
@@ -91,12 +94,20 @@ type DefinitionList struct {
 //
 // Run represents a single run of a Definition
 //
+// TODO:
+//   Runs need to -copy- the run relevant information
+//   from their associated definition when they are
+//   created so they always have correct info. Currently
+//   the definition can change during or after the run
+//   is created and launched meaning the run is acting
+//   on information that is no longer accessible.
+//
 type Run struct {
 	TaskArn         string     `json:"task_arn"`
 	RunID           string     `json:"run_id"`
 	DefinitionID    string     `json:"definition_id"`
 	ClusterName     string     `json:"cluster"`
-	ExitCode        *int       `json:"exit_code"`
+	ExitCode        *int64     `json:"exit_code"`
 	Status          string     `json:"status"`
 	StartedAt       *time.Time `json:"started_at"`
 	FinishedAt      *time.Time `json:"finished_at"`
@@ -108,7 +119,10 @@ type Run struct {
 	Env             *EnvList   `json:"env"`
 }
 
-func (d *Run) updateWith(other Run) {
+//
+// UpdateWith updates this run with information from another
+//
+func (d *Run) UpdateWith(other Run) {
 	if len(other.TaskArn) > 0 {
 		d.TaskArn = other.TaskArn
 	}
