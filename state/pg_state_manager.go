@@ -443,9 +443,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	insert := `
 	INSERT INTO task (
       task_arn, run_id, definition_id, cluster_name, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name
+      started_at, finished_at, instance_id, instance_dns_name, group_name,
+      task_type
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'task'
     );
     `
 

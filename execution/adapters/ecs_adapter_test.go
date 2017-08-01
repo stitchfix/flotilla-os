@@ -169,8 +169,8 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	containers := []*ecs.Container{&container}
 	faultyContainers := []*ecs.Container{&faultyContainer}
 
-	lastStatus := "PENDING"
-	desiredStatus := "STOPPED"
+	lastStatus := state.StatusPending
+	desiredStatus := state.StatusStopped
 
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
@@ -273,7 +273,7 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 		Containers:           faultyContainers,
 	}
 	adapted = adapter.AdaptTask(task3)
-	if adapted.Status != "NEEDS_RETRY" {
-		t.Errorf("Expected status NEEDS_RETRY, was %s", adapted.Status)
+	if adapted.Status != state.StatusNeedsRetry {
+		t.Errorf("Expected status %s, was %s", state.StatusNeedsRetry, adapted.Status)
 	}
 }

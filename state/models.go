@@ -2,6 +2,12 @@ package state
 
 import "time"
 
+var StatusRunning = "RUNNING"
+var StatusQueued = "QUEUED"
+var StatusNeedsRetry = "NEEDS_RETRY"
+var StatusPending = "PENDING"
+var StatusStopped = "STOPPED"
+
 //
 // EnvList wraps a list of EnvVar
 // - abstraction to make it easier to read

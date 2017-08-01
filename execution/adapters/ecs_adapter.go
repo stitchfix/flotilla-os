@@ -109,8 +109,8 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if task.DesiredStatus != nil && *task.DesiredStatus == "STOPPED" {
-		run.Status = "STOPPED"
+	if task.DesiredStatus != nil && *task.DesiredStatus == state.StatusStopped {
+		run.Status = state.StatusStopped
 	} else {
 		run.Status = *task.LastStatus
 	}
@@ -120,7 +120,7 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 	}
 
 	if a.needsRetried(run, task) {
-		run.Status = "NEEDS_RETRY"
+		run.Status = state.StatusNeedsRetry
 		run.InstanceID = ""
 		run.InstanceDNSName = ""
 	}
@@ -132,7 +132,7 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 	//
 	// This is a -strong- indication of abnormal exit, not internal to the run
 	//
-	if run.Status == "STOPPED" && run.ExitCode == nil {
+	if run.Status == state.StatusStopped && run.ExitCode == nil {
 		containerReason := "?"
 		if len(task.Containers) == 1 {
 			containerReason = *task.Containers[0].Reason

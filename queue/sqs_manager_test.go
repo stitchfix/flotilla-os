@@ -2,6 +2,7 @@ package queue
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
@@ -11,9 +12,43 @@ import (
 type testSQSClient struct {
 	t      *testing.T
 	queues []*string
+	calls  []string
+}
+
+func (qc *testSQSClient) GetQueueUrl(input *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
+	qc.calls = append(qc.calls, "GetQueueUrl")
+	if input.QueueName == nil || len(*input.QueueName) == 0 {
+		qc.t.Errorf("Expected non-nil and non empty QueueName")
+	}
+
+	if *input.QueueName == "qtest-nope" {
+		return nil, errors.New("No queue here")
+	}
+
+	qurl := "cupcake"
+	return &sqs.GetQueueUrlOutput{QueueUrl: &qurl}, nil
+}
+
+func (qc *testSQSClient) CreateQueue(input *sqs.CreateQueueInput) (*sqs.CreateQueueOutput, error) {
+	qc.calls = append(qc.calls, "CreateQueue")
+	if input.QueueName == nil || len(*input.QueueName) == 0 {
+		qc.t.Errorf("Expected non-nil and non empty QueueName")
+	}
+
+	if _, ok := input.Attributes["MessageRetentionPeriod"]; !ok {
+		qc.t.Errorf("Expected MessageRetentionPeriod in attributes")
+	}
+
+	if _, ok := input.Attributes["VisibilityTimeout"]; !ok {
+		qc.t.Errorf("Expected VisibilityTimeout in attributes")
+	}
+
+	qurl := "nope"
+	return &sqs.CreateQueueOutput{QueueUrl: &qurl}, nil
 }
 
 func (qc *testSQSClient) ListQueues(input *sqs.ListQueuesInput) (*sqs.ListQueuesOutput, error) {
+	qc.calls = append(qc.calls, "ListQueues")
 	if input.QueueNamePrefix == nil {
 		qc.t.Errorf("Expected non-nil QueueNamePrefix")
 	}
@@ -27,6 +62,7 @@ func (qc *testSQSClient) ListQueues(input *sqs.ListQueuesInput) (*sqs.ListQueues
 }
 
 func (qc *testSQSClient) SendMessage(input *sqs.SendMessageInput) (*sqs.SendMessageOutput, error) {
+	qc.calls = append(qc.calls, "SendMessage")
 	if input.QueueUrl == nil {
 		qc.t.Errorf("Expected non-nil QueueUrl")
 	}
@@ -53,6 +89,7 @@ func (qc *testSQSClient) SendMessage(input *sqs.SendMessageInput) (*sqs.SendMess
 }
 
 func (qc *testSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+	qc.calls = append(qc.calls, "ReceiveMessage")
 	if input.VisibilityTimeout == nil {
 		qc.t.Errorf("Expected non-nil VisibilityTimeout")
 	}
@@ -84,6 +121,7 @@ func (qc *testSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.Re
 }
 
 func (qc *testSQSClient) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+	qc.calls = append(qc.calls, "DeleteMessage")
 	if input.QueueUrl == nil {
 		qc.t.Errorf("Expected non-nil QueueUrl")
 	}
@@ -105,6 +143,7 @@ func setUp(t *testing.T) SQSManager {
 
 	qm := SQSManager{}
 	qm.Initialize(c)
+	qm.namespace = "qtest"
 
 	qA := "A"
 	qB := "B"
@@ -139,6 +178,53 @@ func TestSQSManager_Enqueue(t *testing.T) {
 	err = qm.Enqueue("", toQ)
 	if err == nil {
 		t.Errorf("Expected empty queue url to result in error")
+	}
+}
+
+func TestSQSManager_QurlFor(t *testing.T) {
+	qm := setUp(t)
+
+	testClient := testSQSClient{t: t}
+	qm.qc = &testClient
+
+	expectedCalls := map[string]bool{
+		"GetQueueUrl": true,
+	}
+	qm.QurlFor("cupcake")
+
+	if len(testClient.calls) != len(expectedCalls) {
+		t.Errorf(
+			"Expected exactly %v calls for existing queue, but was %v",
+			len(expectedCalls), len(testClient.calls))
+	}
+
+	for _, call := range testClient.calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call for existing queue [%v]", call)
+		}
+	}
+
+	testClient = testSQSClient{t: t}
+	qm.qc = &testClient
+
+	expectedCalls = map[string]bool{
+		"GetQueueUrl": true,
+		"CreateQueue": true,
+	}
+	qm.QurlFor("nope")
+
+	if len(testClient.calls) != len(expectedCalls) {
+		t.Errorf(
+			"Expected exactly %v calls for non-existing queue, but was %v",
+			len(expectedCalls), len(testClient.calls))
+	}
+
+	for _, call := range testClient.calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call for non-existing queue [%v]", call)
+		}
 	}
 }
 

@@ -21,3 +21,7 @@ log:
 # Queue namespace
 queue:
   namespace: dev-flotilla
+  # 7 day retention
+  retention_seconds: 604800
+  # 45 seconds allowed processing time before re-queueing
+  process_time: 45
