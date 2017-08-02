@@ -19,6 +19,7 @@ type ExecutionService interface {
 	List(limit int, offset int, sortOrder string, sortField string, filters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
 	Terminate(runID string) error
+	ReservedVariables() []string
 }
 
 type executionService struct {
@@ -54,6 +55,14 @@ func NewExecutionService(conf config.Config, sm state.Manager,
 		},
 	}
 	return &es, nil
+}
+
+func (es *executionService) ReservedVariables() []string {
+	var keys []string
+	for k, _ := range es.reservedEnv {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error) {
