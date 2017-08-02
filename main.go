@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	gklog "github.com/go-kit/kit/log"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
@@ -9,7 +8,6 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
-	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"os"
@@ -50,11 +48,4 @@ func main() {
 	logger.Log("logs_client", lc.Name())
 	logger.Log("registry_client", rc)
 	logger.Log("msg", "initialized!")
-
-	es, err := services.NewExecutionService(sm, qm, cc, rc)
-	elist := []state.EnvVar{
-		{Name: "FLOTILLA_SERVER_MODE", Value: "prod"},
-	}
-	env := state.EnvList(elist)
-	fmt.Println(es.Create("testing-7658ce4d-5c7b-43b1-a8d5-17c7c4a77fcc", "flotilla-adhoc", &env))
 }

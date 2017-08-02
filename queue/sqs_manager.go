@@ -70,6 +70,10 @@ func (qm *SQSManager) Initialize(conf config.Config) error {
 	return nil
 }
 
+//
+// QurlFor returns the queue url that corresponds to the given name
+// * if the queue does not exist it is created
+//
 func (qm *SQSManager) QurlFor(name string) (string, error) {
 	return qm.getOrCreateQueue(name)
 }

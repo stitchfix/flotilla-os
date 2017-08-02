@@ -2,10 +2,19 @@ package state
 
 import "time"
 
+// StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
+
+// StatusQueued indicates the run is queued
 var StatusQueued = "QUEUED"
+
+// StatusNeedsRetry indicates the run failed for infra reasons and needs retried
 var StatusNeedsRetry = "NEEDS_RETRY"
+
+// StatusPending indicates the run has been allocated to a host and is in the process of launching
 var StatusPending = "PENDING"
+
+// StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
 //

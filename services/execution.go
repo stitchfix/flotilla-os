@@ -4,11 +4,16 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
+	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
+//
+// ExecutionService interacts with the state manager and queue manager to queue runs, and perform
+// CRUD operations on them
+//
 type ExecutionService interface {
 	Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error)
 	List(limit int, offset int, sortOrder string, sortField string, filters map[string]string) (state.RunList, error)
@@ -17,13 +22,17 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	sm state.Manager
-	qm queue.Manager
-	cc cluster.Client
-	rc registry.Client
+	sm          state.Manager
+	qm          queue.Manager
+	cc          cluster.Client
+	rc          registry.Client
+	reservedEnv map[string]func(run state.Run) string
 }
 
-func NewExecutionService(sm state.Manager,
+//
+// NewExecutionService configures and returns an ExecutionService
+//
+func NewExecutionService(conf config.Config, sm state.Manager,
 	qm queue.Manager,
 	cc cluster.Client,
 	rc registry.Client) (ExecutionService, error) {
@@ -32,6 +41,17 @@ func NewExecutionService(sm state.Manager,
 		qm: qm,
 		cc: cc,
 		rc: rc,
+	}
+	//
+	// Reserved environment variables dynamically generated
+	// per run
+	es.reservedEnv = map[string]func(run state.Run) string{
+		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
+			return conf.GetString("flotilla_mode")
+		},
+		"FLOTILLA_RUN_ID": func(run state.Run) string {
+			return run.RunID
+		},
 	}
 	return &es, nil
 }
@@ -49,7 +69,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 	}
 
 	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(clusterName, definition); err != nil {
+	if err = es.canBeRun(clusterName, definition, env); err != nil {
 		return run, err
 	}
 
@@ -91,11 +111,34 @@ func (es *executionService) constructRun(
 	run = state.Run{
 		RunID:        runID,
 		ClusterName:  clusterName,
-		Env:          env,
 		DefinitionID: definition.DefinitionID,
 		Status:       state.StatusQueued,
 	}
+	runEnv := es.constructEnviron(run, env)
+	run.Env = &runEnv
 	return run, nil
+}
+
+func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) state.EnvList {
+	size := len(es.reservedEnv)
+	if env != nil {
+		size += len(*env)
+	}
+	runEnv := make([]state.EnvVar, size)
+	i := 0
+	for k, f := range es.reservedEnv {
+		runEnv[i] = state.EnvVar{
+			Name:  k,
+			Value: f(run),
+		}
+		i++
+	}
+	if env != nil {
+		for j, e := range *env {
+			runEnv[i+j] = e
+		}
+	}
+	return state.EnvList(runEnv)
 }
 
 func (es *executionService) newUUIDv4() (string, error) {
@@ -106,13 +149,22 @@ func (es *executionService) newUUIDv4() (string, error) {
 	return u.String(), nil
 }
 
-func (es *executionService) canBeRun(clusterName string, definition state.Definition) error {
+func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList) error {
+	if env != nil {
+		for _, e := range *env {
+			_, usingRestricted := es.reservedEnv[e.Name]
+			if usingRestricted {
+				return exceptions.ErrorReservedEnvironmentVariable
+			}
+		}
+	}
+
 	ok, err := es.rc.IsImageValid(definition.Image)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return exceptions.ImageNotFound
+		return exceptions.ErrorImageNotFound
 	}
 
 	ok, err = es.cc.CanBeRun(clusterName, definition)
@@ -120,7 +172,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		return err
 	}
 	if !ok {
-		return exceptions.ClusterConfigurationIssue
+		return exceptions.ErrorClusterConfigurationIssue
 	}
 	return nil
 }
