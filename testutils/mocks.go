@@ -156,3 +156,8 @@ func (iatt *ImplementsAllTheThings) Terminate(run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Terminate")
 	return nil
 }
+
+func (iatt *ImplementsAllTheThings) Define(definition state.Definition) (state.Definition, error) {
+	iatt.Calls = append(iatt.Calls, "Define")
+	return state.Definition{}, nil
+}

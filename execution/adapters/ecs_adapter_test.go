@@ -3,6 +3,7 @@ package adapters
 import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"testing"
 	"time"
@@ -56,12 +57,16 @@ func setUp(t *testing.T) ecsAdapter {
 		instanceID:      "cupcake",
 		instanceDNSName: "sprinkles",
 	}
+	confDir := "../../conf"
+	conf, _ := config.NewConfig(&confDir)
+
 	adapter := ecsAdapter{
 		ec2Client: &client,
 		ecsClient: &client,
 		retriable: []string{
 			"A", "B", "C",
 		},
+		conf: conf,
 	}
 	return adapter
 }
@@ -275,5 +280,181 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	adapted = adapter.AdaptTask(task3)
 	if adapted.Status != state.StatusNeedsRetry {
 		t.Errorf("Expected status %s, was %s", state.StatusNeedsRetry, adapted.Status)
+	}
+}
+
+func TestEcsAdapter_AdaptDefinition(t *testing.T) {
+	adapter := setUp(t)
+
+	memory := int64(512)
+	d := state.Definition{
+		DefinitionID: "id:cupcake",
+		GroupName:    "group:cupcake",
+		Memory:       &memory,
+		Alias:        "cupcake",
+		Image:        "image:cupcake",
+		Command:      "echo 'hi'",
+		Env: &state.EnvList{
+			{Name: "E1", Value: "V1"},
+		},
+		Ports: &state.PortsList{12345, 6789},
+	}
+
+	adapted := adapter.AdaptDefinition(d)
+	if len(adapted.ContainerDefinitions) != 1 {
+		t.Errorf("Expected exactly 1 container definition, was %v", len(adapted.ContainerDefinitions))
+	}
+
+	if adapted.Family == nil || len(*adapted.Family) == 0 {
+		t.Errorf("Expected non-nil and non-empty Family")
+	}
+
+	if adapted.NetworkMode == nil || len(*adapted.NetworkMode) == 0 {
+		t.Errorf("Expected non-nil and non-empty NetworkMode")
+	}
+
+	//
+	// Just make sure that the data -from- the definition is in the right place; other
+	// fields (defaults) subject to much change
+	//
+	container := adapted.ContainerDefinitions[0]
+	if len(container.Command) == 0 {
+		t.Errorf("Expected non-nil and non-empty command")
+	}
+	cmd := container.Command[len(container.Command)-1]
+	wrapped, err := d.WrappedCommand()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if *cmd != wrapped {
+		t.Errorf("Expected wrapped command [%s] but was [%s]", d.Command, *cmd)
+	}
+
+	alias, ok := container.DockerLabels["alias"]
+	if !ok {
+		t.Errorf("Expected non-empty DockerLabels with field [alias] set")
+	}
+	if *alias != d.Alias {
+		t.Errorf("Expected alias %s but was %s", d.Alias, *alias)
+	}
+
+	env := container.Environment
+	if len(env) != len(*d.Env) {
+		t.Errorf("Expected %v environment variables but was %v", len(*d.Env), len(env))
+	}
+	for _, e := range env {
+		if *e.Name == "E1" && *e.Value != "V1" {
+			t.Errorf("Expected environment variable E1:V1 but was E1:%s", *e.Value)
+		}
+	}
+
+	ports := container.PortMappings
+	if len(ports) != len(*d.Ports) {
+		t.Errorf("Expected %v ports but was %v", len(*d.Ports), len(ports))
+	}
+
+	allPresent := true
+	for _, pm := range ports {
+		present := false
+		for _, p := range *d.Ports {
+			if int64(p) == *pm.ContainerPort {
+				present = true
+				break
+			}
+		}
+		allPresent = allPresent && present
+	}
+	if !allPresent {
+		t.Errorf("Expected ports %v but was %v", *d.Ports, ports)
+	}
+
+	if container.Image == nil {
+		t.Errorf("Expected non-nil image")
+	}
+	if *container.Image != d.Image {
+		t.Errorf("Expected image %s but was %s", d.Image, *container.Image)
+	}
+
+	if container.Memory == nil {
+		t.Errorf("Expected non-nil memory")
+	}
+	if *container.Memory != memory {
+		t.Errorf("Expected memory %v but was %v", memory, *container.Memory)
+	}
+}
+
+func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
+	adapter := setUp(t)
+
+	arn := "arn:cupcake"
+	family := "id:cupcake"
+	memory := int64(512)
+	port := int64(1234)
+	image := "image:cupcake"
+	alias := "alias:cupcake"
+	k1 := "K1"
+	v1 := "V1"
+	env := []*ecs.KeyValuePair{
+		{Name: &k1, Value: &v1},
+	}
+	ports := []*ecs.PortMapping{
+		{ContainerPort: &port},
+	}
+	container := ecs.ContainerDefinition{
+		Name:   &family,
+		Memory: &memory,
+		Image:  &image,
+		DockerLabels: map[string]*string{
+			"alias": &alias,
+		},
+		Environment:  env,
+		PortMappings: ports,
+	}
+	taskDef := ecs.TaskDefinition{
+		Family:               &family,
+		TaskDefinitionArn:    &arn,
+		ContainerDefinitions: []*ecs.ContainerDefinition{&container},
+	}
+
+	adapted := adapter.AdaptTaskDef(taskDef)
+	if adapted.DefinitionID != family {
+		t.Errorf("Expected DefinitionID %s but was %s", family, adapted.DefinitionID)
+	}
+
+	if adapted.Memory == nil {
+		t.Errorf("Expected non-nil memory")
+	}
+
+	if *adapted.Memory != memory {
+		t.Errorf("Expected memory %v but was %v", memory, *adapted.Memory)
+	}
+
+	if adapted.Image != image {
+		t.Errorf("Expected image %s but was %s", image, adapted.Image)
+	}
+
+	if adapted.Alias != alias {
+		t.Errorf("Expected alias %s but was %s", alias, adapted.Alias)
+	}
+
+	if adapted.Arn != arn {
+		t.Errorf("Expected arn %s but was %s", arn, adapted.Arn)
+	}
+
+	if adapted.Ports == nil {
+		t.Errorf("Expected non-nil ports")
+	}
+
+	if adapted.Env == nil {
+		t.Errorf("Expected non-nil env")
+	}
+
+	if len(*adapted.Ports) != 1 {
+		t.Errorf("Expected exactly one port mapping")
+	}
+
+	if len(*adapted.Env) != 1 {
+		t.Errorf("Expected exactly one env variable")
 	}
 }

@@ -17,6 +17,12 @@ execution_engine: ecs
 log:
   namespace: flotilla-os-logs
   retention_days: 30
+  driver:
+    name: awslogs
+    options:
+      awslogs-group: flotilla-os-logs
+      awslogs-stream-prefix: flotilla
+      awslogs-region: us-east-1
 
 # Queue namespace
 queue:

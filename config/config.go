@@ -11,6 +11,7 @@ import (
 //
 type Config interface {
 	GetString(key string) string
+	GetStringMapString(key string) map[string]string
 	GetInt(key string) int
 	GetBool(key string) bool
 	IsSet(key string) bool
@@ -53,6 +54,10 @@ func (c *conf) GetInt(key string) int {
 
 func (c *conf) GetBool(key string) bool {
 	return c.v.GetBool(key)
+}
+
+func (c *conf) GetStringMapString(key string) map[string]string {
+	return c.v.GetStringMapString(key)
 }
 
 func (c *conf) IsSet(key string) bool {
