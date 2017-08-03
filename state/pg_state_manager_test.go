@@ -86,12 +86,12 @@ func insertDefinitions(db *sqlx.DB) {
 	t3, _ := time.Parse(time.RFC3339, "2017-07-04T00:03:00+00:00")
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
-	db.MustExec(taskSQL, "run0", "A", "clusta", nil, "RUNNING", t1, nil, "id1", "dns1", "groupZ")
-	db.MustExec(taskSQL, "run1", "B", "clusta", nil, "RUNNING", t2, nil, "id1", "dns1", "groupY")
-	db.MustExec(taskSQL, "run2", "B", "clusta", 1, "STOPPED", t2, t3, "id1", "dns1", "groupY")
-	db.MustExec(taskSQL, "run3", "C", "clusta", nil, "QUEUED", nil, nil, "", "", "groupX")
-	db.MustExec(taskSQL, "run4", "C", "clusta", 0, "STOPPED", t3, t4, "id1", "dns1", "groupX")
-	db.MustExec(taskSQL, "run5", "D", "clustb", nil, "PENDING", nil, nil, "", "", "groupW")
+	db.MustExec(taskSQL, "run0", "A", "clusta", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ")
+	db.MustExec(taskSQL, "run1", "B", "clusta", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY")
+	db.MustExec(taskSQL, "run2", "B", "clusta", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY")
+	db.MustExec(taskSQL, "run3", "C", "clusta", nil, StatusQueued, nil, nil, "", "", "groupX")
+	db.MustExec(taskSQL, "run4", "C", "clusta", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX")
+	db.MustExec(taskSQL, "run5", "D", "clustb", nil, StatusPending, nil, nil, "", "", "groupW")
 
 	db.MustExec(taskEnvSQL, "run0", "E0", "V0")
 	db.MustExec(taskEnvSQL, "run1", "E1", "V1")
@@ -379,7 +379,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		GroupName:    "group:cupcake",
 		DefinitionID: "A",
 		ClusterName:  "clusta",
-		Status:       "QUEUED",
+		Status:       StatusQueued,
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
@@ -399,7 +399,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		StartedAt:    &t1,
 		FinishedAt:   &t2,
 		ClusterName:  "clusta",
-		Status:       "STOPPED",
+		Status:       StatusStopped,
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
@@ -453,7 +453,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	u := Run{
 		TaskArn:    "arn1",
 		ExitCode:   &ec,
-		Status:     "STOPPED",
+		Status:     StatusStopped,
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,

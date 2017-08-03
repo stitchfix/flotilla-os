@@ -14,11 +14,15 @@ import (
 // SQSManager - queue manager implementation for sqs
 //
 type SQSManager struct {
-	namespace string
-	qc        sqsClient
+	namespace         string
+	retentionSeconds  string
+	visibilityTimeout string
+	qc                sqsClient
 }
 
 type sqsClient interface {
+	GetQueueUrl(input *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error)
+	CreateQueue(input *sqs.CreateQueueInput) (*sqs.CreateQueueOutput, error)
 	ListQueues(input *sqs.ListQueuesInput) (*sqs.ListQueuesOutput, error)
 	SendMessage(input *sqs.SendMessageInput) (*sqs.SendMessageOutput, error)
 	ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error)
@@ -44,6 +48,16 @@ func (qm *SQSManager) Initialize(conf config.Config) error {
 		return fmt.Errorf("SQSManager needs [queue.namespace] set in config")
 	}
 
+	qm.retentionSeconds = conf.GetString("queue.retention_seconds")
+	if len(qm.retentionSeconds) == 0 {
+		qm.retentionSeconds = "604800"
+	}
+
+	qm.visibilityTimeout = conf.GetString("queue.process_time")
+	if len(qm.visibilityTimeout) == 0 {
+		qm.visibilityTimeout = "45"
+	}
+
 	qm.namespace = conf.GetString("queue.namespace")
 
 	flotillaMode := conf.GetString("flotilla_mode")
@@ -54,6 +68,36 @@ func (qm *SQSManager) Initialize(conf config.Config) error {
 		qm.qc = sqs.New(sess)
 	}
 	return nil
+}
+
+//
+// QurlFor returns the queue url that corresponds to the given name
+// * if the queue does not exist it is created
+//
+func (qm *SQSManager) QurlFor(name string) (string, error) {
+	return qm.getOrCreateQueue(name)
+}
+
+func (qm *SQSManager) getOrCreateQueue(name string) (string, error) {
+	qname := fmt.Sprintf("%s-%s", qm.namespace, name)
+	res, err := qm.qc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: &qname,
+	})
+	if err != nil || res.QueueUrl == nil {
+		cqi := sqs.CreateQueueInput{
+			Attributes: map[string]*string{
+				"MessageRetentionPeriod": &qm.retentionSeconds,
+				"VisibilityTimeout":      &qm.visibilityTimeout,
+			},
+			QueueName: &qname,
+		}
+		createQueueResponse, err := qm.qc.CreateQueue(&cqi)
+		if err != nil {
+			return "", err
+		}
+		return *createQueueResponse.QueueUrl, nil
+	}
+	return *res.QueueUrl, nil
 }
 
 func (qm *SQSManager) messageFromRun(run state.Run) (*string, error) {
