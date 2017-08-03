@@ -21,6 +21,7 @@ type ECSExecutionEngine struct {
 
 type ecsServiceClient interface {
 	RunTask(input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error)
+	StopTask(input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
@@ -69,6 +70,17 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 	}
 
 	return ee.translateTask(*result.Tasks[0]), nil
+}
+
+//
+// Terminate takes a valid run and stops it
+//
+func (ee *ECSExecutionEngine) Terminate(run state.Run) error {
+	_, err := ee.ecsClient.StopTask(&ecs.StopTaskInput{
+		Cluster: &run.ClusterName,
+		Task:    &run.TaskArn,
+	})
+	return err
 }
 
 func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run state.Run) ecs.RunTaskInput {

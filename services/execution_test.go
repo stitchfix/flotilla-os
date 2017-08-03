@@ -27,7 +27,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"B": "b/",
 		},
 	}
-	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp)
+	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp, &imp)
 	return es, &imp
 }
 
@@ -135,5 +135,49 @@ func TestExecutionService_Create2(t *testing.T) {
 
 	if err != exceptions.ErrorClusterConfigurationIssue {
 		t.Errorf("Expected exceptions.ErrorClusterConfigurationIssue but was %v", err)
+	}
+}
+
+func TestExecutionService_List(t *testing.T) {
+	es, imp := setUp(t)
+	es.List(1, 0, "asc", "cluster_name", nil, nil)
+
+	expectedCalls := map[string]bool{
+		"ListRuns": true,
+	}
+
+	if len(imp.Calls) != len(expectedCalls) {
+		t.Errorf("Expected exactly %v calls during run list with no filters but was: %v", len(expectedCalls), len(imp.Calls))
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during run list with no filters: %s", call)
+		}
+	}
+}
+
+func TestExecutionService_List2(t *testing.T) {
+	es, imp := setUp(t)
+	es.List(
+		1, 0,
+		"asc", "cluster_name",
+		map[string]string{"definition_id": "A"}, nil)
+
+	expectedCalls := map[string]bool{
+		"GetDefinition": true,
+		"ListRuns":      true,
+	}
+
+	if len(imp.Calls) != len(expectedCalls) {
+		t.Errorf("Expected exactly %v calls during run list with no filters but was: %v", len(expectedCalls), len(imp.Calls))
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during run list with no filters: %s", call)
+		}
 	}
 }

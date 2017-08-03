@@ -17,6 +17,14 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+func IsValidStatus(status string) bool {
+	return status == StatusRunning ||
+		status == StatusQueued ||
+		status == StatusNeedsRetry ||
+		status == StatusPending ||
+		status == StatusStopped
+}
+
 //
 // EnvList wraps a list of EnvVar
 // - abstraction to make it easier to read

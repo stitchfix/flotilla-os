@@ -6,6 +6,7 @@ import (
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -16,7 +17,13 @@ import (
 //
 type ExecutionService interface {
 	Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error)
-	List(limit int, offset int, sortOrder string, sortField string, filters map[string]string) (state.RunList, error)
+	List(
+		limit int,
+		offset int,
+		sortOrder string,
+		sortField string,
+		filters map[string]string,
+		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
 	Terminate(runID string) error
 	ReservedVariables() []string
@@ -27,13 +34,15 @@ type executionService struct {
 	qm          queue.Manager
 	cc          cluster.Client
 	rc          registry.Client
+	ee          engine.Engine
 	reservedEnv map[string]func(run state.Run) string
 }
 
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config, sm state.Manager,
+func NewExecutionService(conf config.Config, ee engine.Engine,
+	sm state.Manager,
 	qm queue.Manager,
 	cc cluster.Client,
 	rc registry.Client) (ExecutionService, error) {
@@ -42,6 +51,7 @@ func NewExecutionService(conf config.Config, sm state.Manager,
 		qm: qm,
 		cc: cc,
 		rc: rc,
+		ee: ee,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -57,6 +67,10 @@ func NewExecutionService(conf config.Config, sm state.Manager,
 	return &es, nil
 }
 
+//
+// ReservedVariables returns the list of reserved run environment variable
+// names
+//
 func (es *executionService) ReservedVariables() []string {
 	var keys []string
 	for k, _ := range es.reservedEnv {
@@ -65,6 +79,9 @@ func (es *executionService) ReservedVariables() []string {
 	return keys
 }
 
+//
+// Create constructs and queues a new Run on the cluster specified
+//
 func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error) {
 	var (
 		run state.Run
@@ -186,15 +203,54 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 	return nil
 }
 
+//
+// List returns a list of Runs
+// * validates definition_id and status filters
+//
 func (es *executionService) List(
-	limit int, offset int, sortOrder string, sortField string, filters map[string]string) (state.RunList, error) {
-	return state.RunList{}, nil
+	limit int,
+	offset int,
+	sortOrder string,
+	sortField string,
+	filters map[string]string,
+	envFilters map[string]string) (state.RunList, error) {
+
+	// If definition_id is present in filters, validate its
+	// existence first
+	definitionID, ok := filters["definition_id"]
+	if ok {
+		_, err := es.sm.GetDefinition(definitionID)
+		if err != nil {
+			return state.RunList{}, err
+		}
+	}
+
+	status, ok := filters["status"]
+	if ok && !state.IsValidStatus(status) {
+		// Status filter is invalid
+		return state.RunList{}, exceptions.ErrorInvalidStatus
+	}
+	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters)
 }
 
+//
+// Get returns the run with the given runID
+//
 func (es *executionService) Get(runID string) (state.Run, error) {
-	return state.Run{}, nil
+	return es.sm.GetRun(runID)
 }
 
+//
+// Terminate stops the run with the given runID
+//
 func (es *executionService) Terminate(runID string) error {
-	return nil
+	run, err := es.sm.GetRun(runID)
+	if err != nil {
+		return err
+	}
+
+	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
+		return es.ee.Terminate(run)
+	}
+	return exceptions.ErrorInvalidRun
 }

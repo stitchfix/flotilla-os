@@ -29,3 +29,9 @@ var ErrorClusterConfigurationIssue = errors.New("Defintion cannot be run on the 
 
 // ErrorReservedEnvironmentVariable indicates that one of the environment variables specified is reserved
 var ErrorReservedEnvironmentVariable = errors.New("Using reserved environment variable")
+
+// ErrorInvalidRun indicates the run is missing required fields like arn
+var ErrorInvalidRun = errors.New("Invalid run, missing required fields")
+
+// ErrorInvalidStatus indicates the status string specified is not defined
+var ErrorInvalidStatus = errors.New("Invalid status specified")

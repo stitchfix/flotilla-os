@@ -145,3 +145,14 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 	}
 	return true, nil
 }
+
+// Execution Engine
+func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run) (state.Run, error) {
+	iatt.Calls = append(iatt.Calls, "Execute")
+	return state.Run{}, nil
+}
+
+func (iatt *ImplementsAllTheThings) Terminate(run state.Run) error {
+	iatt.Calls = append(iatt.Calls, "Terminate")
+	return nil
+}

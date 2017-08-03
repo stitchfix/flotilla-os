@@ -18,6 +18,8 @@ type Engine interface {
 
 	// v1 - once runs contain a copy of relevant definition info
 	// Execute(run state.Run) error
+
+	Terminate(run state.Run) error
 }
 
 //
