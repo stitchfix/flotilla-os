@@ -13,6 +13,7 @@ import (
 //
 // ExecutionService interacts with the state manager and queue manager to queue runs, and perform
 // CRUD operations on them
+// * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
 	Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error)
@@ -72,7 +73,7 @@ func NewExecutionService(conf config.Config, ee engine.Engine,
 //
 func (es *executionService) ReservedVariables() []string {
 	var keys []string
-	for k, _ := range es.reservedEnv {
+	for k := range es.reservedEnv {
 		keys = append(keys, k)
 	}
 	return keys

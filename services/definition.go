@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+//
+// DefinitionService defines an interface for operations involving
+// definitions
+// * Like the ExecutionService, is an intermediary layer between state and the execution engine
+//
 type DefinitionService interface {
 	Create(definition *state.Definition) (state.Definition, error)
 	Get(definitionID string) (state.Definition, error)
@@ -23,11 +28,20 @@ type definitionService struct {
 	ee engine.Engine
 }
 
+//
+// NewDefinitionService configures and returns a DefinitionService
+//
 func NewDefinitionService(conf config.Config, ee engine.Engine, sm state.Manager) (DefinitionService, error) {
 	ds := definitionService{sm: sm, ee: ee}
 	return &ds, nil
 }
 
+//
+// Create fully initialize and save the new definition
+// * Allocates new definition id
+// * Defines definition with execution engine
+// * Stores definition using state manager
+//
 func (ds *definitionService) Create(definition *state.Definition) (state.Definition, error) {
 	if valid, reasons := definition.IsValid(); !valid {
 		return state.Definition{}, exceptions.MalformedInput{strings.Join(reasons, "\n")}
@@ -47,20 +61,44 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 	return defined, ds.sm.CreateDefinition(defined)
 }
 
+//
+// Get returns the definition specified by definitionID
+//
 func (ds *definitionService) Get(definitionID string) (state.Definition, error) {
-	return state.Definition{}, nil
+	return ds.sm.GetDefinition(definitionID)
 }
 
+// List lists definitions
 func (ds *definitionService) List(limit int, offset int, sortBy string,
 	order string, filters map[string]string,
 	envFilters map[string]string) (state.DefinitionList, error) {
-	return state.DefinitionList{}, nil
+	return ds.sm.ListDefinitions(limit, offset, sortBy, order, filters, envFilters)
 }
 
+// Update updates the definition specified by definitionID with the given updates
 func (ds *definitionService) Update(definitionID string, updates state.Definition) error {
-	return nil
+	definition, err := ds.sm.GetDefinition(definitionID)
+	if err != nil {
+		return err
+	}
+
+	definition.UpdateWith(updates)
+	defined, err := ds.ee.Define(definition)
+	if err != nil {
+		return err
+	}
+
+	return ds.sm.UpdateDefinition(definitionID, defined)
 }
 
+// Delete deletes and deregisters the definition specified by definitionID
 func (ds *definitionService) Delete(definitionID string) error {
-	return nil
+	definition, err := ds.sm.GetDefinition(definitionID)
+	if err != nil {
+		return err
+	}
+	if err = ds.ee.Deregister(definition); err != nil {
+		return err
+	}
+	return ds.sm.DeleteDefinition(definitionID)
 }

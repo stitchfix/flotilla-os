@@ -22,6 +22,7 @@ type ECSExecutionEngine struct {
 type ecsServiceClient interface {
 	RunTask(input *ecs.RunTaskInput) (*ecs.RunTaskOutput, error)
 	StopTask(input *ecs.StopTaskInput) (*ecs.StopTaskOutput, error)
+	DeregisterTaskDefinition(input *ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
 	RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
@@ -96,6 +97,16 @@ func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definit
 	}
 
 	return ee.adapter.AdaptTaskDef(*result.TaskDefinition), nil
+}
+
+//
+// Deregister deregisters the task definition from ecs
+//
+func (ee *ECSExecutionEngine) Deregister(definition state.Definition) error {
+	_, err := ee.ecsClient.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+		TaskDefinition: &definition.Arn,
+	})
+	return err
 }
 
 func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run state.Run) ecs.RunTaskInput {

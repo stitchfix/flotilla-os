@@ -19,6 +19,8 @@ type Engine interface {
 
 	Define(definition state.Definition) (state.Definition, error)
 
+	Deregister(definition state.Definition) error
+
 	Terminate(run state.Run) error
 }
 

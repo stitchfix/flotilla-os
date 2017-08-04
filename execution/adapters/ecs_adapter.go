@@ -198,6 +198,21 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 	return &res
 }
 
+//
+// AdaptDefinition translates from definition to the ecs arguments for registering a task
+//
+// Several simplifications and assumptions are made
+// * see `defaultContainerDefinition` for chosen defaults regarding user, privileged mode, networking, etc
+// * for now, exactly -one- container per definition is defined AND the DefinitionID == ecs family == container name
+// * we -always- use host networking; this dramatically simplifies the reasoning the end-users have to do
+//   about the way in which their runs are going to function; esp wrt external libraries and frameworks
+//   *** port mappings are maintained as a mechanism to pre-allocate what ports to use and allows some flexibility in
+//       networking; MOST runs will not use this currently as we're using "host" networking mode
+// * we wrap the command specified to ensure lines are echoed and the exit code is captured and is an injection
+//   point for other infra related concerns
+//
+// TODO - add CPU
+//
 func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput {
 	containerDef := a.defaultContainerDefinition()
 	containerDef.Image = &definition.Image
@@ -248,6 +263,10 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 	}
 }
 
+//
+// AdaptTaskDef translates from an ecs task definition to our definition object
+// * see `AdaptTaskDefinition` for translation details
+//
 func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	adapted := state.Definition{
 		Arn:          *taskDef.TaskDefinitionArn,

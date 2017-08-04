@@ -24,6 +24,10 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+//
+// IsValidStatus checks that the given status
+// string is one of the valid statuses
+//
 func IsValidStatus(status string) bool {
 	return status == StatusRunning ||
 		status == StatusQueued ||
@@ -32,10 +36,12 @@ func IsValidStatus(status string) bool {
 		status == StatusStopped
 }
 
+// NewRunID returns a new uuid for a Run
 func NewRunID() (string, error) {
 	return newUUIDv4()
 }
 
+// NewDefinitionID returns a new uuid for a Definition
 func NewDefinitionID(definition Definition) (string, error) {
 	uuid4, err := newUUIDv4()
 	if err != nil {
@@ -133,7 +139,7 @@ func (d *Definition) IsValid() (bool, []string) {
 	conditions := []validationCondition{
 		{len(d.Image) == 0, "string [image] must be specified"},
 		{len(d.GroupName) == 0, "string [group_name] must be specified"},
-		{validGroupName.MatchString(d.GroupName), "Group name can only contain letters, numbers, hyphens, and underscores"},
+		{!validGroupName.MatchString(d.GroupName), "Group name can only contain letters, numbers, hyphens, and underscores"},
 		{len(d.GroupName) > 255, "Group name must be 255 characters or less"},
 		{len(d.Alias) == 0, "string [alias] must be specified"},
 		{d.Memory == nil, "int [memory] must be specified"},

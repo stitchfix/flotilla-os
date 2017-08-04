@@ -8,30 +8,38 @@ import (
 	"testing"
 )
 
-// ImplementsAllTheThings
+//
+// ImplementsAllTheThings defines a struct which implements many of the interfaces
+// to facilitate easier testing
+//
 type ImplementsAllTheThings struct {
 	T           *testing.T
 	Calls       []string
 	Definitions map[string]state.Definition
 	Runs        map[string]state.Run
 	Qurls       map[string]string
+	Defined     []string
 }
 
-// StateManager
+// Name - general
 func (iatt *ImplementsAllTheThings) Name() string {
 	iatt.Calls = append(iatt.Calls, "Name")
 	return "implementer"
 }
+
+// Initialize - general
 func (iatt *ImplementsAllTheThings) Initialize(conf config.Config) error {
 	iatt.Calls = append(iatt.Calls, "Initialize")
 	return nil
 }
 
+// Cleanup - general
 func (iatt *ImplementsAllTheThings) Cleanup() error {
 	iatt.Calls = append(iatt.Calls, "Cleanup")
 	return nil
 }
 
+// ListDefinitions - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitions(
 	limit int, offset int, sortBy string,
 	order string, filters map[string]string,
@@ -44,6 +52,7 @@ func (iatt *ImplementsAllTheThings) ListDefinitions(
 	return dl, nil
 }
 
+// GetDefinition - StateManager
 func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "GetDefinition")
 	var err error
@@ -53,20 +62,28 @@ func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.De
 	}
 	return d, err
 }
+
+// UpdateDefinition - StateManager
 func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, updates state.Definition) error {
 	iatt.Calls = append(iatt.Calls, "UpdateDefinition")
 	return nil
 }
+
+// CreateDefinition - StateManager
 func (iatt *ImplementsAllTheThings) CreateDefinition(d state.Definition) error {
 	iatt.Calls = append(iatt.Calls, "CreateDefinition")
 	iatt.Definitions[d.DefinitionID] = d
 	return nil
 }
+
+// DeleteDefinition - StateManager
 func (iatt *ImplementsAllTheThings) DeleteDefinition(definitionID string) error {
 	iatt.Calls = append(iatt.Calls, "DeleteDefinition")
 	delete(iatt.Definitions, definitionID)
 	return nil
 }
+
+// ListRuns - StateManager
 func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy string,
 	order string, filters map[string]string,
 	envFilters map[string]string) (state.RunList, error) {
@@ -77,6 +94,8 @@ func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy strin
 	}
 	return rl, nil
 }
+
+// GetRun - StateManager
 func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "GetRun")
 	var err error
@@ -86,26 +105,34 @@ func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
 	}
 	return r, err
 }
+
+// CreateRun - StateManager
 func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 	iatt.Calls = append(iatt.Calls, "CreateRun")
 	iatt.Runs[r.RunID] = r
 	return nil
 }
+
+// UpdateRun - StateManager
 func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) error {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")
 	return nil
 }
 
-// QueueManager
+// QurlFor - QueueManager
 func (iatt *ImplementsAllTheThings) QurlFor(name string) (string, error) {
 	iatt.Calls = append(iatt.Calls, "QurlFor")
 	qurl, _ := iatt.Qurls[name]
 	return qurl, nil
 }
+
+// Enqueue - QueueManager
 func (iatt *ImplementsAllTheThings) Enqueue(qURL string, run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Enqueue")
 	return nil
 }
+
+// Receive - QueueManager
 func (iatt *ImplementsAllTheThings) Receive(qURL string) (queue.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "Receive")
 	receipt := queue.RunReceipt{
@@ -117,6 +144,8 @@ func (iatt *ImplementsAllTheThings) Receive(qURL string) (queue.RunReceipt, erro
 	}
 	return receipt, nil
 }
+
+// List - QueueManager
 func (iatt *ImplementsAllTheThings) List() ([]string, error) {
 	iatt.Calls = append(iatt.Calls, "List")
 	res := make([]string, len(iatt.Qurls))
@@ -128,7 +157,7 @@ func (iatt *ImplementsAllTheThings) List() ([]string, error) {
 	return res, nil
 }
 
-// Cluster Client
+// CanBeRun - Cluster Client
 func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, definition state.Definition) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "CanBeRun")
 	if clusterName == "invalidcluster" {
@@ -137,7 +166,7 @@ func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, definition stat
 	return true, nil
 }
 
-// Registry Client
+// IsImageValid - Registry Client
 func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "IsImageValid")
 	if imageRef == "invalidimage" {
@@ -146,18 +175,27 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 	return true, nil
 }
 
-// Execution Engine
+// Execute - Execution Engine
 func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "Execute")
 	return state.Run{}, nil
 }
 
+// Terminate - Execution Engine
 func (iatt *ImplementsAllTheThings) Terminate(run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Terminate")
 	return nil
 }
 
+// Define - Execution Engine
 func (iatt *ImplementsAllTheThings) Define(definition state.Definition) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "Define")
-	return state.Definition{}, nil
+	iatt.Defined = append(iatt.Defined, definition.DefinitionID)
+	return definition, nil
+}
+
+// Deregister - Execution Engine
+func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) error {
+	iatt.Calls = append(iatt.Calls, "Deregister")
+	return nil
 }
