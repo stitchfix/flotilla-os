@@ -116,6 +116,9 @@ func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 // UpdateRun - StateManager
 func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) error {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")
+	run := iatt.Runs[runID]
+	run.UpdateWith(updates)
+	iatt.Runs[runID] = run
 	return nil
 }
 

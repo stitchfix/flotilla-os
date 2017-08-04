@@ -31,3 +31,9 @@ queue:
   retention_seconds: 604800
   # 45 seconds allowed processing time before re-queueing
   process_time: 45
+
+worker:
+  retry_interval_seconds: 30
+  submit_interval_seconds: 30
+  status_interval_seconds: 30
+  reassign_interval_seconds: 30
