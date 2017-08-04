@@ -1,6 +1,13 @@
 package state
 
-import "time"
+import (
+	"bytes"
+	"fmt"
+	"github.com/nu7hatch/gouuid"
+	"regexp"
+	"text/template"
+	"time"
+)
 
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
@@ -17,12 +24,38 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+//
+// IsValidStatus checks that the given status
+// string is one of the valid statuses
+//
 func IsValidStatus(status string) bool {
 	return status == StatusRunning ||
 		status == StatusQueued ||
 		status == StatusNeedsRetry ||
 		status == StatusPending ||
 		status == StatusStopped
+}
+
+// NewRunID returns a new uuid for a Run
+func NewRunID() (string, error) {
+	return newUUIDv4()
+}
+
+// NewDefinitionID returns a new uuid for a Definition
+func NewDefinitionID(definition Definition) (string, error) {
+	uuid4, err := newUUIDv4()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s-%s", definition.GroupName, uuid4), nil
+}
+
+func newUUIDv4() (string, error) {
+	u, err := uuid.NewV4()
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }
 
 //
@@ -60,11 +93,67 @@ type Definition struct {
 	ContainerName string     `json:"container_name"`
 	User          string     `json:"user,omitempty"`
 	Alias         string     `json:"alias"`
-	Memory        *int       `json:"memory"`
+	Memory        *int64     `json:"memory"`
 	Command       string     `json:"command,omitempty"`
 	TaskType      string     `json:"-"`
 	Env           *EnvList   `json:"env"`
 	Ports         *PortsList `json:"ports,omitempty"`
+}
+
+var commandWrapper = `
+bash << _FLOTILLA_EOF
+set -x
+set -e
+{{.Command}}
+_FLOTILLA_EOF
+
+exit_code=$?
+exit ${exit_code}
+`
+var commandTemplate, _ = template.New("command").Parse(commandWrapper)
+
+//
+// WrappedCommand returns the wrapped command for the definition
+// * wrapping ensures lines are logged and exit code is set
+//
+func (d *Definition) WrappedCommand() (string, error) {
+	var result bytes.Buffer
+	if err := commandTemplate.Execute(&result, d); err != nil {
+		return "", err
+	}
+	return result.String(), nil
+}
+
+type validationCondition struct {
+	condition bool
+	reason    string
+}
+
+var validGroupName = regexp.MustCompile(`^[a-zA-Z0-9_\\-]+$`)
+
+//
+// IsValid returns true only if this is a valid definition with all
+// required information
+//
+func (d *Definition) IsValid() (bool, []string) {
+	conditions := []validationCondition{
+		{len(d.Image) == 0, "string [image] must be specified"},
+		{len(d.GroupName) == 0, "string [group_name] must be specified"},
+		{!validGroupName.MatchString(d.GroupName), "Group name can only contain letters, numbers, hyphens, and underscores"},
+		{len(d.GroupName) > 255, "Group name must be 255 characters or less"},
+		{len(d.Alias) == 0, "string [alias] must be specified"},
+		{d.Memory == nil, "int [memory] must be specified"},
+	}
+
+	valid := true
+	var reasons []string
+	for _, cond := range conditions {
+		if cond.condition {
+			valid = false
+			reasons = append(reasons, cond.reason)
+		}
+	}
+	return valid, reasons
 }
 
 //

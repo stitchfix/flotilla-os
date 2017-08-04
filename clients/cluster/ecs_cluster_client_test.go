@@ -133,8 +133,8 @@ func setUp() ECSClusterClient {
 func TestECSClusterClient_CanBeRun(t *testing.T) {
 	cc := setUp()
 
-	tooMuch := 100
-	justRight := 99
+	tooMuch := int64(100)
+	justRight := int64(99)
 
 	unrunnable := state.Definition{
 		Memory: &tooMuch,

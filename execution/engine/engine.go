@@ -8,8 +8,6 @@ import (
 
 //
 // Engine defines the execution engine interface.
-// An engine's sole purpose is to submit a run to
-// backend resources
 //
 type Engine interface {
 	Initialize(conf config.Config) error
@@ -18,6 +16,10 @@ type Engine interface {
 
 	// v1 - once runs contain a copy of relevant definition info
 	// Execute(run state.Run) error
+
+	Define(definition state.Definition) (state.Definition, error)
+
+	Deregister(definition state.Definition) error
 
 	Terminate(run state.Run) error
 }

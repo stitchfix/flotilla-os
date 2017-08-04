@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/nu7hatch/gouuid"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
@@ -14,6 +13,7 @@ import (
 //
 // ExecutionService interacts with the state manager and queue manager to queue runs, and perform
 // CRUD operations on them
+// * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
 	Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error)
@@ -73,7 +73,7 @@ func NewExecutionService(conf config.Config, ee engine.Engine,
 //
 func (es *executionService) ReservedVariables() []string {
 	var keys []string
-	for k, _ := range es.reservedEnv {
+	for k := range es.reservedEnv {
 		keys = append(keys, k)
 	}
 	return keys
@@ -129,7 +129,7 @@ func (es *executionService) constructRun(
 		err error
 	)
 
-	runID, err := es.newUUIDv4()
+	runID, err := state.NewRunID()
 	if err != nil {
 		return run, err
 	}
@@ -165,14 +165,6 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 		}
 	}
 	return state.EnvList(runEnv)
-}
-
-func (es *executionService) newUUIDv4() (string, error) {
-	u, err := uuid.NewV4()
-	if err != nil {
-		return "", err
-	}
-	return u.String(), nil
 }
 
 func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList) error {

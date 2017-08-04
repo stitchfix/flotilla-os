@@ -203,7 +203,7 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	sm := setUp()
 
 	var err error
-	memory := 512
+	memory := int64(512)
 	d := Definition{
 		Arn:           "arn:cupcake",
 		DefinitionID:  "id:cupcake",

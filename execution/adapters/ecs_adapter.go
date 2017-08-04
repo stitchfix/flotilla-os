@@ -17,6 +17,8 @@ import (
 type ECSAdapter interface {
 	AdaptTask(task ecs.Task) state.Run
 	AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput
+	AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput
+	AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition
 }
 
 type ec2ServiceClient interface {
@@ -30,6 +32,7 @@ type ecsServiceClient interface {
 type ecsAdapter struct {
 	ecsClient ecsServiceClient
 	ec2Client ec2ServiceClient
+	conf      config.Config
 	retriable []string
 }
 
@@ -58,7 +61,6 @@ func NewECSAdapter(conf config.Config) (ECSAdapter, error) {
 		"CannotStartContainerError",
 		"CannotPullContainerError",
 	}
-
 	return &adapter, nil
 }
 
@@ -190,8 +192,147 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 	}
 
 	res := ecs.ContainerOverride{
-		Name:        &definition.ContainerName,
+		Name:        &definition.DefinitionID,
 		Environment: pairs,
 	}
 	return &res
+}
+
+//
+// AdaptDefinition translates from definition to the ecs arguments for registering a task
+//
+// Several simplifications and assumptions are made
+// * see `defaultContainerDefinition` for chosen defaults regarding user, privileged mode, networking, etc
+// * for now, exactly -one- container per definition is defined AND the DefinitionID == ecs family == container name
+// * we -always- use host networking; this dramatically simplifies the reasoning the end-users have to do
+//   about the way in which their runs are going to function; esp wrt external libraries and frameworks
+//   *** port mappings are maintained as a mechanism to pre-allocate what ports to use and allows some flexibility in
+//       networking; MOST runs will not use this currently as we're using "host" networking mode
+// * we wrap the command specified to ensure lines are echoed and the exit code is captured and is an injection
+//   point for other infra related concerns
+//
+// TODO - add CPU
+//
+func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput {
+	containerDef := a.defaultContainerDefinition()
+	containerDef.Image = &definition.Image
+	containerDef.Memory = definition.Memory
+	containerDef.Name = &definition.DefinitionID
+	containerDef.DockerLabels = map[string]*string{
+		"alias": &definition.Alias,
+	}
+
+	cmdString, err := definition.WrappedCommand()
+	if err != nil {
+		// Fallback
+		cmdString = definition.Command
+	}
+	cmds := []string{"bash", "-l", "-c", cmdString}
+	containerDef.Command = []*string{
+		&cmds[0], &cmds[1], &cmds[2], &cmds[3],
+	}
+
+	if definition.Ports != nil {
+		protocol := "tcp"
+		containerDef.PortMappings = make([]*ecs.PortMapping, len(*definition.Ports))
+		for i, p := range *definition.Ports {
+			port := int64(p)
+			containerDef.PortMappings[i] = &ecs.PortMapping{
+				Protocol:      &protocol,
+				HostPort:      &port,
+				ContainerPort: &port,
+			}
+		}
+	}
+
+	if definition.Env != nil {
+		containerDef.Environment = make([]*ecs.KeyValuePair, len(*definition.Env))
+		for i, e := range *definition.Env {
+			containerDef.Environment[i] = &ecs.KeyValuePair{
+				Name:  &e.Name,
+				Value: &e.Value,
+			}
+		}
+	}
+
+	networkMode := "host"
+	return ecs.RegisterTaskDefinitionInput{
+		ContainerDefinitions: []*ecs.ContainerDefinition{containerDef},
+		Family:               &definition.DefinitionID,
+		NetworkMode:          &networkMode,
+	}
+}
+
+//
+// AdaptTaskDef translates from an ecs task definition to our definition object
+// * see `AdaptTaskDefinition` for translation details
+//
+func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
+	adapted := state.Definition{
+		Arn:          *taskDef.TaskDefinitionArn,
+		DefinitionID: *taskDef.Family,
+	}
+
+	if len(taskDef.ContainerDefinitions) == 1 {
+		container := taskDef.ContainerDefinitions[0]
+
+		adapted.Memory = container.Memory
+		adapted.Image = *container.Image
+
+		alias, _ := container.DockerLabels["alias"]
+		adapted.Alias = *alias
+
+		if len(container.PortMappings) > 0 {
+			ports := make([]int, len(container.PortMappings))
+			for i, pm := range container.PortMappings {
+				ports[i] = int(*pm.ContainerPort)
+			}
+			adaptedPorts := state.PortsList(ports)
+			adapted.Ports = &adaptedPorts
+		}
+
+		if len(container.Environment) > 0 {
+			env := make([]state.EnvVar, len(container.Environment))
+			for i, e := range container.Environment {
+				env[i] = state.EnvVar{
+					Name:  *e.Name,
+					Value: *e.Value,
+				}
+			}
+			adaptedEnv := state.EnvList(env)
+			adapted.Env = &adaptedEnv
+		}
+	}
+
+	return adapted
+}
+
+func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
+	essential := true
+	user := "root"
+	disableNetworking := false
+	privileged := true
+
+	logDriver := a.conf.GetString("log.driver.name")
+	if len(logDriver) == 0 {
+		logDriver = "awslogs"
+	}
+	confLogOptions := a.conf.GetStringMapString("log.driver.options")
+	logOptions := make(map[string]*string, len(confLogOptions))
+	for k, v := range confLogOptions {
+		logOptions[k] = &v
+	}
+
+	logConfiguration := ecs.LogConfiguration{
+		LogDriver: &logDriver,
+		Options:   logOptions,
+	}
+
+	return &ecs.ContainerDefinition{
+		Essential:         &essential,
+		User:              &user,
+		DisableNetworking: &disableNetworking,
+		Privileged:        &privileged,
+		LogConfiguration:  &logConfiguration,
+	}
 }
