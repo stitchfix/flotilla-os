@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
@@ -55,12 +56,20 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 // Execute takes a pre-configured run and definition and submits them for execution
 // to AWS ECS
 //
-func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run) (state.Run, error) {
+func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run) (state.Run, bool, error) {
 	var executed state.Run
 	rti := ee.toRunTaskInput(definition, run)
 	result, err := ee.ecsClient.RunTask(&rti)
 	if err != nil {
-		return executed, err
+		retryable := false
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == ecs.ErrCodeInvalidParameterException {
+				if strings.Contains(aerr.Message(), "no container instances") {
+					retryable = true
+				}
+			}
+		}
+		return executed, retryable, err
 	}
 
 	if len(result.Failures) != 0 {
@@ -68,10 +77,16 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 		for i, failure := range result.Failures {
 			msg[i] = *failure.Reason
 		}
-		return executed, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
+		//
+		// Retry these, they are very rare;
+		// our upfront validation catches the obvious image and cluster resources
+		//
+		// IMPORTANT - log these messages
+		//
+		return executed, true, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
 	}
 
-	return ee.translateTask(*result.Tasks[0]), nil
+	return ee.translateTask(*result.Tasks[0]), false, nil
 }
 
 //

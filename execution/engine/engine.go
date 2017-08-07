@@ -12,7 +12,7 @@ import (
 type Engine interface {
 	Initialize(conf config.Config) error
 	// v0
-	Execute(definition state.Definition, run state.Run) (state.Run, error)
+	Execute(definition state.Definition, run state.Run) (state.Run, bool, error)
 
 	// v1 - once runs contain a copy of relevant definition info
 	// Execute(run state.Run) error
