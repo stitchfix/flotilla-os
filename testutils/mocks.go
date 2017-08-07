@@ -13,12 +13,15 @@ import (
 // to facilitate easier testing
 //
 type ImplementsAllTheThings struct {
-	T           *testing.T
-	Calls       []string
-	Definitions map[string]state.Definition
-	Runs        map[string]state.Run
-	Qurls       map[string]string
-	Defined     []string
+	T                       *testing.T
+	Calls                   []string                    // Collects calls
+	Definitions             map[string]state.Definition // Definitions stored in "state"
+	Runs                    map[string]state.Run        // Runs stored in "state"
+	Qurls                   map[string]string           // Urls returned by Queue Manager
+	Defined                 []string                    // List of defined definitions (Execution Engine)
+	Queued                  []string                    // List of queued runs (Queue Manager)
+	ExecuteError            error                       // Execution Engine - error to return
+	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 }
 
 // Name - general
@@ -132,14 +135,21 @@ func (iatt *ImplementsAllTheThings) QurlFor(name string) (string, error) {
 // Enqueue - QueueManager
 func (iatt *ImplementsAllTheThings) Enqueue(qURL string, run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Enqueue")
+	iatt.Queued = append(iatt.Queued, run.RunID)
 	return nil
 }
 
 // Receive - QueueManager
 func (iatt *ImplementsAllTheThings) Receive(qURL string) (queue.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "Receive")
+	if len(iatt.Queued) == 0 {
+		return queue.RunReceipt{}, nil
+	}
+
+	popped := iatt.Queued[0]
+	iatt.Queued = iatt.Queued[1:]
 	receipt := queue.RunReceipt{
-		Run: &state.Run{},
+		Run: &state.Run{RunID: popped},
 	}
 	receipt.Done = func() error {
 		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
@@ -179,9 +189,9 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 }
 
 // Execute - Execution Engine
-func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run) (state.Run, bool, error) {
 	iatt.Calls = append(iatt.Calls, "Execute")
-	return state.Run{}, nil
+	return state.Run{}, iatt.ExecuteErrorIsRetryable, iatt.ExecuteError
 }
 
 // Terminate - Execution Engine

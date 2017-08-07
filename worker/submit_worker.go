@@ -31,12 +31,20 @@ func (sw *submitWorker) Run() {
 			continue
 		}
 
+		if runReceipt.Run == nil {
+			sw.log.Log("message", "No run to process")
+			continue
+		}
+
 		//
 		// Fetch run from state manager to ensure its existence
 		//
 		run, err := sw.sm.GetRun(runReceipt.Run.RunID)
 		if err != nil {
-			sw.log.Log("message", "Error fetching run from state", "run_id", runReceipt.Run.RunID, "error", err.Error())
+			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", err.Error())
+			if err = runReceipt.Done(); err != nil {
+				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", err.Error())
+			}
 			continue
 		}
 
@@ -52,6 +60,9 @@ func (sw *submitWorker) Run() {
 				"run_id", run.RunID,
 				"definition_id", run.DefinitionID,
 				"error", err.Error())
+			if err = runReceipt.Done(); err != nil {
+				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", err.Error())
+			}
 			continue
 		}
 
