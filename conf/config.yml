@@ -12,6 +12,10 @@ queue_manager: sqs
 cluster_client: ecs
 logs_client: cloudwatch
 execution_engine: ecs
+enabled_workers:
+  - retry
+  - submit
+
 
 # Log namespace
 log:
@@ -37,3 +41,9 @@ worker:
   submit_interval_seconds: 30
   status_interval_seconds: 30
   reassign_interval_seconds: 30
+
+http:
+  server:
+    read_timeout_seconds: 5
+    write_timeout_seconds: 10
+    listen_address: :5000

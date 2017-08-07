@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 )
 
 //
@@ -17,12 +18,13 @@ type Client interface {
 //
 // NewLogsClient creates and initializes a run logs client
 //
-func NewLogsClient(conf config.Config) (Client, error) {
+func NewLogsClient(conf config.Config, logger flotillaLog.Logger) (Client, error) {
 	name := conf.GetString("logs_client")
 	if len(name) == 0 {
 		name = "cloudwatch"
 	}
 
+	logger.Log("message", "Initializing logs client", "logs_client", name)
 	switch name {
 	case "cloudwatch":
 		cwlc := &CloudWatchLogsClient{}

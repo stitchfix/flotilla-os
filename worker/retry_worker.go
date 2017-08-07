@@ -2,21 +2,36 @@ package worker
 
 import (
 	"fmt"
+	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"time"
 )
 
 type retryWorker struct {
-	sm  state.Manager
-	qm  queue.Manager
-	log flotillaLog.Logger
+	sm   state.Manager
+	qm   queue.Manager
+	conf config.Config
+	log  flotillaLog.Logger
 }
 
 //
 // Run finds tasks that NEED_RETRY and requeues them
 //
 func (rw *retryWorker) Run() {
+	pollIntervalSeconds := rw.conf.GetInt("worker.retry_interval_seconds")
+	if pollIntervalSeconds == 0 {
+		pollIntervalSeconds = 30
+	}
+	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
+	for {
+		rw.runOnce()
+		time.Sleep(pollInterval)
+	}
+}
+
+func (rw *retryWorker) runOnce() {
 	// List runs in the StatusNeedsRetry state and requeue them
 	runList, err := rw.sm.ListRuns(
 		25, 0,

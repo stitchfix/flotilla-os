@@ -171,7 +171,7 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	rti := ecs.RunTaskInput{
 		Cluster:        &run.ClusterName,
 		Count:          &n,
-		StartedBy:      &run.GroupName,
+		StartedBy:      &definition.GroupName,
 		TaskDefinition: &definition.Arn,
 		Overrides:      &overrides,
 	}
@@ -185,16 +185,27 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 
 	pairs := make([]*ecs.KeyValuePair, len(*run.Env))
 	for i, ev := range *run.Env {
+		name := ev.Name
+		value := ev.Value
 		pairs[i] = &ecs.KeyValuePair{
-			Name:  &ev.Name,
-			Value: &ev.Value,
+			Name:  &name,
+			Value: &value,
 		}
 	}
 
+	//
+	// Support legacy case of differing container name and definition id
+	//
+	containerName := definition.DefinitionID
+	if definition.ContainerName != definition.DefinitionID {
+		containerName = definition.ContainerName
+	}
+
 	res := ecs.ContainerOverride{
-		Name:        &definition.DefinitionID,
+		Name:        &containerName,
 		Environment: pairs,
 	}
+	fmt.Println(res.Environment)
 	return &res
 }
 

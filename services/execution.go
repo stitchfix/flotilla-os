@@ -137,6 +137,7 @@ func (es *executionService) constructRun(
 	run = state.Run{
 		RunID:        runID,
 		ClusterName:  clusterName,
+		GroupName:    definition.GroupName,
 		DefinitionID: definition.DefinitionID,
 		Status:       state.StatusQueued,
 	}
