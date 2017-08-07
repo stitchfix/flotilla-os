@@ -14,6 +14,9 @@ type submitWorker struct {
 	log flotillaLog.Logger
 }
 
+//
+// Run lists queues, consumes runs from them, and executes them using the execution engine
+//
 func (sw *submitWorker) Run() {
 	queues, err := sw.qm.List()
 	if err != nil {

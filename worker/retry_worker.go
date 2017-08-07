@@ -13,6 +13,9 @@ type retryWorker struct {
 	log flotillaLog.Logger
 }
 
+//
+// Run finds tasks that NEED_RETRY and requeues them
+//
 func (rw *retryWorker) Run() {
 	// List runs in the StatusNeedsRetry state and requeue them
 	runList, err := rw.sm.ListRuns(
