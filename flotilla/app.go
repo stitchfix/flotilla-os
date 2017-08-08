@@ -102,6 +102,7 @@ func (app *App) configureRoutes(ep endpoints) {
 	s.HandleFunc("/task/{definition_id}/history", ep.ListRuns).Methods("GET")
 	s.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
 
+	s.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
 	s.HandleFunc("/{run_id}/logs", ep.GetDefinition).Methods("GET")
 	s.HandleFunc("/groups", ep.DeleteDefinition).Methods("DELETE")
 

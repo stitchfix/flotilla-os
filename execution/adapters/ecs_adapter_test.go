@@ -76,6 +76,7 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 
 	definition := state.Definition{
 		Arn:           "darn",
+		GroupName:     "groupa",
 		ContainerName: "mynameiswhat",
 	}
 
@@ -95,7 +96,7 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	}
 	rti := adapter.AdaptRun(definition, run)
 
-	if rti.StartedBy == nil || *rti.StartedBy != run.GroupName {
+	if rti.StartedBy == nil || *rti.StartedBy != definition.GroupName {
 		t.Errorf("Expected startedBy name groupa")
 	}
 

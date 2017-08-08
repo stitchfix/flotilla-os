@@ -1,9 +1,5 @@
 package exceptions
 
-import (
-	"errors"
-)
-
 //
 // MalformedInput describes malformed or otherwise incorrect input
 //
@@ -15,23 +11,26 @@ func (e MalformedInput) Error() string {
 	return e.ErrorString
 }
 
-// ErrorDefinitionNotFound indicates that the definition does not exist in the source of state
-var ErrorDefinitionNotFound = errors.New("Referenced definition not found")
+//
+// ConflictingResource describes a conflict case:
+// eg. definition already exists, reserved fields
+//
+type ConflictingResource struct {
+	ErrorString string
+}
 
-// ErrorDefinitionExists indicates that the definition already exists
-var ErrorDefinitionExists = errors.New("Definition with that alias or id already exists")
+func (e ConflictingResource) Error() string {
+	return e.ErrorString
+}
 
-// ErrorImageNotFound indicates that the image ref does not exist in the configured docker image repos
-var ErrorImageNotFound = errors.New("Referenced image does not exist in any of the configured repositories")
+//
+// ResourceMissing describes case where a resource does not exist
+// eg. missing definition or run or no image found
+//
+type MissingResource struct {
+	ErrorString string
+}
 
-// ErrorClusterConfigurationIssue indicates that the cluster is not configured to run the run given
-var ErrorClusterConfigurationIssue = errors.New("Defintion cannot be run on the cluster specified")
-
-// ErrorReservedEnvironmentVariable indicates that one of the environment variables specified is reserved
-var ErrorReservedEnvironmentVariable = errors.New("Using reserved environment variable")
-
-// ErrorInvalidRun indicates the run is missing required fields like arn
-var ErrorInvalidRun = errors.New("Invalid run, missing required fields")
-
-// ErrorInvalidStatus indicates the status string specified is not defined
-var ErrorInvalidStatus = errors.New("Invalid status specified")
+func (e MissingResource) Error() string {
+	return e.ErrorString
+}

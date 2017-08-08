@@ -205,7 +205,6 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 		Name:        &containerName,
 		Environment: pairs,
 	}
-	fmt.Println(res.Environment)
 	return &res
 }
 

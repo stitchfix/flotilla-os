@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
@@ -173,7 +174,8 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
 			if usingRestricted {
-				return exceptions.ErrorReservedEnvironmentVariable
+				return exceptions.ConflictingResource{
+					fmt.Sprintf("environment variable %s is reserved", e.Name)}
 			}
 		}
 	}
@@ -183,7 +185,9 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		return err
 	}
 	if !ok {
-		return exceptions.ErrorImageNotFound
+		return exceptions.MissingResource{
+			fmt.Sprintf(
+				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
 	ok, err = es.cc.CanBeRun(clusterName, definition)
@@ -191,7 +195,9 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		return err
 	}
 	if !ok {
-		return exceptions.ErrorClusterConfigurationIssue
+		return exceptions.MalformedInput{
+			fmt.Sprintf(
+				"definition [%s] cannot be run on cluster [%s]", definition.DefinitionID, clusterName)}
 	}
 	return nil
 }
@@ -221,7 +227,9 @@ func (es *executionService) List(
 	status, ok := filters["status"]
 	if ok && !state.IsValidStatus(status) {
 		// Status filter is invalid
-		return state.RunList{}, exceptions.ErrorInvalidStatus
+		err := exceptions.MalformedInput{
+			fmt.Sprintf("invalid status [%s]", status)}
+		return state.RunList{}, err
 	}
 	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters)
 }
@@ -245,5 +253,7 @@ func (es *executionService) Terminate(runID string) error {
 	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
 		return es.ee.Terminate(run)
 	}
-	return exceptions.ErrorInvalidRun
+	return exceptions.MalformedInput{
+		fmt.Sprintf(
+			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
 }
