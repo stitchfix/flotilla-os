@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	// Pull in postgres specific drivers
+	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/exceptions"
 	"strings"
 )
 
@@ -133,6 +135,10 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	var err error
 	var definition Definition
 	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
+	if err != nil && err == sql.ErrNoRows {
+		return definition, exceptions.MissingResource{
+			fmt.Sprintf("Definition with ID %s not found", definitionID)}
+	}
 	return definition, err
 }
 
@@ -140,11 +146,14 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 // UpdateDefinition updates a definition
 // - updates can be partial
 //
-func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) error {
-	var err error
-	existing, err := sm.GetDefinition(definitionID)
+func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) (Definition, error) {
+	var (
+		err      error
+		existing Definition
+	)
+	existing, err = sm.GetDefinition(definitionID)
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	existing.UpdateWith(updates)
@@ -176,19 +185,19 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(selectForUpdate, definitionID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deleteEnv, definitionID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deletePorts, definitionID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(
@@ -196,14 +205,14 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
 		existing.Command); err != nil {
-		return err
+		return existing, err
 	}
 
 	if existing.Env != nil {
 		for _, e := range *existing.Env {
 			if _, err = tx.Exec(insertEnv, definitionID, e.Name, e.Value); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
@@ -212,16 +221,12 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		for _, p := range *existing.Ports {
 			if _, err = tx.Exec(insertPorts, definitionID, p); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
+	return existing, tx.Commit()
 }
 
 //
@@ -371,11 +376,11 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 //
 // UpdateRun updates run with updates - can be partial
 //
-func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
+func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	var err error
 	existing, err := sm.GetRun(runID)
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	existing.UpdateWith(updates)
@@ -402,15 +407,15 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(selectForUpdate, runID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deleteEnv, runID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(
@@ -420,19 +425,19 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName); err != nil {
-		return err
+		return existing, err
 	}
 
 	if existing.Env != nil {
 		for _, e := range *existing.Env {
 			if _, err = tx.Exec(insertEnv, runID, e.Name, e.Value); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
 
-	return tx.Commit()
+	return existing, tx.Commit()
 }
 
 //

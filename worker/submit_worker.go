@@ -109,7 +109,7 @@ func (sw *submitWorker) runOnce() {
 			// Update the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
-			if err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
+			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
 				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", err.Error())
 			}
 		} else {

@@ -48,7 +48,7 @@ func TestDefinitionService_Create(t *testing.T) {
 	}
 
 	// order matters
-	expected := []string{"Define", "CreateDefinition"}
+	expected := []string{"ListDefinitions", "Define", "CreateDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

@@ -340,6 +340,14 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 		t.Errorf("Expected alias %s but was %s", d.Alias, *alias)
 	}
 
+	groupName, ok := container.DockerLabels["group.name"]
+	if !ok {
+		t.Errorf("Expected non-empty DockerLobels with field [group.name] set")
+	}
+	if *groupName != d.GroupName {
+		t.Errorf("Expected groupName %s but was %s", d.GroupName, groupName)
+	}
+
 	env := container.Environment
 	if len(env) != len(*d.Env) {
 		t.Errorf("Expected %v environment variables but was %v", len(*d.Env), len(env))
@@ -390,6 +398,7 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 
 	arn := "arn:cupcake"
 	family := "id:cupcake"
+	group := "group:cupcake"
 	memory := int64(512)
 	port := int64(1234)
 	image := "image:cupcake"
@@ -407,7 +416,8 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 		Memory: &memory,
 		Image:  &image,
 		DockerLabels: map[string]*string{
-			"alias": &alias,
+			"alias":      &alias,
+			"group.name": &group,
 		},
 		Environment:  env,
 		PortMappings: ports,
@@ -437,6 +447,10 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 
 	if adapted.Alias != alias {
 		t.Errorf("Expected alias %s but was %s", alias, adapted.Alias)
+	}
+
+	if adapted.GroupName != group {
+		t.Errorf("Expected group %s but was %s", group, adapted.GroupName)
 	}
 
 	if adapted.Arn != arn {

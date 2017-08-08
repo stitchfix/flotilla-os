@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/execution/engine"
@@ -19,7 +20,7 @@ type DefinitionService interface {
 	List(limit int, offset int, sortBy string,
 		order string, filters map[string]string,
 		envFilters map[string]string) (state.DefinitionList, error)
-	Update(definitionID string, updates state.Definition) error
+	Update(definitionID string, updates state.Definition) (state.Definition, error)
 	Delete(definitionID string) error
 }
 
@@ -47,6 +48,16 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, exceptions.MalformedInput{strings.Join(reasons, "\n")}
 	}
 
+	exists, err := ds.aliasExists(definition.Alias)
+	if err != nil {
+		return state.Definition{}, err
+	}
+
+	if exists {
+		return state.Definition{}, exceptions.ConflictingResource{
+			fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
+	}
+
 	// Attach definition id here
 	definitionID, err := state.NewDefinitionID(*definition)
 	if err != nil {
@@ -59,6 +70,23 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, err
 	}
 	return defined, ds.sm.CreateDefinition(defined)
+}
+
+func (ds *definitionService) aliasExists(alias string) (bool, error) {
+	// Short circuit, to check if alias already exists
+	dl, err := ds.sm.ListDefinitions(
+		1024, 0, "alias", "asc", map[string]string{"alias": alias}, nil)
+
+	if err != nil {
+		return false, err
+	}
+
+	for _, def := range dl.Definitions {
+		if def.Alias == alias {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 //
@@ -76,16 +104,16 @@ func (ds *definitionService) List(limit int, offset int, sortBy string,
 }
 
 // Update updates the definition specified by definitionID with the given updates
-func (ds *definitionService) Update(definitionID string, updates state.Definition) error {
+func (ds *definitionService) Update(definitionID string, updates state.Definition) (state.Definition, error) {
 	definition, err := ds.sm.GetDefinition(definitionID)
 	if err != nil {
-		return err
+		return definition, err
 	}
 
 	definition.UpdateWith(updates)
 	defined, err := ds.ee.Define(definition)
 	if err != nil {
-		return err
+		return definition, err
 	}
 
 	return ds.sm.UpdateDefinition(definitionID, defined)

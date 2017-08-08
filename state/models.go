@@ -188,6 +188,8 @@ func (d *Definition) UpdateWith(other Definition) {
 		d.TaskType = other.TaskType
 	}
 	if other.Env != nil {
+		fmt.Println(other.Env)
+		fmt.Println(d.Env)
 		d.Env = other.Env
 	}
 	if other.Ports != nil {

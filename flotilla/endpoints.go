@@ -2,8 +2,10 @@ package flotilla
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/services"
+	"github.com/stitchfix/flotilla-os/state"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -96,6 +98,11 @@ func (ep endpoints) encodeError(w http.ResponseWriter, err error) {
 	})
 }
 
+func (ep *endpoints) encodeResponse(w http.ResponseWriter, response interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(response)
+}
+
 func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
@@ -119,25 +126,57 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ep *endpoints) encodeResponse(w http.ResponseWriter, response interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(w).Encode(response)
-}
-
 func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	definition, err := ep.definitionService.Get(vars["definition_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, definition)
+	}
 }
 
 func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
+	var definition state.Definition
+	err := ep.decodeRequest(r, &definition)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	created, err := ep.definitionService.Create(&definition)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, created)
+	}
 }
 
 func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
+	var definition state.Definition
+	err := ep.decodeRequest(r, &definition)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	vars := mux.Vars(r)
+	updated, err := ep.definitionService.Update(vars["definition_id"], definition)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
+	}
 }
 
 func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	err := ep.definitionService.Delete(vars["definition_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, map[string]bool{"deleted": true})
+	}
 }
 
 func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {

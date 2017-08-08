@@ -18,7 +18,7 @@ type Manager interface {
 		order string, filters map[string]string,
 		envFilters map[string]string) (DefinitionList, error)
 	GetDefinition(definitionID string) (Definition, error)
-	UpdateDefinition(definitionID string, updates Definition) error
+	UpdateDefinition(definitionID string, updates Definition) (Definition, error)
 	CreateDefinition(d Definition) error
 	DeleteDefinition(definitionID string) error
 
@@ -28,7 +28,7 @@ type Manager interface {
 
 	GetRun(runID string) (Run, error)
 	CreateRun(r Run) error
-	UpdateRun(runID string, updates Run) error
+	UpdateRun(runID string, updates Run) (Run, error)
 }
 
 //

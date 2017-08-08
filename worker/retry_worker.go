@@ -53,7 +53,7 @@ func (rw *retryWorker) runOnce() {
 			return
 		}
 
-		if err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
+		if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
 			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", err.Error())
 			return
 		}

@@ -67,9 +67,9 @@ func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.De
 }
 
 // UpdateDefinition - StateManager
-func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, updates state.Definition) error {
+func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, updates state.Definition) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateDefinition")
-	return nil
+	return state.Definition{}, nil
 }
 
 // CreateDefinition - StateManager
@@ -117,12 +117,12 @@ func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 }
 
 // UpdateRun - StateManager
-func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) error {
+func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")
 	run := iatt.Runs[runID]
 	run.UpdateWith(updates)
 	iatt.Runs[runID] = run
-	return nil
+	return run, nil
 }
 
 // QurlFor - QueueManager
