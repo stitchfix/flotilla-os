@@ -3,6 +3,7 @@ package flotilla
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
@@ -15,6 +16,7 @@ import (
 type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
+	logsClient        logs.Client
 }
 
 type listRequest struct {
@@ -24,6 +26,11 @@ type listRequest struct {
 	order      string
 	filters    map[string]string
 	envFilters map[string]string
+}
+
+type launchRequest struct {
+	ClusterName string         `json:"cluster"`
+	Env         *state.EnvList `json:"env"`
 }
 
 func (ep *endpoints) getURLParam(v url.Values, key string, defaultValue string) string {
@@ -180,27 +187,121 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
 
+	vars := mux.Vars(r)
+	definitionID, ok := vars["definition_id"]
+	if ok {
+		lr.filters["definition_id"] = definitionID
+	}
+
+	runList, err := ep.executionService.List(
+		lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = runList.Total
+		response["history"] = runList.Runs
+		response["limit"] = lr.limit
+		response["offset"] = lr.offset
+		response["sort_by"] = lr.sortBy
+		response["order"] = lr.order
+		response["env_filters"] = lr.envFilters
+		for k, v := range lr.filters {
+			response[k] = v
+		}
+		ep.encodeResponse(w, response)
+	}
 }
 
 func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Get(vars["run_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
 }
 
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
+	var lr launchRequest
+	err := ep.decodeRequest(r, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
 }
 
 func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	err := ep.executionService.Terminate(vars["run_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, map[string]bool{"terminated": true})
+	}
 }
 
 func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
+	var run state.Run
+	err := ep.decodeRequest(r, &run)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	vars := mux.Vars(r)
+	err = ep.executionService.UpdateStatus(vars["run_id"], run.Status, run.ExitCode)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, map[string]bool{"updated": true})
+	}
 }
 
 func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Get(vars["run_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	params := r.URL.Query()
+	lastSeen := ep.getURLParam(params, "last_seen", "")
+	res := make(map[string]string)
+	var (
+		logs          string
+		lastSeenToken string
+	)
+	if run.Status == state.StatusRunning || run.Status == state.StatusStopped {
+		if len(lastSeen) > 0 {
+			lastSeenToken = lastSeen
+		}
+
+		logs, newLastSeen, err := ep.logsClient.Logs(run.RunID, &lastSeenToken)
+		if err != nil {
+			ep.encodeError(w, err)
+			return
+		}
+		if newLastSeen != nil {
+			res["last_seen"] = *newLastSeen
+		}
+		res["log"] = logs
+	} else {
+		res["log"] = logs
+	}
+	ep.encodeResponse(w, res)
 }
 
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {

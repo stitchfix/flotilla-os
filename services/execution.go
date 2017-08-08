@@ -26,6 +26,7 @@ type ExecutionService interface {
 		filters map[string]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
+	UpdateStatus(runID string, status string, exitCode *int64) error
 	Terminate(runID string) error
 	ReservedVariables() []string
 }
@@ -239,6 +240,17 @@ func (es *executionService) List(
 //
 func (es *executionService) Get(runID string) (state.Run, error) {
 	return es.sm.GetRun(runID)
+}
+
+//
+// UpdateStatus is for supporting some legacy runs that still manually update their status
+//
+func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
+	if !state.IsValidStatus(status) {
+		return exceptions.MalformedInput{fmt.Sprintf("status %s is invalid", status)}
+	}
+	_, err := es.sm.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
+	return err
 }
 
 //

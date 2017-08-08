@@ -60,6 +60,7 @@ func NewApp(conf config.Config,
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
+		logsClient:        lc,
 	}
 
 	app.configureRoutes(ep)
@@ -103,8 +104,8 @@ func (app *App) configureRoutes(ep endpoints) {
 	s.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
 
 	s.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
-	s.HandleFunc("/{run_id}/logs", ep.GetDefinition).Methods("GET")
-	s.HandleFunc("/groups", ep.DeleteDefinition).Methods("DELETE")
+	s.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
+	s.HandleFunc("/groups", ep.GetGroups).Methods("GET")
 
 	app.handler = s
 }
