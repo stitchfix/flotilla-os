@@ -3,6 +3,7 @@ package logs
 import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/state"
 	"os"
 	"testing"
 )
@@ -143,22 +144,27 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 
 	if len(tlc.calls) != len(expectedInitializeCalls) {
 		t.Errorf(
-			"Expected exactly %v initialization calls for non-existing log streams, but was %v",
+			"Expected exactly %v initialization calls for existing log streams, but was %v",
 			len(expectedInitializeCalls), len(tlc.calls))
 	}
 
 	for _, call := range tlc.calls {
 		_, ok := expectedInitializeCalls[call]
 		if !ok {
-			t.Errorf("Unexpected initialization call for non-existing stream [%v]", call)
+			t.Errorf("Unexpected initialization call for existing stream [%v]", call)
 		}
 	}
 
+	cwlc.logStreamPrefix = "cupcake"
 	expectedMsg := "logs\nare\nloglike"
 	expectedNextTok := "next!"
 	tlc.nextTok = expectedNextTok
 
-	msg, tok, _ := cwlc.Logs("logstream", nil)
+	d := state.Definition{ContainerName: "container"}
+	r := state.Run{TaskArn: "a/b/c"}
+
+	// StreamName == cupcake/container/c
+	msg, tok, _ := cwlc.Logs(d, r, nil)
 	if msg != expectedMsg {
 		t.Errorf("Expected log message [%v] but was [%v]", expectedMsg, msg)
 	}

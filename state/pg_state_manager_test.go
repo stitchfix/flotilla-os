@@ -55,6 +55,13 @@ func insertDefinitions(db *sqlx.DB) {
     INSERT INTO task_def_ports(task_def_id, port) VALUES ($1, $2)
     `
 
+	taskDefTagsSQL := `
+	INSERT INTO task_def_tags(task_def_id, tag_id) VALUES($1, $2)
+	`
+	tagSQL := `
+	INSERT INTO tags(text) VALUES($1)
+	`
+
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, exit_code, status,
@@ -80,6 +87,14 @@ func insertDefinitions(db *sqlx.DB) {
 	db.MustExec(portsql, "D", 10002)
 	db.MustExec(portsql, "E", 10003)
 	db.MustExec(portsql, "E", 10004)
+
+	db.MustExec(tagSQL, "tagA")
+	db.MustExec(tagSQL, "tagB")
+	db.MustExec(tagSQL, "tagC")
+
+	db.MustExec(taskDefTagsSQL, "A", "tagA")
+	db.MustExec(taskDefTagsSQL, "A", "tagC")
+	db.MustExec(taskDefTagsSQL, "B", "tagB")
 
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
@@ -108,7 +123,7 @@ func tearDown() {
     drop table if exists
       task, task_def,
       task_def_environments, task_def_ports,
-      task_environments, task_status
+      task_environments, task_status, task_def_tags, tags
     cascade;
     drop sequence if exists task_status_status_id_seq;
     `)
@@ -122,7 +137,11 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	var dl DefinitionList
 	// Test limiting
 	expectedTotal := 5
-	dl, _ = sm.ListDefinitions(1, 0, "alias", "asc", nil, nil)
+	dl, err = sm.ListDefinitions(1, 0, "alias", "asc", nil, nil)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
 	if dl.Total != expectedTotal {
 		t.Errorf("Expected %v total definitions, got %v", expectedTotal, dl.Total)
 	}
@@ -142,6 +161,10 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 
 	if len(*dA.Ports) != 1 {
 		t.Errorf("Expected returned definitions to have correctly attached ports, was %s", dA.Ports)
+	}
+
+	if len(*dA.Tags) != 2 {
+		t.Errorf("Expected returned definitions to have correctly attached tags, was %s", dA.Tags)
 	}
 
 	// Test ordering and offset
@@ -192,6 +215,10 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 		t.Errorf("Expected 2 ports but got %s", *dE.Ports)
 	}
 
+	if dE.Tags != nil {
+		t.Errorf("Expected empty tags but got %s", *dE.Tags)
+	}
+
 	_, err := sm.GetDefinition("Z")
 	if err == nil {
 		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
@@ -218,9 +245,13 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 			{Name: "E1", Value: "V1"},
 		},
 		Ports: &PortsList{12345, 6789},
+		Tags:  &Tags{"apple", "orange", "tiger"},
 	}
 
-	sm.CreateDefinition(d)
+	err = sm.CreateDefinition(d)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
 	f, err := sm.GetDefinition("id:cupcake")
 	if err != nil {
@@ -245,12 +276,19 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 		{Name: "NEW2", Value: "NEWVAL2"},
 	}
 
+	tags := Tags{
+		"cupcake",
+	}
 	updates := Definition{
 		Image: "updated",
 		Env:   &env,
+		Tags:  &tags,
 		Ports: &PortsList{}, // <---- empty, set ports to empty list
 	}
-	sm.UpdateDefinition("A", updates)
+	_, err := sm.UpdateDefinition("A", updates)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
 	d, _ := sm.GetDefinition("A")
 	if d.Image != "updated" {
@@ -263,6 +301,10 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 
 	if len(*d.Env) != 2 {
 		t.Errorf("Expected new env to have length 2, was %v", len(*d.Env))
+	}
+
+	if len(*d.Tags) != 1 {
+		t.Errorf("Expected new tags to have length 1, was %v", len(*d.Tags))
 	}
 
 	updatedEnv := *d.Env
@@ -287,7 +329,10 @@ func TestSQLStateManager_DeleteDefinition(t *testing.T) {
 	sm := setUp()
 
 	var err error
-	sm.DeleteDefinition("A")
+	err = sm.DeleteDefinition("A")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
 	_, err = sm.GetDefinition("A")
 	if err == nil {

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func setUpRetryWorkerTest(t *testing.T) (Worker, *testutils.ImplementsAllTheThings) {
+func setUpRetryWorkerTest(t *testing.T) (*retryWorker, *testutils.ImplementsAllTheThings) {
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
 	logger := flotillaLog.NewLogger(l, nil)
 
@@ -37,7 +37,7 @@ func setUpRetryWorkerTest(t *testing.T) (Worker, *testutils.ImplementsAllTheThin
 
 func TestRetryWorker_Run(t *testing.T) {
 	worker, imp := setUpRetryWorkerTest(t)
-	worker.Run()
+	worker.runOnce()
 
 	//
 	// Make sure that the worker resets the status to StatusQueued, and calls the appropriate methods

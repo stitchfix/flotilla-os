@@ -11,7 +11,7 @@ import (
 )
 
 // Set up situation with runnable run
-func setUpSubmitWorkerTest1(t *testing.T) (Worker, *testutils.ImplementsAllTheThings) {
+func setUpSubmitWorkerTest1(t *testing.T) (*submitWorker, *testutils.ImplementsAllTheThings) {
 	validRun := state.Run{
 		RunID:        "run:cupcake",
 		DefinitionID: "def:cupcake",
@@ -43,7 +43,7 @@ func setUpSubmitWorkerTest1(t *testing.T) (Worker, *testutils.ImplementsAllTheTh
 }
 
 // Set up situation with unrunnable run
-func setUpSubmitWorkerTest2(t *testing.T) (Worker, *testutils.ImplementsAllTheThings) {
+func setUpSubmitWorkerTest2(t *testing.T) (*submitWorker, *testutils.ImplementsAllTheThings) {
 	invalidRun := state.Run{
 		RunID:        "run:shoebox",
 		DefinitionID: "def:shoebox",
@@ -75,7 +75,7 @@ func setUpSubmitWorkerTest2(t *testing.T) (Worker, *testutils.ImplementsAllTheTh
 }
 
 // Another unrunnable run
-func setUpSubmitWorkerTest3(t *testing.T) (Worker, *testutils.ImplementsAllTheThings) {
+func setUpSubmitWorkerTest3(t *testing.T) (*submitWorker, *testutils.ImplementsAllTheThings) {
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
 	logger := flotillaLog.NewLogger(l, nil)
 
@@ -109,7 +109,7 @@ func TestSubmitWorker_Run(t *testing.T) {
 
 	// Test valid run; it's status is queued, it exists in state, its definition exists in state
 	worker, imp := setUpSubmitWorkerTest1(t)
-	worker.Run()
+	worker.runOnce()
 
 	expected := []string{"List", "Receive", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
@@ -126,7 +126,7 @@ func TestSubmitWorker_Run(t *testing.T) {
 func TestSubmitWorker_Run2(t *testing.T) {
 	// Test invalid run; it's status is running (this can happen with duplication in queues, which sqs allows)
 	worker, imp := setUpSubmitWorkerTest2(t)
-	worker.Run()
+	worker.runOnce()
 
 	// Importantly, execute is NOT called and it -is- acked
 	expected := []string{"List", "Receive", "GetRun", "GetDefinition", "RunReceipt.Done"}
@@ -145,7 +145,7 @@ func TestSubmitWorker_Run3(t *testing.T) {
 	// Test invalid run; it's queued but does not exist; this should not happen
 	// (run is queued but does not exist in state)
 	worker, imp := setUpSubmitWorkerTest3(t)
-	worker.Run()
+	worker.runOnce()
 
 	// Importantly, execute is NOT called and it -is- acked
 	expected := []string{"List", "Receive", "GetRun", "RunReceipt.Done"}
@@ -167,7 +167,7 @@ func TestSubmitWorker_Run4(t *testing.T) {
 	imp.ExecuteError = errors.New("nope")
 	imp.ExecuteErrorIsRetryable = false
 
-	worker.Run()
+	worker.runOnce()
 
 	// Importantly, execute is called and it -is- acked
 	expected := []string{"List", "Receive", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
@@ -195,7 +195,7 @@ func TestSubmitWorker_Run5(t *testing.T) {
 	imp.ExecuteError = errors.New("nope")
 	imp.ExecuteErrorIsRetryable = true
 
-	worker.Run()
+	worker.runOnce()
 
 	// Importantly, execute it called but it is not updated nor is it acked
 	expected := []string{"List", "Receive", "GetRun", "GetDefinition", "Execute"}

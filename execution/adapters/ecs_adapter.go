@@ -41,7 +41,7 @@ type ecsAdapter struct {
 // from ECS api specific objects to our representation
 //
 func NewECSAdapter(conf config.Config) (ECSAdapter, error) {
-	adapter := ecsAdapter{}
+	adapter := ecsAdapter{conf: conf}
 
 	if !conf.IsSet("aws_default_region") {
 		return &adapter, fmt.Errorf("ECSAdapter needs [aws_default_region] set in config")
@@ -171,7 +171,7 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	rti := ecs.RunTaskInput{
 		Cluster:        &run.ClusterName,
 		Count:          &n,
-		StartedBy:      &run.GroupName,
+		StartedBy:      &definition.GroupName,
 		TaskDefinition: &definition.Arn,
 		Overrides:      &overrides,
 	}
@@ -185,14 +185,24 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 
 	pairs := make([]*ecs.KeyValuePair, len(*run.Env))
 	for i, ev := range *run.Env {
+		name := ev.Name
+		value := ev.Value
 		pairs[i] = &ecs.KeyValuePair{
-			Name:  &ev.Name,
-			Value: &ev.Value,
+			Name:  &name,
+			Value: &value,
 		}
 	}
 
+	//
+	// Support legacy case of differing container name and definition id
+	//
+	containerName := definition.DefinitionID
+	if definition.ContainerName != definition.DefinitionID {
+		containerName = definition.ContainerName
+	}
+
 	res := ecs.ContainerOverride{
-		Name:        &definition.DefinitionID,
+		Name:        &containerName,
 		Environment: pairs,
 	}
 	return &res
@@ -219,7 +229,8 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 	containerDef.Memory = definition.Memory
 	containerDef.Name = &definition.DefinitionID
 	containerDef.DockerLabels = map[string]*string{
-		"alias": &definition.Alias,
+		"alias":      &definition.Alias,
+		"group.name": &definition.GroupName,
 	}
 
 	cmdString, err := definition.WrappedCommand()
@@ -248,11 +259,18 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 	if definition.Env != nil {
 		containerDef.Environment = make([]*ecs.KeyValuePair, len(*definition.Env))
 		for i, e := range *definition.Env {
+			name := e.Name
+			value := e.Value
 			containerDef.Environment[i] = &ecs.KeyValuePair{
-				Name:  &e.Name,
-				Value: &e.Value,
+				Name:  &name,
+				Value: &value,
 			}
 		}
+	}
+
+	if definition.Tags != nil {
+		tagsList := strings.Join(*definition.Tags, ",")
+		containerDef.DockerLabels["tags"] = &tagsList
 	}
 
 	networkMode := "host"
@@ -269,8 +287,9 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 //
 func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	adapted := state.Definition{
-		Arn:          *taskDef.TaskDefinitionArn,
-		DefinitionID: *taskDef.Family,
+		Arn:           *taskDef.TaskDefinitionArn,
+		DefinitionID:  *taskDef.Family, // Family==ContainerName==DefinitionID
+		ContainerName: *taskDef.Family,
 	}
 
 	if len(taskDef.ContainerDefinitions) == 1 {
@@ -280,6 +299,15 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 		adapted.Image = *container.Image
 
 		alias, _ := container.DockerLabels["alias"]
+		groupName, _ := container.DockerLabels["group.name"]
+		tagList, ok := container.DockerLabels["tags"]
+		if ok {
+			tagSplits := strings.Split(*tagList, ",")
+			tags := state.Tags(tagSplits)
+			adapted.Tags = &tags
+		}
+
+		adapted.GroupName = *groupName
 		adapted.Alias = *alias
 
 		if len(container.PortMappings) > 0 {
@@ -321,6 +349,16 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 	logOptions := make(map[string]*string, len(confLogOptions))
 	for k, v := range confLogOptions {
 		logOptions[k] = &v
+	}
+
+	//
+	// Allow defining log group as -either- log namespace or
+	// awslogs-group
+	//
+	_, ok := logOptions["awslogs-group"]
+	if !ok {
+		logGroup := a.conf.GetString("log.namespace")
+		logOptions["awslogs-group"] = &logGroup
 	}
 
 	logConfiguration := ecs.LogConfiguration{

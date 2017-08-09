@@ -25,12 +25,19 @@ func NewWorker(
 	sm state.Manager) (Worker, error) {
 	switch workerType {
 	case "submit":
-		return &submitWorker{}, nil
+		return &submitWorker{
+			conf: conf,
+			sm:   sm,
+			qm:   qm,
+			ee:   ee,
+			log:  log,
+		}, nil
 	case "retry":
 		return &retryWorker{
-			sm:  sm,
-			qm:  qm,
-			log: log,
+			sm:   sm,
+			qm:   qm,
+			conf: conf,
+			log:  log,
 		}, nil
 	case "status":
 		return &statusWorker{}, nil

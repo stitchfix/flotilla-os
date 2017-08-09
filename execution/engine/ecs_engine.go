@@ -71,7 +71,6 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 		}
 		return executed, retryable, err
 	}
-
 	if len(result.Failures) != 0 {
 		msg := make([]string, len(result.Failures))
 		for i, failure := range result.Failures {

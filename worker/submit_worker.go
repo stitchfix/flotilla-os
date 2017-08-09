@@ -1,23 +1,38 @@
 package worker
 
 import (
+	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"time"
 )
 
 type submitWorker struct {
-	sm  state.Manager
-	qm  queue.Manager
-	ee  engine.Engine
-	log flotillaLog.Logger
+	sm   state.Manager
+	qm   queue.Manager
+	ee   engine.Engine
+	conf config.Config
+	log  flotillaLog.Logger
 }
 
 //
 // Run lists queues, consumes runs from them, and executes them using the execution engine
 //
 func (sw *submitWorker) Run() {
+	pollIntervalSeconds := sw.conf.GetInt("worker.submit_interval_seconds")
+	if pollIntervalSeconds == 0 {
+		pollIntervalSeconds = 30
+	}
+	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
+	for {
+		sw.runOnce()
+		time.Sleep(pollInterval)
+	}
+}
+
+func (sw *submitWorker) runOnce() {
 	queues, err := sw.qm.List()
 	if err != nil {
 		sw.log.Log("message", "Error listing queues", "error", err.Error())
@@ -80,7 +95,7 @@ func (sw *submitWorker) Run() {
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
 			launched, retryable, err := sw.ee.Execute(definition, run)
 			if err != nil {
-				sw.log.Log("Error executing run", "run_id", run.RunID, "error", err.Error(), "retryable", retryable)
+				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", err.Error(), "retryable", retryable)
 				if !retryable {
 					// Set status to StatusStopped, and ack
 					launched.Status = state.StatusStopped
@@ -94,8 +109,8 @@ func (sw *submitWorker) Run() {
 			// Update the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
-			if err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
-				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status)
+			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
+				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", err.Error())
 			}
 		} else {
 			sw.log.Log("message", "Received run that is not runnable", "run_id", run.RunID, "status", run.Status)

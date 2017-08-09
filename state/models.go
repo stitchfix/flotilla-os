@@ -82,6 +82,12 @@ type EnvVar struct {
 }
 
 //
+// Tags wraps a list of strings
+// - abstraction to make it easier to read
+//   and write to db
+//
+type Tags []string
+
 // Definition represents a definition of a job
 // - roughly 1-1 with an AWS ECS task definition
 //
@@ -98,6 +104,7 @@ type Definition struct {
 	TaskType      string     `json:"-"`
 	Env           *EnvList   `json:"env"`
 	Ports         *PortsList `json:"ports,omitempty"`
+	Tags          *Tags      `json:"tags,omitempty"`
 }
 
 var commandWrapper = `
@@ -193,6 +200,10 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Ports != nil {
 		d.Ports = other.Ports
 	}
+	if other.Tags != nil {
+		d.Tags = other.Tags
+	}
+
 }
 
 //
@@ -286,4 +297,20 @@ func (d *Run) UpdateWith(other Run) {
 type RunList struct {
 	Total int   `json:"total"`
 	Runs  []Run `json:"history"`
+}
+
+//
+// GroupsList wraps a list of group names
+//
+type GroupsList struct {
+	Groups []string
+	Total  int
+}
+
+//
+// TagsList wraps a list of tag names
+//
+type TagsList struct {
+	Tags  []string
+	Total int
 }

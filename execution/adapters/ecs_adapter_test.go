@@ -76,6 +76,7 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 
 	definition := state.Definition{
 		Arn:           "darn",
+		GroupName:     "groupa",
 		ContainerName: "mynameiswhat",
 	}
 
@@ -95,7 +96,7 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	}
 	rti := adapter.AdaptRun(definition, run)
 
-	if rti.StartedBy == nil || *rti.StartedBy != run.GroupName {
+	if rti.StartedBy == nil || *rti.StartedBy != definition.GroupName {
 		t.Errorf("Expected startedBy name groupa")
 	}
 
@@ -298,6 +299,7 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 			{Name: "E1", Value: "V1"},
 		},
 		Ports: &state.PortsList{12345, 6789},
+		Tags:  &state.Tags{"apple", "orange", "tiger"},
 	}
 
 	adapted := adapter.AdaptDefinition(d)
@@ -337,6 +339,22 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 	}
 	if *alias != d.Alias {
 		t.Errorf("Expected alias %s but was %s", d.Alias, *alias)
+	}
+
+	groupName, ok := container.DockerLabels["group.name"]
+	if !ok {
+		t.Errorf("Expected non-empty DockerLabels with field [group.name] set")
+	}
+	if *groupName != d.GroupName {
+		t.Errorf("Expected groupName %s but was %s", d.GroupName, groupName)
+	}
+
+	tagsList, ok := container.DockerLabels["tags"]
+	if !ok {
+		t.Errorf("Expected non-empty DockerLabels with field [tags] set")
+	}
+	if *tagsList != "apple,orange,tiger" {
+		t.Errorf("Expected tags [apple,orange,tiger] but was %s", *tagsList)
 	}
 
 	env := container.Environment
@@ -389,10 +407,12 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 
 	arn := "arn:cupcake"
 	family := "id:cupcake"
+	group := "group:cupcake"
 	memory := int64(512)
 	port := int64(1234)
 	image := "image:cupcake"
 	alias := "alias:cupcake"
+	tagsList := "apple,orange,tiger"
 	k1 := "K1"
 	v1 := "V1"
 	env := []*ecs.KeyValuePair{
@@ -406,7 +426,9 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 		Memory: &memory,
 		Image:  &image,
 		DockerLabels: map[string]*string{
-			"alias": &alias,
+			"alias":      &alias,
+			"group.name": &group,
+			"tags":       &tagsList,
 		},
 		Environment:  env,
 		PortMappings: ports,
@@ -438,6 +460,10 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 		t.Errorf("Expected alias %s but was %s", alias, adapted.Alias)
 	}
 
+	if adapted.GroupName != group {
+		t.Errorf("Expected group %s but was %s", group, adapted.GroupName)
+	}
+
 	if adapted.Arn != arn {
 		t.Errorf("Expected arn %s but was %s", arn, adapted.Arn)
 	}
@@ -448,6 +474,14 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 
 	if adapted.Env == nil {
 		t.Errorf("Expected non-nil env")
+	}
+
+	if adapted.Tags == nil {
+		t.Errorf("Expected non-nil tags")
+	}
+
+	if len(*adapted.Tags) != 3 {
+		t.Errorf("Expected exactly 3 tags")
 	}
 
 	if len(*adapted.Ports) != 1 {

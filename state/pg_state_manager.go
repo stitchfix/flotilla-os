@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	// Pull in postgres specific drivers
+	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/exceptions"
 	"strings"
 )
 
@@ -51,7 +53,7 @@ func (sm *SQLStateManager) makeWhereClause(filters map[string]string) []string {
 	i := 0
 	for k, v := range filters {
 		fmtString := "%s='%s'"
-		if k == "image" || k == "alias" {
+		if k == "image" || k == "alias" || k == "group_name" || k == "text" {
 			fmtString = "%s like '%%%s%%'"
 		}
 		wc[i] = fmt.Sprintf(fmtString, k, v)
@@ -133,6 +135,10 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	var err error
 	var definition Definition
 	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
+	if err != nil && err == sql.ErrNoRows {
+		return definition, exceptions.MissingResource{
+			fmt.Sprintf("Definition with ID %s not found", definitionID)}
+	}
 	return definition, err
 }
 
@@ -140,11 +146,14 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 // UpdateDefinition updates a definition
 // - updates can be partial
 //
-func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) error {
-	var err error
-	existing, err := sm.GetDefinition(definitionID)
+func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) (Definition, error) {
+	var (
+		err      error
+		existing Definition
+	)
+	existing, err = sm.GetDefinition(definitionID)
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	existing.UpdateWith(updates)
@@ -152,6 +161,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	selectForUpdate := `SELECT * FROM task_def WHERE definition_id = $1 FOR UPDATE;`
 	deleteEnv := `DELETE FROM task_def_environments WHERE task_def_id = $1;`
 	deletePorts := `DELETE FROM task_def_ports WHERE task_def_id = $1;`
+	deleteTags := `DELETE FROM task_def_tags WHERE task_def_id = $1`
 	update := `
     UPDATE task_def SET
       arn = $2, image = $3,
@@ -174,21 +184,35 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
     ) VALUES ($1, $2);
     `
 
+	insertDefTags := `
+	INSERT INTO task_def_tags(
+	  task_def_id, tag_id
+	) VALUES ($1, $2);
+	`
+
+	insertTags := `
+	INSERT INTO tags(text) SELECT $1 WHERE NOT EXISTS (SELECT text from tags where text = $2)
+	`
+
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(selectForUpdate, definitionID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deleteEnv, definitionID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deletePorts, definitionID); err != nil {
-		return err
+		return existing, err
+	}
+
+	if _, err = tx.Exec(deleteTags, definitionID); err != nil {
+		return existing, err
 	}
 
 	if _, err = tx.Exec(
@@ -196,14 +220,14 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
 		existing.Command); err != nil {
-		return err
+		return existing, err
 	}
 
 	if existing.Env != nil {
 		for _, e := range *existing.Env {
 			if _, err = tx.Exec(insertEnv, definitionID, e.Name, e.Value); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
@@ -212,16 +236,24 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		for _, p := range *existing.Ports {
 			if _, err = tx.Exec(insertPorts, definitionID, p); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
+	if existing.Tags != nil {
+		for _, t := range *existing.Tags {
+			if _, err = tx.Exec(insertTags, t, t); err != nil {
+				tx.Rollback()
+				return existing, err
+			}
+			if _, err = tx.Exec(insertDefTags, definitionID, t); err != nil {
+				tx.Rollback()
+				return existing, err
+			}
+		}
 	}
-	return nil
+	return existing, tx.Commit()
 }
 
 //
@@ -250,6 +282,17 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       task_def_id, port
     ) VALUES ($1, $2);
     `
+
+	insertDefTags := `
+	INSERT INTO task_def_tags(
+	  task_def_id, tag_id
+	) VALUES ($1, $2);
+	`
+
+	insertTags := `
+	INSERT INTO tags(text) SELECT $1 WHERE NOT EXISTS (SELECT text from tags where text = $2)
+	`
+
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return err
@@ -279,6 +322,19 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 			}
 		}
 	}
+
+	if d.Tags != nil {
+		for _, t := range *d.Tags {
+			if _, err = tx.Exec(insertTags, t, t); err != nil {
+				tx.Rollback()
+				return err
+			}
+			if _, err = tx.Exec(insertDefTags, d.DefinitionID, t); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
 	return tx.Commit()
 }
 
@@ -297,6 +353,7 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	statements := []string{
 		"DELETE FROM task_def_environments WHERE task_def_id = $1",
 		"DELETE FROM task_def_ports WHERE task_def_id = $1",
+		"DELETE FROM task_def_tags WHERE task_def_id = $1",
 		delTaskEnvs,
 		"DELETE FROM task WHERE definition_id = $1",
 		"DELETE FROM task_def WHERE definition_id = $1",
@@ -371,11 +428,11 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 //
 // UpdateRun updates run with updates - can be partial
 //
-func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
+func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	var err error
 	existing, err := sm.GetRun(runID)
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	existing.UpdateWith(updates)
@@ -402,15 +459,15 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(selectForUpdate, runID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(deleteEnv, runID); err != nil {
-		return err
+		return existing, err
 	}
 
 	if _, err = tx.Exec(
@@ -420,19 +477,19 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) error {
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName); err != nil {
-		return err
+		return existing, err
 	}
 
 	if existing.Env != nil {
 		for _, e := range *existing.Env {
 			if _, err = tx.Exec(insertEnv, runID, e.Name, e.Value); err != nil {
 				tx.Rollback()
-				return err
+				return existing, err
 			}
 		}
 	}
 
-	return tx.Commit()
+	return existing, tx.Commit()
 }
 
 //
@@ -480,6 +537,61 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		}
 	}
 	return tx.Commit()
+}
+
+//
+// Metadata
+//
+func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (GroupsList, error) {
+	var (
+		err         error
+		result      GroupsList
+		whereClause string
+	)
+	if name != nil && len(*name) > 0 {
+		whereClause = fmt.Sprintf("where %s", strings.Join(
+			sm.makeWhereClause(map[string]string{"group_name": *name}), " and "))
+	}
+
+	sql := fmt.Sprintf(ListGroupsSQL, whereClause)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+	err = sm.db.Select(&result.Groups, sql, limit, offset)
+	if err != nil {
+		return result, err
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
+func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsList, error) {
+	var (
+		err         error
+		result      TagsList
+		whereClause string
+	)
+	if name != nil && len(*name) > 0 {
+		whereClause = fmt.Sprintf("where %s", strings.Join(
+			sm.makeWhereClause(map[string]string{"text": *name}), " and "))
+	}
+
+	sql := fmt.Sprintf(ListTagsSQL, whereClause)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+	err = sm.db.Select(&result.Tags, sql, limit, offset)
+	if err != nil {
+		return result, err
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 //
@@ -546,6 +658,21 @@ func (e *PortsList) Scan(value interface{}) error {
 
 // Value to db
 func (e PortsList) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+// Scan from db
+func (e *Tags) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
+// Value to db
+func (e Tags) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }

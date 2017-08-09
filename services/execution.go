@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
@@ -25,6 +26,7 @@ type ExecutionService interface {
 		filters map[string]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
+	UpdateStatus(runID string, status string, exitCode *int64) error
 	Terminate(runID string) error
 	ReservedVariables() []string
 }
@@ -137,6 +139,7 @@ func (es *executionService) constructRun(
 	run = state.Run{
 		RunID:        runID,
 		ClusterName:  clusterName,
+		GroupName:    definition.GroupName,
 		DefinitionID: definition.DefinitionID,
 		Status:       state.StatusQueued,
 	}
@@ -172,7 +175,8 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
 			if usingRestricted {
-				return exceptions.ErrorReservedEnvironmentVariable
+				return exceptions.ConflictingResource{
+					fmt.Sprintf("environment variable %s is reserved", e.Name)}
 			}
 		}
 	}
@@ -182,7 +186,9 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		return err
 	}
 	if !ok {
-		return exceptions.ErrorImageNotFound
+		return exceptions.MissingResource{
+			fmt.Sprintf(
+				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
 	ok, err = es.cc.CanBeRun(clusterName, definition)
@@ -190,7 +196,9 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		return err
 	}
 	if !ok {
-		return exceptions.ErrorClusterConfigurationIssue
+		return exceptions.MalformedInput{
+			fmt.Sprintf(
+				"definition [%s] cannot be run on cluster [%s]", definition.DefinitionID, clusterName)}
 	}
 	return nil
 }
@@ -220,7 +228,9 @@ func (es *executionService) List(
 	status, ok := filters["status"]
 	if ok && !state.IsValidStatus(status) {
 		// Status filter is invalid
-		return state.RunList{}, exceptions.ErrorInvalidStatus
+		err := exceptions.MalformedInput{
+			fmt.Sprintf("invalid status [%s]", status)}
+		return state.RunList{}, err
 	}
 	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters)
 }
@@ -230,6 +240,17 @@ func (es *executionService) List(
 //
 func (es *executionService) Get(runID string) (state.Run, error) {
 	return es.sm.GetRun(runID)
+}
+
+//
+// UpdateStatus is for supporting some legacy runs that still manually update their status
+//
+func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
+	if !state.IsValidStatus(status) {
+		return exceptions.MalformedInput{fmt.Sprintf("status %s is invalid", status)}
+	}
+	_, err := es.sm.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
+	return err
 }
 
 //
@@ -244,5 +265,7 @@ func (es *executionService) Terminate(runID string) error {
 	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
 		return es.ee.Terminate(run)
 	}
-	return exceptions.ErrorInvalidRun
+	return exceptions.MalformedInput{
+		fmt.Sprintf(
+			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
 }

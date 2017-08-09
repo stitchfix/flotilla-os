@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/stitchfix/flotilla-os/config"
-	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	"testing"
@@ -113,28 +112,16 @@ func TestExecutionService_Create2(t *testing.T) {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
-	if err != exceptions.ErrorReservedEnvironmentVariable {
-		t.Errorf("Expected exceptions.ErrorReservedEnvironmentVariable but was %v", err)
-	}
-
 	// Invalid image
 	_, err = es.Create("C", "clusta", nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
-	if err != exceptions.ErrorImageNotFound {
-		t.Errorf("Expected exceptions.ErrorImageNotFound but was %v", err)
-	}
-
 	// Invalid cluster
 	_, err = es.Create("A", "invalidcluster", nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
-	}
-
-	if err != exceptions.ErrorClusterConfigurationIssue {
-		t.Errorf("Expected exceptions.ErrorClusterConfigurationIssue but was %v", err)
 	}
 }
 
