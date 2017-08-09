@@ -22,6 +22,8 @@ type ImplementsAllTheThings struct {
 	Queued                  []string                    // List of queued runs (Queue Manager)
 	ExecuteError            error                       // Execution Engine - error to return
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
+	Groups                  []string
+	Tags                    []string
 }
 
 // Name - general
@@ -69,7 +71,10 @@ func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.De
 // UpdateDefinition - StateManager
 func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, updates state.Definition) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateDefinition")
-	return state.Definition{}, nil
+	defn := iatt.Definitions[definitionID]
+	defn.UpdateWith(updates)
+	iatt.Definitions[definitionID] = defn
+	return defn, nil
 }
 
 // CreateDefinition - StateManager
@@ -128,13 +133,13 @@ func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (
 // ListGroups - StateManager
 func (iatt *ImplementsAllTheThings) ListGroups(limit int, offset int, name *string) (state.GroupsList, error) {
 	iatt.Calls = append(iatt.Calls, "ListGroups")
-	return state.GroupsList{}, nil
+	return state.GroupsList{Total: len(iatt.Groups), Groups: iatt.Groups}, nil
 }
 
 // ListTags - StateManager
 func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
 	iatt.Calls = append(iatt.Calls, "ListTags")
-	return state.TagsList{}, nil
+	return state.TagsList{Total: len(iatt.Tags), Tags: iatt.Tags}, nil
 }
 
 // QurlFor - QueueManager

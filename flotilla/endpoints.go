@@ -168,6 +168,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	updated, err := ep.definitionService.Update(vars["definition_id"], definition)
+
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {

@@ -1,7 +1,6 @@
 package flotilla
 
 import (
-	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/clients/registry"
@@ -92,28 +91,7 @@ func (app *App) configure(conf config.Config) {
 }
 
 func (app *App) configureRoutes(ep endpoints) {
-	r := mux.NewRouter()
-	s := r.PathPrefix("/api/v1").Subrouter()
-
-	s.HandleFunc("/task", ep.ListDefinitions).Methods("GET")
-	s.HandleFunc("/task", ep.CreateDefinition).Methods("POST")
-	s.HandleFunc("/task/{definition_id}", ep.GetDefinition).Methods("GET")
-	s.HandleFunc("/task/{definition_id}", ep.UpdateDefinition).Methods("PUT")
-	s.HandleFunc("/task/{definition_id}", ep.DeleteDefinition).Methods("DELETE")
-	s.HandleFunc("/task/{definition_id}/execute", ep.CreateRun).Methods("PUT")
-
-	s.HandleFunc("/history", ep.ListRuns).Methods("GET")
-	s.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
-	s.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
-	s.HandleFunc("/task/{definition_id}/history", ep.ListRuns).Methods("GET")
-	s.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
-
-	s.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
-	s.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
-	s.HandleFunc("/groups", ep.GetGroups).Methods("GET")
-	s.HandleFunc("/tags", ep.GetTags).Methods("GET")
-
-	app.handler = s
+	app.handler = NewRouter(ep)
 }
 
 func (app *App) initializeWorkers(
