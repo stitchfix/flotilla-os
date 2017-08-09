@@ -125,6 +125,18 @@ func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (
 	return run, nil
 }
 
+// ListGroups - StateManager
+func (iatt *ImplementsAllTheThings) ListGroups(limit int, offset int, name *string) (state.GroupsList, error) {
+	iatt.Calls = append(iatt.Calls, "ListGroups")
+	return state.GroupsList{}, nil
+}
+
+// ListTags - StateManager
+func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
+	iatt.Calls = append(iatt.Calls, "ListTags")
+	return state.TagsList{}, nil
+}
+
 // QurlFor - QueueManager
 func (iatt *ImplementsAllTheThings) QurlFor(name string) (string, error) {
 	iatt.Calls = append(iatt.Calls, "QurlFor")

@@ -111,6 +111,7 @@ func (app *App) configureRoutes(ep endpoints) {
 	s.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
 	s.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
 	s.HandleFunc("/groups", ep.GetGroups).Methods("GET")
+	s.HandleFunc("/tags", ep.GetTags).Methods("GET")
 
 	app.handler = s
 }

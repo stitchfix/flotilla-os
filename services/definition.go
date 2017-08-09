@@ -22,6 +22,10 @@ type DefinitionService interface {
 		envFilters map[string]string) (state.DefinitionList, error)
 	Update(definitionID string, updates state.Definition) (state.Definition, error)
 	Delete(definitionID string) error
+
+	// Metadata oriented
+	ListGroups(limit int, offset int, name *string) (state.GroupsList, error)
+	ListTags(limit int, offset int, name *string) (state.TagsList, error)
 }
 
 type definitionService struct {
@@ -129,4 +133,12 @@ func (ds *definitionService) Delete(definitionID string) error {
 		return err
 	}
 	return ds.sm.DeleteDefinition(definitionID)
+}
+
+func (ds *definitionService) ListGroups(limit int, offset int, name *string) (state.GroupsList, error) {
+	return ds.sm.ListGroups(limit, offset, name)
+}
+
+func (ds *definitionService) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
+	return ds.sm.ListTags(limit, offset, name)
 }

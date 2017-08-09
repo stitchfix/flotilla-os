@@ -268,6 +268,11 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		}
 	}
 
+	if definition.Tags != nil {
+		tagsList := strings.Join(*definition.Tags, ",")
+		containerDef.DockerLabels["tags"] = &tagsList
+	}
+
 	networkMode := "host"
 	return ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{containerDef},
@@ -295,6 +300,12 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 
 		alias, _ := container.DockerLabels["alias"]
 		groupName, _ := container.DockerLabels["group.name"]
+		tagList, ok := container.DockerLabels["tags"]
+		if ok {
+			tagSplits := strings.Split(*tagList, ",")
+			tags := state.Tags(tagSplits)
+			adapted.Tags = &tags
+		}
 
 		adapted.GroupName = *groupName
 		adapted.Alias = *alias

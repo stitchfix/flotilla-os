@@ -98,6 +98,18 @@ CREATE SEQUENCE IF NOT EXISTS task_status_status_id_seq
   CACHE 1;
 
 ALTER TABLE ONLY task_status ALTER COLUMN status_id SET DEFAULT nextval('task_status_status_id_seq'::regclass);
+
+--
+-- Tags
+--
+CREATE TABLE IF NOT EXISTS tags (
+  text character varying NOT NULL PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS task_def_tags (
+  tag_id character varying NOT NULL REFERENCES tags(text),
+  task_def_id character varying NOT NULL REFERENCES task_def(definition_id)
+);
 `
 
 //
@@ -116,7 +128,8 @@ select
   coalesce(td.command,'')   as command,
   coalesce(td.task_type,'') as tasktype,
   env::TEXT                 as env,
-  ports                     as ports
+  ports                     as ports,
+  tags                      as tags
   from (select * from task_def) td left outer join
     (select task_def_id,
       array_to_json(
@@ -128,7 +141,12 @@ select
       array_to_json(array_agg(port))::TEXT as ports
         from task_def_ports group by task_def_id
     ) tdp
-  on td.definition_id = tdp.task_def_id
+  on td.definition_id = tdp.task_def_id left outer join
+    (select task_def_id,
+      array_to_json(array_agg(tag_id))::TEXT as tags
+        from task_def_tags group by task_def_id
+    ) tdt
+  on td.definition_id = tdt.task_def_id
 `
 
 //
@@ -178,3 +196,13 @@ const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
 // GetRunSQL postgres specific query for getting a single run
 //
 const GetRunSQL = RunSelect + "\nwhere run_id = $1"
+
+const GroupsSelect = `
+select distinct group_name from task_def
+`
+const TagsSelect = `
+select distinct text from tags
+`
+
+const ListGroupsSQL = GroupsSelect + "\n%s order by group_name asc limit $1 offset $2"
+const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"

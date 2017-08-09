@@ -29,6 +29,9 @@ type Manager interface {
 	GetRun(runID string) (Run, error)
 	CreateRun(r Run) error
 	UpdateRun(runID string, updates Run) (Run, error)
+
+	ListGroups(limit int, offset int, name *string) (GroupsList, error)
+	ListTags(limit int, offset int, name *string) (TagsList, error)
 }
 
 //

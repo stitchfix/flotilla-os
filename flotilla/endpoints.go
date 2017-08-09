@@ -289,5 +289,33 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+	name := lr.filters["name"]
+	groups, err := ep.definitionService.ListGroups(lr.limit, lr.offset, &name)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = groups.Total
+		response["groups"] = groups.Groups
+		response["limit"] = lr.limit
+		response["offset"] = lr.offset
+		ep.encodeResponse(w, response)
+	}
+}
 
+func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+	name := lr.filters["name"]
+	tags, err := ep.definitionService.ListTags(lr.limit, lr.offset, &name)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = tags.Total
+		response["tags"] = tags.Tags
+		response["limit"] = lr.limit
+		response["offset"] = lr.offset
+		ep.encodeResponse(w, response)
+	}
 }
