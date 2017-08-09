@@ -57,10 +57,15 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, err
 	}
+	logService, err := services.NewLogService(conf, sm, lc)
+	if err != nil {
+		return app, err
+	}
+
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
-		logsClient:        lc,
+		logService:        logService,
 	}
 
 	app.configureRoutes(ep)

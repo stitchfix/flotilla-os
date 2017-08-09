@@ -340,6 +340,16 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 		logOptions[k] = &v
 	}
 
+	//
+	// Allow defining log group as -either- log namespace or
+	// awslogs-group
+	//
+	_, ok := logOptions["awslogs-group"]
+	if !ok {
+		logGroup := a.conf.GetString("log.namespace")
+		logOptions["awslogs-group"] = &logGroup
+	}
+
 	logConfiguration := ecs.LogConfiguration{
 		LogDriver: &logDriver,
 		Options:   logOptions,

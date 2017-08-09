@@ -212,3 +212,9 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 	iatt.Calls = append(iatt.Calls, "Deregister")
 	return nil
 }
+
+// Logs - Logs Client
+func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+	iatt.Calls = append(iatt.Calls, "Logs")
+	return "", nil, nil
+}

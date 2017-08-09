@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/state"
 )
 
 //
@@ -12,21 +13,22 @@ import (
 type Client interface {
 	Name() string
 	Initialize(config config.Config) error
-	Logs(handle string, lastSeen *string) (string, *string, error)
+	Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error)
 }
 
 //
 // NewLogsClient creates and initializes a run logs client
 //
 func NewLogsClient(conf config.Config, logger flotillaLog.Logger) (Client, error) {
-	name := conf.GetString("logs_client")
+	name := conf.GetString("log.driver.name")
 	if len(name) == 0 {
-		name = "cloudwatch"
+		name = "awslogs"
 	}
 
-	logger.Log("message", "Initializing logs client", "logs_client", name)
+	logger.Log("message", "Initializing logs client", "client", name)
 	switch name {
-	case "cloudwatch":
+	case "awslogs":
+		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
 		cwlc := &CloudWatchLogsClient{}
 		return cwlc, cwlc.Initialize(conf)
 	default:

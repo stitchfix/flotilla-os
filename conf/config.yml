@@ -20,7 +20,7 @@ enabled_workers:
 # Log namespace
 log:
   namespace: flotilla-os-logs
-  retention_days: 30
+  retention_days: 90
   driver:
     name: awslogs
     options:

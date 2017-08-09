@@ -3,7 +3,6 @@ package flotilla
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
@@ -16,7 +15,7 @@ import (
 type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
-	logsClient        logs.Client
+	logService        services.LogService
 }
 
 type listRequest struct {
@@ -271,35 +270,20 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Get(vars["run_id"])
+	params := r.URL.Query()
+
+	lastSeen := ep.getURLParam(params, "last_seen", "")
+	logs, newLastSeen, err := ep.logService.Logs(vars["run_id"], &lastSeen)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
 
-	params := r.URL.Query()
-	lastSeen := ep.getURLParam(params, "last_seen", "")
-	res := make(map[string]string)
-	var (
-		logs          string
-		lastSeenToken string
-	)
-	if run.Status == state.StatusRunning || run.Status == state.StatusStopped {
-		if len(lastSeen) > 0 {
-			lastSeenToken = lastSeen
-		}
-
-		logs, newLastSeen, err := ep.logsClient.Logs(run.RunID, &lastSeenToken)
-		if err != nil {
-			ep.encodeError(w, err)
-			return
-		}
-		if newLastSeen != nil {
-			res["last_seen"] = *newLastSeen
-		}
-		res["log"] = logs
-	} else {
-		res["log"] = logs
+	res := map[string]string{
+		"log": logs,
+	}
+	if newLastSeen != nil {
+		res["last_seen"] = *newLastSeen
 	}
 	ep.encodeResponse(w, res)
 }
