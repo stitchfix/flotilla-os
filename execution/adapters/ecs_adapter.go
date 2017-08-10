@@ -319,17 +319,15 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 			adapted.Ports = &adaptedPorts
 		}
 
-		if len(container.Environment) > 0 {
-			env := make([]state.EnvVar, len(container.Environment))
-			for i, e := range container.Environment {
-				env[i] = state.EnvVar{
-					Name:  *e.Name,
-					Value: *e.Value,
-				}
+		env := make([]state.EnvVar, len(container.Environment))
+		for i, e := range container.Environment {
+			env[i] = state.EnvVar{
+				Name:  *e.Name,
+				Value: *e.Value,
 			}
-			adaptedEnv := state.EnvList(env)
-			adapted.Env = &adaptedEnv
 		}
+		adaptedEnv := state.EnvList(env)
+		adapted.Env = &adaptedEnv
 	}
 
 	return adapted
