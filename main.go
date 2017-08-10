@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	gklog "github.com/go-kit/kit/log"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
@@ -16,6 +17,13 @@ import (
 )
 
 func main() {
+
+	args := os.Args
+	if len(args) < 2 {
+		fmt.Println("Usage: flotilla-os <conf_dir>")
+		os.Exit(1)
+	}
+
 	//
 	// Use go-kit for structured logging
 	//
@@ -25,7 +33,7 @@ func main() {
 	//
 	// Wrap viper for configuration
 	//
-	confDir := "conf"
+	confDir := args[1]
 	c, err := config.NewConfig(&confDir)
 	if err != nil {
 		logger.Log("message", "Error initializing configuration")
