@@ -265,12 +265,12 @@ type Run struct {
 	RunID           string     `json:"run_id"`
 	DefinitionID    string     `json:"definition_id"`
 	ClusterName     string     `json:"cluster"`
-	ExitCode        *int64     `json:"exit_code"`
+	ExitCode        *int64     `json:"exit_code,omitempty"`
 	Status          string     `json:"status"`
-	StartedAt       *time.Time `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at"`
-	InstanceID      string     `json:"-"`
-	InstanceDNSName string     `json:"-"`
+	StartedAt       *time.Time `json:"started_at,omitempty"`
+	FinishedAt      *time.Time `json:"finished_at,omitempty"`
+	InstanceID      string     `json:"instance_id"`
+	InstanceDNSName string     `json:"instance_dns_name"`
 	GroupName       string     `json:"group_name"`
 	User            string     `json:"user,omitempty"`
 	TaskType        string     `json:"-"`

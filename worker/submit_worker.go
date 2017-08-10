@@ -50,7 +50,6 @@ func (sw *submitWorker) runOnce() {
 		}
 
 		if runReceipt.Run == nil {
-			sw.log.Log("message", "No run to process")
 			continue
 		}
 
