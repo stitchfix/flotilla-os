@@ -208,7 +208,7 @@ func (d *Definition) UpdateWith(other Definition) {
 
 }
 
-func (d *Definition) MarshalJSON() ([]byte, error) {
+func (d Definition) MarshalJSON() ([]byte, error) {
 	type Alias Definition
 
 	env := d.Env
@@ -218,12 +218,11 @@ func (d *Definition) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		Env *EnvList `json:"env"`
-		*Alias
+		Alias
 	}{
 		Env:   env,
-		Alias: (*Alias)(d),
+		Alias: (Alias)(d),
 	})
-	return json.Marshal(d)
 }
 
 //
@@ -269,8 +268,8 @@ type Run struct {
 	Status          string     `json:"status"`
 	StartedAt       *time.Time `json:"started_at,omitempty"`
 	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	InstanceID      string     `json:"instance_id"`
-	InstanceDNSName string     `json:"instance_dns_name"`
+	InstanceID      string     `json:"-"`
+	InstanceDNSName string     `json:"-"`
 	GroupName       string     `json:"group_name"`
 	User            string     `json:"user,omitempty"`
 	TaskType        string     `json:"-"`
@@ -324,6 +323,21 @@ func (d *Run) UpdateWith(other Run) {
 	if other.Env != nil {
 		d.Env = other.Env
 	}
+}
+
+func (r Run) MarshalJSON() ([]byte, error) {
+	type Alias Run
+	instance := map[string]string{
+		"instance_id": r.InstanceID,
+		"dns_name":    r.InstanceDNSName,
+	}
+	return json.Marshal(&struct {
+		Instance map[string]string `json:"instance"`
+		Alias
+	}{
+		Instance: instance,
+		Alias:    (Alias)(r),
+	})
 }
 
 //
