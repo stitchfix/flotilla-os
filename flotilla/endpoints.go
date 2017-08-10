@@ -114,6 +114,9 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 
 	definitionList, err := ep.definitionService.List(
 		lr.limit, lr.offset, lr.sortBy, lr.order, lr.filters, lr.envFilters)
+	if definitionList.Definitions == nil {
+		definitionList.Definitions = []state.Definition{}
+	}
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {

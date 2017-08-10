@@ -2,6 +2,7 @@ package state
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/nu7hatch/gouuid"
 	"regexp"
@@ -207,12 +208,45 @@ func (d *Definition) UpdateWith(other Definition) {
 
 }
 
+func (d *Definition) MarshalJSON() ([]byte, error) {
+	type Alias Definition
+
+	env := d.Env
+	if env == nil {
+		env = &EnvList{}
+	}
+
+	return json.Marshal(&struct {
+		Env *EnvList `json:"env"`
+		*Alias
+	}{
+		Env:   env,
+		Alias: (*Alias)(d),
+	})
+	return json.Marshal(d)
+}
+
 //
 // DefinitionList wraps a list of Definitions
 //
 type DefinitionList struct {
 	Total       int          `json:"total"`
 	Definitions []Definition `json:"definitions"`
+}
+
+func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
+	type Alias DefinitionList
+	l := dl.Definitions
+	if l == nil {
+		l = []Definition{}
+	}
+	return json.Marshal(&struct {
+		Definitions []Definition `json:"definitions"`
+		*Alias
+	}{
+		Definitions: l,
+		Alias:       (*Alias)(dl),
+	})
 }
 
 //
@@ -231,16 +265,16 @@ type Run struct {
 	RunID           string     `json:"run_id"`
 	DefinitionID    string     `json:"definition_id"`
 	ClusterName     string     `json:"cluster"`
-	ExitCode        *int64     `json:"exit_code"`
+	ExitCode        *int64     `json:"exit_code,omitempty"`
 	Status          string     `json:"status"`
-	StartedAt       *time.Time `json:"started_at"`
-	FinishedAt      *time.Time `json:"finished_at"`
-	InstanceID      string     `json:"-"`
-	InstanceDNSName string     `json:"-"`
+	StartedAt       *time.Time `json:"started_at,omitempty"`
+	FinishedAt      *time.Time `json:"finished_at,omitempty"`
+	InstanceID      string     `json:"instance_id"`
+	InstanceDNSName string     `json:"instance_dns_name"`
 	GroupName       string     `json:"group_name"`
 	User            string     `json:"user,omitempty"`
 	TaskType        string     `json:"-"`
-	Env             *EnvList   `json:"env"`
+	Env             *EnvList   `json:"env,omitempty"`
 }
 
 //

@@ -729,6 +729,12 @@
 			"revisionTime": "2017-05-05T04:36:39Z"
 		},
 		{
+			"checksumSHA1": "I778b2sbNN/yjwKSdb3y7hz2yUQ=",
+			"path": "github.com/rs/cors",
+			"revision": "eabcc6af4bbe5ad3a949d36450326a2b0b9894b8",
+			"revisionTime": "2017-08-01T07:32:01Z"
+		},
+		{
 			"checksumSHA1": "i1Ziv0l+Mg4+QepkJXHyLU2tGqY=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "00386b3fbd637582f90cb17482dc3087646c0ac2",

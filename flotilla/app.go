@@ -1,6 +1,7 @@
 package flotilla
 
 import (
+	"github.com/rs/cors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/clients/registry"
@@ -12,15 +13,19 @@ import (
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/worker"
 	"net/http"
+	"strings"
 	"time"
 )
 
 type App struct {
-	address      string
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	handler      http.Handler
-	workers      []worker.Worker
+	address            string
+	mode               string
+	corsAllowedOrigins []string
+	logger             flotillaLog.Logger
+	readTimeout        time.Duration
+	writeTimeout       time.Duration
+	handler            http.Handler
+	workers            []worker.Worker
 }
 
 func (app *App) Run() error {
@@ -46,6 +51,7 @@ func NewApp(conf config.Config,
 	rc registry.Client) (App, error) {
 
 	var app App
+	app.logger = log
 	app.configure(conf)
 
 	executionService, err := services.NewExecutionService(conf, ee, sm, qm, cc, rc)
@@ -88,10 +94,25 @@ func (app *App) configure(conf config.Config) {
 	}
 	app.readTimeout = time.Duration(readTimeout) * time.Second
 	app.writeTimeout = time.Duration(writeTimeout) * time.Second
+
+	app.mode = conf.GetString("flotilla_mode")
+	app.corsAllowedOrigins = conf.GetStringSlice("http.server.cors_allowed_origins")
 }
 
 func (app *App) configureRoutes(ep endpoints) {
-	app.handler = NewRouter(ep)
+	if app.mode == "dev" || app.mode == "test" {
+		app.logger.Log(
+			"message", "WARNING - enabling CORS",
+			"origins", strings.Join(app.corsAllowedOrigins, ","))
+		router := NewRouter(ep)
+		c := cors.New(cors.Options{
+			AllowedOrigins: app.corsAllowedOrigins,
+			AllowedMethods: []string{"GET", "DELETE", "POST", "PUT"},
+		})
+		app.handler = c.Handler(router)
+	} else {
+		app.handler = NewRouter(ep)
+	}
 }
 
 func (app *App) initializeWorkers(
@@ -102,6 +123,7 @@ func (app *App) initializeWorkers(
 	sm state.Manager) error {
 	for _, workerName := range conf.GetStringSlice("enabled_workers") {
 		wk, err := worker.NewWorker(workerName, log, conf, ee, qm, sm)
+		app.logger.Log("message", "Starting worker", "name", workerName)
 		if err != nil {
 			return err
 		}
