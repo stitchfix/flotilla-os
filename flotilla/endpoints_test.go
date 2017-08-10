@@ -26,7 +26,9 @@ func setUp(t *testing.T) *mux.Router {
 			"runA": {DefinitionID: "A", ClusterName: "A",
 				GroupName: "A", TaskArn: "ARN",
 				RunID: "runA", Status: state.StatusRunning},
-			"runB": {DefinitionID: "B", ClusterName: "B", GroupName: "B", RunID: "runB"},
+			"runB": {DefinitionID: "B", ClusterName: "B",
+				GroupName: "B", RunID: "runB",
+				InstanceDNSName: "cupcakedns", InstanceID: "cupcakeid"},
 		},
 		Qurls: map[string]string{
 			"A": "a/",
@@ -189,6 +191,10 @@ func TestEndpoints_GetDefinition(t *testing.T) {
 	if r.DefinitionID != "A" {
 		t.Errorf("Expected definition_id [A] but was [%s]", r.DefinitionID)
 	}
+
+	if r.Env == nil {
+		t.Errorf("Expected non-nil environment")
+	}
 }
 
 func TestEndpoints_GetGroups(t *testing.T) {
@@ -281,6 +287,39 @@ func TestEndpoints_GetRun(t *testing.T) {
 
 	if r.RunID != "runA" {
 		t.Errorf("Expected run with runID [runA] but was [%s]", r.RunID)
+	}
+}
+
+func TestEndpoints_GetRun2(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("GET", "/api/v1/history/runB", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var other map[string]interface{}
+	err := json.NewDecoder(resp.Body).Decode(&other)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	instance, ok := other["instance"]
+	if !ok {
+		t.Errorf("Expected [instance] in response")
+	}
+
+	if _, ok = instance.(map[string]interface{}); !ok {
+		t.Errorf("Expected [instance] in response to be a map")
 	}
 }
 
