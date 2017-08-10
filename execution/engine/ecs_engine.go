@@ -103,14 +103,30 @@ func (ee *ECSExecutionEngine) Terminate(run state.Run) error {
 // Define creates or updates a task definition with ecs
 //
 func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definition, error) {
-	var defined state.Definition
 	rti := ee.adapter.AdaptDefinition(definition)
 	result, err := ee.ecsClient.RegisterTaskDefinition(&rti)
 	if err != nil {
-		return defined, err
+		return state.Definition{}, err
 	}
 
-	return ee.adapter.AdaptTaskDef(*result.TaskDefinition), nil
+	//
+	// We wrap the command of a definition before registering it with
+	// ECS. What this means is that the command returned from registration
+	// contains only the *wrapped* version. Reversing the wrapping process
+	// using string parsing is brittle. Instead, we make the following
+	// assumptions:
+	//
+	// * Definitions are pre-validated using their `IsValid` method meaning
+	//   they must have a non-empty user command
+	// * Registering a task definition with ECS does not mutate the user command
+	// ** The command acknowledged by ECS is -exactly- the wrapped version
+	//    of the command contained in the passed in Definition
+	// Hence it should be safe to simply attach the passed in definition's
+	// Command field to the output.
+	//
+	defined := ee.adapter.AdaptTaskDef(*result.TaskDefinition)
+	defined.Command = definition.Command
+	return defined, nil
 }
 
 //

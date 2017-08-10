@@ -45,7 +45,7 @@ func setUp(t *testing.T) *mux.Router {
 func TestEndpoints_CreateDefinition(t *testing.T) {
 	router := setUp(t)
 
-	newDef := `{"alias":"cupcake", "memory":100, "group_name":"cupcake", "image":"someimage"}`
+	newDef := `{"alias":"cupcake", "memory":100, "group_name":"cupcake", "image":"someimage", "command":"echo 'hi'"}`
 	req := httptest.NewRequest("POST", "/api/v1/task", bytes.NewBufferString(newDef))
 	w := httptest.NewRecorder()
 
