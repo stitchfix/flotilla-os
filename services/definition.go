@@ -68,7 +68,6 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, err
 	}
 	definition.DefinitionID = definitionID
-
 	defined, err := ds.ee.Define(*definition)
 	if err != nil {
 		return state.Definition{}, err

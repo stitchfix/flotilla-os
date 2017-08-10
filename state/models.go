@@ -150,6 +150,7 @@ func (d *Definition) IsValid() (bool, []string) {
 		{len(d.GroupName) > 255, "Group name must be 255 characters or less"},
 		{len(d.Alias) == 0, "string [alias] must be specified"},
 		{d.Memory == nil, "int [memory] must be specified"},
+		{len(d.Command) == 0, "string [command] must be specified"},
 	}
 
 	valid := true

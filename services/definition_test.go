@@ -41,6 +41,7 @@ func TestDefinitionService_Create(t *testing.T) {
 		Image:     "image:cupcake",
 		GroupName: "group-cupcake",
 		Memory:    &memory,
+		Command:   "echo 'hi'",
 	}
 	created, _ := ds.Create(&newValidDef)
 	if len(created.DefinitionID) == 0 {
