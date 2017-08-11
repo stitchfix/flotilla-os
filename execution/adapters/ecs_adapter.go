@@ -346,7 +346,8 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 	confLogOptions := a.conf.GetStringMapString("log.driver.options")
 	logOptions := make(map[string]*string, len(confLogOptions))
 	for k, v := range confLogOptions {
-		logOptions[k] = &v
+		val := v
+		logOptions[k] = &val
 	}
 
 	//
