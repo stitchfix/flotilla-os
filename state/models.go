@@ -193,6 +193,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Memory != nil {
 		d.Memory = other.Memory
 	}
+	if len(other.Command) > 0 {
+		d.Command = other.Command
+	}
 	if len(other.TaskType) > 0 {
 		d.TaskType = other.TaskType
 	}
