@@ -138,6 +138,82 @@ func TestEndpoints_CreateRun(t *testing.T) {
 	}
 }
 
+func TestEndpoints_CreateRun2(t *testing.T) {
+	router := setUp(t)
+
+	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_email":"flotilla@github.com", "team_name":"thebest"}}`
+	req := httptest.NewRequest("PUT", "/api/v2/task/A/execute", bytes.NewBufferString(newRun))
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	r := state.Run{}
+	err := json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if len(r.RunID) == 0 {
+		t.Errorf("Expected non-empty run id")
+	}
+
+	if r.Status != state.StatusQueued {
+		t.Errorf("Expected new run to have status [%s] but was [%s]", state.StatusQueued, r.Status)
+	}
+
+	if r.User != "flotilla@github.com" {
+		t.Errorf("Expected new run to have user set to run_tags.owner_email but was [%s]", r.User)
+	}
+}
+
+func TestEndpoints_CreateRun4(t *testing.T) {
+	router := setUp(t)
+
+	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}}`
+	req := httptest.NewRequest("PUT", "/api/v4/task/A/execute", bytes.NewBufferString(newRun))
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	r := state.Run{}
+	err := json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if len(r.RunID) == 0 {
+		t.Errorf("Expected non-empty run id")
+	}
+
+	if r.Status != state.StatusQueued {
+		t.Errorf("Expected new run to have status [%s] but was [%s]", state.StatusQueued, r.Status)
+	}
+
+	if r.User != "flotilla" {
+		t.Errorf("Expected new run to have user set to run_tags.owner_id but was [%s]", r.User)
+	}
+}
+
 func TestEndpoints_DeleteDefinition(t *testing.T) {
 	router := setUp(t)
 

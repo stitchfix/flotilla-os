@@ -44,7 +44,7 @@ func TestExecutionService_Create(t *testing.T) {
 		"QurlFor":       true,
 		"Enqueue":       true,
 	}
-	run, err := es.Create("B", "clusta", env)
+	run, err := es.Create("B", "clusta", env, "somebody")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -74,6 +74,10 @@ func TestExecutionService_Create(t *testing.T) {
 
 	if run.Status != state.StatusQueued {
 		t.Errorf("Expected new run to have status '%s' but was '%s'", state.StatusQueued, run.Status)
+	}
+
+	if run.User != "somebody" {
+		t.Errorf("Expected new run to have user 'somebody' but was '%s'", run.User)
 	}
 
 	if run.Env == nil {
@@ -107,19 +111,19 @@ func TestExecutionService_Create2(t *testing.T) {
 	var err error
 
 	// Invalid environment
-	_, err = es.Create("A", "clusta", env)
+	_, err = es.Create("A", "clusta", env, "somebody")
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
 	// Invalid image
-	_, err = es.Create("C", "clusta", nil)
+	_, err = es.Create("C", "clusta", nil, "somebody")
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
 	// Invalid cluster
-	_, err = es.Create("A", "invalidcluster", nil)
+	_, err = es.Create("A", "invalidcluster", nil, "somebody")
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
 	}

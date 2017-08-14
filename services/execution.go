@@ -17,7 +17,7 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error)
+	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -58,12 +58,20 @@ func NewExecutionService(conf config.Config, ee engine.Engine,
 	//
 	// Reserved environment variables dynamically generated
 	// per run
+
+	ownerKey := conf.GetString("owner_id_var")
+	if len(ownerKey) == 0 {
+		ownerKey = "FLOTILLA_RUN_OWNER_ID"
+	}
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
 			return conf.GetString("flotilla_mode")
 		},
 		"FLOTILLA_RUN_ID": func(run state.Run) string {
 			return run.RunID
+		},
+		ownerKey: func(run state.Run) string {
+			return run.User
 		},
 	}
 	return &es, nil
@@ -84,7 +92,8 @@ func (es *executionService) ReservedVariables() []string {
 //
 // Create constructs and queues a new Run on the cluster specified
 //
-func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList) (state.Run, error) {
+func (es *executionService) Create(
+	definitionID string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -102,7 +111,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env)
+	run, err = es.constructRun(clusterName, definition, env, ownerID)
 	if err != nil {
 		return run, err
 	}
@@ -124,7 +133,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 }
 
 func (es *executionService) constructRun(
-	clusterName string, definition state.Definition, env *state.EnvList) (state.Run, error) {
+	clusterName string, definition state.Definition, env *state.EnvList, ownerID string) (state.Run, error) {
 
 	var (
 		run state.Run
@@ -142,6 +151,7 @@ func (es *executionService) constructRun(
 		GroupName:    definition.GroupName,
 		DefinitionID: definition.DefinitionID,
 		Status:       state.StatusQueued,
+		User:         ownerID,
 	}
 	runEnv := es.constructEnviron(run, env)
 	run.Env = &runEnv
