@@ -2,6 +2,7 @@ package flotilla
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/services"
@@ -30,6 +31,17 @@ type listRequest struct {
 type launchRequest struct {
 	ClusterName string         `json:"cluster"`
 	Env         *state.EnvList `json:"env"`
+}
+
+type launchRequestV2 struct {
+	RunTags RunTags `json:"run_tags"`
+	*launchRequest
+}
+
+type RunTags struct {
+	OwnerEmail string `json:"owner_email"`
+	TeamName   string `json:"team_name"`
+	OwnerID    string `json:"owner_id"`
 }
 
 func (ep *endpoints) getURLParam(v url.Values, key string, defaultValue string) string {
@@ -237,7 +249,53 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown")
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
+func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
+	var lr launchRequestV2
+	err := ep.decodeRequest(r, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	if len(lr.RunTags.OwnerEmail) == 0 || len(lr.RunTags.TeamName) == 0 {
+		ep.encodeError(w, exceptions.MalformedInput{
+			fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
+		return
+	}
+
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
+func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
+	var lr launchRequestV2
+	err := ep.decodeRequest(r, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	if len(lr.RunTags.OwnerID) == 0 {
+		ep.encodeError(w, exceptions.MalformedInput{
+			fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
+		return
+	}
+
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
