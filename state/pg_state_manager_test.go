@@ -37,18 +37,8 @@ func setUp() Manager {
 
 func insertDefinitions(db *sqlx.DB) {
 	defsql := `
-    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `
-
-	envsql := `
-    INSERT INTO task_def_environments(task_def_id, name, value)
-      VALUES ($1, $2, $3)
-    `
-
-	taskEnvSQL := `
-    INSERT INTO task_environments(task_id, name, value)
-      VALUES ($1, $2, $3)
+    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `
 
 	portsql := `
@@ -65,22 +55,20 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name
+      started_at, finished_at, instance_id, instance_dns_name, group_name, env
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
     )
     `
 
-	db.MustExec(defsql, "A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'")
-	db.MustExec(defsql, "B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'")
-	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'")
-	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'")
-	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'")
-
-	db.MustExec(envsql, "A", "E_A1", "V_A1")
-	db.MustExec(envsql, "B", "E_B1", "V_B1")
-	db.MustExec(envsql, "B", "E_B2", "V_B2")
-	db.MustExec(envsql, "B", "E_B3", "V_B3")
+	db.MustExec(defsql,
+		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`)
+	db.MustExec(defsql,
+		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`)
+	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil)
+	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil)
+	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil)
 
 	db.MustExec(portsql, "A", 10000)
 	db.MustExec(portsql, "C", 10001)
@@ -101,19 +89,20 @@ func insertDefinitions(db *sqlx.DB) {
 	t3, _ := time.Parse(time.RFC3339, "2017-07-04T00:03:00+00:00")
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
-	db.MustExec(taskSQL, "run0", "A", "clusta", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ")
-	db.MustExec(taskSQL, "run1", "B", "clusta", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY")
-	db.MustExec(taskSQL, "run2", "B", "clusta", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY")
-	db.MustExec(taskSQL, "run3", "C", "clusta", nil, StatusQueued, nil, nil, "", "", "groupX")
-	db.MustExec(taskSQL, "run4", "C", "clusta", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX")
-	db.MustExec(taskSQL, "run5", "D", "clustb", nil, StatusPending, nil, nil, "", "", "groupW")
+	db.MustExec(taskSQL,
+		"run0", "A", "clusta", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`)
+	db.MustExec(
+		taskSQL, "run1", "B", "clusta", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`)
 
-	db.MustExec(taskEnvSQL, "run0", "E0", "V0")
-	db.MustExec(taskEnvSQL, "run1", "E1", "V1")
-	db.MustExec(taskEnvSQL, "run2", "E2", "V2")
-	db.MustExec(taskEnvSQL, "run3", "E3_1", "V3_1")
-	db.MustExec(taskEnvSQL, "run3", "E3_2", "V3_2")
-	db.MustExec(taskEnvSQL, "run3", "E3_3", "V3_3")
+	db.MustExec(
+		taskSQL, "run2", "B", "clusta", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`)
+
+	db.MustExec(taskSQL,
+		"run3", "C", "clusta", nil, StatusQueued, nil, nil, "", "", "groupX",
+		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`)
+
+	db.MustExec(taskSQL, "run4", "C", "clusta", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil)
+	db.MustExec(taskSQL, "run5", "D", "clustb", nil, StatusPending, nil, nil, "", "", "groupW", nil)
 }
 
 func tearDown() {
@@ -346,7 +335,11 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 
 	var err error
 	expectedTotal := 6
-	rl, _ := sm.ListRuns(1, 0, "started_at", "asc", nil, nil)
+	rl, err := sm.ListRuns(1, 0, "started_at", "asc", nil, nil)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
 	if rl.Total != expectedTotal {
 		t.Errorf("Expected total to be %v but was %v", expectedTotal, rl.Total)
 	}
@@ -358,6 +351,10 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	r0 := rl.Runs[0]
 	if r0.RunID != "run0" {
 		t.Errorf("Listing with order returned incorrect run, expected run0 but got %s", r0.RunID)
+	}
+
+	if r0.Env == nil {
+		t.Errorf("Expected non-nil env for run")
 	}
 
 	if len(*r0.Env) != 1 {
@@ -388,7 +385,11 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	}
 
 	// Test filtering on environment variables
-	rl, _ = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"})
+	rl, err = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"})
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
 	if rl.Runs[0].RunID != "run2" {
 		t.Errorf(
 			`Expected environment variable filters (E2:V2) to yield

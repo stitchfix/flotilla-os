@@ -66,7 +66,7 @@ func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []strin
 	wc := make([]string, len(filters))
 	i := 0
 	for k, v := range filters {
-		fmtString := `env::jsonb @> '[{"name":"%s","value":"%s"}]'`
+		fmtString := `env @> '[{"name":"%s","value":"%s"}]'`
 		wc[i] = fmt.Sprintf(fmtString, k, v)
 		i++
 	}
@@ -159,7 +159,6 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	existing.UpdateWith(updates)
 
 	selectForUpdate := `SELECT * FROM task_def WHERE definition_id = $1 FOR UPDATE;`
-	deleteEnv := `DELETE FROM task_def_environments WHERE task_def_id = $1;`
 	deletePorts := `DELETE FROM task_def_ports WHERE task_def_id = $1;`
 	deleteTags := `DELETE FROM task_def_tags WHERE task_def_id = $1`
 	update := `
@@ -167,15 +166,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       arn = $2, image = $3,
       container_name = $4, "user" = $5,
       alias = $6, memory = $7,
-      command = $8
+      command = $8, env = $9
     WHERE definition_id = $1;
-    `
-
-	insertEnv := `
-    INSERT INTO task_def_environments(
-      task_def_id, name, value
-    )
-    VALUES ($1, $2, $3);
     `
 
 	insertPorts := `
@@ -203,10 +195,6 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		return existing, err
 	}
 
-	if _, err = tx.Exec(deleteEnv, definitionID); err != nil {
-		return existing, err
-	}
-
 	if _, err = tx.Exec(deletePorts, definitionID); err != nil {
 		return existing, err
 	}
@@ -219,17 +207,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		update, definitionID,
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
-		existing.Command); err != nil {
+		existing.Command, existing.Env); err != nil {
 		return existing, err
-	}
-
-	if existing.Env != nil {
-		for _, e := range *existing.Env {
-			if _, err = tx.Exec(insertEnv, definitionID, e.Name, e.Value); err != nil {
-				tx.Rollback()
-				return existing, err
-			}
-		}
 	}
 
 	if existing.Ports != nil {
@@ -265,16 +244,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	insert := `
     INSERT INTO task_def(
       arn, definition_id, image, group_name,
-      container_name, "user", alias, memory, command
+      container_name, "user", alias, memory, command, env
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
-    `
-
-	insertEnv := `
-    INSERT INTO task_def_environments(
-      task_def_id, name, value
-    )
-    VALUES ($1, $2, $3);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
     `
 
 	insertPorts := `
@@ -300,18 +272,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command); err != nil {
+		d.User, d.Alias, d.Memory, d.Command, d.Env); err != nil {
 		tx.Rollback()
 		return err
-	}
-
-	if d.Env != nil {
-		for _, e := range *d.Env {
-			if _, err = tx.Exec(insertEnv, d.DefinitionID, e.Name, e.Value); err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
 	}
 
 	if d.Ports != nil {
@@ -344,17 +307,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	var err error
 
-	delTaskEnvs := `
-    DELETE FROM task_environments WHERE task_id in (
-      SELECT run_id as task_id from task WHERE definition_id = $1
-    )
-    `
-
 	statements := []string{
-		"DELETE FROM task_def_environments WHERE task_def_id = $1",
 		"DELETE FROM task_def_ports WHERE task_def_id = $1",
 		"DELETE FROM task_def_tags WHERE task_def_id = $1",
-		delTaskEnvs,
 		"DELETE FROM task WHERE definition_id = $1",
 		"DELETE FROM task_def WHERE definition_id = $1",
 	}
@@ -438,7 +393,6 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	existing.UpdateWith(updates)
 
 	selectForUpdate := `SELECT * FROM task WHERE run_id = $1 FOR UPDATE;`
-	deleteEnv := `DELETE FROM task_environments WHERE task_id = $1;`
 	update := `
     UPDATE task SET
       task_arn = $2, definition_id = $3,
@@ -446,15 +400,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       status = $6, started_at = $7,
       finished_at = $8, instance_id = $9,
       instance_dns_name = $10,
-      group_name = $11
+      group_name = $11, env = $12
     WHERE run_id = $1;
-    `
-
-	insertEnv := `
-    INSERT INTO task_environments(
-      task_id, name, value
-    )
-    VALUES ($1, $2, $3);
     `
 
 	tx, err := sm.db.Begin()
@@ -466,27 +413,14 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		return existing, err
 	}
 
-	if _, err = tx.Exec(deleteEnv, runID); err != nil {
-		return existing, err
-	}
-
 	if _, err = tx.Exec(
 		update, runID,
 		existing.TaskArn, existing.DefinitionID,
 		existing.ClusterName, existing.ExitCode,
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
-		existing.InstanceDNSName, existing.GroupName); err != nil {
+		existing.InstanceDNSName, existing.GroupName, existing.Env); err != nil {
 		return existing, err
-	}
-
-	if existing.Env != nil {
-		for _, e := range *existing.Env {
-			if _, err = tx.Exec(insertEnv, runID, e.Name, e.Value); err != nil {
-				tx.Rollback()
-				return existing, err
-			}
-		}
 	}
 
 	return existing, tx.Commit()
@@ -501,17 +435,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, cluster_name, exit_code, status,
       started_at, finished_at, instance_id, instance_dns_name, group_name,
-      task_type
+      env, task_type
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'task'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'task'
     );
-    `
-
-	insertEnv := `
-    INSERT INTO task_environments(
-      task_id, name, value
-    )
-    VALUES ($1, $2, $3);
     `
 
 	tx, err := sm.db.Begin()
@@ -523,19 +450,11 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.TaskArn, r.RunID, r.DefinitionID,
 		r.ClusterName, r.ExitCode, r.Status,
 		r.StartedAt, r.FinishedAt,
-		r.InstanceID, r.InstanceDNSName, r.GroupName); err != nil {
+		r.InstanceID, r.InstanceDNSName, r.GroupName, r.Env); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if r.Env != nil {
-		for _, e := range *r.Env {
-			if _, err = tx.Exec(insertEnv, r.RunID, e.Name, e.Value); err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-	}
 	return tx.Commit()
 }
 
