@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS task_def (
   group_name character varying NOT NULL,
   memory integer,
   command text,
+  env jsonb,
   -- Refactor these
   "user" character varying,
   arn character varying,
@@ -23,13 +24,6 @@ CREATE TABLE IF NOT EXISTS task_def (
   task_type character varying,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
-);
-
-CREATE TABLE IF NOT EXISTS task_def_environments (
-  task_def_id character varying NOT NULL REFERENCES task_def(definition_id),
-  name character varying NOT NULL,
-  value character varying,
-  CONSTRAINT task_def_environments_pkey PRIMARY KEY(task_def_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS task_def_ports (
@@ -41,7 +35,7 @@ CREATE TABLE IF NOT EXISTS task_def_ports (
 CREATE INDEX IF NOT EXISTS ix_task_def_alias ON task_def(alias);
 CREATE INDEX IF NOT EXISTS ix_task_def_group_name ON task_def(group_name);
 CREATE INDEX IF NOT EXISTS ix_task_def_image ON task_def(image);
-
+CREATE INDEX IF NOT EXISTS ix_task_def_env ON task_def USING gin (env jsonb_path_ops);
 --
 -- Runs
 --
@@ -57,6 +51,7 @@ CREATE TABLE IF NOT EXISTS task (
   instance_id character varying,
   instance_dns_name character varying,
   group_name character varying,
+  env jsonb,
   -- Refactor these --
   task_arn character varying,
   docker_id character varying,
@@ -65,17 +60,10 @@ CREATE TABLE IF NOT EXISTS task (
   -- Refactor these --
 );
 
-CREATE TABLE IF NOT EXISTS task_environments (
-  task_id character varying NOT NULL REFERENCES task(run_id),
-  name character varying NOT NULL,
-  value character varying,
-  CONSTRAINT task_environments_pkey PRIMARY KEY(task_id, name)
-);
-
 CREATE INDEX IF NOT EXISTS ix_task_cluster_name ON task(cluster_name);
 CREATE INDEX IF NOT EXISTS ix_task_status ON task(status);
 CREATE INDEX IF NOT EXISTS ix_task_group_name ON task(group_name);
-
+CREATE INDEX IF NOT EXISTS ix_task_env ON task USING gin (env jsonb_path_ops);
 --
 -- Status
 --
@@ -132,12 +120,6 @@ select
   tags                      as tags
   from (select * from task_def) td left outer join
     (select task_def_id,
-      array_to_json(
-        array_agg(json_build_object('name',name,'value',coalesce(value,'')))) as env
-          from task_def_environments group by task_def_id
-    ) tde
-  on td.definition_id = tde.task_def_id left outer join
-    (select task_def_id,
       array_to_json(array_agg(port))::TEXT as ports
         from task_def_ports group by task_def_id
     ) tdp
@@ -178,13 +160,7 @@ select
   coalesce(t.user,'')                        as "user",
   coalesce(t.task_type,'')                   as tasktype,
   env::TEXT                                  as env
-  from (select * from task) t left outer join
-    (select task_id,
-      array_to_json(
-        array_agg(json_build_object('name',name,'value',coalesce(value,'')))) as env
-          from task_environments group by task_id
-    ) te
-  on t.run_id = te.task_id
+from task t
 `
 
 //
