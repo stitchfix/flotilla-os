@@ -272,9 +272,17 @@ func (es *executionService) Terminate(runID string) error {
 		return err
 	}
 
+	// If it's been submitted, let the status update workers handle setting it to stopped
 	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
 		return es.ee.Terminate(run)
 	}
+
+	// If it's queued and not submitted, set status to stopped (checked by submit worker)
+	if run.Status == state.StatusQueued {
+		_, err = es.sm.UpdateRun(runID, state.Run{Status: state.StatusStopped})
+		return err
+	}
+
 	return exceptions.MalformedInput{
 		fmt.Sprintf(
 			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
