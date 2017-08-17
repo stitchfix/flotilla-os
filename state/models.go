@@ -109,7 +109,7 @@ type Definition struct {
 }
 
 var commandWrapper = `
-bash << _FLOTILLA_EOF
+bash << \_FLOTILLA_EOF
 set -x
 set -e
 {{.Command}}
