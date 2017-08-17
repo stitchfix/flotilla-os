@@ -3,9 +3,12 @@ package logs
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
 	"sort"
 	"strings"
@@ -109,6 +112,11 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 
 	result, err := cwl.logsClient.GetLogEvents(args)
 	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+				return "", nil, exceptions.MissingResource{err.Error()}
+			}
+		}
 		return "", nil, err
 	}
 
