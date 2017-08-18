@@ -113,6 +113,13 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+				// Fallback logic for legacy container names
+				if strings.HasPrefix(definition.ContainerName, definition.GroupName) {
+					definition.ContainerName = strings.Replace(
+						definition.ContainerName, fmt.Sprintf("%s-", definition.GroupName), "", -1)
+					return cwl.Logs(definition, run, lastSeen)
+				}
+
 				return "", nil, exceptions.MissingResource{err.Error()}
 			}
 		}
