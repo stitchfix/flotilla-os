@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS task (
   -- Refactor these --
 );
 
+CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_cluster_name ON task(cluster_name);
 CREATE INDEX IF NOT EXISTS ix_task_status ON task(status);
 CREATE INDEX IF NOT EXISTS ix_task_group_name ON task(group_name);
