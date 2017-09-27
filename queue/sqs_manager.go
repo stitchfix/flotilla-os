@@ -29,6 +29,10 @@ type sqsClient interface {
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
 }
 
+type sqsStatusUpdate struct {
+	Detail state.StatusUpdate `json:"detail"`
+}
+
 //
 // Name of queue manager - matches value in configuration
 //
@@ -124,6 +128,25 @@ func (qm *SQSManager) runFromMessage(message *sqs.Message) (state.Run, error) {
 	return run, err
 }
 
+func (qm *SQSManager) statusFromMessage(message *sqs.Message) (state.StatusUpdate, error) {
+	var statusUpdate state.StatusUpdate
+	if message == nil {
+		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from nil message")
+	}
+
+	body := message.Body
+	if body == nil {
+		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from empty message")
+	}
+
+	var deser sqsStatusUpdate
+	err := json.Unmarshal([]byte(*body), &deser)
+	if err != nil {
+		return statusUpdate, err
+	}
+	return deser.Detail, nil
+}
+
 //
 // Enqueue queues run
 //
@@ -152,9 +175,9 @@ func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 //
 // Receive receives a new run to operate on
 //
-func (qm *SQSManager) Receive(qURL string) (RunReceipt, error) {
+func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 	if len(qURL) == 0 {
-		fmt.Errorf("No queue url specified, can't enqueue")
+		fmt.Errorf("No queue url specified, can't dequeue")
 	}
 
 	maxMessages := int64(1)
@@ -178,6 +201,38 @@ func (qm *SQSManager) Receive(qURL string) (RunReceipt, error) {
 
 	run, err := qm.runFromMessage(response.Messages[0])
 	receipt.Run = &run
+	receipt.Done = func() error {
+		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
+	}
+	return receipt, err
+}
+
+func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
+	if len(qURL) == 0 {
+		fmt.Errorf("No queue url specified, can't dequeue")
+	}
+
+	maxMessages := int64(1)
+	visibilityTimeout := int64(45)
+	rmi := sqs.ReceiveMessageInput{
+		QueueUrl:            &qURL,
+		MaxNumberOfMessages: &maxMessages,
+		VisibilityTimeout:   &visibilityTimeout,
+	}
+
+	var err error
+	var receipt StatusReceipt
+	response, err := qm.qc.ReceiveMessage(&rmi)
+	if err != nil {
+		return receipt, err
+	}
+
+	if len(response.Messages) == 0 {
+		return receipt, nil
+	}
+
+	statusUpdate, err := qm.statusFromMessage(response.Messages[0])
+	receipt.StatusUpdate = &statusUpdate
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}

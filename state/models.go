@@ -366,3 +366,38 @@ type TagsList struct {
 	Tags  []string
 	Total int
 }
+
+//
+// StatusUpdate is a status update for a Run
+//
+type StatusUpdate struct {
+	TaskArn    string                `json:"taskArn"`
+	Version    *int                  `json:"version"`
+	LastStatus string                `json:"lastStatus"`
+	Overrides  StatusUpdateOverrides `json"overrides"`
+}
+
+// StatusUpdateOverrides
+type StatusUpdateOverrides struct {
+	ContainerOverrides []StatusUpdateContainerOverrides `json:"containerOverrides"`
+}
+
+// StatusUpdateContainerOverrides
+type StatusUpdateContainerOverrides struct {
+	Environment []EnvVar `json:"environment"`
+}
+
+//
+// GetEnvVar gets the named env var from the -first- container override
+//
+func (su StatusUpdate) GetEnvVar(name string) (string, error) {
+	if len(su.Overrides.ContainerOverrides) == 0 {
+		return "", fmt.Errorf("No container override to fetch var [%s] from", name)
+	}
+	for _, ev := range su.Overrides.ContainerOverrides[0].Environment {
+		if ev.Name == name {
+			return ev.Value, nil
+		}
+	}
+	return "", fmt.Errorf("No var [%s] found", name)
+}
