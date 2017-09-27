@@ -2,7 +2,7 @@ package log
 
 import (
 	"errors"
-	"github.com/stitchfix/httpclient"
+	"github.com/stitchfix/flotilla-os/clients/httpclient"
 	"time"
 )
 
@@ -37,6 +37,7 @@ type HTTPEvent struct {
 //
 func NewHTTPSink(host string, path string, method string) HTTPEventSink {
 	return HTTPEventSink{
+
 		path, method, httpclient.Client{Host: host},
 	}
 }
