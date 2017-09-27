@@ -1,0 +1,40 @@
+$spacing: 12px;
+$view-spacing: $spacing * 2;
+$max-width: 1400px;
+$breakpoint-mid: 900px;
+
+$header-height: 64px;
+$distance-from-content-to-header: $spacing * 2;
+$orange: #d6ae49;
+$color-primary: $teal-bright;
+$color-error: $red;
+$color-muted: $teal-muted;
+$color-active: $teal-bright;
+
+$default-font-family: -apple-system,BlinkMacSystemFont,"Roboto",Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;
+$font-size: 14px;
+$font-size-large: 1.25rem;
+$font-size-small: 0.9rem;
+.text-large { font-size: $font-size-large; }
+$font-spacing: 0.02rem;
+$font-color: $white;
+$font-color-darker: $gray;
+
+$default-bg: $black2;
+$default-border-color: $black5;
+$default-border: 1px solid $default-border-color;
+
+%disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+%active {
+  background: $black3;
+  color: $color-active;
+}
+%code,
+.code {
+  font-family: 'Source Code Pro';
+  font-size: $font-size;
+  font-weight: bold !important;
+}

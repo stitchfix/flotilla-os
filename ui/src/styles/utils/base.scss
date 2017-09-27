@@ -1,0 +1,24 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  font-size: $font-size;
+}
+body {
+  background: $default-bg;
+  font-size: 1rem;
+  letter-spacing: $font-spacing;
+  color: $font-color;
+  font-family: $default-font-family;
+}
+
+// Misc
+.react-json-view {
+  font-family: 'Source Code Pro' !important;
+  white-space: pre-wrap !important;
+  font-size: 0.9rem !important;
+  word-break: break-all !important;
+  font-weight: lighter !important;
+}

@@ -1,0 +1,59 @@
+.app-root {
+  min-height: calc(100vh - #{$header-height});
+}
+.view-container {
+  @include flex(row, nowrap, center, center);
+  margin-top: $header-height;
+  .view {
+    width: 100%;
+    max-width: $max-width;
+    padding: 0 $view-spacing;
+  }
+}
+.layout-standard {
+  width: 100%;
+  margin-top: $distance-from-content-to-header;
+}
+.layout-detail {
+  $sidebar-width: 550px;
+  @include flex(row, nowrap, flex-start, stretch);
+  width: 100%;
+  .layout-detail-sidebar {
+    width: $sidebar-width;
+    &::-webkit-scrollbar { width: 0 !important }
+    @media (max-width: $max-width) and (min-width: $breakpoint-mid) {
+      right: $view-spacing;
+    }
+    & > :first-child {
+      margin-top: $distance-from-content-to-header;
+    }
+  }
+  .layout-detail-content {
+    flex: 1;
+    margin-top: $distance-from-content-to-header;
+    @include flex(column, nowrap, flex-start, stretch);
+    height: 100%;
+  }
+  &.sidebar-left {
+    .layout-detail-content {
+      margin-left: $spacing * 2;
+    }
+  }
+  &.sidebar-right {
+    .layout-detail-content {
+      margin-right: $spacing * 2;
+    }
+  }
+  @media (max-width: $breakpoint-mid) {
+    @include flex(column, nowrap, flex-start, flex-start);
+    .layout-detail-sidebar {
+      position: static;
+      width: 100%;
+    }
+    .layout-detail-content {
+      width: 100%;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+  }
+}

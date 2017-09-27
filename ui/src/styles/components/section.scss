@@ -1,0 +1,25 @@
+$section-container-bg: $default-bg;
+$section-container-border: $default-border;
+$section-header-bg: $black3;
+$section-header-height: 50px;
+
+.section-container {
+  background: $section-container-bg;
+  border: $section-container-border;
+  margin-bottom: ($spacing * 2);
+  flex: 1;
+  .section-header {
+    @include flex(row, nowrap, space-between, center);
+    height: $section-header-height;
+    padding: $spacing;
+    border-bottom: $default-border;
+    background: $section-header-bg;
+    .section-header-text {
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+  }
+  .section-content {
+    padding: $spacing;
+  }
+}

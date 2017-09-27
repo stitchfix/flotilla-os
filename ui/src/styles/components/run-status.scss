@@ -1,0 +1,35 @@
+.run-status-text-container {
+  $height: 28px;
+  @include flex(row, nowrap, flex-start, center);
+  .run-status-text {
+    margin-right: $spacing / 2;
+  }
+  .run-status-icon > svg {
+    transform: translateY(2px);
+  }
+  &.failed {
+    .run-status-icon {
+      color: $color-error;
+    }
+  }
+  &.running {
+    .run-status-icon {
+      color: $white;
+    }
+  }
+  &.pending {
+    .run-status-icon {
+      color: yellow;
+    }
+  }
+  &.queued {
+    .run-status-icon {
+      color: $gray2;
+    }
+  }
+  &.success {
+    .run-status-icon {
+      color: $green;
+    }
+  }
+}

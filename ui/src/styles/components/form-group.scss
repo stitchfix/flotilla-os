@@ -1,0 +1,67 @@
+$form-container-width: 600px;
+$static-font-color: $color-muted;
+
+.form-container {
+  max-width: $form-container-width;
+  width: 100%;
+  margin-bottom: $spacing * 2;
+}
+
+.form-group {
+  @include flex(column, nowrap, flex-start, flex-start);
+  border-bottom: $default-border;
+  font-size: $font-size !important;
+  padding: $spacing;
+  .form-group-content {
+    width: 100%;
+  }
+  .form-group-static {
+    display: flex;
+    color: $static-font-color;
+    font-size: 1.125rem;
+  }
+  .form-group-error {
+    color: $color-error;
+    margin-top: ($spacing / 2);
+  }
+  &.horizontal {
+    width: 100%;
+    .form-group-content {
+      @include flex(row, nowrap, flex-start, flex-start);
+      .form-group-label {
+        @include flex(row, nowrap, flex-start, center);
+        flex: 2.4;
+        text-transform: uppercase;
+        font-weight: 500;
+        word-break: break-all;
+      }
+      .form-group-input,
+      .form-group-static {
+        @include flex(row, nowrap, flex-start, center);
+        padding-left: 4px;
+        flex: 4;
+        word-break: break-all;
+      }
+    }
+  }
+  &.vertical {
+    @include flex(column, nowrap, flex-start, flex-start);
+    width: 100%;
+    .form-group-label {
+      text-transform: uppercase;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: $spacing / 2;
+    }
+    .form-group-input {
+      width: 100%;
+      &.has-error {
+        .input,
+        .textarea,
+        .Select-control {
+          // border-color: $red !important;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+h1,h2,h3,h4,h5,h6 {
+  font-weight: 400;
+}
+pre {
+  font-family: 'Source Code Pro';
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+a {
+  text-decoration: underline;
+  cursor: pointer;
+  color: inherit;
+  transition-duration: 0.02s;
+  &:visited {
+    color: inherit;
+  }
+  &:hover {
+    color: $color-active;
+  }
+}
+a:hover .stitchfix-logo path {
+  fill: $color-active;
+}
+code,.code,.monospace,pre {
+  font-family: 'Source Code Pro';
+}
+.text-secondary {
+  font-size: $font-size-small;
+  color: $font-color-darker;
+}

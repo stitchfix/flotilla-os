@@ -1,0 +1,5 @@
+.error-view {
+  @include flex(column, nowrap, flex-start, stretch);
+  width: 100%;
+  margin-top: $spacing;
+}

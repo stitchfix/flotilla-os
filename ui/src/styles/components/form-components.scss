@@ -1,0 +1,82 @@
+$form-component-height: 38px;
+$form-component-bg: $black3;
+$form-component-border: 2px solid $black4;
+$form-component-border-radius: 4px;
+$form-component-color: $white;
+$form-component-font-size: $font-size;
+$form-component-placeholder-color: $gray;
+$textarea-height: 120px;
+
+input.input,
+select.input {
+  height: $form-component-height;
+  background: $form-component-bg;
+  border: $form-component-border;
+  border-radius: $form-component-border-radius;
+  padding: 0 $spacing;
+  font-size: $form-component-font-size;
+  width: 100%;
+  color: $form-component-color;
+  &::placeholder {
+    color: $form-component-placeholder-color;
+  }
+}
+textarea.textarea {
+  background: $form-component-bg;
+  height: $textarea-height;
+  border: $form-component-border;
+  border-radius: $form-component-border-radius;
+  padding: $spacing;
+  font-size: $form-component-font-size;
+  width: 100%;
+  color: $form-component-color;
+  &::placeholder {
+    color: $form-component-placeholder-color;
+  }
+}
+.Select-control {
+  background: $form-component-bg !important;
+  color: $form-component-color !important;
+  border: $form-component-border !important;
+  height: $form-component-height !important;
+  & * {
+    color: $form-component-color !important;
+  }
+}
+.Select--multi > .Select-control {
+  .Select-value {
+    // @include flex(row, nowrap, flex-start, center);
+    background: $black4 !important;
+    flex-grow: 0 !important;
+    padding: 0 !important;
+    // border-radius: 8px !important;
+    border-color: $default-border-color !important;
+    .Select-value-icon {
+      background: $red !important;
+      color: $white !important;
+      &:hover {
+        background: $white !important;
+        color: $red !important;
+      }
+    }
+    .Select-value-label {
+      padding: 0 8px !important;
+    }
+    & * {
+      color: $font-color-darker !important;
+      border-color: $default-border-color !important;
+    }
+  }
+}
+.Select-menu-outer {
+  background: $black3 !important;
+  border: $form-component-border !important;
+}
+.Select-option {
+  color: $font-color !important;
+  background: transparent !important;
+  &.is-focused {
+    background: $teal-muted !important;
+    color: $black3 !important;
+  }
+}

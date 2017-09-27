@@ -1,0 +1,24 @@
+$app-header-bg: $black3;
+$app-header-border-bottom: $default-border;
+$app-header-shadow: 0px 7px 14px 0px rgba(55,64,71,0.25);
+$z-index-app-header: 5000;
+
+.app-header-container {
+  @include flex(row, nowrap, center, center);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-bottom: $app-header-border-bottom;
+  height: $header-height;
+  background: $app-header-bg;
+  z-index: $z-index-app-header;
+  box-shadow: $app-header-shadow;
+  .app-header {
+    @include flex(row, nowrap, space-between, center);
+    width: 100%;
+    max-width: $max-width;
+    height: 100%;
+    padding: 0 $view-spacing;
+  }
+}

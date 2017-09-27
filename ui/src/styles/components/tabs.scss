@@ -1,0 +1,21 @@
+.tab-container {
+  width: 100%;
+  .tab-container-list {
+    @include flex(row, nowrap, flex-start, center);
+    height: $spacing * 4;
+    .tab-container-list-element {
+      @include flex(row, nowrap, center, center);
+      height: 100%;
+      padding: 0 $spacing;
+      border-bottom: 4px solid transparent;
+      text-decoration: none !important;
+      &.active {
+        color: $color-active;
+        border-bottom-color: $color-active;
+      }
+    }
+  }
+  .tab-container-content {
+
+  }
+}

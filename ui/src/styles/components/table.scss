@@ -1,0 +1,84 @@
+$table-bg: $default-bg;
+$tr-top-border: $default-border;
+// TODO: fix these
+$tr-bg-color: $table-bg;
+$tr-even-bg-color: $table-bg;
+$tr-odd-bg-color: $table-bg;
+$tr-hover-bg-color: $table-bg;
+$tr-height: 48px;
+
+%table-cell-base {
+  @include flex(row, nowrap, flex-start, center);
+  flex: 1;
+  height: $tr-height;
+  min-width: 0;
+  overflow: hidden;
+  overflow: hidden;
+  padding: 0 $spacing;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: $font-color-darker;
+}
+
+.table {
+  .tbody {
+    .tr { border-top: $tr-top-border; }
+  }
+  .tr {
+    @include flex(row, nowrap, flex-start, center);
+    width: 100%;
+    text-decoration: none !important;
+  }
+  .th {
+    @extend %table-cell-base;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 500;
+    &.is-sortable {
+      cursor: pointer;
+      &:hover {
+        @extend %active;
+      }
+    }
+    &.active {
+      @extend %active;
+      &.asc:after {
+        content: '▲';
+        margin-left: 4px;
+        font-size: 0.6rem;
+      }
+      &.desc:after {
+        content: '▼';
+        margin-left: 4px;
+        font-size: 0.6rem;
+      }
+    }
+  }
+  .td {
+    @extend %table-cell-base;
+  }
+  &.striped {
+    .tbody {
+      .tr {
+        &:nth-child(even) {
+          background: $tr-even-bg-color;
+        }
+        &:nth-child(odd) {
+          background: $tr-odd-bg-color;
+        }
+      }
+    }
+  }
+  &.hoverable {
+    .tbody {
+      .tr {
+        cursor: pointer;
+        &:hover {
+          @extend %active;
+          .td { @extend %active; }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+.run-logs-container {
+  position: relative;
+  height: 100%;
+  min-height: calc(100vh - #{$header-height} - #{$distance-from-content-to-header} - #{$distance-from-content-to-header} - 95px);
+  .run-logs {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(100% - (#{$spacing} * 5));
+    background: $default-bg;
+    color: $font-color;
+    overflow-y: scroll;
+    padding: $spacing;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    div {
+      margin: 6px 0;
+    }
+  }
+}
+.run-status {
+  @include flex(row, nowrap, flex-start, center);
+  & > * {
+    flex: 1;
+  }
+}
