@@ -40,7 +40,12 @@ func NewWorker(
 			log:  log,
 		}, nil
 	case "status":
-		return &statusWorker{}, nil
+		return &statusWorker{
+			sm:   sm,
+			qm:   qm,
+			conf: conf,
+			log:  log,
+		}, nil
 	case "reassign":
 		return &reassignWorker{}, nil
 	default:
