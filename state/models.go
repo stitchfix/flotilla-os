@@ -435,14 +435,14 @@ type StatusUpdateContainerOverrides struct {
 //
 // GetEnvVar gets the named env var from the -first- container override
 //
-func (su StatusUpdate) GetEnvVar(name string) (string, error) {
+func (su StatusUpdate) GetEnvVar(name string) (string, bool) {
 	if len(su.Overrides.ContainerOverrides) == 0 {
-		return "", fmt.Errorf("No container override to fetch var [%s] from", name)
+		return "", false
 	}
 	for _, ev := range su.Overrides.ContainerOverrides[0].Environment {
 		if ev.Name == name {
-			return ev.Value, nil
+			return ev.Value, true
 		}
 	}
-	return "", fmt.Errorf("No var [%s] found", name)
+	return "", false
 }

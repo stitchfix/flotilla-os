@@ -123,7 +123,7 @@ func (es *executionService) Create(
 	}
 
 	// Get qurl
-	qurl, err := es.qm.QurlFor(run.ClusterName)
+	qurl, err := es.qm.QurlFor(run.ClusterName, true)
 	if err != nil {
 		return run, err
 	}

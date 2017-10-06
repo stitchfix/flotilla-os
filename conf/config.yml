@@ -15,6 +15,7 @@ execution_engine: ecs
 enabled_workers:
   - retry
   - submit
+  - status
 
 
 # Log namespace

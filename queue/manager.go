@@ -11,7 +11,7 @@ import (
 //
 type Manager interface {
 	Name() string
-	QurlFor(name string) (string, error)
+	QurlFor(name string, prefixed bool) (string, error)
 	Initialize(config.Config) error
 	Enqueue(qURL string, run state.Run) error
 	ReceiveRun(qURL string) (RunReceipt, error)

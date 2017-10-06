@@ -29,7 +29,7 @@ func (sw *statusWorker) Run() {
 	statusQueue := sw.conf.GetString("queue.status")
 	sw.log.Log("message", fmt.Sprintf("using status queue [%s]", statusQueue))
 
-	qurl, err := sw.qm.QurlFor(statusQueue)
+	qurl, err := sw.qm.QurlFor(statusQueue, false)
 	if err != nil {
 		sw.log.Log("message", "unable to start status worker, no qurl found", "error", err.Error())
 	} else {
@@ -54,25 +54,32 @@ func (sw *statusWorker) runOnce(statusQurl string) {
 		// Relies on the reserved env var, FLOTILLA_SERVER_MODE to ensure update
 		// belongs to -this- mode of Flotilla
 		//
-		serverMode, _ := update.GetEnvVar("FLOTILLA_SERVER_MODE")
-		if serverMode != sw.conf.GetString("flotilla_mode") {
-			return
+		serverMode, ok := update.GetEnvVar("FLOTILLA_SERVER_MODE")
+		shouldProcess := ok && serverMode == sw.conf.GetString("flotilla_mode")
+		if shouldProcess {
+			run, err := sw.findRun(update.TaskArn)
+			if err != nil {
+				sw.log.Log("message", "unable to find run to apply update to", "error", err.Error())
+				return
+			}
+
+			run.UpdateStatus(update)
+			_, err = sw.sm.UpdateRun(run.RunID, run)
+			if err != nil {
+				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", err.Error())
+				return
+			}
 		}
 
-		run, err := sw.findRun(update.TaskArn)
-		if err != nil {
-			sw.log.Log("message", "unable to find run to apply update to", "error", err.Error())
-			return
+		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
+		if err = statusReceipt.Done(); err != nil {
+			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", err.Error())
 		}
-
-		run.UpdateStatus(update)
-		// adapt
-		sw.sm.UpdateRun(run.RunID, run)
 	}
 }
 
 func (sw *statusWorker) findRun(taskArn string) (state.Run, error) {
-	runs, err := sw.sm.ListRuns(1, 0, "created_at", "asc", map[string]string{
+	runs, err := sw.sm.ListRuns(1, 0, "started_at", "asc", map[string]string{
 		"task_arn": taskArn,
 	}, nil)
 	if err != nil {

@@ -78,12 +78,15 @@ func (qm *SQSManager) Initialize(conf config.Config) error {
 // QurlFor returns the queue url that corresponds to the given name
 // * if the queue does not exist it is created
 //
-func (qm *SQSManager) QurlFor(name string) (string, error) {
-	return qm.getOrCreateQueue(name)
+func (qm *SQSManager) QurlFor(name string, prefixed bool) (string, error) {
+	return qm.getOrCreateQueue(name, prefixed)
 }
 
-func (qm *SQSManager) getOrCreateQueue(name string) (string, error) {
-	qname := fmt.Sprintf("%s-%s", qm.namespace, name)
+func (qm *SQSManager) getOrCreateQueue(name string, prefixed bool) (string, error) {
+	qname := name
+	if prefixed {
+		qname = fmt.Sprintf("%s-%s", qm.namespace, name)
+	}
 	res, err := qm.qc.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: &qname,
 	})
@@ -176,8 +179,10 @@ func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 // Receive receives a new run to operate on
 //
 func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
+	var receipt RunReceipt
+
 	if len(qURL) == 0 {
-		fmt.Errorf("No queue url specified, can't dequeue")
+		return receipt, fmt.Errorf("No queue url specified, can't dequeue")
 	}
 
 	maxMessages := int64(1)
@@ -189,7 +194,7 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 	}
 
 	var err error
-	var receipt RunReceipt
+
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
 		return receipt, err
@@ -208,8 +213,10 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 }
 
 func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
+	var receipt StatusReceipt
+
 	if len(qURL) == 0 {
-		fmt.Errorf("No queue url specified, can't dequeue")
+		return receipt, fmt.Errorf("No queue url specified, can't dequeue")
 	}
 
 	maxMessages := int64(1)
@@ -221,7 +228,7 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 	}
 
 	var err error
-	var receipt StatusReceipt
+
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
 		return receipt, err

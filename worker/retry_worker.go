@@ -46,7 +46,7 @@ func (rw *retryWorker) runOnce() {
 	}
 
 	for _, run := range runList.Runs {
-		qurl, err := rw.qm.QurlFor(run.ClusterName)
+		qurl, err := rw.qm.QurlFor(run.ClusterName, true)
 
 		if err != nil {
 			rw.log.Log("message", "Error getting QurlFor cluster", "cluster", run.ClusterName, "error", err.Error())
