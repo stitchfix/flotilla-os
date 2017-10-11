@@ -196,7 +196,7 @@ func TestSQSManager_QurlFor(t *testing.T) {
 	expectedCalls := map[string]bool{
 		"GetQueueUrl": true,
 	}
-	qm.QurlFor("cupcake")
+	qm.QurlFor("cupcake", true)
 
 	if len(testClient.calls) != len(expectedCalls) {
 		t.Errorf(
@@ -218,7 +218,7 @@ func TestSQSManager_QurlFor(t *testing.T) {
 		"GetQueueUrl": true,
 		"CreateQueue": true,
 	}
-	qm.QurlFor("nope")
+	qm.QurlFor("nope", true)
 
 	if len(testClient.calls) != len(expectedCalls) {
 		t.Errorf(
@@ -244,9 +244,9 @@ func TestSQSManager_ReceiveStatus(t *testing.T) {
 	qm := setUp(t)
 	receipt, _ := qm.ReceiveStatus("statusQ")
 
-	srvMode, err := receipt.StatusUpdate.GetEnvVar("FLOTILLA_SERVER_MODE")
-	if err != nil {
-		t.Error(err)
+	srvMode, ok := receipt.StatusUpdate.GetEnvVar("FLOTILLA_SERVER_MODE")
+	if !ok {
+		t.Errorf("Expected FLOTILLA_SERVER_MODE to exist in environment")
 	}
 
 	if srvMode != "prod" {

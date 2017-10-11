@@ -1,0 +1,165 @@
+package worker
+
+import (
+	gklog "github.com/go-kit/kit/log"
+	"github.com/stitchfix/flotilla-os/config"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/testutils"
+	"os"
+	"testing"
+)
+
+func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAllTheThings) {
+	confDir := "../conf"
+	c, _ := config.NewConfig(&confDir)
+
+	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	logger := flotillaLog.NewLogger(l, nil)
+	run := state.Run{
+		RunID:  "somerun",
+		Status: state.StatusPending,
+	}
+	imp := testutils.ImplementsAllTheThings{
+		T: t,
+		Qurls: map[string]string{
+			"A": "a/",
+		},
+		Runs: map[string]state.Run{
+			"somerun": run,
+		},
+		StatusUpdates: []testutils.MockStatusUpdate{
+			{
+				TaskArn:    "status1",
+				ServerMode: "test",
+				LastStatus: state.StatusRunning,
+			},
+			{
+				TaskArn:    "status1",
+				ServerMode: "test",
+				LastStatus: state.StatusPending,
+			},
+			{
+				TaskArn:    "status1",
+				ServerMode: "test",
+				LastStatus: state.StatusStopped,
+			},
+		},
+	}
+	return &statusWorker{
+		sm:   &imp,
+		qm:   &imp,
+		log:  logger,
+		conf: c,
+	}, &imp
+}
+
+func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsAllTheThings) {
+	confDir := "../conf"
+	c, _ := config.NewConfig(&confDir)
+
+	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	logger := flotillaLog.NewLogger(l, nil)
+	run := state.Run{
+		RunID:  "somerun",
+		Status: state.StatusPending,
+	}
+	imp := testutils.ImplementsAllTheThings{
+		T: t,
+		Qurls: map[string]string{
+			"A": "a/",
+		},
+		Runs: map[string]state.Run{
+			"somerun": run,
+		},
+		StatusUpdates: []testutils.MockStatusUpdate{
+			{
+				TaskArn:    "nope1",
+				ServerMode: "prod",
+				LastStatus: state.StatusStopped,
+			},
+			{
+				TaskArn:    "nope2",
+				ServerMode: "staging",
+				LastStatus: state.StatusStopped,
+			},
+			{
+				TaskArn:    "status1",
+				ServerMode: "test",
+				LastStatus: state.StatusRunning,
+			},
+		},
+	}
+	return &statusWorker{
+		sm:   &imp,
+		qm:   &imp,
+		log:  logger,
+		conf: c,
+	}, &imp
+}
+func TestStatusWorker_Run(t *testing.T) {
+	// 1. With a valid status update, run should go from PENDING to RUNNING
+	// 2. With a valid status update that is out of order, run status stays the same
+	//    eg. RUNNING does *not* transition back to PENDING
+	worker, imp := setUpStatusWorkerTest(t)
+
+	worker.runOnce("statusqurl")
+
+	expected := []string{"ReceiveStatus", "ListRuns", "UpdateRun", "StatusReceipt.Done"}
+	if len(imp.Calls) != len(expected) {
+		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
+	}
+
+	run, _ := imp.GetRun("somerun")
+	if run.Status != state.StatusRunning {
+		t.Errorf("Expected run to have updated status: %s but was %s", state.StatusRunning, run.Status)
+	}
+
+	worker.runOnce("statusqurl")
+	run, _ = imp.GetRun("somerun")
+	if run.Status != state.StatusRunning {
+		t.Errorf("Expected run to have same status: %s, but was %s", state.StatusRunning, run.Status)
+	}
+
+	worker.runOnce("statusqurl")
+	run, _ = imp.GetRun("somerun")
+	if run.Status != state.StatusStopped {
+		t.Errorf("Expected run to have updated status: %s, but was %s", state.StatusStopped, run.Status)
+	}
+}
+
+func TestStatusWorker_Run2(t *testing.T) {
+	//
+	// Ignore and ack status updates that don't belong to us
+	//
+	worker, imp := setUpStatusWorkerTest2(t)
+
+	//
+	// The first iterations correspond to the first two mock status updates which
+	// don't belong to the test mode and should be ignored and acked
+	//
+	expected := []string{"ReceiveStatus", "StatusReceipt.Done"}
+	worker.runOnce("statusqurl")
+
+	if len(imp.Calls) != len(expected) {
+		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
+	}
+
+	imp.Calls = []string{}
+	worker.runOnce("statusqurl")
+	if len(imp.Calls) != len(expected) {
+		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
+	}
+
+	imp.Calls = []string{}
+	expected = []string{"ReceiveStatus", "ListRuns", "UpdateRun", "StatusReceipt.Done"}
+	worker.runOnce("statusqurl")
+	if len(imp.Calls) != len(expected) {
+		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
+	}
+
+	run, _ := imp.GetRun("somerun")
+	if run.Status != state.StatusRunning {
+		t.Errorf("Expected run to have updated status: %s but was %s", state.StatusRunning, run.Status)
+	}
+}

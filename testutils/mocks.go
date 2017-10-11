@@ -20,11 +20,17 @@ type ImplementsAllTheThings struct {
 	Qurls                   map[string]string           // Urls returned by Queue Manager
 	Defined                 []string                    // List of defined definitions (Execution Engine)
 	Queued                  []string                    // List of queued runs (Queue Manager)
-	StatusUpdates           []string                    //List of queued status updates (Queue Manager)
+	StatusUpdates           []MockStatusUpdate          //List of queued status updates (Queue Manager)
 	ExecuteError            error                       // Execution Engine - error to return
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+}
+
+type MockStatusUpdate struct {
+	TaskArn    string
+	ServerMode string
+	LastStatus string
 }
 
 // Name - general
@@ -144,7 +150,7 @@ func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string
 }
 
 // QurlFor - QueueManager
-func (iatt *ImplementsAllTheThings) QurlFor(name string) (string, error) {
+func (iatt *ImplementsAllTheThings) QurlFor(name string, prefixed bool) (string, error) {
 	iatt.Calls = append(iatt.Calls, "QurlFor")
 	qurl, _ := iatt.Qurls[name]
 	return qurl, nil
@@ -185,8 +191,26 @@ func (iatt *ImplementsAllTheThings) ReceiveStatus(qURL string) (queue.StatusRece
 
 	popped := iatt.StatusUpdates[0]
 	iatt.StatusUpdates = iatt.StatusUpdates[1:]
+
+	su := state.StatusUpdate{
+		TaskArn:    popped.TaskArn,
+		LastStatus: popped.LastStatus,
+		Overrides: state.StatusUpdateOverrides{
+			ContainerOverrides: []state.StatusUpdateContainerOverrides{
+				{
+					Environment: []state.EnvVar{
+						{
+							Name:  "FLOTILLA_SERVER_MODE",
+							Value: popped.ServerMode,
+						},
+					},
+				},
+			},
+		},
+	}
+
 	receipt := queue.StatusReceipt{
-		StatusUpdate: &state.StatusUpdate{TaskArn: popped},
+		StatusUpdate: &su,
 	}
 	receipt.Done = func() error {
 		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")

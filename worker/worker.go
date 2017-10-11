@@ -46,8 +46,6 @@ func NewWorker(
 			conf: conf,
 			log:  log,
 		}, nil
-	case "reassign":
-		return &reassignWorker{}, nil
 	default:
 		return nil, fmt.Errorf("No workerType %s exists", workerType)
 	}
