@@ -1,6 +1,8 @@
 package log
 
 import (
+	"os"
+	"log"
 	"errors"
 	"github.com/stitchfix/flotilla-os/clients/httpclient"
 	"time"
@@ -11,6 +13,26 @@ import (
 //
 type EventSink interface {
 	Receive(keyvals ...interface{}) error
+}
+
+//
+// LocalEventSink - an implementation of EventSink that 
+// simply logs events to os.Stderr.
+//
+type LocalEventSink struct {
+	logger *log.Logger 
+}
+
+func NewLocalEventSink() *LocalEventSink {
+	logger := log.New(os.Stderr, "[LocalEventSink] ", 
+					log.Ldate | log.Ltime | log.Lshortfile)
+
+	return &LocalEventSink{logger}
+}
+
+func (localSink *LocalEventSink) Receive(keyvals ...interface{}) error {
+	log.Printf("\n%v\n", keyvals)
+	return nil
 }
 
 //

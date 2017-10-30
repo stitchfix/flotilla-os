@@ -28,7 +28,8 @@ func main() {
 	// Use go-kit for structured logging
 	//
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
-	logger := flotillaLog.NewLogger(l, nil)
+	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
+	logger := flotillaLog.NewLogger(l, eventSinks)
 
 	//
 	// Wrap viper for configuration
