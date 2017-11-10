@@ -213,6 +213,33 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 	}
 }
 
+func TestSQLStateManager_GetDefinitionByAlias(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	dE, _ := sm.GetDefinitionByAlias("aliasE")
+	if dE.DefinitionID != "E" {
+		t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
+	}
+
+	if dE.Env != nil {
+		t.Errorf("Expected empty environment but got %s", *dE.Env)
+	}
+
+	if len(*dE.Ports) != 2 {
+		t.Errorf("Expected 2 ports but got %v", *dE.Ports)
+	}
+
+	if dE.Tags != nil {
+		t.Errorf("Expected empty tags but got %s", *dE.Tags)
+	}
+
+	_, err := sm.GetDefinitionByAlias("aliasZ")
+	if err == nil {
+		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
+	}
+}
+
 func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
