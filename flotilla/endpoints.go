@@ -157,6 +157,16 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	definition, err := ep.definitionService.GetByAlias(vars["alias"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, definition)
+	}
+}
+
 func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)

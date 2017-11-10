@@ -18,6 +18,7 @@ type Manager interface {
 		order string, filters map[string]string,
 		envFilters map[string]string) (DefinitionList, error)
 	GetDefinition(definitionID string) (Definition, error)
+	GetDefinitionByAlias(alias string) (Definition, error)
 	UpdateDefinition(definitionID string, updates Definition) (Definition, error)
 	CreateDefinition(d Definition) error
 	DeleteDefinition(definitionID string) error
