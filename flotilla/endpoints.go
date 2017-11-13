@@ -3,14 +3,15 @@ package flotilla
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/stitchfix/flotilla-os/exceptions"
-	"github.com/stitchfix/flotilla-os/services"
-	"github.com/stitchfix/flotilla-os/state"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/stitchfix/flotilla-os/exceptions"
+	"github.com/stitchfix/flotilla-os/services"
+	"github.com/stitchfix/flotilla-os/state"
 )
 
 type endpoints struct {
@@ -38,6 +39,9 @@ type launchRequestV2 struct {
 	*launchRequest
 }
 
+//
+// RunTags represents which user is responsible for a task run
+//
 type RunTags struct {
 	OwnerEmail string `json:"owner_email"`
 	TeamName   string `json:"team_name"`
@@ -48,9 +52,8 @@ func (ep *endpoints) getURLParam(v url.Values, key string, defaultValue string) 
 	val, ok := v[key]
 	if ok && len(val) > 0 {
 		return val[0]
-	} else {
-		return defaultValue
 	}
+	return defaultValue
 }
 
 func (ep *endpoints) getFilters(params url.Values, nonFilters map[string]bool) (map[string]string, map[string]string) {
@@ -150,6 +153,16 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	definition, err := ep.definitionService.Get(vars["definition_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, definition)
+	}
+}
+
+func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	definition, err := ep.definitionService.GetByAlias(vars["alias"])
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -267,7 +280,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 	if len(lr.RunTags.OwnerEmail) == 0 || len(lr.RunTags.TeamName) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
-			fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
+			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
 		return
 	}
 
@@ -290,12 +303,35 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
-			fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
+			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
 		return
 	}
 
 	vars := mux.Vars(r)
 	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
+func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
+	var lr launchRequestV2
+	err := ep.decodeRequest(r, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	if len(lr.RunTags.OwnerID) == 0 {
+		ep.encodeError(w, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
+		return
+	}
+
+	vars := mux.Vars(r)
+	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {

@@ -143,6 +143,20 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 }
 
 //
+// GetDefinitionByAlias returns a single definition by id
+//
+func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error) {
+	var err error
+	var definition Definition
+	err = sm.db.Get(&definition, GetDefinitionByAliasSQL, alias)
+	if err != nil && err == sql.ErrNoRows {
+		return definition, exceptions.MissingResource{
+			fmt.Sprintf("Definition with alias %s not found", alias)}
+	}
+	return definition, err
+}
+
+//
 // UpdateDefinition updates a definition
 // - updates can be partial
 //

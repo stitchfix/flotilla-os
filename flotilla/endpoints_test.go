@@ -3,13 +3,14 @@ package flotilla
 import (
 	"bytes"
 	"encoding/json"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
-	"net/http/httptest"
-	"testing"
 )
 
 func setUp(t *testing.T) *mux.Router {
@@ -18,9 +19,9 @@ func setUp(t *testing.T) *mux.Router {
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
 		Definitions: map[string]state.Definition{
-			"A": {DefinitionID: "A"},
-			"B": {DefinitionID: "B"},
-			"C": {DefinitionID: "C", Image: "invalidimage"},
+			"A": {DefinitionID: "A", Alias: "aliasA"},
+			"B": {DefinitionID: "B", Alias: "aliasB"},
+			"C": {DefinitionID: "C", Alias: "aliasC", Image: "invalidimage"},
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A",
@@ -214,6 +215,44 @@ func TestEndpoints_CreateRun4(t *testing.T) {
 	}
 }
 
+func TestEndpoints_CreateRunByAlias(t *testing.T) {
+	router := setUp(t)
+
+	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}}`
+	req := httptest.NewRequest("PUT", "/api/v1/task/alias/aliasA/execute", bytes.NewBufferString(newRun))
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	r := state.Run{}
+	err := json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if len(r.RunID) == 0 {
+		t.Errorf("Expected non-empty run id")
+	}
+
+	if r.Status != state.StatusQueued {
+		t.Errorf("Expected new run to have status [%s] but was [%s]", state.StatusQueued, r.Status)
+	}
+
+	if r.User != "flotilla" {
+		t.Errorf("Expected new run to have user set to run_tags.owner_id but was [%s]", r.User)
+	}
+}
+
 func TestEndpoints_DeleteDefinition(t *testing.T) {
 	router := setUp(t)
 
@@ -245,6 +284,38 @@ func TestEndpoints_GetDefinition(t *testing.T) {
 	router := setUp(t)
 
 	req := httptest.NewRequest("GET", "/api/v1/task/A", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var r state.Definition
+	err := json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if r.DefinitionID != "A" {
+		t.Errorf("Expected definition_id [A] but was [%s]", r.DefinitionID)
+	}
+
+	if r.Env == nil {
+		t.Errorf("Expected non-nil environment")
+	}
+}
+
+func TestEndpoints_GetDefinitionByAlias(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("GET", "/api/v1/task/alias/aliasA", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)

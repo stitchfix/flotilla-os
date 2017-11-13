@@ -17,6 +17,7 @@ import (
 type DefinitionService interface {
 	Create(definition *state.Definition) (state.Definition, error)
 	Get(definitionID string) (state.Definition, error)
+	GetByAlias(alias string) (state.Definition, error)
 	List(limit int, offset int, sortBy string,
 		order string, filters map[string]string,
 		envFilters map[string]string) (state.DefinitionList, error)
@@ -97,6 +98,10 @@ func (ds *definitionService) aliasExists(alias string) (bool, error) {
 //
 func (ds *definitionService) Get(definitionID string) (state.Definition, error) {
 	return ds.sm.GetDefinition(definitionID)
+}
+
+func (ds *definitionService) GetByAlias(alias string) (state.Definition, error) {
+	return ds.sm.GetDefinitionByAlias(alias)
 }
 
 // List lists definitions

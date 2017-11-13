@@ -1,13 +1,14 @@
 package state
 
 import (
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	"github.com/stitchfix/flotilla-os/config"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"github.com/stitchfix/flotilla-os/config"
 )
 
 func getDB(conf config.Config) *sqlx.DB {
@@ -143,15 +144,15 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	}
 
 	if len(*dA.Env) != 1 {
-		t.Errorf("Expected returned definitions to have correctly attached env vars, was %s", dA.Env)
+		t.Errorf("Expected returned definitions to have correctly attached env vars, was %v", dA.Env)
 	}
 
 	if len(*dA.Ports) != 1 {
-		t.Errorf("Expected returned definitions to have correctly attached ports, was %s", dA.Ports)
+		t.Errorf("Expected returned definitions to have correctly attached ports, was %v", dA.Ports)
 	}
 
 	if len(*dA.Tags) != 2 {
-		t.Errorf("Expected returned definitions to have correctly attached tags, was %s", dA.Tags)
+		t.Errorf("Expected returned definitions to have correctly attached tags, was %v", dA.Tags)
 	}
 
 	// Test ordering and offset
@@ -199,7 +200,7 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 	}
 
 	if len(*dE.Ports) != 2 {
-		t.Errorf("Expected 2 ports but got %s", *dE.Ports)
+		t.Errorf("Expected 2 ports but got %v", *dE.Ports)
 	}
 
 	if dE.Tags != nil {
@@ -207,6 +208,33 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 	}
 
 	_, err := sm.GetDefinition("Z")
+	if err == nil {
+		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
+	}
+}
+
+func TestSQLStateManager_GetDefinitionByAlias(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	dE, _ := sm.GetDefinitionByAlias("aliasE")
+	if dE.DefinitionID != "E" {
+		t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
+	}
+
+	if dE.Env != nil {
+		t.Errorf("Expected empty environment but got %s", *dE.Env)
+	}
+
+	if len(*dE.Ports) != 2 {
+		t.Errorf("Expected 2 ports but got %v", *dE.Ports)
+	}
+
+	if dE.Tags != nil {
+		t.Errorf("Expected empty tags but got %s", *dE.Tags)
+	}
+
+	_, err := sm.GetDefinitionByAlias("aliasZ")
 	if err == nil {
 		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
 	}
@@ -356,7 +384,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	}
 
 	if len(*r0.Env) != 1 {
-		t.Errorf("Expected returned runs to have correctly attached env vars, was %s", r0.Env)
+		t.Errorf("Expected returned runs to have correctly attached env vars, was %v", r0.Env)
 	}
 
 	// Test ordering and offset
@@ -405,7 +433,7 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 	}
 
 	if len(*r2.Env) != 1 {
-		t.Errorf("Expected environment to have exactly one entry, but was %s", len(*r2.Env))
+		t.Errorf("Expected environment to have exactly one entry, but was %v", len(*r2.Env))
 	}
 
 	_, err := sm.GetRun("run100")
