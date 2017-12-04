@@ -40,9 +40,12 @@ func NewWorker(
 			log:  log,
 		}, nil
 	case "status":
-		return &statusWorker{}, nil
-	case "reassign":
-		return &reassignWorker{}, nil
+		return &statusWorker{
+			sm:   sm,
+			qm:   qm,
+			conf: conf,
+			log:  log,
+		}, nil
 	default:
 		return nil, fmt.Errorf("No workerType %s exists", workerType)
 	}

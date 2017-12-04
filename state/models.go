@@ -328,6 +328,35 @@ func (d *Run) UpdateWith(other Run) {
 	}
 }
 
+//
+// UpdateStatus transitions the status of a run
+// based on the given StatusUpdate
+//
+func (r *Run) UpdateStatus(status *StatusUpdate) {
+	//
+	// Runs have a deterministic lifecycle
+	//
+	// QUEUED --> PENDING --> RUNNING --> STOPPED
+	// QUEUED --> PENDING --> NEEDS_RETRY --> QUEUED ...
+	// QUEUED --> PENDING --> STOPPED ...
+	//
+	statusPrecedence := map[string]int{
+		StatusNeedsRetry: -1,
+		StatusQueued:     0,
+		StatusPending:    1,
+		StatusRunning:    2,
+		StatusStopped:    3,
+	}
+
+	if runStatus, ok := statusPrecedence[r.Status]; ok {
+		if newStatus, ok := statusPrecedence[status.LastStatus]; ok {
+			if newStatus > runStatus {
+				r.Status = status.LastStatus
+			}
+		}
+	}
+}
+
 func (r Run) MarshalJSON() ([]byte, error) {
 	type Alias Run
 	instance := map[string]string{
@@ -365,4 +394,55 @@ type GroupsList struct {
 type TagsList struct {
 	Tags  []string
 	Total int
+}
+
+//
+// StatusUpdate is a status update for a Run
+//
+type StatusUpdate struct {
+	ClusterArn           string                  `json:"clusterArn"`
+	ContainerInstanceArn string                  `json:"containerInstanceArn"`
+	Overrides            StatusUpdateOverrides   `json:"overrides"`
+	DesiredStatus        string                  `json:"desiredStatus"`
+	LastStatus           string                  `json:"lastStatus"`
+	Containers           []StatusUpdateContainer `json:"containers"`
+	Group                string                  `json:"group"`
+	TaskArn              string                  `json:"taskArn"`
+	Version              *int                    `json:"version"`
+	StartedAt            time.Time               `json:"startedAt"`
+	StoppedAt            time.Time               `json:"stoppedAt"`
+}
+
+type StatusUpdateContainer struct {
+	ContainerArn string `json:"containerArn"`
+	LastStatus   string `json:"lastStatus"`
+	Name         string `json:"name"`
+	TaskArn      string `json:"taskArn"`
+	ExitCode     *int64 `json:"exitCode"`
+	Reason       string `json:"reason"`
+}
+
+// StatusUpdateOverrides
+type StatusUpdateOverrides struct {
+	ContainerOverrides []StatusUpdateContainerOverrides `json:"containerOverrides"`
+}
+
+// StatusUpdateContainerOverrides
+type StatusUpdateContainerOverrides struct {
+	Environment []EnvVar `json:"environment"`
+}
+
+//
+// GetEnvVar gets the named env var from the -first- container override
+//
+func (su StatusUpdate) GetEnvVar(name string) (string, bool) {
+	if len(su.Overrides.ContainerOverrides) == 0 {
+		return "", false
+	}
+	for _, ev := range su.Overrides.ContainerOverrides[0].Environment {
+		if ev.Name == name {
+			return ev.Value, true
+		}
+	}
+	return "", false
 }

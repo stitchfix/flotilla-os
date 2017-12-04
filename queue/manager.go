@@ -11,20 +11,30 @@ import (
 //
 type Manager interface {
 	Name() string
-	QurlFor(name string) (string, error)
+	QurlFor(name string, prefixed bool) (string, error)
 	Initialize(config.Config) error
 	Enqueue(qURL string, run state.Run) error
-	Receive(qURL string) (RunReceipt, error)
+	ReceiveRun(qURL string) (RunReceipt, error)
+	ReceiveStatus(qURL string) (StatusReceipt, error)
 	List() ([]string, error)
 }
 
 //
-// RunReceipt wraps a Run and a callback  to use
+// RunReceipt wraps a Run and a callback to use
 // when Run is finished processing
 //
 type RunReceipt struct {
 	Run  *state.Run
 	Done func() error
+}
+
+//
+// StatusReceipt wraps a StatusUpdate and a callback to use
+// when StatusUpdate is finished applying
+//
+type StatusReceipt struct {
+	StatusUpdate *state.StatusUpdate
+	Done         func() error
 }
 
 //

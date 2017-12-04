@@ -15,6 +15,7 @@ execution_engine: ecs
 enabled_workers:
   - retry
   - submit
+  - status
 
 
 # Log namespace
@@ -35,11 +36,13 @@ queue:
   retention_seconds: 604800
   # 45 seconds allowed processing time before re-queueing
   process_time: 45
+  # main status update queue name
+  status: flotilla-status-updates-dev
 
 worker:
   retry_interval_seconds: 30
   submit_interval_seconds: 30
-  status_interval_seconds: 30
+  status_interval_seconds: 5
   reassign_interval_seconds: 30
 
 http:

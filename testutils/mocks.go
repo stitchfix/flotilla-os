@@ -21,10 +21,17 @@ type ImplementsAllTheThings struct {
 	Qurls                   map[string]string           // Urls returned by Queue Manager
 	Defined                 []string                    // List of defined definitions (Execution Engine)
 	Queued                  []string                    // List of queued runs (Queue Manager)
+	StatusUpdates           []MockStatusUpdate          //List of queued status updates (Queue Manager)
 	ExecuteError            error                       // Execution Engine - error to return
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+}
+
+type MockStatusUpdate struct {
+	TaskArn    string
+	ServerMode string
+	LastStatus string
 }
 
 // Name - general
@@ -155,7 +162,7 @@ func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string
 }
 
 // QurlFor - QueueManager
-func (iatt *ImplementsAllTheThings) QurlFor(name string) (string, error) {
+func (iatt *ImplementsAllTheThings) QurlFor(name string, prefixed bool) (string, error) {
 	iatt.Calls = append(iatt.Calls, "QurlFor")
 	qurl, _ := iatt.Qurls[name]
 	return qurl, nil
@@ -168,9 +175,9 @@ func (iatt *ImplementsAllTheThings) Enqueue(qURL string, run state.Run) error {
 	return nil
 }
 
-// Receive - QueueManager
-func (iatt *ImplementsAllTheThings) Receive(qURL string) (queue.RunReceipt, error) {
-	iatt.Calls = append(iatt.Calls, "Receive")
+// ReceiveRun - QueueManager
+func (iatt *ImplementsAllTheThings) ReceiveRun(qURL string) (queue.RunReceipt, error) {
+	iatt.Calls = append(iatt.Calls, "ReceiveRun")
 	if len(iatt.Queued) == 0 {
 		return queue.RunReceipt{}, nil
 	}
@@ -182,6 +189,43 @@ func (iatt *ImplementsAllTheThings) Receive(qURL string) (queue.RunReceipt, erro
 	}
 	receipt.Done = func() error {
 		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
+		return nil
+	}
+	return receipt, nil
+}
+
+// ReceiveStatus - QueueManager
+func (iatt *ImplementsAllTheThings) ReceiveStatus(qURL string) (queue.StatusReceipt, error) {
+	iatt.Calls = append(iatt.Calls, "ReceiveStatus")
+	if len(iatt.StatusUpdates) == 0 {
+		return queue.StatusReceipt{}, nil
+	}
+
+	popped := iatt.StatusUpdates[0]
+	iatt.StatusUpdates = iatt.StatusUpdates[1:]
+
+	su := state.StatusUpdate{
+		TaskArn:    popped.TaskArn,
+		LastStatus: popped.LastStatus,
+		Overrides: state.StatusUpdateOverrides{
+			ContainerOverrides: []state.StatusUpdateContainerOverrides{
+				{
+					Environment: []state.EnvVar{
+						{
+							Name:  "FLOTILLA_SERVER_MODE",
+							Value: popped.ServerMode,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	receipt := queue.StatusReceipt{
+		StatusUpdate: &su,
+	}
+	receipt.Done = func() error {
+		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")
 		return nil
 	}
 	return receipt, nil

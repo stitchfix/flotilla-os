@@ -107,8 +107,13 @@ func (qc *testSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.Re
 	}
 
 	handle := "handle"
-	jsonRun, _ := json.Marshal(state.Run{RunID: "cupcake"})
-	asString := string(jsonRun)
+	asString := ""
+	if *input.QueueUrl == "statusQ" {
+		asString = `{"detail":{"taskArn":"sometaskarn","lastStatus":"STOPPED","version":17, "overrides":{"containerOverrides":[{"environment":[{"name":"FLOTILLA_SERVER_MODE","value":"prod"}]}]}}}`
+	} else {
+		jsonRun, _ := json.Marshal(state.Run{RunID: "cupcake"})
+		asString = string(jsonRun)
+	}
 
 	msg := sqs.Message{
 		ReceiptHandle: &handle,
@@ -148,9 +153,10 @@ func setUp(t *testing.T) SQSManager {
 	qA := "A"
 	qB := "B"
 	qC := "C"
+	qStatus := "statusQ"
 	testClient := testSQSClient{
 		t:      t,
-		queues: []*string{&qA, &qB, &qC},
+		queues: []*string{&qA, &qB, &qC, &qStatus},
 	}
 	qm.qc = &testClient
 
@@ -161,8 +167,8 @@ func TestSQSManager_List(t *testing.T) {
 	qm := setUp(t)
 
 	listed, _ := qm.List()
-	if len(listed) != 3 {
-		t.Errorf("Expected listed queues to be [3] but was %v", len(listed))
+	if len(listed) != 4 {
+		t.Errorf("Expected listed queues to be [4] but was %v", len(listed))
 	}
 }
 
@@ -190,7 +196,7 @@ func TestSQSManager_QurlFor(t *testing.T) {
 	expectedCalls := map[string]bool{
 		"GetQueueUrl": true,
 	}
-	qm.QurlFor("cupcake")
+	qm.QurlFor("cupcake", true)
 
 	if len(testClient.calls) != len(expectedCalls) {
 		t.Errorf(
@@ -212,7 +218,7 @@ func TestSQSManager_QurlFor(t *testing.T) {
 		"GetQueueUrl": true,
 		"CreateQueue": true,
 	}
-	qm.QurlFor("nope")
+	qm.QurlFor("nope", true)
 
 	if len(testClient.calls) != len(expectedCalls) {
 		t.Errorf(
@@ -228,8 +234,24 @@ func TestSQSManager_QurlFor(t *testing.T) {
 	}
 }
 
-func TestSQSManager_Receive(t *testing.T) {
+func TestSQSManager_ReceiveRun(t *testing.T) {
 	qm := setUp(t)
-	receipt, _ := qm.Receive("A")
+	receipt, _ := qm.ReceiveRun("A")
+	receipt.Done()
+}
+
+func TestSQSManager_ReceiveStatus(t *testing.T) {
+	qm := setUp(t)
+	receipt, _ := qm.ReceiveStatus("statusQ")
+
+	srvMode, ok := receipt.StatusUpdate.GetEnvVar("FLOTILLA_SERVER_MODE")
+	if !ok {
+		t.Errorf("Expected FLOTILLA_SERVER_MODE to exist in environment")
+	}
+
+	if srvMode != "prod" {
+		t.Errorf("Expected to pull server mode [%s], was [%s]", "prod", srvMode)
+	}
+
 	receipt.Done()
 }

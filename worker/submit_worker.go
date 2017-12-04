@@ -43,7 +43,7 @@ func (sw *submitWorker) runOnce() {
 		//
 		// Get new queued Run
 		//
-		runReceipt, err := sw.qm.Receive(qurl)
+		runReceipt, err := sw.qm.ReceiveRun(qurl)
 		if err != nil {
 			sw.log.Log("message", "Error receiving run", "qurl", qurl, "error", err.Error())
 			continue
