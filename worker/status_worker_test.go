@@ -48,7 +48,7 @@ func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAl
 	}
 	return &statusWorker{
 		sm:   &imp,
-		qm:   &imp,
+		ee:   &imp,
 		log:  logger,
 		conf: c,
 	}, &imp
@@ -92,7 +92,7 @@ func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsA
 	}
 	return &statusWorker{
 		sm:   &imp,
-		qm:   &imp,
+		ee:   &imp,
 		log:  logger,
 		conf: c,
 	}, &imp
@@ -103,9 +103,9 @@ func TestStatusWorker_Run(t *testing.T) {
 	//    eg. RUNNING does *not* transition back to PENDING
 	worker, imp := setUpStatusWorkerTest(t)
 
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 
-	expected := []string{"ReceiveStatus", "ListRuns", "UpdateRun", "StatusReceipt.Done"}
+	expected := []string{"PollStatus", "ListRuns", "UpdateRun", "StatusReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -115,13 +115,13 @@ func TestStatusWorker_Run(t *testing.T) {
 		t.Errorf("Expected run to have updated status: %s but was %s", state.StatusRunning, run.Status)
 	}
 
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 	run, _ = imp.GetRun("somerun")
 	if run.Status != state.StatusRunning {
 		t.Errorf("Expected run to have same status: %s, but was %s", state.StatusRunning, run.Status)
 	}
 
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 	run, _ = imp.GetRun("somerun")
 	if run.Status != state.StatusStopped {
 		t.Errorf("Expected run to have updated status: %s, but was %s", state.StatusStopped, run.Status)
@@ -139,21 +139,21 @@ func TestStatusWorker_Run2(t *testing.T) {
 	// don't belong to the test mode and should be ignored and acked
 	//
 	expected := []string{"ReceiveStatus", "StatusReceipt.Done"}
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
 
 	imp.Calls = []string{}
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
 
 	imp.Calls = []string{}
 	expected = []string{"ReceiveStatus", "ListRuns", "UpdateRun", "StatusReceipt.Done"}
-	worker.runOnce("statusqurl")
+	worker.runOnce()
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

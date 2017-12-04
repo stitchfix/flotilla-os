@@ -30,7 +30,7 @@ func setUpRetryWorkerTest(t *testing.T) (*retryWorker, *testutils.ImplementsAllT
 	}
 	return &retryWorker{
 		sm:  &imp,
-		qm:  &imp,
+		ee:  &imp,
 		log: logger,
 	}, &imp
 }
@@ -43,7 +43,7 @@ func TestRetryWorker_Run(t *testing.T) {
 	// Make sure that the worker resets the status to StatusQueued, and calls the appropriate methods
 	// in order (get runs to retry, get qurls for them, update them to queued status, then enqueue them)
 	//
-	expected := []string{"ListRuns", "QurlFor", "UpdateRun", "Enqueue"}
+	expected := []string{"ListRuns", "UpdateRun", "Enqueue"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

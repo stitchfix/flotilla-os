@@ -7,7 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
-	"github.com/stitchfix/flotilla-os/execution/adapters"
+	"github.com/stitchfix/flotilla-os/execution/adapter"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"strings"
 )
@@ -16,8 +17,10 @@ import (
 // ECSExecutionEngine submits runs to ecs
 //
 type ECSExecutionEngine struct {
-	ecsClient ecsServiceClient
-	adapter   adapters.ECSAdapter
+	ecsClient  ecsServiceClient
+	adapter    adapter.ECSAdapter
+	qm         queue.Manager
+	statusQurl string
 }
 
 type ecsServiceClient interface {
@@ -44,12 +47,77 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		ee.ecsClient = ecs.New(sess)
 	}
 
-	adapter, err := adapters.NewECSAdapter(conf)
+	adapter, err := adapter.NewECSAdapter(conf)
 	if err != nil {
 		return err
 	}
 	ee.adapter = adapter
+
+	//
+	// Get queue manager for queuing runs
+	//
+	qm, err := queue.NewQueueManager(conf)
+	if err != nil {
+		return err
+	}
+	ee.qm = qm
+
+	statusQueue := conf.GetString("queue.status")
+	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+//
+// PollStatus pops status updates from the status queue using the QueueManager
+//
+func (ee *ECSExecutionEngine) PollStatus() (queue.StatusReceipt, error) {
+	return ee.qm.ReceiveStatus(ee.statusQurl)
+}
+
+//
+// PollRuns receives -at most- one run per queue that is pending execution
+//
+func (ee *ECSExecutionEngine) PollRuns() ([]queue.RunReceipt, error) {
+	queues, err := ee.qm.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var runs []queue.RunReceipt
+	for _, qurl := range queues {
+		//
+		// Get new queued Run
+		//
+		runReceipt, err := ee.qm.ReceiveRun(qurl)
+		if err != nil {
+			return runs, err
+		}
+
+		if runReceipt.Run == nil {
+			return runs, err
+		}
+
+		runs = append(runs, runReceipt)
+	}
+	return runs, nil
+}
+
+//
+// Enqueue pushes a run onto the queue using the QueueManager
+//
+func (ee *ECSExecutionEngine) Enqueue(run state.Run) error {
+	// Get qurl
+	qurl, err := ee.qm.QurlFor(run.ClusterName, true)
+	if err != nil {
+		return err
+	}
+
+	// Queue run
+	return ee.qm.Enqueue(qurl, run)
 }
 
 //

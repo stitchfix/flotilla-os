@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
@@ -22,6 +23,12 @@ type Engine interface {
 	Deregister(definition state.Definition) error
 
 	Terminate(run state.Run) error
+
+	Enqueue(run state.Run) error
+
+	PollRuns() ([]queue.RunReceipt, error)
+
+	PollStatus() (queue.StatusReceipt, error)
 }
 
 //

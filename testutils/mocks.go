@@ -168,8 +168,8 @@ func (iatt *ImplementsAllTheThings) QurlFor(name string, prefixed bool) (string,
 	return qurl, nil
 }
 
-// Enqueue - QueueManager
-func (iatt *ImplementsAllTheThings) Enqueue(qURL string, run state.Run) error {
+// Enqueue - ExecutionEngine
+func (iatt *ImplementsAllTheThings) Enqueue(run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Enqueue")
 	iatt.Queued = append(iatt.Queued, run.RunID)
 	return nil
@@ -259,6 +259,65 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 		return false, nil
 	}
 	return true, nil
+}
+
+// PollRuns - Execution Engine
+func (iatt *ImplementsAllTheThings) PollRuns() ([]queue.RunReceipt, error) {
+	iatt.Calls = append(iatt.Calls, "PollRuns")
+
+	var r []queue.RunReceipt
+	if len(iatt.Queued) == 0 {
+		return r, nil
+	}
+
+	popped := iatt.Queued[0]
+	iatt.Queued = iatt.Queued[1:]
+	receipt := queue.RunReceipt{
+		Run: &state.Run{RunID: popped},
+	}
+	receipt.Done = func() error {
+		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
+		return nil
+	}
+	r = append(r, receipt)
+	return r, nil
+}
+
+//PollStatus - Execution Engine
+func (iatt *ImplementsAllTheThings) PollStatus() (queue.StatusReceipt, error) {
+	iatt.Calls = append(iatt.Calls, "PollStatus")
+	if len(iatt.StatusUpdates) == 0 {
+		return queue.StatusReceipt{}, nil
+	}
+
+	popped := iatt.StatusUpdates[0]
+	iatt.StatusUpdates = iatt.StatusUpdates[1:]
+
+	su := state.StatusUpdate{
+		TaskArn:    popped.TaskArn,
+		LastStatus: popped.LastStatus,
+		Overrides: state.StatusUpdateOverrides{
+			ContainerOverrides: []state.StatusUpdateContainerOverrides{
+				{
+					Environment: []state.EnvVar{
+						{
+							Name:  "FLOTILLA_SERVER_MODE",
+							Value: popped.ServerMode,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	receipt := queue.StatusReceipt{
+		StatusUpdate: &su,
+	}
+	receipt.Done = func() error {
+		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")
+		return nil
+	}
+	return receipt, nil
 }
 
 // Execute - Execution Engine
