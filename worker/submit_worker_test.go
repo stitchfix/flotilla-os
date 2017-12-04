@@ -19,7 +19,8 @@ func setUpSubmitWorkerTest1(t *testing.T) (*submitWorker, *testutils.ImplementsA
 	}
 
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
-	logger := flotillaLog.NewLogger(l, nil)
+	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
+	logger := flotillaLog.NewLogger(l, eventSinks)
 
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
@@ -51,7 +52,8 @@ func setUpSubmitWorkerTest2(t *testing.T) (*submitWorker, *testutils.ImplementsA
 	}
 
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
-	logger := flotillaLog.NewLogger(l, nil)
+	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
+	logger := flotillaLog.NewLogger(l, eventSinks)
 
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
@@ -77,7 +79,8 @@ func setUpSubmitWorkerTest2(t *testing.T) (*submitWorker, *testutils.ImplementsA
 // Another unrunnable run
 func setUpSubmitWorkerTest3(t *testing.T) (*submitWorker, *testutils.ImplementsAllTheThings) {
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
-	logger := flotillaLog.NewLogger(l, nil)
+	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
+	logger := flotillaLog.NewLogger(l, eventSinks)
 
 	imp := testutils.ImplementsAllTheThings{
 		T: t,

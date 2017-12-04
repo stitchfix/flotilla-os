@@ -12,6 +12,8 @@ func NewRouter(ep endpoints) *mux.Router {
 	v1.HandleFunc("/task/{definition_id}", ep.UpdateDefinition).Methods("PUT")
 	v1.HandleFunc("/task/{definition_id}", ep.DeleteDefinition).Methods("DELETE")
 	v1.HandleFunc("/task/{definition_id}/execute", ep.CreateRun).Methods("PUT")
+	v1.HandleFunc("/task/alias/{alias}", ep.GetDefinitionByAlias).Methods("GET")
+	v1.HandleFunc("/task/alias/{alias}/execute", ep.CreateRunByAlias).Methods("PUT")
 
 	v1.HandleFunc("/history", ep.ListRuns).Methods("GET")
 	v1.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")

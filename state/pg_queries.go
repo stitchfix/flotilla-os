@@ -145,6 +145,11 @@ const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
 const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 
 //
+// GetDefinitionByAliasSQL get definition by alias
+//
+const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
+
+//
 // RunSelect postgres specific query for runs
 //
 const RunSelect = `

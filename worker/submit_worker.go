@@ -105,6 +105,13 @@ func (sw *submitWorker) runOnce() {
 			}
 
 			//
+			// Emit event with current definition
+			//
+			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", definition, "run_id", run.RunID)
+			if err != nil {
+				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", err.Error()) }
+
+			//
 			// Update the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//

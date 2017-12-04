@@ -2,10 +2,11 @@ package testutils
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	"testing"
 )
 
 //
@@ -73,6 +74,17 @@ func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.De
 		err = fmt.Errorf("No definition %s", definitionID)
 	}
 	return d, err
+}
+
+// GetDefinitionByAlias - StateManager
+func (iatt *ImplementsAllTheThings) GetDefinitionByAlias(alias string) (state.Definition, error) {
+	iatt.Calls = append(iatt.Calls, "GetDefinitionByAlias")
+	for _, d := range iatt.Definitions {
+		if d.Alias == alias {
+			return d, nil
+		}
+	}
+	return state.Definition{}, fmt.Errorf("No definition with alias %s", alias)
 }
 
 // UpdateDefinition - StateManager

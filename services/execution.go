@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
@@ -18,6 +19,7 @@ import (
 //
 type ExecutionService interface {
 	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error)
+	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -94,16 +96,37 @@ func (es *executionService) ReservedVariables() []string {
 //
 func (es *executionService) Create(
 	definitionID string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error) {
-	var (
-		run state.Run
-		err error
-	)
 
 	// Ensure definition exists
 	definition, err := es.sm.GetDefinition(definitionID)
 	if err != nil {
-		return run, err
+		return state.Run{}, err
 	}
+
+	return es.createFromDefinition(definition, clusterName, env, ownerID)
+}
+
+//
+// Create constructs and queues a new Run on the cluster specified, based on an alias
+//
+func (es *executionService) CreateByAlias(
+	alias string, clusterName string, env *state.EnvList, ownerID string) (state.Run, error) {
+
+	// Ensure definition exists
+	definition, err := es.sm.GetDefinitionByAlias(alias)
+	if err != nil {
+		return state.Run{}, err
+	}
+
+	return es.createFromDefinition(definition, clusterName, env, ownerID)
+}
+
+func (es *executionService) createFromDefinition(
+	definition state.Definition, clusterName string, env *state.EnvList, ownerID string) (state.Run, error) {
+	var (
+		run state.Run
+		err error
+	)
 
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(clusterName, definition, env); err != nil {
@@ -186,7 +209,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 			_, usingRestricted := es.reservedEnv[e.Name]
 			if usingRestricted {
 				return exceptions.ConflictingResource{
-					fmt.Sprintf("environment variable %s is reserved", e.Name)}
+					ErrorString: fmt.Sprintf("environment variable %s is reserved", e.Name)}
 			}
 		}
 	}
@@ -197,7 +220,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 	}
 	if !ok {
 		return exceptions.MissingResource{
-			fmt.Sprintf(
+			ErrorString: fmt.Sprintf(
 				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
@@ -207,7 +230,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 	}
 	if !ok {
 		return exceptions.MalformedInput{
-			fmt.Sprintf(
+			ErrorString: fmt.Sprintf(
 				"definition [%s] cannot be run on cluster [%s]", definition.DefinitionID, clusterName)}
 	}
 	return nil
@@ -239,7 +262,7 @@ func (es *executionService) List(
 	if ok && !state.IsValidStatus(status) {
 		// Status filter is invalid
 		err := exceptions.MalformedInput{
-			fmt.Sprintf("invalid status [%s]", status)}
+			ErrorString: fmt.Sprintf("invalid status [%s]", status)}
 		return state.RunList{}, err
 	}
 	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters)
@@ -257,7 +280,7 @@ func (es *executionService) Get(runID string) (state.Run, error) {
 //
 func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
 	if !state.IsValidStatus(status) {
-		return exceptions.MalformedInput{fmt.Sprintf("status %s is invalid", status)}
+		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
 	_, err := es.sm.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
 	return err
@@ -284,6 +307,6 @@ func (es *executionService) Terminate(runID string) error {
 	}
 
 	return exceptions.MalformedInput{
-		fmt.Sprintf(
+		ErrorString: fmt.Sprintf(
 			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
 }

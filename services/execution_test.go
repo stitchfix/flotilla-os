@@ -1,10 +1,11 @@
 package services
 
 import (
+	"testing"
+
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
-	"testing"
 )
 
 func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
@@ -13,9 +14,9 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
 		Definitions: map[string]state.Definition{
-			"A": {DefinitionID: "A"},
-			"B": {DefinitionID: "B"},
-			"C": {DefinitionID: "C", Image: "invalidimage"},
+			"A": {DefinitionID: "A", Alias: "aliasA"},
+			"B": {DefinitionID: "B", Alias: "aliasB"},
+			"C": {DefinitionID: "C", Alias: "aliasC", Image: "invalidimage"},
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A", GroupName: "A", RunID: "runA"},
@@ -45,6 +46,77 @@ func TestExecutionService_Create(t *testing.T) {
 		"Enqueue":       true,
 	}
 	run, err := es.Create("B", "clusta", env, "somebody")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if len(imp.Calls) != len(expectedCalls) {
+		t.Errorf("Expected exactly %v calls during run creation but was: %v", len(expectedCalls), len(imp.Calls))
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during run creation: %s", call)
+		}
+	}
+
+	if len(run.RunID) == 0 {
+		t.Errorf("Expected Create to populated run with non-empty RunID")
+	}
+
+	if run.ClusterName != "clusta" {
+		t.Errorf("Expected cluster name 'clusta' but was '%s'", run.ClusterName)
+	}
+
+	if run.DefinitionID != "B" {
+		t.Errorf("Expected definitionID 'B' but was '%s'", run.DefinitionID)
+	}
+
+	if run.Status != state.StatusQueued {
+		t.Errorf("Expected new run to have status '%s' but was '%s'", state.StatusQueued, run.Status)
+	}
+
+	if run.User != "somebody" {
+		t.Errorf("Expected new run to have user 'somebody' but was '%s'", run.User)
+	}
+
+	if run.Env == nil {
+		t.Errorf("Expected non-nil environment")
+	}
+
+	if len(*run.Env) != (len(es.ReservedVariables()) + len(*env)) {
+		t.Errorf("Unexpected number of environment variables; expected %v but was %v",
+			len(es.ReservedVariables())+len(*env), len(*run.Env))
+	}
+
+	includesExpected := false
+	for _, e := range *run.Env {
+		if e.Name == "K1" && e.Value == "V1" {
+			includesExpected = true
+		}
+	}
+
+	if !includesExpected {
+		t.Errorf("Expected K1:V1 in run environment")
+	}
+}
+
+func TestExecutionService_CreateByAlias(t *testing.T) {
+	// Tests valid create
+	es, imp := setUp(t)
+	env := &state.EnvList{
+		{Name: "K1", Value: "V1"},
+	}
+	expectedCalls := map[string]bool{
+		"GetDefinitionByAlias": true,
+		"IsImageValid":         true,
+		"CanBeRun":             true,
+		"CreateRun":            true,
+		"QurlFor":              true,
+		"Enqueue":              true,
+	}
+	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
