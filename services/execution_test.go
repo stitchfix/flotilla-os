@@ -27,7 +27,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"B": "b/",
 		},
 	}
-	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp, &imp)
+	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp)
 	return es, &imp
 }
 
@@ -42,7 +42,6 @@ func TestExecutionService_Create(t *testing.T) {
 		"IsImageValid":  true,
 		"CanBeRun":      true,
 		"CreateRun":     true,
-		"QurlFor":       true,
 		"Enqueue":       true,
 	}
 	run, err := es.Create("B", "clusta", env, "somebody")
@@ -113,7 +112,6 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		"IsImageValid":         true,
 		"CanBeRun":             true,
 		"CreateRun":            true,
-		"QurlFor":              true,
 		"Enqueue":              true,
 	}
 	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody")

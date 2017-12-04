@@ -3,15 +3,15 @@ package worker
 import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"time"
 )
 
 type statusWorker struct {
 	sm   state.Manager
-	qm   queue.Manager
+	ee   engine.Engine
 	conf config.Config
 	log  flotillaLog.Logger
 }
@@ -26,22 +26,14 @@ func (sw *statusWorker) Run() {
 	}
 	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
 
-	statusQueue := sw.conf.GetString("queue.status")
-	sw.log.Log("message", fmt.Sprintf("using status queue [%s]", statusQueue))
-
-	qurl, err := sw.qm.QurlFor(statusQueue, false)
-	if err != nil {
-		sw.log.Log("message", "unable to start status worker, no qurl found", "error", err.Error())
-	} else {
-		for {
-			sw.runOnce(qurl)
-			time.Sleep(pollInterval)
-		}
+	for {
+		sw.runOnce()
+		time.Sleep(pollInterval)
 	}
 }
 
-func (sw *statusWorker) runOnce(statusQurl string) {
-	statusReceipt, err := sw.qm.ReceiveStatus(statusQurl)
+func (sw *statusWorker) runOnce() {
+	statusReceipt, err := sw.ee.PollStatus()
 	if err != nil {
 		sw.log.Log("message", "unable to receive status message", "error", err.Error())
 		return

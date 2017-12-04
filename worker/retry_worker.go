@@ -3,15 +3,15 @@ package worker
 import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"time"
 )
 
 type retryWorker struct {
 	sm   state.Manager
-	qm   queue.Manager
+	ee   engine.Engine
 	conf config.Config
 	log  flotillaLog.Logger
 }
@@ -46,20 +46,14 @@ func (rw *retryWorker) runOnce() {
 	}
 
 	for _, run := range runList.Runs {
-		qurl, err := rw.qm.QurlFor(run.ClusterName, true)
-
-		if err != nil {
-			rw.log.Log("message", "Error getting QurlFor cluster", "cluster", run.ClusterName, "error", err.Error())
-			return
-		}
 
 		if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
 			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", err.Error())
 			return
 		}
 
-		if err = rw.qm.Enqueue(qurl, run); err != nil {
-			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "qurl", qurl, "error", err.Error())
+		if err = rw.ee.Enqueue(run); err != nil {
+			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", err.Error())
 			return
 		}
 	}

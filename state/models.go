@@ -352,6 +352,12 @@ func (r *Run) UpdateStatus(status *StatusUpdate) {
 		if newStatus, ok := statusPrecedence[status.LastStatus]; ok {
 			if newStatus > runStatus {
 				r.Status = status.LastStatus
+
+				// Update other important info
+				startedAt := status.StartedAt
+				finishedAt := status.StoppedAt
+				r.StartedAt = &startedAt
+				r.FinishedAt = &finishedAt
 			}
 		}
 	}

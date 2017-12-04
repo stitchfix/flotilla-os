@@ -8,7 +8,6 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/execution/engine"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
@@ -35,7 +34,6 @@ type ExecutionService interface {
 
 type executionService struct {
 	sm          state.Manager
-	qm          queue.Manager
 	cc          cluster.Client
 	rc          registry.Client
 	ee          engine.Engine
@@ -47,12 +45,10 @@ type executionService struct {
 //
 func NewExecutionService(conf config.Config, ee engine.Engine,
 	sm state.Manager,
-	qm queue.Manager,
 	cc cluster.Client,
 	rc registry.Client) (ExecutionService, error) {
 	es := executionService{
 		sm: sm,
-		qm: qm,
 		cc: cc,
 		rc: rc,
 		ee: ee,
@@ -145,14 +141,8 @@ func (es *executionService) createFromDefinition(
 		return run, err
 	}
 
-	// Get qurl
-	qurl, err := es.qm.QurlFor(run.ClusterName, true)
-	if err != nil {
-		return run, err
-	}
-
 	// Queue run
-	return run, es.qm.Enqueue(qurl, run)
+	return run, es.ee.Enqueue(run)
 }
 
 func (es *executionService) constructRun(

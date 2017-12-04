@@ -8,7 +8,6 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/worker"
@@ -46,7 +45,6 @@ func NewApp(conf config.Config,
 	lc logs.Client,
 	ee engine.Engine,
 	sm state.Manager,
-	qm queue.Manager,
 	cc cluster.Client,
 	rc registry.Client) (App, error) {
 
@@ -54,7 +52,7 @@ func NewApp(conf config.Config,
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ee, sm, qm, cc, rc)
+	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc)
 	if err != nil {
 		return app, err
 	}
@@ -75,7 +73,7 @@ func NewApp(conf config.Config,
 
 	app.configureRoutes(ep)
 
-	return app, app.initializeWorkers(conf, log, ee, qm, sm)
+	return app, app.initializeWorkers(conf, log, ee, sm)
 }
 
 func (app *App) configure(conf config.Config) {
@@ -119,10 +117,9 @@ func (app *App) initializeWorkers(
 	conf config.Config,
 	log flotillaLog.Logger,
 	ee engine.Engine,
-	qm queue.Manager,
 	sm state.Manager) error {
 	for _, workerName := range conf.GetStringSlice("enabled_workers") {
-		wk, err := worker.NewWorker(workerName, log, conf, ee, qm, sm)
+		wk, err := worker.NewWorker(workerName, log, conf, ee, sm)
 		app.logger.Log("message", "Starting worker", "name", workerName)
 		if err != nil {
 			return err

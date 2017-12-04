@@ -10,7 +10,6 @@ import (
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/flotilla"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"os"
@@ -52,15 +51,6 @@ func main() {
 	}
 
 	//
-	// Get queue manager for queuing runs
-	//
-	qm, err := queue.NewQueueManager(c)
-	if err != nil {
-		logger.Log("message", "Error initializing queue manager")
-		log.Fatal(err)
-	}
-
-	//
 	// Get registry client for validating images
 	//
 	rc, err := registry.NewRegistryClient(c)
@@ -98,6 +88,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app, err := flotilla.NewApp(c, logger, lc, ee, sm, qm, cc, rc)
+	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc)
 	log.Fatal(app.Run())
 }

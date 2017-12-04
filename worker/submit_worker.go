@@ -4,14 +4,12 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"time"
 )
 
 type submitWorker struct {
 	sm   state.Manager
-	qm   queue.Manager
 	ee   engine.Engine
 	conf config.Config
 	log  flotillaLog.Logger
@@ -33,21 +31,11 @@ func (sw *submitWorker) Run() {
 }
 
 func (sw *submitWorker) runOnce() {
-	queues, err := sw.qm.List()
+	receipts, err := sw.ee.PollRuns()
 	if err != nil {
-		sw.log.Log("message", "Error listing queues", "error", err.Error())
+		sw.log.Log("message", "Error receiving runs", "error", err.Error())
 	}
-
-	for _, qurl := range queues {
-
-		//
-		// Get new queued Run
-		//
-		runReceipt, err := sw.qm.ReceiveRun(qurl)
-		if err != nil {
-			sw.log.Log("message", "Error receiving run", "qurl", qurl, "error", err.Error())
-			continue
-		}
+	for _, runReceipt := range receipts {
 
 		if runReceipt.Run == nil {
 			continue
@@ -109,7 +97,8 @@ func (sw *submitWorker) runOnce() {
 			//
 			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", definition, "run_id", run.RunID)
 			if err != nil {
-				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", err.Error()) }
+				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", err.Error())
+			}
 
 			//
 			// Update the status and information of the run;
