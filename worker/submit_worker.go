@@ -36,7 +36,6 @@ func (sw *submitWorker) runOnce() {
 		sw.log.Log("message", "Error receiving runs", "error", err.Error())
 	}
 	for _, runReceipt := range receipts {
-
 		if runReceipt.Run == nil {
 			continue
 		}

@@ -26,9 +26,13 @@ type Engine interface {
 
 	Enqueue(run state.Run) error
 
-	PollRuns() ([]queue.RunReceipt, error)
+	PollRuns() ([]RunReceipt, error)
 
-	PollStatus() (queue.StatusReceipt, error)
+	PollStatus() (RunReceipt, error)
+}
+
+type RunReceipt struct {
+	queue.RunReceipt
 }
 
 //

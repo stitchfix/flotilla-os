@@ -29,10 +29,6 @@ type sqsClient interface {
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
 }
 
-type sqsStatusUpdate struct {
-	Detail state.StatusUpdate `json:"detail"`
-}
-
 //
 // Name of queue manager - matches value in configuration
 //
@@ -131,8 +127,8 @@ func (qm *SQSManager) runFromMessage(message *sqs.Message) (state.Run, error) {
 	return run, err
 }
 
-func (qm *SQSManager) statusFromMessage(message *sqs.Message) (state.StatusUpdate, error) {
-	var statusUpdate state.StatusUpdate
+func (qm *SQSManager) statusFromMessage(message *sqs.Message) (string, error) {
+	var statusUpdate string
 	if message == nil {
 		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from nil message")
 	}
@@ -142,12 +138,7 @@ func (qm *SQSManager) statusFromMessage(message *sqs.Message) (state.StatusUpdat
 		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from empty message")
 	}
 
-	var deser sqsStatusUpdate
-	err := json.Unmarshal([]byte(*body), &deser)
-	if err != nil {
-		return statusUpdate, err
-	}
-	return deser.Detail, nil
+	return *body, nil
 }
 
 //
@@ -239,7 +230,7 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 	}
 
 	statusUpdate, err := qm.statusFromMessage(response.Messages[0])
-	receipt.StatusUpdate = &statusUpdate
+	receipt.StatusUpdate = statusUpdate
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}
