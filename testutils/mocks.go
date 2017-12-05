@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"encoding/json"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -204,16 +207,17 @@ func (iatt *ImplementsAllTheThings) ReceiveStatus(qURL string) (queue.StatusRece
 	popped := iatt.StatusUpdates[0]
 	iatt.StatusUpdates = iatt.StatusUpdates[1:]
 
-	su := state.StatusUpdate{
-		TaskArn:    popped.TaskArn,
-		LastStatus: popped.LastStatus,
-		Overrides: state.StatusUpdateOverrides{
-			ContainerOverrides: []state.StatusUpdateContainerOverrides{
+	modeKey := "FLOTILLA_SERVER_MODE"
+	su := ecs.Task{
+		TaskArn:    &popped.TaskArn,
+		LastStatus: &popped.LastStatus,
+		Overrides: &ecs.TaskOverride{
+			ContainerOverrides: []*ecs.ContainerOverride{
 				{
-					Environment: []state.EnvVar{
+					Environment: []*ecs.KeyValuePair{
 						{
-							Name:  "FLOTILLA_SERVER_MODE",
-							Value: popped.ServerMode,
+							Name:  &modeKey,
+							Value: &popped.ServerMode,
 						},
 					},
 				},
@@ -221,11 +225,14 @@ func (iatt *ImplementsAllTheThings) ReceiveStatus(qURL string) (queue.StatusRece
 		},
 	}
 
+	asJson, _ := json.Marshal(su)
+
 	receipt := queue.StatusReceipt{
-		StatusUpdate: &su,
+		StatusUpdate: string(asJson),
 	}
+
 	receipt.Done = func() error {
-		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")
+		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
 		return nil
 	}
 	return receipt, nil
@@ -262,10 +269,10 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 }
 
 // PollRuns - Execution Engine
-func (iatt *ImplementsAllTheThings) PollRuns() ([]queue.RunReceipt, error) {
+func (iatt *ImplementsAllTheThings) PollRuns() ([]engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollRuns")
 
-	var r []queue.RunReceipt
+	var r []engine.RunReceipt
 	if len(iatt.Queued) == 0 {
 		return r, nil
 	}
@@ -279,45 +286,40 @@ func (iatt *ImplementsAllTheThings) PollRuns() ([]queue.RunReceipt, error) {
 		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
 		return nil
 	}
-	r = append(r, receipt)
+	r = append(r, engine.RunReceipt{receipt})
 	return r, nil
 }
 
 //PollStatus - Execution Engine
-func (iatt *ImplementsAllTheThings) PollStatus() (queue.StatusReceipt, error) {
+func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollStatus")
 	if len(iatt.StatusUpdates) == 0 {
-		return queue.StatusReceipt{}, nil
+		return engine.RunReceipt{}, nil
 	}
 
 	popped := iatt.StatusUpdates[0]
 	iatt.StatusUpdates = iatt.StatusUpdates[1:]
 
-	su := state.StatusUpdate{
-		TaskArn:    popped.TaskArn,
-		LastStatus: popped.LastStatus,
-		Overrides: state.StatusUpdateOverrides{
-			ContainerOverrides: []state.StatusUpdateContainerOverrides{
-				{
-					Environment: []state.EnvVar{
-						{
-							Name:  "FLOTILLA_SERVER_MODE",
-							Value: popped.ServerMode,
-						},
-					},
-				},
+	run := state.Run{
+		TaskArn: popped.TaskArn,
+		Status:  popped.LastStatus,
+		Env: &state.EnvList{
+			{
+				Name:  "FLOTILLA_SERVER_MODE",
+				Value: popped.ServerMode,
 			},
 		},
 	}
 
-	receipt := queue.StatusReceipt{
-		StatusUpdate: &su,
+	receipt := queue.RunReceipt{
+		Run: &run,
 	}
+
 	receipt.Done = func() error {
 		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")
 		return nil
 	}
-	return receipt, nil
+	return engine.RunReceipt{receipt}, nil
 }
 
 // Execute - Execution Engine

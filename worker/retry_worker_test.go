@@ -21,7 +21,9 @@ func setUpRetryWorkerTest(t *testing.T) (*retryWorker, *testutils.ImplementsAllT
 			"C": {DefinitionID: "C", Image: "invalidimage"},
 		},
 		Runs: map[string]state.Run{
-			"runA": {DefinitionID: "A", ClusterName: "A", GroupName: "A", RunID: "runA"},
+			"runA": {
+				DefinitionID: "A", ClusterName: "A",
+				GroupName: "A", RunID: "runA", Status: state.StatusNeedsRetry},
 		},
 		Qurls: map[string]string{
 			"A": "a/",

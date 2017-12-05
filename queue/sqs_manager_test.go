@@ -243,15 +243,5 @@ func TestSQSManager_ReceiveRun(t *testing.T) {
 func TestSQSManager_ReceiveStatus(t *testing.T) {
 	qm := setUp(t)
 	receipt, _ := qm.ReceiveStatus("statusQ")
-
-	srvMode, ok := receipt.StatusUpdate.GetEnvVar("FLOTILLA_SERVER_MODE")
-	if !ok {
-		t.Errorf("Expected FLOTILLA_SERVER_MODE to exist in environment")
-	}
-
-	if srvMode != "prod" {
-		t.Errorf("Expected to pull server mode [%s], was [%s]", "prod", srvMode)
-	}
-
 	receipt.Done()
 }

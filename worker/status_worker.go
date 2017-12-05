@@ -33,28 +33,36 @@ func (sw *statusWorker) Run() {
 }
 
 func (sw *statusWorker) runOnce() {
-	statusReceipt, err := sw.ee.PollStatus()
+	runReceipt, err := sw.ee.PollStatus()
 	if err != nil {
 		sw.log.Log("message", "unable to receive status message", "error", err.Error())
 		return
 	}
 
 	// Ensure update is in the env required, otherwise, ack without taking action
-	update := statusReceipt.StatusUpdate
+	update := runReceipt.Run
 	if update != nil {
 		//
 		// Relies on the reserved env var, FLOTILLA_SERVER_MODE to ensure update
 		// belongs to -this- mode of Flotilla
 		//
-		serverMode, ok := update.GetEnvVar("FLOTILLA_SERVER_MODE")
-		shouldProcess := ok && serverMode == sw.conf.GetString("flotilla_mode")
+		var serverMode string
+		if update.Env != nil {
+			for _, kv := range *update.Env {
+				if kv.Name == "FLOTILLA_SERVER_MODE" {
+					serverMode = kv.Value
+				}
+			}
+		}
+
+		shouldProcess := len(serverMode) > 0 && serverMode == sw.conf.GetString("flotilla_mode")
 		if shouldProcess {
 			run, err := sw.findRun(update.TaskArn)
 			if err != nil {
 				sw.log.Log("message", "unable to find run to apply update to", "error", err.Error())
 				return
 			}
-			run.UpdateStatus(update)
+			run.UpdateWith(*update)
 			_, err = sw.sm.UpdateRun(run.RunID, run)
 			if err != nil {
 				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", err.Error())
@@ -63,7 +71,7 @@ func (sw *statusWorker) runOnce() {
 		}
 
 		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
-		if err = statusReceipt.Done(); err != nil {
+		if err = runReceipt.Done(); err != nil {
 			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", err.Error())
 		}
 	}

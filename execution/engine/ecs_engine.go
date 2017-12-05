@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -74,20 +75,40 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 //
 // PollStatus pops status updates from the status queue using the QueueManager
 //
-func (ee *ECSExecutionEngine) PollStatus() (queue.StatusReceipt, error) {
-	return ee.qm.ReceiveStatus(ee.statusQurl)
+func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
+	var (
+		receipt   RunReceipt
+		ecsUpdate ecs.Task
+		err       error
+	)
+
+	rawReceipt, err := ee.qm.ReceiveStatus(ee.statusQurl)
+	if err != nil {
+		return receipt, err
+	}
+
+	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &ecsUpdate)
+	if err != nil {
+		return receipt, err
+	}
+
+	adapted := ee.adapter.AdaptTask(ecsUpdate)
+
+	receipt.Run = &adapted
+	receipt.Done = rawReceipt.Done
+	return receipt, nil
 }
 
 //
 // PollRuns receives -at most- one run per queue that is pending execution
 //
-func (ee *ECSExecutionEngine) PollRuns() ([]queue.RunReceipt, error) {
+func (ee *ECSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	queues, err := ee.qm.List()
 	if err != nil {
 		return nil, err
 	}
 
-	var runs []queue.RunReceipt
+	var runs []RunReceipt
 	for _, qurl := range queues {
 		//
 		// Get new queued Run
@@ -101,7 +122,7 @@ func (ee *ECSExecutionEngine) PollRuns() ([]queue.RunReceipt, error) {
 			return runs, err
 		}
 
-		runs = append(runs, runReceipt)
+		runs = append(runs, RunReceipt{runReceipt})
 	}
 	return runs, nil
 }
