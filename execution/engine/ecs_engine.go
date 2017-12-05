@@ -32,6 +32,10 @@ type ecsServiceClient interface {
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
+type ecsUpdate struct {
+	Detail ecs.Task `json:"detail"`
+}
+
 //
 // Initialize configures the ECSExecutionEngine and initializes internal clients
 //
@@ -77,9 +81,9 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 //
 func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 	var (
-		receipt   RunReceipt
-		ecsUpdate ecs.Task
-		err       error
+		receipt RunReceipt
+		update  ecsUpdate
+		err     error
 	)
 
 	rawReceipt, err := ee.qm.ReceiveStatus(ee.statusQurl)
@@ -87,12 +91,12 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 		return receipt, err
 	}
 
-	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &ecsUpdate)
+	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &update)
 	if err != nil {
 		return receipt, err
 	}
 
-	adapted := ee.adapter.AdaptTask(ecsUpdate)
+	adapted := ee.adapter.AdaptTask(update.Detail)
 
 	receipt.Run = &adapted
 	receipt.Done = rawReceipt.Done
