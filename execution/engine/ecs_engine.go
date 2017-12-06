@@ -12,6 +12,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"strings"
+	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 //
@@ -32,6 +33,10 @@ type ecsServiceClient interface {
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
+type ecsUpdate struct {
+	Detail ecs.Task `json:"detail"`
+}
+
 //
 // Initialize configures the ECSExecutionEngine and initializes internal clients
 //
@@ -40,28 +45,30 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		return fmt.Errorf("ECSExecutionEngine needs [aws_default_region] set in config")
 	}
 
+	var (
+		adpt adapter.ECSAdapter
+		err error
+	)
+
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {
 		sess := session.Must(session.NewSession(&aws.Config{
 			Region: aws.String(conf.GetString("aws_default_region"))}))
 
-		ee.ecsClient = ecs.New(sess)
+		ecsClient := ecs.New(sess)
+		ec2Client := ec2.New(sess)
+
+		adpt, err = adapter.NewECSAdapter(conf, ecsClient, ec2Client)
+		if err != nil {
+			return err
+		}
 	}
 
-	adapter, err := adapter.NewECSAdapter(conf)
-	if err != nil {
-		return err
-	}
-	ee.adapter = adapter
+	ee.adapter = adpt
 
-	//
-	// Get queue manager for queuing runs
-	//
-	qm, err := queue.NewQueueManager(conf)
-	if err != nil {
-		return err
+	if ee.qm == nil {
+		return fmt.Errorf("No queue.Manager implementation; ECSExecutionEngine needs a queue.Manager")
 	}
-	ee.qm = qm
 
 	statusQueue := conf.GetString("queue.status")
 	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
@@ -77,9 +84,9 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 //
 func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 	var (
-		receipt   RunReceipt
-		ecsUpdate ecs.Task
-		err       error
+		receipt RunReceipt
+		update  ecsUpdate
+		err     error
 	)
 
 	rawReceipt, err := ee.qm.ReceiveStatus(ee.statusQurl)
@@ -87,12 +94,12 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 		return receipt, err
 	}
 
-	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &ecsUpdate)
+	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &update)
 	if err != nil {
 		return receipt, err
 	}
 
-	adapted := ee.adapter.AdaptTask(ecsUpdate)
+	adapted := ee.adapter.AdaptTask(update.Detail)
 
 	receipt.Run = &adapted
 	receipt.Done = rawReceipt.Done

@@ -1,9 +1,6 @@
 package adapter
 
 import (
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
@@ -21,17 +18,17 @@ type ECSAdapter interface {
 	AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition
 }
 
-type ec2ServiceClient interface {
+type EC2ServiceClient interface {
 	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
 }
 
-type ecsServiceClient interface {
+type ECSServiceClient interface {
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
 type ecsAdapter struct {
-	ecsClient ecsServiceClient
-	ec2Client ec2ServiceClient
+	ecsClient ECSServiceClient
+	ec2Client EC2ServiceClient
 	conf      config.Config
 	retriable []string
 }
@@ -40,26 +37,16 @@ type ecsAdapter struct {
 // NewECSAdapter configures and returns an ecs adapter for translating
 // from ECS api specific objects to our representation
 //
-func NewECSAdapter(conf config.Config) (ECSAdapter, error) {
-	adapter := ecsAdapter{conf: conf}
-
-	if !conf.IsSet("aws_default_region") {
-		return &adapter, fmt.Errorf("ECSAdapter needs [aws_default_region] set in config")
-	}
-
-	flotillaMode := conf.GetString("flotilla_mode")
-	if flotillaMode != "test" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(conf.GetString("aws_default_region"))}))
-
-		adapter.ecsClient = ecs.New(sess)
-		adapter.ec2Client = ec2.New(sess)
-	}
-
-	adapter.retriable = []string{
-		"CannotCreateContainerError",
-		"CannotStartContainerError",
-		"CannotPullContainerError",
+func NewECSAdapter(conf config.Config, ecsClient ECSServiceClient, ec2Client EC2ServiceClient) (ECSAdapter, error) {
+	adapter := ecsAdapter{
+		conf:      conf,
+		ec2Client: ec2Client,
+		ecsClient: ecsClient,
+		retriable: []string{
+			"CannotCreateContainerError",
+			"CannotStartContainerError",
+			"CannotPullContainerError",
+		},
 	}
 	return &adapter, nil
 }
