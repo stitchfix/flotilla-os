@@ -28,21 +28,36 @@ func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAl
 		Runs: map[string]state.Run{
 			"somerun": run,
 		},
-		StatusUpdates: []testutils.MockStatusUpdate{
+		StatusUpdatesAsRuns: []state.Run{
 			{
-				TaskArn:    "status1",
-				ServerMode: "test",
-				LastStatus: state.StatusRunning,
+				TaskArn: "status1",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "test",
+					},
+				},
+				Status: state.StatusRunning,
 			},
 			{
-				TaskArn:    "status1",
-				ServerMode: "test",
-				LastStatus: state.StatusPending,
+				TaskArn: "status1",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "test",
+					},
+				},
+				Status: state.StatusPending,
 			},
 			{
-				TaskArn:    "status1",
-				ServerMode: "test",
-				LastStatus: state.StatusStopped,
+				TaskArn: "status1",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "test",
+					},
+				},
+				Status: state.StatusStopped,
 			},
 		},
 	}
@@ -72,21 +87,36 @@ func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsA
 		Runs: map[string]state.Run{
 			"somerun": run,
 		},
-		StatusUpdates: []testutils.MockStatusUpdate{
+		StatusUpdatesAsRuns: []state.Run{
 			{
-				TaskArn:    "nope1",
-				ServerMode: "prod",
-				LastStatus: state.StatusStopped,
+				TaskArn: "nope1",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "prod",
+					},
+				},
+				Status: state.StatusStopped,
 			},
 			{
-				TaskArn:    "nope2",
-				ServerMode: "staging",
-				LastStatus: state.StatusStopped,
+				TaskArn: "nope2",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "staging",
+					},
+				},
+				Status: state.StatusStopped,
 			},
 			{
-				TaskArn:    "status1",
-				ServerMode: "test",
-				LastStatus: state.StatusRunning,
+				TaskArn: "status1",
+				Env: &state.EnvList{
+					{
+						Name:  "FLOTILLA_SERVER_MODE",
+						Value: "test",
+					},
+				},
+				Status: state.StatusRunning,
 			},
 		},
 	}

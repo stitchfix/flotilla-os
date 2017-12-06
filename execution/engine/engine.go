@@ -38,7 +38,7 @@ type RunReceipt struct {
 //
 // NewExecutionEngine initializes and returns a new Engine
 //
-func NewExecutionEngine(conf config.Config) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
 	name := conf.GetString("execution_engine")
 	if len(name) == 0 {
 		name = "ecs"
@@ -46,7 +46,7 @@ func NewExecutionEngine(conf config.Config) (Engine, error) {
 
 	switch name {
 	case "ecs":
-		eng := &ECSExecutionEngine{}
+		eng := &ECSExecutionEngine{qm: qm}
 		return eng, eng.Initialize(conf)
 	default:
 		return nil, fmt.Errorf("No Engine named [%s] was found", name)
