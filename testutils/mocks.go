@@ -201,7 +201,7 @@ func (iatt *ImplementsAllTheThings) ReceiveStatus(qURL string) (queue.StatusRece
 	iatt.StatusUpdates = iatt.StatusUpdates[1:]
 
 	receipt := queue.StatusReceipt{
-		StatusUpdate: popped,
+		StatusUpdate: &popped,
 	}
 
 	receipt.Done = func() error {

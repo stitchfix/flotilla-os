@@ -6,13 +6,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"strings"
-	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 //
@@ -47,7 +47,7 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 
 	var (
 		adpt adapter.ECSAdapter
-		err error
+		err  error
 	)
 
 	flotillaMode := conf.GetString("flotilla_mode")
@@ -58,6 +58,7 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		ecsClient := ecs.New(sess)
 		ec2Client := ec2.New(sess)
 
+		ee.ecsClient = ecsClient
 		adpt, err = adapter.NewECSAdapter(conf, ecsClient, ec2Client)
 		if err != nil {
 			return err
@@ -94,14 +95,18 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 		return receipt, err
 	}
 
-	err = json.Unmarshal([]byte(rawReceipt.StatusUpdate), &update)
-	if err != nil {
-		return receipt, err
+	//
+	// If we receive an update that is empty, don't try to deserialize it
+	//
+	if rawReceipt.StatusUpdate != nil {
+		err = json.Unmarshal([]byte(*rawReceipt.StatusUpdate), &update)
+		if err != nil {
+			return receipt, fmt.Errorf("Error: %v\nJSON: [%s]", err.Error(), rawReceipt.StatusUpdate)
+		}
+		adapted := ee.adapter.AdaptTask(update.Detail)
+		receipt.Run = &adapted
 	}
 
-	adapted := ee.adapter.AdaptTask(update.Detail)
-
-	receipt.Run = &adapted
 	receipt.Done = rawReceipt.Done
 	return receipt, nil
 }
@@ -121,12 +126,13 @@ func (ee *ECSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 		// Get new queued Run
 		//
 		runReceipt, err := ee.qm.ReceiveRun(qurl)
+
 		if err != nil {
 			return runs, err
 		}
 
 		if runReceipt.Run == nil {
-			return runs, err
+			continue
 		}
 
 		runs = append(runs, RunReceipt{runReceipt})
