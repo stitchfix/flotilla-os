@@ -230,7 +230,7 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 	}
 
 	statusUpdate, err := qm.statusFromMessage(response.Messages[0])
-	receipt.StatusUpdate = statusUpdate
+	receipt.StatusUpdate = &statusUpdate
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}

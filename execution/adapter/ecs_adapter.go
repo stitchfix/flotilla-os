@@ -124,7 +124,10 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 	if run.Status == state.StatusStopped && run.ExitCode == nil {
 		containerReason := "?"
 		if len(task.Containers) == 1 {
-			containerReason = *task.Containers[0].Reason
+			container := task.Containers[0]
+			if container != nil && container.Reason != nil {
+				containerReason = *container.Reason
+			}
 		}
 
 		for _, retriable := range a.retriable {

@@ -38,7 +38,7 @@ func (mqm *mockQueueManager) ReceiveStatus(qURL string) (queue.StatusReceipt, er
 	popped := mqm.statusUpdates[0]
 	mqm.statusUpdates = mqm.statusUpdates[1:]
 
-	return queue.StatusReceipt{StatusUpdate: popped}, nil
+	return queue.StatusReceipt{StatusUpdate: &popped}, nil
 }
 
 func (mqm *mockQueueManager) List() ([]string, error) {

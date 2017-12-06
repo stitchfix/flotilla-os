@@ -33,7 +33,7 @@ type RunReceipt struct {
 // when StatusUpdate is finished applying
 //
 type StatusReceipt struct {
-	StatusUpdate string
+	StatusUpdate *string
 	Done         func() error
 }
 
