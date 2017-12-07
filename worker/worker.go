@@ -38,15 +38,16 @@ func NewWorker(
 		return nil, fmt.Errorf("No workerType %s exists", workerType)
 	}
 
-	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
-	if len(pollIntervalString) == 0 {
-		return worker, fmt.Errorf("Worker type: [%s] needs worker.%s_interval set", workerType, workerType)
-	}
-
-	pollInterval, err := time.ParseDuration(pollIntervalString)
-	if err != nil {
-		return worker, err
-	}
+	pollInterval, err := GetPollInterval(workerType, conf)
 	err = worker.Initialize(conf, sm, ee, log, pollInterval)
 	return worker, err
+}
+
+func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
+	var interval time.Duration
+	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
+	if len(pollIntervalString) == 0 {
+		return interval, fmt.Errorf("Worker type: [%s] needs worker.%s_interval set", workerType, workerType)
+	}
+	return time.ParseDuration(pollIntervalString)
 }
