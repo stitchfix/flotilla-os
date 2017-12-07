@@ -39,11 +39,14 @@ queue:
   # main status update queue name
   status: flotilla-status-updates-dev
 
+#
+# Intervals are duration strings. Eg. "300ms", "1.5h" or "2h45m".
+# Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+#
 worker:
-  retry_interval_seconds: 30
-  submit_interval_seconds: 30
-  status_interval_seconds: 5
-  reassign_interval_seconds: 30
+  retry_interval: 30s
+  submit_interval: 5s
+  status_interval: 300ms
 
 http:
   server:

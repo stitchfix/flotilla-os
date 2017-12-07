@@ -6,12 +6,15 @@ import (
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
+	"time"
 )
 
 //
 // Worker defines a background worker process
 //
 type Worker interface {
+	Initialize(
+		conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error
 	Run()
 }
 
@@ -21,29 +24,29 @@ func NewWorker(
 	conf config.Config,
 	ee engine.Engine,
 	sm state.Manager) (Worker, error) {
+
+	var worker Worker
+
 	switch workerType {
 	case "submit":
-		return &submitWorker{
-			conf: conf,
-			sm:   sm,
-			ee:   ee,
-			log:  log,
-		}, nil
+		worker = &submitWorker{}
 	case "retry":
-		return &retryWorker{
-			sm:   sm,
-			ee:   ee,
-			conf: conf,
-			log:  log,
-		}, nil
+		worker = &retryWorker{}
 	case "status":
-		return &statusWorker{
-			sm:   sm,
-			ee:   ee,
-			conf: conf,
-			log:  log,
-		}, nil
+		worker = &statusWorker{}
 	default:
 		return nil, fmt.Errorf("No workerType %s exists", workerType)
 	}
+
+	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
+	if len(pollIntervalString) == 0 {
+		return worker, fmt.Errorf("Worker type: [%s] needs worker.%s_interval set", workerType, workerType)
+	}
+
+	pollInterval, err := time.ParseDuration(pollIntervalString)
+	if err != nil {
+		return worker, err
+	}
+	err = worker.Initialize(conf, sm, ee, log, pollInterval)
+	return worker, err
 }

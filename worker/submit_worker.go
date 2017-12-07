@@ -9,24 +9,30 @@ import (
 )
 
 type submitWorker struct {
-	sm   state.Manager
-	ee   engine.Engine
-	conf config.Config
-	log  flotillaLog.Logger
+	sm           state.Manager
+	ee           engine.Engine
+	conf         config.Config
+	log          flotillaLog.Logger
+	pollInterval time.Duration
+}
+
+func (sw *submitWorker) Initialize(
+	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+	sw.pollInterval = pollInterval
+	sw.conf = conf
+	sw.sm = sm
+	sw.ee = ee
+	sw.log = log
+	return nil
 }
 
 //
 // Run lists queues, consumes runs from them, and executes them using the execution engine
 //
 func (sw *submitWorker) Run() {
-	pollIntervalSeconds := sw.conf.GetInt("worker.submit_interval_seconds")
-	if pollIntervalSeconds == 0 {
-		pollIntervalSeconds = 30
-	}
-	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
 	for {
 		sw.runOnce()
-		time.Sleep(pollInterval)
+		time.Sleep(sw.pollInterval)
 	}
 }
 

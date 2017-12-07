@@ -10,24 +10,30 @@ import (
 )
 
 type retryWorker struct {
-	sm   state.Manager
-	ee   engine.Engine
-	conf config.Config
-	log  flotillaLog.Logger
+	sm           state.Manager
+	ee           engine.Engine
+	conf         config.Config
+	log          flotillaLog.Logger
+	pollInterval time.Duration
+}
+
+func (rw *retryWorker) Initialize(
+	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+	rw.pollInterval = pollInterval
+	rw.conf = conf
+	rw.sm = sm
+	rw.ee = ee
+	rw.log = log
+	return nil
 }
 
 //
 // Run finds tasks that NEED_RETRY and requeues them
 //
 func (rw *retryWorker) Run() {
-	pollIntervalSeconds := rw.conf.GetInt("worker.retry_interval_seconds")
-	if pollIntervalSeconds == 0 {
-		pollIntervalSeconds = 30
-	}
-	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
 	for {
 		rw.runOnce()
-		time.Sleep(pollInterval)
+		time.Sleep(rw.pollInterval)
 	}
 }
 
