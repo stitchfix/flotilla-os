@@ -10,25 +10,30 @@ import (
 )
 
 type statusWorker struct {
-	sm   state.Manager
-	ee   engine.Engine
-	conf config.Config
-	log  flotillaLog.Logger
+	sm           state.Manager
+	ee           engine.Engine
+	conf         config.Config
+	log          flotillaLog.Logger
+	pollInterval time.Duration
+}
+
+func (sw *statusWorker) Initialize(
+	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+	sw.pollInterval = pollInterval
+	sw.conf = conf
+	sw.sm = sm
+	sw.ee = ee
+	sw.log = log
+	return nil
 }
 
 //
 // Run updates status of tasks
 //
 func (sw *statusWorker) Run() {
-	pollIntervalSeconds := sw.conf.GetInt("worker.status_interval_seconds")
-	if pollIntervalSeconds == 0 {
-		pollIntervalSeconds = 5
-	}
-	pollInterval := time.Duration(pollIntervalSeconds) * time.Second
-
 	for {
 		sw.runOnce()
-		time.Sleep(pollInterval)
+		time.Sleep(sw.pollInterval)
 	}
 }
 
