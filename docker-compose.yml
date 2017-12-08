@@ -1,0 +1,12 @@
+version: '3'
+services:
+  flotilla:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://flotilla:flotilla@db/flotilla?sslmode=disable
+  db:
+    image: postgres:9.6.2
+    environment:
+      POSTGRES_USER: flotilla
+      POSTGRES_DB: flotilla
+      POSTGRES_PASSWORD: flotilla
