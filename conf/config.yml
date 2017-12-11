@@ -3,6 +3,7 @@ aws_default_region: us-east-1
 
 # Database url - relevant for database oriented state managers
 database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+create_database_schema: true
 
 #
 # Configure which managers and clients to use
