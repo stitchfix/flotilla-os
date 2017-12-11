@@ -26,7 +26,8 @@ func setUp() Manager {
 	//
 	// Implicit testing - this will create tables
 	//
-	os.Setenv("state_manager", "postgres")
+	os.Setenv("STATE_MANAGER", "postgres")
+	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
 	sm, _ := NewStateManager(conf)
 	//
 	//

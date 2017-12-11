@@ -32,13 +32,17 @@ func (sm *SQLStateManager) Name() string {
 //
 func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	dburl := conf.GetString("database_url")
+	createSchema := conf.GetBool("create_database_schema")
 
 	var err error
 	if sm.db, err = sqlx.Connect("postgres", dburl); err != nil {
 		return err
 	}
-	if err = sm.createTables(); err != nil {
-		return err
+
+	if createSchema {
+		if err = sm.createTables(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
