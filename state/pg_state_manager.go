@@ -81,7 +81,7 @@ func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []strin
 func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (string, error) {
 	if order == "asc" || order == "desc" {
 		if obj.validOrderField(field) {
-			return fmt.Sprintf("order by %s %s", field, order), nil
+			return fmt.Sprintf("order by %s %s NULLS LAST", field, order), nil
 		}
 		return "", fmt.Errorf("Invalid field to order by [%s], must be one of [%s]",
 			field,
