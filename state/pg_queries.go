@@ -181,6 +181,12 @@ const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
 //
 const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 
+//
+// GetRunSQLForUpdate postgres specific query for getting a single run
+// for update
+//
+const GetRunSQLForUpdate = GetRunSQL + " for update"
+
 const GroupsSelect = `
 select distinct group_name from task_def
 `
