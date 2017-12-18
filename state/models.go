@@ -339,10 +339,14 @@ func (d *Run) UpdateWith(other Run) {
 		StatusStopped:    3,
 	}
 
-	if runStatus, ok := statusPrecedence[d.Status]; ok {
-		if newStatus, ok := statusPrecedence[other.Status]; ok {
-			if newStatus > runStatus {
-				d.Status = other.Status
+	if other.Status == StatusNeedsRetry {
+		d.Status = StatusNeedsRetry
+	} else {
+		if runStatus, ok := statusPrecedence[d.Status]; ok {
+			if newStatus, ok := statusPrecedence[other.Status]; ok {
+				if newStatus > runStatus {
+					d.Status = other.Status
+				}
 			}
 		}
 	}

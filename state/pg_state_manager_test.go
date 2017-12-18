@@ -531,6 +531,9 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		FinishedAt: &t2,
 		Env:        &env,
 	}
+	u2 := Run{
+		Status: StatusNeedsRetry,
+	}
 	sm.UpdateRun("run3", u)
 
 	r, _ := sm.GetRun("run3")
@@ -564,5 +567,11 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	}
 	if matches != len(env) {
 		t.Errorf("Not all updated env vars match")
+	}
+
+	sm.UpdateRun("run3", u2)
+	r, _ = sm.GetRun("run3")
+	if r.Status != u2.Status {
+		t.Errorf("Expected to update status to %s but was %s", u2.Status, r.Status)
 	}
 }
