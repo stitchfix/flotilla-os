@@ -402,15 +402,35 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 // UpdateRun updates run with updates - can be partial
 //
 func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
-	var err error
-	existing, err := sm.GetRun(runID)
+	var (
+		err      error
+		existing Run
+	)
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return existing, err
+	}
+
+	rows, err := tx.Query(GetRunSQLForUpdate, runID)
+	if err != nil {
+		tx.Rollback()
+		return existing, err
+	}
+
+	for rows.Next() {
+		err = rows.Scan(
+			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.ClusterName,
+			&existing.ExitCode, &existing.Status, &existing.StartedAt, &existing.FinishedAt,
+			&existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName, &existing.User,
+			&existing.TaskType, &existing.Env)
+	}
 	if err != nil {
 		return existing, err
 	}
 
 	existing.UpdateWith(updates)
 
-	selectForUpdate := `SELECT * FROM task WHERE run_id = $1 FOR UPDATE;`
 	update := `
     UPDATE task SET
       task_arn = $2, definition_id = $3,
@@ -422,15 +442,6 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
     WHERE run_id = $1;
     `
 
-	tx, err := sm.db.Begin()
-	if err != nil {
-		return existing, err
-	}
-
-	if _, err = tx.Exec(selectForUpdate, runID); err != nil {
-		return existing, err
-	}
-
 	if _, err = tx.Exec(
 		update, runID,
 		existing.TaskArn, existing.DefinitionID,
@@ -438,6 +449,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName, existing.Env); err != nil {
+		tx.Rollback()
 		return existing, err
 	}
 

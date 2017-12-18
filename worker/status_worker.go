@@ -67,8 +67,8 @@ func (sw *statusWorker) runOnce() {
 				sw.log.Log("message", "unable to find run to apply update to", "error", err.Error())
 				return
 			}
-			run.UpdateWith(*update)
-			_, err = sw.sm.UpdateRun(run.RunID, run)
+
+			_, err = sw.sm.UpdateRun(run.RunID, *update)
 			if err != nil {
 				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", err.Error())
 				return
