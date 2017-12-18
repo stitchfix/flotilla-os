@@ -45,6 +45,14 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		return fmt.Errorf("ECSExecutionEngine needs [aws_default_region] set in config")
 	}
 
+	if !conf.IsSet("queue.status") {
+		return fmt.Errorf("ECSExecutionEngine needs [queue.status] set in config")
+	}
+
+	if !conf.IsSet("queue.status_rule") {
+		return fmt.Errorf("ECSExecutionEngine needs [queue.status_rule] set in config")
+	}
+
 	var (
 		adpt adapter.ECSAdapter
 		err  error
@@ -77,6 +85,11 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		return err
 	}
 
+	statusRule := conf.GetString("queue.status_rule")
+	return ee.createEventRuleIfNotExists(statusRule)
+}
+
+func (ee *ECSExecutionEngine) createEventRuleIfNotExists(statusRule string) error {
 	return nil
 }
 

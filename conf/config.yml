@@ -39,6 +39,8 @@ queue:
   process_time: 45
   # main status update queue name
   status: flotilla-status-updates-dev
+  # rule name for routing status change events to the status queue
+  status_rule: flotilla-task-status
 
 #
 # Intervals are duration strings. Eg. "300ms", "1.5h" or "2h45m".
