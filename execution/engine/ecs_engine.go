@@ -6,8 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchevents"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	"github.com/stitchfix/flotilla-os/queue"
@@ -20,6 +22,8 @@ import (
 //
 type ECSExecutionEngine struct {
 	ecsClient  ecsServiceClient
+	cwClient   cloudwatchServiceClient
+	sqsClient  sqsClient
 	adapter    adapter.ECSAdapter
 	qm         queue.Manager
 	statusQurl string
@@ -31,6 +35,15 @@ type ecsServiceClient interface {
 	DeregisterTaskDefinition(input *ecs.DeregisterTaskDefinitionInput) (*ecs.DeregisterTaskDefinitionOutput, error)
 	RegisterTaskDefinition(input *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
+}
+
+type cloudwatchServiceClient interface {
+	PutRule(input *cloudwatchevents.PutRuleInput) (*cloudwatchevents.PutRuleOutput, error)
+	PutTargets(input *cloudwatchevents.PutTargetsInput) (*cloudwatchevents.PutTargetsOutput, error)
+}
+
+type sqsClient interface {
+	GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
 }
 
 type ecsUpdate struct {
@@ -59,6 +72,11 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	)
 
 	flotillaMode := conf.GetString("flotilla_mode")
+
+	//
+	// When mode is not test, setup and initialize all aws clients
+	// - this isn't ideal; is there another way?
+	//
 	if flotillaMode != "test" {
 		sess := session.Must(session.NewSession(&aws.Config{
 			Region: aws.String(conf.GetString("aws_default_region"))}))
@@ -67,6 +85,8 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		ec2Client := ec2.New(sess)
 
 		ee.ecsClient = ecsClient
+		ee.cwClient = cloudwatchevents.New(sess)
+		ee.sqsClient = sqs.New(sess)
 		adpt, err = adapter.NewECSAdapter(conf, ecsClient, ec2Client)
 		if err != nil {
 			return err
@@ -79,6 +99,12 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		return fmt.Errorf("No queue.Manager implementation; ECSExecutionEngine needs a queue.Manager")
 	}
 
+	//
+	// Calling QurlFor creates the status queue if it does not exist
+	// - this is necessary for the next step of creating an ecs
+	//   task update rule in cloudwatch which routes task updates
+	//   to the status queue
+	//
 	statusQueue := conf.GetString("queue.status")
 	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
 	if err != nil {
@@ -86,11 +112,58 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	statusRule := conf.GetString("queue.status_rule")
-	return ee.createEventRuleIfNotExists(statusRule)
+	return ee.createOrUpdateEventRule(statusRule, statusQueue)
 }
 
-func (ee *ECSExecutionEngine) createEventRuleIfNotExists(statusRule string) error {
+func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQueue string) error {
+	_, err := ee.cwClient.PutRule(&cloudwatchevents.PutRuleInput{
+		Description:  aws.String("Routes ecs task status events to flotilla status queues"),
+		Name:         &statusRule,
+		EventPattern: aws.String(`{"source":["aws.ecs"],"detail-type":["ECS Task State Change"]}`),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Route status events to the status queue
+	targetArn, err := ee.getTargetArn(ee.statusQurl)
+	res, err := ee.cwClient.PutTargets(&cloudwatchevents.PutTargetsInput{
+		Rule: &statusRule,
+		Targets: []*cloudwatchevents.Target{
+			{
+				Arn: &targetArn,
+				Id:  &statusQueue,
+			},
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if *res.FailedEntryCount > 0 {
+		failed := res.FailedEntries[0]
+		return fmt.Errorf("Error creating routing rule for ecs status messages [%s]", *failed.ErrorMessage)
+	}
 	return nil
+}
+
+func (ee *ECSExecutionEngine) getTargetArn(qurl string) (string, error) {
+	var arn string
+	res, err := ee.sqsClient.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+		QueueUrl: &qurl,
+		AttributeNames: []*string{
+			aws.String("QueueArn"),
+		},
+	})
+	if err != nil {
+		return arn, err
+	}
+	if res.Attributes["QueueArn"] != nil {
+		return *res.Attributes["QueueArn"], nil
+	}
+	return arn, fmt.Errorf("Couldn't get queue arn")
 }
 
 //
