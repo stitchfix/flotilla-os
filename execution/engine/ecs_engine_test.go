@@ -1,8 +1,11 @@
 package engine
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchevents"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	"github.com/stitchfix/flotilla-os/queue"
@@ -43,6 +46,33 @@ func (mqm *mockQueueManager) ReceiveStatus(qURL string) (queue.StatusReceipt, er
 
 func (mqm *mockQueueManager) List() ([]string, error) {
 	return nil, nil
+}
+
+type mockSQSClient struct {
+	queueArn string
+}
+
+func (msqs *mockSQSClient) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error) {
+	return &sqs.GetQueueAttributesOutput{
+		Attributes: map[string]*string{
+			"QueueArn": &msqs.queueArn,
+		},
+	}, nil
+}
+
+type mockCloudWatchClient struct {
+}
+
+func (mcwc *mockCloudWatchClient) PutRule(input *cloudwatchevents.PutRuleInput) (*cloudwatchevents.PutRuleOutput, error) {
+	return &cloudwatchevents.PutRuleOutput{
+		RuleArn: aws.String("ruleArn"),
+	}, nil
+}
+
+func (mcwc *mockCloudWatchClient) PutTargets(input *cloudwatchevents.PutTargetsInput) (*cloudwatchevents.PutTargetsOutput, error) {
+	return &cloudwatchevents.PutTargetsOutput{
+		FailedEntryCount: aws.Int64(0),
+	}, nil
 }
 
 type testClient struct {
@@ -105,7 +135,11 @@ func setUp(t *testing.T) ECSExecutionEngine {
 
 	a, _ := adapter.NewECSAdapter(conf, &client, &client)
 
-	eng := ECSExecutionEngine{qm: qm}
+	eng := ECSExecutionEngine{
+		qm:        qm,
+		sqsClient: &mockSQSClient{"qArn"},
+		cwClient:  &mockCloudWatchClient{},
+	}
 	eng.Initialize(conf)
 	eng.adapter = a
 

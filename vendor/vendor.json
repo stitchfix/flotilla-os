@@ -183,6 +183,12 @@
 			"revisionTime": "2017-07-27T22:25:20Z"
 		},
 		{
+			"checksumSHA1": "Nc3vXlV7s309PprScYpRDPQWeDQ=",
+			"path": "github.com/aws/aws-sdk-go/service/cloudwatchevents",
+			"revision": "d7d99e85e1cfd854af65a55cad3dd2007db5b96f",
+			"revisionTime": "2018-01-04T23:00:34Z"
+		},
+		{
 			"checksumSHA1": "eJJjXlK7MLOlZhu8741//GZj0ZQ=",
 			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
 			"revision": "df374c20d53ed082b8cf0d0da52b1a181abf387b",
