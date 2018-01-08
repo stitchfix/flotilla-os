@@ -40,6 +40,7 @@ type ecsServiceClient interface {
 type cloudwatchServiceClient interface {
 	PutRule(input *cloudwatchevents.PutRuleInput) (*cloudwatchevents.PutRuleOutput, error)
 	PutTargets(input *cloudwatchevents.PutTargetsInput) (*cloudwatchevents.PutTargetsOutput, error)
+	ListRuleNamesByTarget(input *cloudwatchevents.ListRuleNamesByTargetInput) (*cloudwatchevents.ListRuleNamesByTargetOutput, error)
 }
 
 type sqsClient interface {
@@ -128,6 +129,21 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 
 	// Route status events to the status queue
 	targetArn, err := ee.getTargetArn(ee.statusQurl)
+	if err != nil {
+		return fmt.Errorf("Error getting target arn for %s; message: [%s]", ee.statusQurl, err.Error())
+	}
+
+	names, err := ee.cwClient.ListRuleNamesByTarget(&cloudwatchevents.ListRuleNamesByTargetInput{
+		TargetArn: &targetArn,
+	})
+	if err != nil {
+		return fmt.Errorf("Error listing rules for target: [%s]; message: [%s]", targetArn, err.Error())
+	}
+
+	if len(names.RuleNames) > 0 && *names.RuleNames[0] == statusRule {
+		return nil
+	}
+
 	res, err := ee.cwClient.PutTargets(&cloudwatchevents.PutTargetsInput{
 		Rule: &statusRule,
 		Targets: []*cloudwatchevents.Target{
@@ -146,6 +162,7 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 		failed := res.FailedEntries[0]
 		return fmt.Errorf("Error creating routing rule for ecs status messages [%s]", *failed.ErrorMessage)
 	}
+
 	return nil
 }
 

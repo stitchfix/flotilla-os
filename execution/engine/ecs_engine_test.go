@@ -75,6 +75,13 @@ func (mcwc *mockCloudWatchClient) PutTargets(input *cloudwatchevents.PutTargetsI
 	}, nil
 }
 
+func (mwcw *mockCloudWatchClient) ListRuleNamesByTarget(
+	input *cloudwatchevents.ListRuleNamesByTargetInput) (*cloudwatchevents.ListRuleNamesByTargetOutput, error) {
+	return &cloudwatchevents.ListRuleNamesByTargetOutput{
+		RuleNames: []*string{},
+	}, nil
+}
+
 type testClient struct {
 	t               *testing.T
 	instanceID      string
