@@ -420,10 +420,10 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 
 	for rows.Next() {
 		err = rows.Scan(
-			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.ClusterName,
-			&existing.ExitCode, &existing.Status, &existing.StartedAt, &existing.FinishedAt,
-			&existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName, &existing.User,
-			&existing.TaskType, &existing.Env)
+			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
+			&existing.ClusterName, &existing.ExitCode, &existing.Status, &existing.StartedAt,
+			&existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName,
+			&existing.User, &existing.TaskType, &existing.Env)
 	}
 	if err != nil {
 		return existing, err
@@ -434,21 +434,24 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	update := `
     UPDATE task SET
       task_arn = $2, definition_id = $3,
-      cluster_name = $4, exit_code = $5,
-      status = $6, started_at = $7,
-      finished_at = $8, instance_id = $9,
-      instance_dns_name = $10,
-      group_name = $11, env = $12
+	  alias = $4, image = $5,
+      cluster_name = $6, exit_code = $7,
+      status = $8, started_at = $9,
+      finished_at = $10, instance_id = $11,
+      instance_dns_name = $12,
+      group_name = $13, env = $14
     WHERE run_id = $1;
     `
 
 	if _, err = tx.Exec(
 		update, runID,
 		existing.TaskArn, existing.DefinitionID,
+		existing.Alias, existing.Image,
 		existing.ClusterName, existing.ExitCode,
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
-		existing.InstanceDNSName, existing.GroupName, existing.Env); err != nil {
+		existing.InstanceDNSName, existing.GroupName,
+		existing.Env); err != nil {
 		tx.Rollback()
 		return existing, err
 	}
@@ -463,11 +466,11 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	var err error
 	insert := `
 	INSERT INTO task (
-      task_arn, run_id, definition_id, cluster_name, exit_code, status,
+      task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, status,
       started_at, finished_at, instance_id, instance_dns_name, group_name,
       env, task_type
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'task'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'task'
     );
     `
 
@@ -478,9 +481,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 
 	if _, err = tx.Exec(insert,
 		r.TaskArn, r.RunID, r.DefinitionID,
-		r.ClusterName, r.ExitCode, r.Status,
-		r.StartedAt, r.FinishedAt,
-		r.InstanceID, r.InstanceDNSName, r.GroupName, r.Env); err != nil {
+		r.Alias, r.Image, r.ClusterName,
+		r.ExitCode, r.Status, r.StartedAt,
+		r.FinishedAt, r.InstanceID,
+		r.InstanceDNSName, r.GroupName, r.Env); err != nil {
 		tx.Rollback()
 		return err
 	}

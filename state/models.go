@@ -266,6 +266,8 @@ type Run struct {
 	TaskArn         string     `json:"task_arn"`
 	RunID           string     `json:"run_id"`
 	DefinitionID    string     `json:"definition_id"`
+	Alias           string     `json:"alias"`
+	Image           string     `json:"image"`
 	ClusterName     string     `json:"cluster"`
 	ExitCode        *int64     `json:"exit_code,omitempty"`
 	Status          string     `json:"status"`
@@ -291,6 +293,12 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
+	}
+	if len(other.Alias) > 0 {
+		d.Alias = other.Alias
+	}
+	if len(other.Image) > 0 {
+		d.Image = other.Image
 	}
 	if len(other.ClusterName) > 0 {
 		d.ClusterName = other.ClusterName

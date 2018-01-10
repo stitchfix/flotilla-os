@@ -163,6 +163,8 @@ func (es *executionService) constructRun(
 		ClusterName:  clusterName,
 		GroupName:    definition.GroupName,
 		DefinitionID: definition.DefinitionID,
+		Alias:        definition.Alias,
+		Image:        definition.Image,
 		Status:       state.StatusQueued,
 		User:         ownerID,
 	}
