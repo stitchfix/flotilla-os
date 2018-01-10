@@ -56,10 +56,10 @@ func insertDefinitions(db *sqlx.DB) {
 
 	taskSQL := `
     INSERT INTO task (
-      run_id, definition_id, cluster_name, exit_code, status,
+      run_id, definition_id, cluster_name, alias, image, exit_code, status,
       started_at, finished_at, instance_id, instance_dns_name, group_name, env
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
     )
     `
 
@@ -92,19 +92,19 @@ func insertDefinitions(db *sqlx.DB) {
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
 	db.MustExec(taskSQL,
-		"run0", "A", "clusta", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`)
+		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`)
 	db.MustExec(
-		taskSQL, "run1", "B", "clusta", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`)
+		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`)
 
 	db.MustExec(
-		taskSQL, "run2", "B", "clusta", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`)
+		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`)
 
 	db.MustExec(taskSQL,
-		"run3", "C", "clusta", nil, StatusQueued, nil, nil, "", "", "groupX",
+		"run3", "C", "clusta", "aliasC", "imgC", nil, StatusQueued, nil, nil, "", "", "groupX",
 		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`)
 
-	db.MustExec(taskSQL, "run4", "C", "clusta", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil)
-	db.MustExec(taskSQL, "run5", "D", "clustb", nil, StatusPending, nil, nil, "", "", "groupW", nil)
+	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil)
+	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil)
 }
 
 func tearDown() {
@@ -450,6 +450,8 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	r1 := Run{
 		RunID:        "run:17",
 		GroupName:    "group:cupcake",
+		Alias:        "cute",
+		Image:        "someImage",
 		DefinitionID: "A",
 		ClusterName:  "clusta",
 		Status:       StatusQueued,
@@ -468,6 +470,8 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		RunID:        "run:18",
 		GroupName:    "group:cupcake",
 		DefinitionID: "A",
+		Alias:        "AliasA",
+		Image:        "ImageA",
 		ExitCode:     &ec,
 		StartedAt:    &t1,
 		FinishedAt:   &t2,
@@ -508,6 +512,13 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		t.Errorf("Expected finished_at %s but was %s", *r2.FinishedAt, *f2.FinishedAt)
 	}
 
+	if f2.Alias != r2.Alias {
+		t.Errorf("Expected alias: [%s] but was [%s]", r2.Alias, f2.Alias)
+	}
+
+	if f2.Image != r2.Image {
+		t.Errorf("Expected image: [%s] but was [%s]", r2.Image, f2.Image)
+	}
 }
 
 func TestSQLStateManager_UpdateRun(t *testing.T) {
@@ -525,6 +536,8 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	t2 = t2.UTC()
 	u := Run{
 		TaskArn:    "arn1",
+		Alias:      "alien",
+		Image:      "imagine",
 		ExitCode:   &ec,
 		Status:     StatusStopped,
 		StartedAt:  &t1,
@@ -551,6 +564,14 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 
 	if r.Status != u.Status {
 		t.Errorf("Expected update to set status to %s but was %s", u.Status, r.Status)
+	}
+
+	if r.Alias != u.Alias {
+		t.Errorf("Expected update to set alias: [%s] but was [%s]", u.Alias, r.Alias)
+	}
+
+	if r.Image != u.Image {
+		t.Errorf("Expected update to set image: [%s] but was [%s]", u.Image, r.Image)
 	}
 
 	updatedEnv := *r.Env

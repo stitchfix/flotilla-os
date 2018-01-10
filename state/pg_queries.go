@@ -43,6 +43,8 @@ CREATE INDEX IF NOT EXISTS ix_task_def_env ON task_def USING gin (env jsonb_path
 CREATE TABLE IF NOT EXISTS task (
   run_id character varying NOT NULL PRIMARY KEY,
   definition_id character varying REFERENCES task_def(definition_id),
+  alias character varying,
+  image character varying,
   cluster_name character varying,
   exit_code integer,
   status character varying,
@@ -157,6 +159,8 @@ select
   coalesce(t.task_arn,'')                    as taskarn,
   t.run_id                                   as runid,
   coalesce(t.definition_id,'')               as definitionid,
+  coalesce(t.alias,'')                       as alias,
+  coalesce(t.image,'')                       as image,
   coalesce(t.cluster_name,'')                as clustername,
   t.exit_code                                as exitcode,
   coalesce(t.status,'')                      as status,
