@@ -10,7 +10,9 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	"math"
 	"strings"
+	"time"
 )
 
 //
@@ -35,11 +37,26 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	createSchema := conf.GetBool("create_database_schema")
 
 	var err error
-	if sm.db, err = sqlx.Connect("postgres", dburl); err != nil {
+	if sm.db, err = sqlx.Open("postgres", dburl); err != nil {
 		return err
 	}
 
 	if createSchema {
+		// Since this happens at initialization we
+		// could encounter racy conditions waiting for pg
+		// to become available. Wait for it a bit
+		if err = sm.db.Ping(); err != nil {
+			// Try 3 more times
+			// 5, 10, 20
+			for i := 0; i < 3 && err != nil; i++ {
+				time.Sleep(time.Duration(5*math.Pow(2, float64(i))) * time.Second)
+				err = sm.db.Ping()
+			}
+			if err != nil {
+				return fmt.Errorf("error trying to connect to postgres, retries exhausted; error: [%s]", err.Error())
+			}
+		}
+
 		if err = sm.createTables(); err != nil {
 			return err
 		}
