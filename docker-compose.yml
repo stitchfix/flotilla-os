@@ -2,6 +2,10 @@ version: '3'
 services:
   ui:
     build: ./ui
+    environment:
+      FLOTILLA_API: http://flotilla/api/v1
+      DEFAULT_CLUSTER: default
+      
   flotilla:
     build: .
     environment:
