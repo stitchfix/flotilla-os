@@ -1,6 +1,7 @@
 FROM node:carbon
 WORKDIR /usr/src/app
-COPY package.json .
+ADD . /usr/src/app
+RUN npm install -g serve
 RUN npm install
-COPY . .
-ENTRYPOINT npm start
+RUN npm run build
+ENTRYPOINT serve -s build
