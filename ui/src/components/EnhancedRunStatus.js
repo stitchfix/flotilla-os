@@ -1,7 +1,7 @@
 import React from "react"
 import { CheckCircle, XCircle } from "react-feather"
 import { capitalize } from "lodash"
-import { Loader, colors } from "platforma"
+import { Loader, colors } from "aa-ui-components"
 import { runStatusTypes } from "../constants/"
 import { getRunStatus } from "../utils/"
 

@@ -14,7 +14,7 @@ import {
   withRouterSync,
   Button,
   intentTypes,
-} from "platforma"
+} from "aa-ui-components"
 import config from "../config"
 import { envNameValueDelimiterChar } from "../constants"
 import { runFormValidate, getHelmetTitle } from "../utils/"

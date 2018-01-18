@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { formValues } from "redux-form"
 import { get } from "lodash"
-import { ReduxFormGroupSelect, withStateFetch } from "platforma"
+import { ReduxFormGroupSelect, withStateFetch } from "aa-ui-components"
 import config from "../config"
 import { getImageTagsEndpoint } from "../utils/"
 

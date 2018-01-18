@@ -13,7 +13,7 @@ import {
   FormGroup,
   queryUpdateTypes,
   modalActions,
-} from "platforma"
+} from "aa-ui-components"
 import qs from "query-string"
 import { has, get, pickBy, identity } from "lodash"
 import config from "../config"

@@ -6,7 +6,7 @@ import {
   Loader,
   queryUpdateTypes,
   withStateFetch,
-} from "platforma"
+} from "aa-ui-components"
 import querystring from "query-string"
 import { has, isEmpty, isEqual } from "lodash"
 import SortHeader from "./SortHeader"

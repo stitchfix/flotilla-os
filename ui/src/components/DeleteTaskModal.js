@@ -10,7 +10,7 @@ import {
   intentTypes,
   popupActions,
   Popup,
-} from "platforma"
+} from "aa-ui-components"
 import { get } from "lodash"
 import axios from "axios"
 import config from "../config"

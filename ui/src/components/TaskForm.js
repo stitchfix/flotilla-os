@@ -14,7 +14,7 @@ import {
   ViewHeader,
   Button,
   intentTypes,
-} from "platforma"
+} from "aa-ui-components"
 import config from "../config"
 import { taskFormTypes } from "../constants/"
 import { taskFormUtils, getHelmetTitle } from "../utils/"

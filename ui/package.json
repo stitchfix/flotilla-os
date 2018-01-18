@@ -21,7 +21,7 @@
     "immutability-helper": "2.6.1",
     "lodash": "^4.17.4",
     "moment": "^2.19.2",
-    "platforma": "stitchfix/aa-ui-components.git#0.6.0",
+    "aa-ui-components": "stitchfix/aa-ui-components.git#0.6.0",
     "prop-types": "^15.6.0",
     "query-string": "^5.0.1",
     "react": "^16.1.1",
@@ -112,8 +112,7 @@
     ],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
-      "\\.(css|scss)$": "<rootDir>/src/__testutils__/styleMock.js",
-      "platforma": "<rootDir>/../platforma/src/"
+      "\\.(css|scss)$": "<rootDir>/src/__testutils__/styleMock.js"
     },
     "coveragePathIgnorePatterns": [
       "/node_modules/",

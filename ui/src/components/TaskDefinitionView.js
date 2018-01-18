@@ -3,7 +3,13 @@ import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import Helmet from "react-helmet"
 import { get, has } from "lodash"
-import { View, ViewHeader, Button, intentTypes, modalActions } from "platforma"
+import {
+  View,
+  ViewHeader,
+  Button,
+  intentTypes,
+  modalActions,
+} from "aa-ui-components"
 import { taskDefinitionPropTypes } from "../constants/"
 import { getHelmetTitle } from "../utils/"
 import TaskInfo from "./TaskInfo"

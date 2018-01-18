@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import { HashRouter, Route, Switch } from "react-router-dom"
 import { connect } from "react-redux"
-import { withStateFetch } from "platforma"
+import { withStateFetch } from "aa-ui-components"
 import config from "../config"
 import RunForm from "./RunForm"
 import TaskDefinitionView from "./TaskDefinitionView"

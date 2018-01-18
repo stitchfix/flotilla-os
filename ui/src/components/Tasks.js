@@ -12,7 +12,7 @@ import {
   Card,
   FormGroup,
   queryUpdateTypes,
-} from "platforma"
+} from "aa-ui-components"
 import qs from "query-string"
 import DebounceInput from "react-debounce-input"
 import { has, isEmpty, isEqual, get, pickBy, identity } from "lodash"

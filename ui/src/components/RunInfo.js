@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import { Link } from "react-router-dom"
 import JsonView from "react-json-view"
-import { Card, FormGroup, Button, Tag, colors } from "platforma"
+import { Card, FormGroup, Button, Tag, colors } from "aa-ui-components"
 import { has, get } from "lodash"
 import moment from "moment"
 import { reactJsonViewProps } from "../constants/"

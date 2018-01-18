@@ -1,5 +1,5 @@
 import React from "react"
-import { intentTypes, Popup, popupActions } from "platforma"
+import { intentTypes, Popup, popupActions } from "aa-ui-components"
 import axios from "axios"
 import config from "../config"
 import { actionTypes } from "../constants/"

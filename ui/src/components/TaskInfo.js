@@ -1,5 +1,5 @@
 import React from "react"
-import { Card, FormGroup, Tag } from "platforma"
+import { Card, FormGroup, Tag } from "aa-ui-components"
 import { get, has } from "lodash"
 import JsonView from "react-json-view"
 import { reactJsonViewProps } from "../constants/"

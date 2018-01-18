@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
-import { Button } from "platforma"
+import { Button } from "aa-ui-components"
 import { getImageDisplayName } from "../utils/"
 
 const TasksRow = ({ data, onRunButtonClick }) => {

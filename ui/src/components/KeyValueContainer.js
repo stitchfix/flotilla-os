@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { ChevronUp, ChevronDown } from "react-feather"
-import { Button, Card, FormGroup } from "platforma"
+import { Button, Card, FormGroup } from "aa-ui-components"
 
 export default class KeyValueContainer extends Component {
   static propTypes = {

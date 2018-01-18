@@ -2,7 +2,13 @@ import React from "react"
 import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { Link } from "react-router-dom"
-import { Button, View, ViewHeader, modalActions, intentTypes } from "platforma"
+import {
+  Button,
+  View,
+  ViewHeader,
+  modalActions,
+  intentTypes,
+} from "aa-ui-components"
 import { get } from "lodash"
 import qs from "query-string"
 import {

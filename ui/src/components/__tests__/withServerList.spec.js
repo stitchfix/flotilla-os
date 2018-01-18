@@ -2,7 +2,11 @@ import React from "react"
 import { MemoryRouter } from "react-router-dom"
 import { mount } from "enzyme"
 import qs from "query-string"
-import { withRouterSync, queryUpdateTypes, withStateFetch } from "platforma"
+import {
+  withRouterSync,
+  queryUpdateTypes,
+  withStateFetch,
+} from "aa-ui-components"
 import withQueryOffsetTransform from "../withQueryOffsetTransform"
 import withServerList from "../withServerList"
 

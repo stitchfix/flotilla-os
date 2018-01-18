@@ -4,7 +4,7 @@ import {
   ReduxFormGroupInput,
   ReduxFormGroupArray,
   ReduxFormGroupArrayRow,
-} from "platforma"
+} from "aa-ui-components"
 
 export const EnvFieldArray = props => {
   const { handleEnvCreate, handleEnvUpdate, handleEnvRemove } = props
