@@ -1,9 +1,12 @@
 version: '3'
 services:
+  ui:
+    build: ./ui
   flotilla:
     build: .
     environment:
       DATABASE_URL: postgresql://flotilla:flotilla@db/flotilla?sslmode=disable
+      FLOTILLA_MODE: dev
   db:
     image: postgres:9.6.2
     environment:
