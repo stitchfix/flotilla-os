@@ -21,7 +21,7 @@
     "immutability-helper": "2.6.1",
     "lodash": "^4.17.4",
     "moment": "^2.19.2",
-    "platforma": "git+ssh://git@github.com/stitchfix/aa-ui-components.git#0.6.0",
+    "platforma": "stitchfix/aa-ui-components.git#0.6.0",
     "prop-types": "^15.6.0",
     "query-string": "^5.0.1",
     "react": "^16.1.1",
