@@ -1,0 +1,7 @@
+export const pending = "PENDING"
+export const queued = "QUEUED"
+export const running = "RUNNING"
+export const stopped = "STOPPED"
+export const needs_retry = "NEEDS_RETRY"
+export const success = "SUCCESS"
+export const failed = "FAILED"
