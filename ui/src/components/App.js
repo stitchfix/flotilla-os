@@ -74,7 +74,7 @@ export const App = props => {
             <div className="pl-topbar-app-name">
               <Link to="/">
                 <img
-                  src="favicon.png"
+                  src="static/favicon.png"
                   alt="stitchfix-logo"
                   style={{
                     width: 32,
