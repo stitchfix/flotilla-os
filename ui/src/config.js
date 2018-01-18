@@ -1,10 +1,9 @@
 const FLOTILLA_API = process.env.FLOTILLA_API || "FILL_ME_IN"
-const CLUSTERS_API = process.env.CLUSTERS_API || "FILL_ME_IN"
+const CLUSTERS_API = process.env.CLUSTERS_API || "config/clusters.json"
 const IMAGE_ENDPOINT = process.env.IMAGE_ENDPOINT || "FILL_ME_IN"
 const IMAGE_TAGS_ENDPOINT = process.env.IMAGE_TAGS_ENDPOINT || "FILL_ME_IN"
-const DOCKER_REPOSITORY_HOST =
-  process.env.DOCKER_REPOSITORY_HOST || "FILL_ME_IN"
-const DEFAULT_CLUSTER = process.env.DEFAULT_CLUSTER || "FILL_ME_IN"
+const DOCKER_REPOSITORY_HOST = process.env.DOCKER_REPOSITORY_HOST || ""
+const DEFAULT_CLUSTER = process.env.DEFAULT_CLUSTER || "default"
 
 export default {
   FLOTILLA_API,

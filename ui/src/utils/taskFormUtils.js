@@ -2,8 +2,16 @@ import { get, has, isEmpty } from "lodash"
 import config from "../config"
 import { taskFormTypes } from "../constants/"
 
-export const joinImage = (image, tag) =>
-  `${config.DOCKER_REPOSITORY_HOST}/${image}:${tag}`
+export const joinImage = (image, tag) => {
+  if (
+    typeof config.DOCKER_REPOSITORY_HOST === "string" &&
+    config.DOCKER_REPOSITORY_HOST.length > 0
+  ) {
+    return `${config.DOCKER_REPOSITORY_HOST}/${image}:${tag}`
+  }
+
+  return `${image}:${tag}`
+}
 
 export const splitImage = str => {
   const split = str.split("/")[1].split(":")
