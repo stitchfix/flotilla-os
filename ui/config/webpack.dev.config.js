@@ -12,6 +12,7 @@ module.exports = opts => {
         inject: "body",
         filename: "index.html",
         appMountId: "root",
+        favicon: "src/assets/favicon.png",
       }),
     ],
   }

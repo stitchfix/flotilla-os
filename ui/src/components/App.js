@@ -17,46 +17,7 @@ import ActiveRuns from "./ActiveRuns"
 import TaskContainer from "./TaskContainer"
 import RunContainer from "./RunContainer"
 import CreateTaskForm from "./CreateTaskForm"
-
-const containerStyle = {
-  background: `rgba(0, 0, 0, 0.28)`,
-  border: "none",
-  borderRadius: 8,
-}
-const contentStyle = {
-  padding: 16,
-}
-const filterBarStyle = {
-  marginTop: 12,
-  marginBottom: 12,
-  paddingTop: 12,
-  paddingBottom: 12,
-  borderTop: "1px solid rgba(255, 255, 255, 0.2)",
-  borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
-}
-
-const FilterBar = props => (
-  <div
-    className="flex ff-rn j-fs a-c with-horizontal-child-margin"
-    style={filterBarStyle}
-  >
-    <h4>FILTER BY</h4>
-    {props.filters.map((filter, i) => <div key={i}>{filter}</div>)}
-  </div>
-)
-
-const Test = props => {
-  return (
-    <View noHeader>
-      <Card containerStyle={containerStyle}>
-        <div className="flex ff-cn j-fs a-s full-width">
-          <h1>Tasks</h1>
-          <FilterBar filters={["Alias", "Group", "Image"]} />
-        </div>
-      </Card>
-    </View>
-  )
-}
+import Favicon from "../assets/favicon.png"
 
 export const App = props => {
   const {
@@ -74,7 +35,7 @@ export const App = props => {
             <div className="pl-topbar-app-name">
               <Link to="/">
                 <img
-                  src="static/favicon.png"
+                  src={Favicon}
                   alt="stitchfix-logo"
                   style={{
                     width: 32,
@@ -100,7 +61,6 @@ export const App = props => {
           <Route exact path="/tasks" component={Tasks} />
           <Route path="/tasks/:definitionId" component={TaskContainer} />
           <Route path="/runs/:runId" component={RunContainer} />
-          <Route path="/weee" component={Test} />
           {process.env.NODE_ENV === "production" ? (
             <Redirect from="/" to="/tasks" />
           ) : null}
