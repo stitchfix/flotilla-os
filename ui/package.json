@@ -112,7 +112,7 @@
     ],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
-      "\\.(css|scss)$": "<rootDir>/src/__testutils__/styleMock.js"
+      "\\.(css|scss|png)$": "<rootDir>/src/__testutils__/styleMock.js"
     },
     "coveragePathIgnorePatterns": [
       "/node_modules/",
