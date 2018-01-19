@@ -11,10 +11,9 @@ const requestDropdownOpts = () => ({ type: actionTypes.REQUEST_SELECT_OPTS })
 const receiveDropdownOpts = res => ({
   type: actionTypes.RECEIVE_SELECT_OPTS,
   payload: {
-    image: res[0].repositories.map(strToSelectOpt),
-    group: res[1].groups.map(strToSelectOpt),
-    cluster: res[2].registered_clusters.map(strToSelectOpt),
-    tag: res[3].tags.map(strToSelectOpt),
+    group: res[0].groups.map(strToSelectOpt),
+    cluster: res[1].registered_clusters.map(strToSelectOpt),
+    tag: res[2].tags.map(strToSelectOpt),
   },
 })
 
@@ -40,21 +39,13 @@ export default function fetchDropdownOpts() {
 
     axios
       .all([
-        axios.get(config.IMAGE_ENDPOINT),
         axios.get(`${config.FLOTILLA_API}/groups?limit=2000`),
         axios.get(config.CLUSTERS_API),
         axios.get(`${config.FLOTILLA_API}/tags?limit=5000`),
       ])
       .then(
-        axios.spread((image, group, cluster, tag) => {
-          dispatch(
-            receiveDropdownOpts([
-              image.data,
-              group.data,
-              cluster.data,
-              tag.data,
-            ])
-          )
+        axios.spread((group, cluster, tag) => {
+          dispatch(receiveDropdownOpts([group.data, cluster.data, tag.data]))
         })
       )
       .catch(err => {

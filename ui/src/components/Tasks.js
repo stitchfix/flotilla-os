@@ -89,7 +89,6 @@ export class Tasks extends Component {
           <Card
             className="flot-list-view-filters-container"
             contentStyle={{ padding: 0 }}
-            // header="Filters"
           >
             <div className="flot-list-view-filters">
               <FormGroup
@@ -147,14 +146,17 @@ export class Tasks extends Component {
               <FormGroup
                 label="Image"
                 input={
-                  <Select
+                  <DebounceInput
+                    minLength={1}
+                    debounceTimeout={250}
+                    type="text"
+                    className="pl-input"
                     value={get(query, "image", "")}
-                    options={this.props.imageOptions}
-                    onChange={selection => {
+                    onChange={evt => {
                       updateQuery([
                         {
                           key: "image",
-                          value: selection === null ? null : selection.value,
+                          value: evt.target.value,
                           updateType: queryUpdateTypes.SHALLOW,
                         },
                         {
@@ -222,7 +224,6 @@ export class Tasks extends Component {
 }
 
 const mapStateToProps = state => ({
-  imageOptions: get(state, "selectOpts.image", []),
   groupOptions: get(state, "selectOpts.group", []),
 })
 

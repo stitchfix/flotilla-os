@@ -3,7 +3,6 @@ import { actionTypes } from "../constants/"
 const initialState = {
   cluster: [],
   group: [],
-  image: [],
   tag: [],
   error: false,
   inFlight: false,
@@ -24,7 +23,6 @@ export default function selectOpts(state = initialState, action) {
         error: false,
         cluster: action.payload.cluster,
         group: action.payload.group,
-        image: action.payload.image,
         tag: action.payload.tag,
       }
     case actionTypes.RECEIVE_SELECT_OPTS_ERROR:

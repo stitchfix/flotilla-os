@@ -2,7 +2,6 @@ import React from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import { Button } from "aa-ui-components"
-import { getImageDisplayName } from "../utils/"
 
 const TasksRow = ({ data, onRunButtonClick }) => {
   return (
@@ -21,7 +20,7 @@ const TasksRow = ({ data, onRunButtonClick }) => {
         {data.group_name}
       </div>
       <div className="pl-td overflow-ellipsis" style={{ flex: 1 }}>
-        {getImageDisplayName(data.image)}
+        {data.image}
       </div>
       <div className="pl-td" style={{ flex: 1 }}>
         {data.memory}

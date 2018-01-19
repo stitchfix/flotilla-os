@@ -18,7 +18,6 @@ import {
 import config from "../config"
 import { taskFormTypes } from "../constants/"
 import { taskFormUtils, getHelmetTitle } from "../utils/"
-import ImageTagSelect from "./ImageTagSelect"
 import EnvFieldArray from "./EnvFieldArray"
 
 class TaskForm extends Component {
@@ -26,12 +25,6 @@ class TaskForm extends Component {
     taskFormType: PropTypes.oneOf(Object.values(taskFormTypes)),
     handleSubmit: PropTypes.func,
     inFlight: PropTypes.bool,
-    imageOptions: PropTypes.arrayOf(
-      PropTypes.shape({
-        label: PropTypes.string,
-        value: PropTypes.string,
-      })
-    ),
     groupOptions: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string,
@@ -64,7 +57,6 @@ class TaskForm extends Component {
     const {
       handleSubmit,
       inFlight,
-      imageOptions,
       groupOptions,
       tagOptions,
       selectOptionsRequestInFlight,
@@ -119,15 +111,7 @@ class TaskForm extends Component {
                   isLoading={selectOptionsRequestInFlight}
                   disabled={selectOptionsRequestInFlight}
                 />
-                <ReduxFormGroupSelect
-                  name="image"
-                  label="Image"
-                  isRequired
-                  options={imageOptions}
-                  isLoading={selectOptionsRequestInFlight}
-                  disabled={selectOptionsRequestInFlight}
-                />
-                <ImageTagSelect />
+                <ReduxFormGroupInput name="image" label="Image" isRequired />
                 <ReduxFormGroupTextarea
                   name="command"
                   label="Command"

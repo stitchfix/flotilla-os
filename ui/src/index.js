@@ -8,7 +8,7 @@ import { fetchSelectOpts } from "./actions/"
 
 const store = Store()
 
-// Dispatch global select options (image, group, tags, etc.)
+// Dispatch global select options (group, tags, etc.)
 store.dispatch(fetchSelectOpts())
 
 render(
