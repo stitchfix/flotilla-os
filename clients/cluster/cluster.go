@@ -16,6 +16,7 @@ type Client interface {
 	Name() string
 	Initialize(conf config.Config) error
 	CanBeRun(clusterName string, definition state.Definition) (bool, error)
+	ListClusters() ([]string, error)
 }
 
 //

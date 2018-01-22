@@ -30,6 +30,7 @@ type ExecutionService interface {
 	UpdateStatus(runID string, status string, exitCode *int64) error
 	Terminate(runID string) error
 	ReservedVariables() []string
+	ListClusters() ([]string, error)
 }
 
 type executionService struct {
@@ -72,6 +73,8 @@ func NewExecutionService(conf config.Config, ee engine.Engine,
 			return run.User
 		},
 	}
+	// Warm cached cluster list
+	es.cc.ListClusters()
 	return &es, nil
 }
 
@@ -301,4 +304,11 @@ func (es *executionService) Terminate(runID string) error {
 	return exceptions.MalformedInput{
 		ErrorString: fmt.Sprintf(
 			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
+}
+
+//
+// ListClusters returns a list of all execution clusters available
+//
+func (es *executionService) ListClusters() ([]string, error) {
+	return es.cc.ListClusters()
 }

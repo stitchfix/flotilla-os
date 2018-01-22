@@ -417,3 +417,14 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, response)
 	}
 }
+
+func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
+	clusters, err := ep.executionService.ListClusters()
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["clusters"] = clusters
+		ep.encodeResponse(w, response)
+	}
+}
