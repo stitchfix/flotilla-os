@@ -50,12 +50,9 @@ module.exports = opts => {
       new webpack.DefinePlugin({
         "process.env": {
           FLOTILLA_API: JSON.stringify(process.env.FLOTILLA_API),
-          CLUSTERS_API: JSON.stringify(process.env.CLUSTERS_API),
           DOCKER_REPOSITORY_HOST: JSON.stringify(
             process.env.DOCKER_REPOSITORY_HOST
           ),
-          IMAGE_ENDPOINT: JSON.stringify(process.env.IMAGE_ENDPOINT),
-          IMAGE_TAGS_ENDPOINT: JSON.stringify(process.env.IMAGE_TAGS_ENDPOINT),
           DEFAULT_CLUSTER: JSON.stringify(process.env.DEFAULT_CLUSTER),
         },
       }),

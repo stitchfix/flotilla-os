@@ -12,7 +12,7 @@ const receiveDropdownOpts = res => ({
   type: actionTypes.RECEIVE_SELECT_OPTS,
   payload: {
     group: res[0].groups.map(strToSelectOpt),
-    cluster: res[1].registered_clusters.map(strToSelectOpt),
+    cluster: res[1].clusters.map(strToSelectOpt),
     tag: res[2].tags.map(strToSelectOpt),
   },
 })
@@ -40,7 +40,7 @@ export default function fetchDropdownOpts() {
     axios
       .all([
         axios.get(`${config.FLOTILLA_API}/groups?limit=2000`),
-        axios.get(config.CLUSTERS_API),
+        axios.get(`${config.FLOTILLA_API}/clusters`),
         axios.get(`${config.FLOTILLA_API}/tags?limit=5000`),
       ])
       .then(
