@@ -8,9 +8,12 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
+	"log"
 	"strings"
 	"time"
 )
+
+var LIST_CLUSTER_RESULTS int64 = 10
 
 //
 // ECSClusterClient is the default cluster client and maintains a
@@ -21,11 +24,13 @@ import (
 // [NOTE] This client assumes homogenous clusters
 //
 type ECSClusterClient struct {
-	ecsClient resourceClient
-	clusters  resourceCache
+	ecsClient    resourceClient
+	clusters     resourceCache
+	clusterNames clusterNamesCache
 }
 
 type resourceClient interface {
+	ListClusters(input *ecs.ListClustersInput) (*ecs.ListClustersOutput, error)
 	DescribeClusters(input *ecs.DescribeClustersInput) (*ecs.DescribeClustersOutput, error)
 	ListContainerInstances(input *ecs.ListContainerInstancesInput) (*ecs.ListContainerInstancesOutput, error)
 	DescribeContainerInstances(input *ecs.DescribeContainerInstancesInput) (*ecs.DescribeContainerInstancesOutput, error)
@@ -62,6 +67,10 @@ func (ecc *ECSClusterClient) Initialize(conf config.Config) error {
 		duration:      15 * time.Minute,
 		internalCache: cache.New(15*time.Minute, 5*time.Minute),
 	}
+	ecc.clusterNames = clusterNamesCache{
+		duration:      15 * time.Minute,
+		internalCache: cache.New(15*time.Minute, 5*time.Minute),
+	}
 	return nil
 }
 
@@ -87,6 +96,54 @@ func (ecc *ECSClusterClient) CanBeRun(clusterName string, definition state.Defin
 	}
 
 	return ecc.validate(resources, definition), nil
+}
+
+//
+// ListClusters gets a list of cluster names
+//
+func (ecc *ECSClusterClient) ListClusters() ([]string, error) {
+	clusterNames, found := ecc.clusterNames.getClusterNames()
+	if found {
+		return clusterNames, nil
+	}
+	clusterNames, err := ecc.getClusterNamesFromApi()
+	if err != nil {
+		return clusterNames, err
+	}
+	ecc.clusterNames.setInstanceResources(clusterNames)
+	return clusterNames, nil
+}
+
+func (ecc *ECSClusterClient) getClusterNamesFromApi() ([]string, error) {
+	var nextToken *string
+	clusterNames := make([]string, 0, 100)
+	for {
+		clusterArns, err := ecc.ecsClient.ListClusters(
+			&ecs.ListClustersInput{
+				MaxResults: &LIST_CLUSTER_RESULTS,
+				NextToken:  nextToken})
+		if err != nil {
+			return nil, err
+		}
+		clusters, err := ecc.ecsClient.DescribeClusters(
+			&ecs.DescribeClustersInput{Clusters: clusterArns.ClusterArns})
+		if err != nil {
+			return nil, err
+		}
+		for _, cluster := range clusters.Clusters {
+			if cluster.ClusterName != nil {
+				clusterNames = append(clusterNames, *cluster.ClusterName)
+			} else {
+				log.Printf("Nil cluster name in cluster %v", cluster)
+			}
+		}
+		if clusterArns.NextToken == nil {
+			break
+		} else {
+			nextToken = clusterArns.NextToken
+		}
+	}
+	return clusterNames, nil
 }
 
 func (ecc *ECSClusterClient) validate(resources *instanceResources, definition state.Definition) bool {
@@ -233,4 +290,22 @@ func (rc *resourceCache) getInstanceResources(clusterName string) (*instanceReso
 
 func (rc *resourceCache) setInstanceResources(clusterName string, resources *instanceResources) {
 	rc.internalCache.Set(clusterName, *resources, rc.duration)
+}
+
+type clusterNamesCache struct {
+	duration      time.Duration
+	internalCache *cache.Cache
+}
+
+func (cnc *clusterNamesCache) getClusterNames() ([]string, bool) {
+	rawClusterNames, found := cnc.internalCache.Get("clusterNames")
+	if found {
+		clusterNames, ok := rawClusterNames.(*[]string)
+		return *clusterNames, ok
+	}
+	return make([]string, 0, 0), false
+}
+
+func (cnc *clusterNamesCache) setInstanceResources(clusterNames []string) {
+	cnc.internalCache.Set("clusterNames", &clusterNames, cnc.duration)
 }

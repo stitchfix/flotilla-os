@@ -232,6 +232,11 @@ func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, definition stat
 	return true, nil
 }
 
+// ListClusters - Cluster Client
+func (iatt *ImplementsAllTheThings) ListClusters() ([]string, error) {
+	return []string{"cluster0", "cluster1"}, nil
+}
+
 // IsImageValid - Registry Client
 func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "IsImageValid")

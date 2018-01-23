@@ -26,6 +26,7 @@ func NewRouter(ep endpoints) *mux.Router {
 	v1.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
 	v1.HandleFunc("/groups", ep.GetGroups).Methods("GET")
 	v1.HandleFunc("/tags", ep.GetTags).Methods("GET")
+	v1.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
 
 	v2 := r.PathPrefix("/api/v2").Subrouter()
 	v2.HandleFunc("/task/{definition_id}/execute", ep.CreateRunV2).Methods("PUT")

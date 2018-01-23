@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
@@ -17,24 +18,48 @@ func (trc *testResourceClient) DescribeClusters(input *ecs.DescribeClustersInput
 		trc.t.Errorf("Expected at least one cluster name search param, got 0")
 	}
 
-	first := input.Clusters[0]
-	if first == nil || len(*first) == 0 {
-		trc.t.Errorf("Expected non-nil and non-empty cluster name")
+	clusters := make([]*ecs.Cluster, 0, len(input.Clusters))
+
+	for _, identifier := range input.Clusters {
+		if identifier == nil || len(*identifier) == 0 {
+			trc.t.Errorf("Expected non-nil and non-empty cluster name or arn")
+		}
+		if *identifier == "clusta" || *identifier == "failwhale" {
+			clusters = append(clusters, &ecs.Cluster{ClusterName: identifier})
+		} else if *identifier == "cluster_arn" {
+			name := "cluster_name"
+			clusters = append(clusters, &ecs.Cluster{ClusterName: &name})
+		}
 	}
 
-	var res ecs.DescribeClustersOutput
-	if *first == "clusta" || *first == "failwhale" {
-		name := *first
-		clstr := ecs.Cluster{
-			ClusterName: &name,
-		}
-		res = ecs.DescribeClustersOutput{
-			Clusters: []*ecs.Cluster{
-				&clstr,
-			},
-		}
+	res := ecs.DescribeClustersOutput{
+		Clusters: clusters,
 	}
 	return &res, nil
+}
+
+func (trc *testResourceClient) ListClusters(input *ecs.ListClustersInput) (*ecs.ListClustersOutput, error) {
+	tok := "next_token"
+	identifier0 := "cluster_arn"
+	identifier1 := "clusta"
+	identifier2 := "failwhale"
+	if trc.listCalled == 0 {
+		trc.listCalled = 1
+		return &ecs.ListClustersOutput{
+			ClusterArns: []*string{&identifier0, &identifier1},
+			NextToken:   &tok}, nil
+	} else if trc.listCalled == 1 {
+		trc.listCalled = 2
+		if input.NextToken == nil || *input.NextToken != "next_token" {
+			return nil, fmt.Errorf("ListClusters has already been called but the " +
+				"value of NextToken provided was nil or incorrect")
+		}
+		return &ecs.ListClustersOutput{
+			ClusterArns: []*string{&identifier2},
+			NextToken:   nil}, nil
+	} else {
+		return nil, fmt.Errorf("Did not expect to call ListClusters more than twice")
+	}
 }
 
 func (trc *testResourceClient) ListContainerInstances(input *ecs.ListContainerInstancesInput) (*ecs.ListContainerInstancesOutput, error) {
@@ -171,5 +196,29 @@ func TestECSClusterClient_CanBeRun(t *testing.T) {
 	_, err := cc.CanBeRun("failwhale", runnable)
 	if err == nil {
 		t.Errorf("Failwhale cluster should have failures, but was nil")
+	}
+}
+
+func TestECSClusterClient_ListClusters(t *testing.T) {
+	cc := setUp()
+
+	trc := &testResourceClient{
+		t:          t,
+		listCalled: 0,
+	}
+	cc.ecsClient = trc
+
+	names, err := cc.ListClusters()
+	if err != nil {
+		t.Errorf("Did not expect error testing ListClusters: %v", err)
+		return
+	}
+	if names == nil || len(names) != 3 {
+		t.Errorf("Expected length-3 cluster names, got %v", names)
+		return
+	}
+	if !(names[0] == "cluster_name") {
+		t.Errorf("Did not get expected cluster names: %v", names)
+		return
 	}
 }
