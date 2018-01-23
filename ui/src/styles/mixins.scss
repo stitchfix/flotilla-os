@@ -1,0 +1,16 @@
+@mixin flex($direction, $wrap, $justify, $align) {
+  display: flex;
+  flex-flow: $direction $wrap;
+  justify-content: $justify;
+  @if $wrap == "wrap" {
+    align-content: $align;
+  } @else {
+    align-items: $align;
+  }
+}
+@mixin overflow-ellipsis() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-wrap: normal;
+}

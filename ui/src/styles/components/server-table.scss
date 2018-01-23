@@ -1,0 +1,4 @@
+.server-table-inputs {
+  @include flex(row, nowrap, flex-start, center);
+  background: $default-bg;
+}

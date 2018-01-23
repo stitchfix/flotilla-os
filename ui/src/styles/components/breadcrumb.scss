@@ -1,0 +1,6 @@
+.breadcrumb {
+  @include overflow-ellipsis();
+  font-size: $font-size-large;
+  margin: 0 ($spacing / 2);
+  text-decoration: none;
+}

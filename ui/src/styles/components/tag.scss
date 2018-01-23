@@ -1,0 +1,14 @@
+.tag {
+  @include flex(row, nowrap, flex-start, center);
+  background: $black3;
+  color: $teal;
+  flex-grow: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.task-definition, .run-info {
+  .tag {
+    margin-right: $spacing / 2;
+    margin-bottom: $spacing / 2;
+  }
+}

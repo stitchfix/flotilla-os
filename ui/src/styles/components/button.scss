@@ -1,0 +1,67 @@
+$button-height: 32px;
+$button-small-height: 24px;
+$button-font-size: 0.9rem;
+$button-font-weight: 500;
+
+.button {
+  @include flex(row, nowrap, center, center);
+  height: $button-height;
+  padding: 0 $spacing;
+  background: $black4;
+  color: $white;
+  font-size: $button-font-size;
+  font-weight: $button-font-weight;
+  text-transform: uppercase;
+  text-decoration: none;
+  -webkit-appearance: none;
+  border: none;
+  // line-height: 0;
+  border-radius: 2px;
+  margin: 0 ($spacing / 3);
+  cursor: pointer;
+  &.button-small {
+    height: $button-small-height;
+    padding: 0 ($spacing / 2);
+  }
+  &a {
+    text-decoration: none !important;
+  }
+  &:hover {
+    // @extend %active;
+    background: $black2;
+  }
+  &.button-active {
+    @extend %active;
+  }
+  &.button-primary {
+    background: $color-primary;
+    color: white;
+    &:hover {
+      background: white;
+      color: $color-primary;
+    }
+  }
+  &.button-error {
+    background: $color-error;
+    color: white;
+    &:hover {
+      background: white;
+     color: $color-error;
+    }
+  }
+  &.button-circular {
+    $_size: 24px;
+    padding: 0;
+    min-width: $_size !important;
+    width: $_size !important;
+    height: $_size !important;
+    border-radius: $_size / 2 !important;
+  }
+  &:disabled {
+    background: $gray !important;
+    color: $black2 !important;
+  }
+  .button-icon-text {
+    margin-left: $spacing / 3;
+  }
+}

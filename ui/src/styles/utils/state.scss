@@ -1,0 +1,5 @@
+.button:disabled,
+.input:disabled,
+.Select.is-disabled > .Select-control {
+  @extend %disabled;
+}
