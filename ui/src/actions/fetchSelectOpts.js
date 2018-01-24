@@ -10,7 +10,7 @@ const strToSelectOpt = opt => ({ label: opt, value: opt })
 const requestDropdownOpts = () => ({ type: actionTypes.REQUEST_SELECT_OPTS })
 
 const mapStringArrayToSelectObjectArray = (obj, key) => {
-  if (has(obj, "key") && Array.isArray(obj[key])) {
+  if (has(obj, key) && Array.isArray(obj[key])) {
     return obj[key].map(strToSelectOpt)
   }
   return []
