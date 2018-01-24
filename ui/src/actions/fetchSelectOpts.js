@@ -1,6 +1,7 @@
 import React from "react"
 import { intentTypes, Popup, popupActions } from "aa-ui-components"
 import axios from "axios"
+import { has } from "lodash"
 import config from "../config"
 import { actionTypes } from "../constants/"
 
@@ -8,14 +9,22 @@ const strToSelectOpt = opt => ({ label: opt, value: opt })
 
 const requestDropdownOpts = () => ({ type: actionTypes.REQUEST_SELECT_OPTS })
 
-const receiveDropdownOpts = res => ({
-  type: actionTypes.RECEIVE_SELECT_OPTS,
-  payload: {
-    group: res[0].groups.map(strToSelectOpt),
-    cluster: res[1].clusters.map(strToSelectOpt),
-    tag: res[2].tags.map(strToSelectOpt),
-  },
-})
+const mapStringArrayToSelectObjectArray = (obj, key) => {
+  if (has(obj, "key") && Array.isArray(obj[key])) {
+    return obj[key].map(strToSelectOpt)
+  }
+  return []
+}
+const receiveDropdownOpts = res => {
+  return {
+    type: actionTypes.RECEIVE_SELECT_OPTS,
+    payload: {
+      group: mapStringArrayToSelectObjectArray(res[0], "groups"),
+      cluster: mapStringArrayToSelectObjectArray(res[1], "clusters"),
+      tag: mapStringArrayToSelectObjectArray(res[2], "tags"),
+    },
+  }
+}
 
 const receiveDropdownOptsError = error => dispatch => {
   dispatch(
