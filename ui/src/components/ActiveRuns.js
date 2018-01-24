@@ -52,8 +52,8 @@ export const ActiveRuns = ({
         {get(error, "response.data.error", error.toString())}
       </div>
     )
-  } else if (has(data, "history") && Array.isArray(data.history)) {
-    if (data.history.length > 0) {
+  } else if (has(data, "history")) {
+    if (Array.isArray(data.history) && data.history.length > 0) {
       content = data.history.map(d => (
         <ActiveRunsRow
           data={d}
