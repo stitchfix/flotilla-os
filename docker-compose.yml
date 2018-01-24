@@ -1,9 +1,25 @@
 version: '3'
 services:
+  ui:
+    build:
+      context: ./ui
+      args:
+        FLOTILLA_API: http://localhost:3000/api/v1
+        DEFAULT_CLUSTER: default
+    environment:
+      FLOTILLA_API: http://localhost:3000/api/v1
+      DEFAULT_CLUSTER: default
+    ports:
+      - 5000:5000
+      
   flotilla:
     build: .
     environment:
       DATABASE_URL: postgresql://flotilla:flotilla@db/flotilla?sslmode=disable
+      FLOTILLA_MODE: dev
+      HTTP_SERVER_CORS_ALLOWED_ORIGINS: http://localhost:5000
+    ports:
+      - 3000:3000
   db:
     image: postgres:9.6.2
     environment:

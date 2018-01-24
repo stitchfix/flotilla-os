@@ -1,0 +1,122 @@
+{
+  "name": "flotilla-os-ui",
+  "version": "4.0.0",
+  "private": true,
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:stitchfix/flotilla-os.git"
+  },
+  "author": "Patrick Sun",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/stitchfix/flotilla-os/issues"
+  },
+  "homepage": "https://github.com/stitchfix/flotilla-os",
+  "dependencies": {
+    "aa-ui-components": "github:stitchfix/aa-ui-components#0.6.2",
+    "ansi-to-react": "^1.6.0",
+    "axios": "0.17.1",
+    "classnames": "2.2.5",
+    "flex-utils": "0.1.0",
+    "immutability-helper": "2.6.1",
+    "lodash": "^4.17.4",
+    "moment": "^2.19.2",
+    "prop-types": "^15.6.0",
+    "query-string": "^5.0.1",
+    "react": "^16.1.1",
+    "react-addons-css-transition-group": "15.6.2",
+    "react-debounce-input": "^3.1.0",
+    "react-dom": "^16.1.1",
+    "react-feather": "^1.0.7",
+    "react-helmet": "^5.2.0",
+    "react-json-view": "^1.13.3",
+    "react-redux": "^5.0.6",
+    "react-router": "^4.2.0",
+    "react-router-dom": "^4.2.2",
+    "react-select": "1.1.0",
+    "react-tooltip": "^3.4.0",
+    "react-virtualized": "9.13.0",
+    "redux": "^3.7.2",
+    "redux-form": "7.1.2",
+    "redux-logger": "^3.0.6",
+    "redux-thunk": "^2.2.0"
+  },
+  "devDependencies": {
+    "autoprefixer-loader": "3.2.0",
+    "axios-mock-adapter": "1.10.0",
+    "babel-cli": "6.18.0",
+    "babel-core": "6.20.0",
+    "babel-eslint": "7.1.1",
+    "babel-jest": "17.0.2",
+    "babel-loader": "6.2.9",
+    "babel-plugin-transform-class-properties": "6.23.0",
+    "babel-plugin-transform-export-extensions": "6.22.0",
+    "babel-polyfill": "6.9.1",
+    "babel-preset-latest": "6.16.0",
+    "babel-preset-react": "6.16.0",
+    "babel-preset-stage-0": "6.16.0",
+    "css-loader": "0.26.1",
+    "enzyme": "3.2.0",
+    "enzyme-adapter-react-16": "1.1.0",
+    "eslint": "3.12.0",
+    "eslint-config-airbnb": "13.0.0",
+    "eslint-config-prettier": "2.9.0",
+    "eslint-plugin-import": "2.2.0",
+    "eslint-plugin-jsx-a11y": "2.2.3",
+    "eslint-plugin-prettier": "2.4.0",
+    "eslint-plugin-react": "6.8.0",
+    "extract-text-webpack-plugin": "2.1.0",
+    "fetch-mock": "5.13.1",
+    "file-loader": "1.1.5",
+    "html-webpack-plugin": "2.24.1",
+    "husky": "0.14.3",
+    "jest": "21.2.1",
+    "less": "2.7.3",
+    "less-loader": "4.0.5",
+    "lint-staged": "6.0.0",
+    "node-sass": "4.7.2",
+    "prettier": "1.9.2",
+    "raf": "3.4.0",
+    "react-addons-perf": "15.4.2",
+    "react-hot-loader": "3.0.0-beta.6",
+    "react-test-renderer": "16.2.0",
+    "redux-mock-store": "1.2.3",
+    "rimraf": "2.6.1",
+    "sass-loader": "6.0.0",
+    "sinon": "4.1.2",
+    "style-loader": "0.13.1",
+    "url-loader": "0.5.7",
+    "webpack": "3.8.1",
+    "webpack-dev-server": "2.9.5"
+  },
+  "scripts": {
+    "babel": "./node_modules/.bin/babel-node --presets latest,stage-0",
+    "webpack": "NODE_ENV=production npm run babel -- ./node_modules/.bin/webpack --progress --optimize-minimize",
+    "dev": "NODE_ENV=dev npm run babel -- ./node_modules/.bin/webpack-dev-server --progress --hot",
+    "build": "rimraf build/ && npm run webpack",
+    "start": "npm run dev",
+    "test": "jest",
+    "test:watch": "npm test -- --watch",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,scss}": [
+      "prettier --no-semi --trailing-comma es5 --write",
+      "git add"
+    ]
+  },
+  "jest": {
+    "setupFiles": [
+      "raf/polyfill"
+    ],
+    "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
+    "moduleNameMapper": {
+      "\\.(css|scss|png)$": "<rootDir>/src/__testutils__/styleMock.js"
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/src/__testutils__/"
+    ]
+  }
+}

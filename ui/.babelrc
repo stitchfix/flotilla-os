@@ -1,0 +1,4 @@
+{
+  "presets": ["stage-0", "latest", "react"],
+  "plugins": ["transform-export-extensions", "transform-class-properties"]
+}

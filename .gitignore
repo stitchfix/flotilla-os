@@ -20,3 +20,10 @@ vendor/**
 *.iml
 
 flotilla-os
+
+# gh-pages and ui_branch
+node_modules
+.cache/
+public/
+.DS_Store
+yarn-error.log

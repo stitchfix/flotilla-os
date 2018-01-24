@@ -1,0 +1,181 @@
+@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro");
+@import "../../node_modules/flex-utils/css/flex-utils.min.css";
+@import "../../node_modules/aa-ui-components/lib/index.css";
+@import "../../node_modules/aa-ui-components/lib/colors.scss";
+@import "../../node_modules/aa-ui-components/lib/variables.scss";
+@import "../../node_modules/aa-ui-components/lib/mixins.scss";
+
+//
+// Mixins/Variables
+//
+$flot-view-breakpoint-medium: 800px;
+$monospace-font-family: "Source Code Pro", "Roboto Mono", monospace;
+
+@mixin key-value-container($direction) {
+  $kv-border: 1px solid $black_2;
+  $kv-spacing: $spacing;
+
+  width: 100%;
+  height: 100%;
+
+  @if $direction == "vertical" {
+    @include flex(column, nowrap, flex-start, stretch);
+    width: 100%;
+    & > * {
+      border-bottom: $kv-border;
+      padding: $kv-spacing;
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  } @else if $direction == "horizontal" {
+    @include flex(row, nowrap, flex-start, center);
+    width: 100%;
+    & > * {
+      border-right: $kv-border;
+      padding: $kv-spacing;
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+}
+
+//
+// General
+//
+::selection {
+  background: $blue_4;
+  color: $gray_4;
+}
+
+pre,
+code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: $monospace-font-family;
+}
+
+.text-small {
+  font-size: 0.85rem;
+  color: $light_gray_0;
+}
+
+//
+// Table
+//
+.table-footer {
+  height: 48px;
+  background: $black_2;
+}
+
+.table-error-container {
+  height: 960px;
+  width: 100%;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.sort-header {
+  background: transparent;
+  font-size: 1rem;
+}
+
+//
+// aa-ui-components Overrides
+//
+.pl-topbar-container {
+  background: transparentize(#2d343a, 0.05);
+}
+.pl-tag {
+  font-family: $monospace-font-family;
+  font-size: 0.85rem;
+  background: $black_3;
+  color: $blue_3;
+  letter-spacing: 0.02rem;
+}
+
+.pl-tr.hoverable:hover > .pl-td {
+  color: $color-primary !important;
+}
+
+.pl-td {
+  color: $gray_3;
+}
+
+.pl-input:focus {
+  border-color: $color-primary;
+}
+
+.Select.is-focused > .Select-control {
+  border-color: $color-primary !important;
+}
+
+//
+// Key Value Container
+//
+.key-value-container {
+  &.horizontal {
+    @include key-value-container(horizontal);
+  }
+  &.vertical {
+    @include key-value-container(vertical);
+  }
+}
+
+//
+// List View (Tasks, ActiveRuns)
+//
+.flot-list-view {
+  @include flex(column, nowrap, flex-start, stretch);
+  width: 100%;
+
+  .flot-list-view-filters-container {
+    margin-bottom: $spacing * 2;
+  }
+  .flot-list-view-filters {
+    width: 100%;
+    @include key-value-container(horizontal);
+  }
+
+  @media (max-width: $flot-view-breakpoint-medium) {
+    @include flex(column, nowrap, flex-start, stretch);
+
+    .flot-list-view-filters {
+      @include key-value-container(vertical);
+    }
+  }
+}
+
+//
+// Detail View (Task, Run)
+//
+.flot-detail-view {
+  @include flex(row, nowrap, flex-start, flex-start);
+  width: 100%;
+
+  .flot-detail-view-sidebar {
+    $_width: 400px;
+    margin-right: $spacing * 2;
+    width: $_width;
+    min-width: $_width;
+    .flot-detail-view-sidebar-card-content {
+      @include key-value-container(vertical);
+    }
+    & > :nth-child(2) {
+      margin-top: $spacing * 2;
+    }
+  }
+
+  @media (max-width: $flot-view-breakpoint-medium) {
+    @include flex(column, nowrap, flex-start, stretch);
+
+    .flot-detail-view-sidebar {
+      margin-right: 0;
+      margin-bottom: $spacing * 2;
+      width: 100%;
+    }
+  }
+}

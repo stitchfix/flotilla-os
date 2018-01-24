@@ -1,0 +1,15 @@
+{
+  "extends": ["prettier"],
+  "installedESLint": true,
+  "parser": "babel-eslint",
+  "plugins": ["react", "prettier"],
+  "rules": {
+    "prettier/prettier": ["error", {
+      "semi": false,
+      "trailingComma": "es5"
+    }]
+  },
+  "env": {
+    "browser": true
+  }
+}
