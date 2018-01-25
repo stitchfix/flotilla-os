@@ -149,6 +149,7 @@ export default class RunLogs extends Component {
     const viewHeaderMarginBottom = 24
     const contentMarginBottom = 24
     const viewInnerMarginBottom = 72
+    const runStatusBarHeight = 65 + 24 // height + margin-bottom
 
     return (
       window.innerHeight -
@@ -156,7 +157,8 @@ export default class RunLogs extends Component {
       viewHeaderHeight -
       viewHeaderMarginBottom -
       contentMarginBottom -
-      viewInnerMarginBottom
+      viewInnerMarginBottom -
+      runStatusBarHeight
     )
   }
   handleAutoscrollChange(evt) {

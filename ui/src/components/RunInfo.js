@@ -19,12 +19,12 @@ export default function RunInfo({ data }) {
 
           return (
             <div className="flot-detail-view-sidebar-card-content">
-              <FormGroup isStatic label="Status">
+              {/*<FormGroup isStatic label="Status">
                 <EnhancedRunStatus
                   status={get(data, "status", "")}
                   exitCode={get(data, "exit_code", "")}
                 />
-              </FormGroup>
+              </FormGroup>*/}
               <FormGroup isStatic label="Exit Code">
                 {get(data, "exit_code", "-")}
               </FormGroup>
