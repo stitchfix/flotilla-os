@@ -31,27 +31,27 @@ export const App = props => {
         {!!popupVisible && !!popup && popup}
         <Topbar>
           <div className="pl-topbar-section">
-            <div className="pl-topbar-app-name">
-              <Link to="/">
-                <img
-                  src={Favicon}
-                  alt="stitchfix-logo"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 6,
-                    marginRight: 6,
-                    transform: "translateY(4px)",
-                  }}
-                />
-              </Link>
+            <Link to="/" className="pl-topbar-app-name">
+              <img
+                src={Favicon}
+                alt="stitchfix-logo"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  marginRight: 12,
+                }}
+              />
+              <div>FLOTILLA</div>
+            </Link>
+            <div className="pl-topbar-nav-link-group">
+              <NavLink className="pl-topbar-nav-link" to="/tasks">
+                Tasks
+              </NavLink>
+              <NavLink className="pl-topbar-nav-link" to="/runs">
+                Runs
+              </NavLink>
             </div>
-            <NavLink className="pl-topbar-nav-link" to="/tasks">
-              Tasks
-            </NavLink>
-            <NavLink className="pl-topbar-nav-link" to="/runs">
-              Runs
-            </NavLink>
           </div>
         </Topbar>
         <Switch>

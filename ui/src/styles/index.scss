@@ -93,6 +93,9 @@ code {
 //
 // aa-ui-components Overrides
 //
+.pl-topbar-app-name {
+  font-family: $monospace-font-family;
+}
 .pl-textarea {
   @include monospace();
 }
