@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/stitchfix/flotilla-os",
   "dependencies": {
-    "aa-ui-components": "github:stitchfix/aa-ui-components#0.6.2",
+    "aa-ui-components": "github:stitchfix/aa-ui-components#0.6.3",
     "ansi-to-react": "^1.6.0",
     "axios": "0.17.1",
     "classnames": "2.2.5",
