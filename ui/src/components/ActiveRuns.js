@@ -84,7 +84,6 @@ export const ActiveRuns = ({
         <Card
           className="flot-list-view-filters-container"
           contentStyle={{ padding: 0 }}
-          // header="Filters"
         >
           <div className="flot-list-view-filters">
             <FormGroup
@@ -133,6 +132,7 @@ export const ActiveRuns = ({
               display="Started At"
               sortKey="started_at"
               updateQuery={updateQuery}
+              className="pl-hide-small"
             />
             <div className="pl-th" style={{ flex: 4 }}>
               Alias
@@ -144,6 +144,7 @@ export const ActiveRuns = ({
               display="Cluster"
               sortKey="cluster_name"
               updateQuery={updateQuery}
+              className="pl-hide-small"
             />
           </div>
           {content}

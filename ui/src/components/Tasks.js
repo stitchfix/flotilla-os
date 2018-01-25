@@ -191,8 +191,9 @@ export class Tasks extends Component {
                 sortKey="group_name"
                 updateQuery={updateQuery}
                 style={{ flex: 1 }}
+                className="pl-hide-small"
               />
-              <div className="pl-th" style={{ flex: 1 }}>
+              <div className="pl-th pl-hide-small" style={{ flex: 1 }}>
                 Image
               </div>
               <SortHeader
@@ -202,6 +203,7 @@ export class Tasks extends Component {
                 sortKey="memory"
                 updateQuery={updateQuery}
                 style={{ flex: 1 }}
+                className="pl-hide-small"
               />
             </div>
             {content}

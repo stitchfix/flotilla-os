@@ -9,6 +9,7 @@
 // Mixins/Variables
 //
 $flot-view-breakpoint-medium: 800px;
+$flot-view-breakpoint-small: 550px;
 $monospace-font-family: "SFMono-Regular", "Source Code Pro", "Roboto Mono",
   monospace;
 $small-font-size: 0.9rem;
@@ -203,5 +204,17 @@ code {
       margin-bottom: $spacing * 2;
       width: 100%;
     }
+  }
+}
+
+// Hide certain columns for narrow views
+@media (max-width: $flot-view-breakpoint-medium) {
+  .pl-hide-med {
+    display: none;
+  }
+}
+@media (max-width: $flot-view-breakpoint-small) {
+  .pl-hide-small {
+    display: none !important;
   }
 }

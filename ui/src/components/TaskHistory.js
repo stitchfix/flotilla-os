@@ -64,10 +64,10 @@ class TaskHistory extends Component {
                 exitCode={get(d, "exit_code")}
               />
             </div>
-            <div className="pl-td">{getRunDuration(d)}</div>
+            <div className="pl-td pl-hide-small">{getRunDuration(d)}</div>
             <div className="pl-td">{d.run_id}</div>
-            <div className="pl-td">{d.cluster}</div>
-            <div className="pl-td">
+            <div className="pl-td pl-hide-small">{d.cluster}</div>
+            <div className="pl-td pl-hide-small">
               {get(d, "status") === runStatusTypes.pending ||
               get(d, "status") === runStatusTypes.queued ||
               get(d, "status") === runStatusTypes.running ? (
@@ -115,7 +115,7 @@ class TaskHistory extends Component {
             sortKey="status"
             updateQuery={updateQuery}
           />
-          <div className="pl-th">Duration</div>
+          <div className="pl-th pl-hide-small">Duration</div>
           <SortHeader
             currentSortKey={query.sort_by}
             currentOrder={query.order}
@@ -129,8 +129,9 @@ class TaskHistory extends Component {
             display="Cluster"
             sortKey="cluster"
             updateQuery={updateQuery}
+            className="pl-hide-small"
           />
-          <div className="pl-th">Actions</div>
+          <div className="pl-th pl-hide-small">Actions</div>
         </div>
         {content}
         <PaginationButtons

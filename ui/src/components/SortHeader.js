@@ -10,6 +10,10 @@ export default class SortHeader extends Component {
     sortKey: PropTypes.string,
     updateQuery: PropTypes.func,
     style: PropTypes.object,
+    className: PropTypes.string,
+  }
+  static defaultProps = {
+    className: "",
   }
   constructor(props) {
     super(props)
@@ -65,7 +69,11 @@ export default class SortHeader extends Component {
     })
 
     return (
-      <button onClick={this.handleClick} className={className} style={style}>
+      <button
+        onClick={this.handleClick}
+        className={`${className} ${this.props.className}`}
+        style={style}
+      >
         {this.props.display}
       </button>
     )

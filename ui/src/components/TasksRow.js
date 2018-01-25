@@ -16,13 +16,16 @@ const TasksRow = ({ data, onRunButtonClick }) => {
       <div className="pl-td" style={{ flex: 4 }}>
         {data.alias}
       </div>
-      <div className="pl-td" style={{ flex: 1 }}>
+      <div className="pl-td pl-hide-small" style={{ flex: 1 }}>
         {data.group_name}
       </div>
-      <div className="pl-td overflow-ellipsis" style={{ flex: 1 }}>
+      <div
+        className="pl-td pl-hide-small overflow-ellipsis"
+        style={{ flex: 1 }}
+      >
         {data.image}
       </div>
-      <div className="pl-td" style={{ flex: 1 }}>
+      <div className="pl-td pl-hide-small" style={{ flex: 1 }}>
         {data.memory}
       </div>
     </Link>
