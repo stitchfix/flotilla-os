@@ -178,16 +178,20 @@ code {
     }
   }
 
-  &.flot-run-view {
-    .flot-detail-view-sidebar {
-      max-height: calc(
-        100vh - #{$topbar-height} - #{$view-header-height} - #{$spacing * 2}
-      );
-      overflow-y: scroll;
-      padding-bottom: $spacing * 2;
+  // Views wider than $flot-view-breakpoint-medium
+  @media (min-width: $flot-view-breakpoint-medium) {
+    &.flot-run-view {
+      .flot-detail-view-sidebar {
+        max-height: calc(
+          100vh - #{$topbar-height} - #{$view-header-height} - #{$spacing * 2}
+        );
+        overflow-y: scroll;
+        padding-bottom: $spacing * 2;
+      }
     }
   }
 
+  // Views narrower than $flot-view-breakpoint-medium
   @media (max-width: $flot-view-breakpoint-medium) {
     @include flex(column, nowrap, flex-start, stretch);
 
