@@ -114,7 +114,9 @@ export default function RunInfo({ data }) {
                   }
                   key={`env-${i}`}
                 >
-                  <span className="code">{env.value}</span>
+                  <span className="code" style={{ wordBreak: "break-all" }}>
+                    {env.value}
+                  </span>
                 </FormGroup>
               ))}
             </div>
