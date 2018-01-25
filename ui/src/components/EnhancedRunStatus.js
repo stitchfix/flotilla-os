@@ -19,7 +19,7 @@ export const getIcon = enhancedStatus => {
   switch (enhancedStatus) {
     case runStatusTypes.queued:
       return (
-        <Loader mini spinnerStyle={{ borderLeftColor: colors.gray.gray_0 }} />
+        <Loader mini spinnerStyle={{ borderLeftColor: colors.gray.gray_4 }} />
       )
     case runStatusTypes.pending:
       return (

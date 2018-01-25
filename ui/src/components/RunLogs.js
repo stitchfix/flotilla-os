@@ -32,15 +32,17 @@ export default class RunLogs extends Component {
     runId: PropTypes.string.isRequired,
     status: PropTypes.oneOf(Object.values(runStatusTypes)),
   }
+  constructor(props) {
+    super(props)
+    this.rowRenderer = this.rowRenderer.bind(this)
+    this.handleAutoscrollChange = this.handleAutoscrollChange.bind(this)
+  }
   state = {
     isLoading: false,
     error: false,
     lastSeen: undefined,
     logs: [],
-  }
-  constructor(props) {
-    super(props)
-    this.rowRenderer = this.rowRenderer.bind(this)
+    shouldAutoscroll: true,
   }
   componentDidMount() {
     this.fetch(this.props.runId)
@@ -60,7 +62,8 @@ export default class RunLogs extends Component {
     // Compare loading and error states.
     if (
       this.state.isLoading !== nextState.isLoading ||
-      this.state.error !== nextState.error
+      this.state.error !== nextState.error ||
+      this.state.shouldAutoscroll !== nextState.shouldAutoscroll
     ) {
       return true
     }
@@ -156,8 +159,11 @@ export default class RunLogs extends Component {
       viewInnerMarginBottom
     )
   }
+  handleAutoscrollChange(evt) {
+    this.setState(state => ({ shouldAutoscroll: !state.shouldAutoscroll }))
+  }
   render() {
-    const { error, isLoading, logs } = this.state
+    const { shouldAutoscroll, error, isLoading, logs } = this.state
     const loaderContainerHeight = 50
     let content
 
@@ -169,7 +175,13 @@ export default class RunLogs extends Component {
           <AutoSizer disableHeight>
             {({ width }) => {
               const rowCount = !!isLoading ? logs.length + 1 : logs.length
-              const scrollToIndex = !!isLoading ? logs.length : logs.length - 1
+
+              let scrollToIndex
+
+              if (shouldAutoscroll) {
+                scrollToIndex = !!isLoading ? logs.length : logs.length - 1
+              }
+
               return (
                 <List
                   className="code"
@@ -202,7 +214,24 @@ export default class RunLogs extends Component {
     }
 
     return (
-      <Card containerStyle={{ width: "100%" }} header="Logs">
+      <Card
+        containerStyle={{ width: "100%" }}
+        header={
+          <div className="flex ff-rn j-sb a-c full-width">
+            <div>Logs</div>
+            <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
+              <div className="pl-button with-horizontal-child-margin">
+                <input
+                  type="checkbox"
+                  onChange={this.handleAutoscrollChange}
+                  checked={shouldAutoscroll}
+                />
+                <div>Autoscroll</div>
+              </div>
+            </div>
+          </div>
+        }
+      >
         {content}
       </Card>
     )
