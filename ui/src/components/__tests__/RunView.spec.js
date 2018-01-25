@@ -15,7 +15,8 @@ const setup = configureSetup({
 describe("RunView", () => {
   it("renders a View component", () => {
     const wrapper = setup({ connectToRouter: true })
-    expect(wrapper.find("View").length).toEqual(1)
+    expect(wrapper.find(".pl-view-container").length).toEqual(1)
+    expect(wrapper.find(".pl-view-inner").length).toEqual(1)
   })
   it("renders a ViewHeader component with the correct props", () => {
     const wrapper = setup({ connectToRouter: true })
