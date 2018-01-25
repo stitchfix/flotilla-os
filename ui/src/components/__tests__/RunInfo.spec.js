@@ -34,7 +34,19 @@ describe("RunInfo", () => {
     expect(formGroups.at(3).text()).toMatch(moment(res.finished_at).fromNow())
 
     expect(formGroups.at(4).props().label).toEqual("Run ID")
-    expect(formGroups.at(4).props().children).toEqual(res.run_id)
+    expect(formGroups.at(4).find("Link")).toBeTruthy()
+    expect(
+      formGroups
+        .at(4)
+        .find("Link")
+        .text()
+    ).toEqual(res.run_id)
+    expect(
+      formGroups
+        .at(4)
+        .find("Link")
+        .props().to
+    ).toEqual(`/runs/${res.run_id}`)
 
     expect(formGroups.at(5).props().label).toEqual("Task Definition ID")
     expect(formGroups.at(5).text()).toMatch(res.definition_id)
