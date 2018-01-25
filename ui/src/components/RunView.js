@@ -43,7 +43,7 @@ export const RunView = props => {
   const helmetEmoji = getHelmetEmoji(enhancedStatus)
 
   return (
-    <View>
+    <div className="pl-view-container">
       <Helmet>
         <title>
           {getHelmetTitle(
@@ -96,14 +96,16 @@ export const RunView = props => {
           </div>
         }
       />
-      <div className="flot-detail-view">
-        <RunInfo {...props} />
-        <RunLogs
-          runId={props.runId}
-          status={get(props.data, "status", undefined)}
-        />
+      <div className="pl-view-inner" style={{ marginBottom: 0 }}>
+        <div className="flot-detail-view flot-run-view">
+          <RunInfo {...props} />
+          <RunLogs
+            runId={props.runId}
+            status={get(props.data, "status", undefined)}
+          />
+        </div>
       </div>
-    </View>
+    </div>
   )
 }
 
