@@ -70,12 +70,15 @@ const TaskInfo = ({ data }) => (
           <div className="flot-detail-view-sidebar-card-content code">
             {get(data, "env", []).map((env, i) => (
               <FormGroup
-                horizontal
                 isStatic
-                label={<Tag>{env.name}</Tag>}
+                label={
+                  <span className="code" style={{ color: "white" }}>
+                    {env.name}
+                  </span>
+                }
                 key={`env-${i}`}
               >
-                <Tag>{env.value}</Tag>
+                <span className="code">{env.value}</span>
               </FormGroup>
             ))}
           </div>
