@@ -9,7 +9,6 @@ import {
   Link,
 } from "react-router-dom"
 import { connect } from "react-redux"
-// import ReactCSSTransitionGroup from "react-addons-css-transition-group"
 import { View, Card, Topbar, ModalContainer } from "aa-ui-components"
 import { fetchSelectOpts } from "../actions/"
 import Tasks from "./Tasks"
