@@ -132,7 +132,6 @@ export const ActiveRuns = ({
               display="Started At"
               sortKey="started_at"
               updateQuery={updateQuery}
-              className="pl-hide-small"
             />
             <div className="pl-th" style={{ flex: 4 }}>
               Alias
