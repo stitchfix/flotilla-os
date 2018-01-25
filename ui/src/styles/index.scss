@@ -9,7 +9,14 @@
 // Mixins/Variables
 //
 $flot-view-breakpoint-medium: 800px;
-$monospace-font-family: "Source Code Pro", "Roboto Mono", monospace;
+$monospace-font-family: "SFMono-Regular", "Source Code Pro", "Roboto Mono",
+  monospace;
+$small-font-size: 0.9rem;
+
+@mixin monospace() {
+  font-family: $monospace-font-family !important;
+  font-size: $small-font-size !important;
+}
 
 @mixin key-value-container($direction) {
   $kv-border: 1px solid $black_2;
@@ -53,11 +60,11 @@ pre,
 code {
   white-space: pre-wrap;
   word-break: break-all;
-  font-family: $monospace-font-family;
+  @include monospace();
 }
 
 .text-small {
-  font-size: 0.85rem;
+  font-size: $small-font-size;
   color: $light_gray_0;
 }
 
@@ -86,12 +93,14 @@ code {
 //
 // aa-ui-components Overrides
 //
+.pl-textarea {
+  @include monospace();
+}
 .pl-topbar-container {
   background: transparentize(#2d343a, 0.05);
 }
 .pl-tag {
-  font-family: $monospace-font-family;
-  font-size: 0.85rem;
+  @include monospace();
   background: $black_3;
   color: $blue_3;
   letter-spacing: 0.02rem;
