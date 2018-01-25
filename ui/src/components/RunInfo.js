@@ -31,10 +31,8 @@ export default function RunInfo({ data }) {
               <FormGroup isStatic label="Started At">
                 {has(data, "started_at") ? (
                   <div className="flex ff-rn j-fs a-bl with-horizontal-child-margin">
-                    <div>{data.started_at}</div>
-                    <div className="text-small">
-                      {moment(data.started_at).fromNow()}
-                    </div>
+                    <div>{moment(data.started_at).fromNow()}</div>
+                    <div className="text-small">{data.started_at}</div>
                   </div>
                 ) : (
                   "-"
@@ -43,17 +41,27 @@ export default function RunInfo({ data }) {
               <FormGroup isStatic label="Finished At">
                 {has(data, "finished_at") ? (
                   <div className="flex ff-rn j-fs a-bl with-horizontal-child-margin">
-                    <div>{data.finished_at}</div>
-                    <div className="text-small">
-                      {moment(data.finished_at).fromNow()}
-                    </div>
+                    <div>{moment(data.finished_at).fromNow()}</div>
+                    <div className="text-small">{data.finished_at}</div>
                   </div>
                 ) : (
                   "-"
                 )}
               </FormGroup>
               <FormGroup isStatic label="Run ID">
-                {get(data, "run_id", "-")}
+                {has(data, "run_id") ? (
+                  <Link
+                    to={`/runs/${data.run_id}`}
+                    style={{
+                      textDecoration: "underline",
+                      color: colors.gray.gray_3,
+                    }}
+                  >
+                    {data.run_id}
+                  </Link>
+                ) : (
+                  "-"
+                )}
               </FormGroup>
               <FormGroup isStatic label="Task Definition ID">
                 {has(data, "definition_id") ? (
