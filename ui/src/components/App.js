@@ -39,7 +39,7 @@ export const App = props => {
                   width: 32,
                   height: 32,
                   borderRadius: 6,
-                  marginRight: 12,
+                  marginRight: 8,
                 }}
               />
               <div>FLOTILLA</div>
