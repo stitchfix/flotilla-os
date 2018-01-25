@@ -12,7 +12,7 @@ import { checkStatus } from "../utils/"
 
 // Constants for React Virtualized to calculate row height based on number of
 // chars per line.
-const rowHeight = 20
+const rowHeight = 26
 
 // Estimated char width.
 const estCharWidth = 7.645
@@ -24,7 +24,7 @@ const maxCharsPerRow = width => width / estCharWidth
 const rowStyles = {
   whiteSpace: "pre-wrap",
   wordBreak: "break-all",
-  lineHeight: 1.5,
+  lineHeight: 1.4,
 }
 
 export default class RunLogs extends Component {
