@@ -53,7 +53,7 @@ class RunStatusBar extends Component {
           <FormGroup isStatic label="Status">
             <EnhancedRunStatus
               status={get(this.props, "status", "")}
-              exitCode={get(this.props, "exit_code", "")}
+              exitCode={get(this.props, "exitCode", "")}
             />
           </FormGroup>
           <FormGroup isStatic label="Duration">
