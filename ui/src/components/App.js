@@ -1,22 +1,15 @@
 import React, { Component } from "react"
 import { PropTypes } from "prop-types"
-import {
-  HashRouter,
-  Route,
-  Switch,
-  NavLink,
-  Redirect,
-  Link,
-} from "react-router-dom"
+import { HashRouter, Route, Switch, Redirect, Link } from "react-router-dom"
 import { connect } from "react-redux"
-import { View, Card, Topbar, ModalContainer } from "aa-ui-components"
+import { View, Card, ModalContainer } from "aa-ui-components"
 import { fetchSelectOpts } from "../actions/"
+import FlotillaTopbar from "./FlotillaTopbar"
 import Tasks from "./Tasks"
 import ActiveRuns from "./ActiveRuns"
 import TaskContainer from "./TaskContainer"
 import RunContainer from "./RunContainer"
 import CreateTaskForm from "./CreateTaskForm"
-import Favicon from "../assets/favicon.png"
 
 export const App = props => {
   const {
@@ -29,31 +22,7 @@ export const App = props => {
       <div>
         {!!modalVisible && !!modal && <ModalContainer modal={modal} />}
         {!!popupVisible && !!popup && popup}
-        <Topbar>
-          <div className="pl-topbar-section">
-            <Link to="/" className="pl-topbar-app-name">
-              <img
-                src={Favicon}
-                alt="stitchfix-logo"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  marginRight: 8,
-                }}
-              />
-              <div>FLOTILLA</div>
-            </Link>
-            <div className="pl-topbar-nav-link-group">
-              <NavLink className="pl-topbar-nav-link" to="/tasks">
-                Tasks
-              </NavLink>
-              <NavLink className="pl-topbar-nav-link" to="/runs">
-                Runs
-              </NavLink>
-            </div>
-          </div>
-        </Topbar>
+        <FlotillaTopbar />
         <Switch>
           <Route exact path="/tasks/create" component={CreateTaskForm} />
           <Route exact path="/runs" component={ActiveRuns} />
