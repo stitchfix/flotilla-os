@@ -33,7 +33,7 @@ describe("RunView", () => {
       })}`,
     })
 
-    expect(vh.find("Button").length).toEqual(1)
+    expect(vh.find("Button").length).toEqual(2)
   })
   // @TODO
   it("renders a RunInfo component", () => {

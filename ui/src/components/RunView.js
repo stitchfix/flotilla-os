@@ -57,14 +57,25 @@ export const RunView = props => {
           <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
             <div>{props.runId}</div>
             <EnhancedRunStatus
-              status={get(props.data, "status", "")}
-              exitCode={get(props.data, "exit_code", "")}
+              status={get(props.data, "status")}
+              exitCode={get(props.data, "exit_code")}
               iconOnly
             />
           </div>
         }
         actions={
           <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
+            <Button
+              onClick={() => {
+                const url = `${window.location.origin}/#/runs/${
+                  props.runId
+                }/mini`
+                const windowFeatures = `menubar=no,location=no,toolbar=no,resizable=0,width=360,height=130,toolbar=no`
+                window.open(url, props.runId, windowFeatures)
+              }}
+            >
+              Mini View
+            </Button>
             <Link
               to={{
                 pathname: `/tasks/${get(props.data, "definition_id", "")}/run`,
@@ -104,8 +115,8 @@ export const RunView = props => {
             <RunStatusBar
               startedAt={get(props.data, "started_at")}
               finishedAt={get(props.data, "finished_at")}
-              status={get(props.data, "status")}
-              exitCode={get(props.data, "exit_code")}
+              status={get(props.data, "status", "")}
+              exitCode={get(props.data, "exit_code", "")}
             />
             <RunLogs
               runId={props.runId}
