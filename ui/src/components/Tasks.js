@@ -43,7 +43,7 @@ export class Tasks extends Component {
     this.props.history.push(`/tasks/${definitionId}/run`)
   }
   render() {
-    const { isLoading, error, data, history, query, updateQuery } = this.props
+    const { isLoading, data, error, history, query, updateQuery } = this.props
     const loaderContainerStyle = { height: 960 }
 
     let content = <Loader containerStyle={loaderContainerStyle} />
@@ -51,7 +51,8 @@ export class Tasks extends Component {
     if (isLoading) {
       content = <Loader containerStyle={loaderContainerStyle} />
     } else if (error) {
-      content = <EmptyTable title="An error occurred!" message={error} error />
+      const errorDisplay = error.toString() || "An error occured."
+      content = <EmptyTable title={errorDisplay} error />
     } else if (has(data, "definitions")) {
       if (data.definitions.length > 0) {
         content = data.definitions.map(d => (
@@ -68,8 +69,7 @@ export class Tasks extends Component {
       } else {
         content = (
           <EmptyTable
-            title="No tasks were found."
-            message="Create one?"
+            title="No tasks were found. Create one?"
             actions={
               <Link className="pl-button pl-intent-primary" to="/tasks/create">
                 <span style={{ marginLeft: 4 }}>Create New Task</span>

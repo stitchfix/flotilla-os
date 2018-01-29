@@ -47,7 +47,8 @@ class TaskHistory extends Component {
     if (isLoading) {
       content = <Loader containerStyle={{ height: 960 }} />
     } else if (error) {
-      content = <EmptyTable title="An error occurred!" message={error} error />
+      const errorDisplay = error.toString() || "An error occurred."
+      content = <EmptyTable title={errorDisplay} error />
     } else if (has(data, "history")) {
       if (Array.isArray(data.history) && data.history.length > 0) {
         content = data.history.map(d => (
@@ -97,13 +98,14 @@ class TaskHistory extends Component {
       } else {
         content = (
           <EmptyTable
-            title="This task hasn't been run yet."
-            message="Run it?"
+            title="This task hasn't been run yet. Run it?"
             actions={
               <Link
                 className="pl-button pl-intent-primary"
-                to={`/${props.definitionId}/run`}
-              />
+                to={`/tasks/${this.props.definitionId}/run`}
+              >
+                Run Task
+              </Link>
             }
           />
         )

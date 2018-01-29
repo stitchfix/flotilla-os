@@ -7,9 +7,6 @@ const EmptyTable = props => (
     {has(props, "title") && (
       <div className="flot-empty-table-title">{props.title}</div>
     )}
-    {has(props, "message") && (
-      <div className="flot-empty-table-message">{props.message}</div>
-    )}
     {has(props, "actions") && (
       <div className="flot-empty-table-actions">{props.actions}</div>
     )}
@@ -19,7 +16,6 @@ const EmptyTable = props => (
 EmptyTable.propTypes = {
   error: PropTypes.bool.isRequired,
   title: PropTypes.node,
-  message: PropTypes.node,
   actions: PropTypes.node,
 }
 

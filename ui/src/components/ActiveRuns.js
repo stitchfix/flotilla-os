@@ -48,7 +48,8 @@ export const ActiveRuns = ({
   if (isLoading) {
     content = <Loader containerStyle={loaderContainerStyle} />
   } else if (error) {
-    content = <EmptyTable title="An error occurred!" message={error} error />
+    const errorDisplay = error.toString() || "An error occurred."
+    content = <EmptyTable title={errorDisplay} error />
   } else if (has(data, "history")) {
     if (Array.isArray(data.history) && data.history.length > 0) {
       content = data.history.map(d => (
