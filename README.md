@@ -6,33 +6,41 @@
 
 Flotilla is a self-service framework that dramatically simplifies the process of defining and executing containerized jobs. This means you get to focus on the work you're doing rather than _how_ to do it.
 
+Once deployed, Flotilla allows you to:
+
+* Define containerized jobs by allowing you to specify exactly what command to run, what image to run that command in, and what resources that command needs to run
+* Run any previously defined job and access its logs, status, and exit code
+* View and edit job definitions with a flexible UI
+* Run jobs and view execution history and logs within the UI
+* Use the complete REST API for definitions, jobs, and logs to build your own custom workflows
+
 ## Philosophy
 
 Flotilla is strongly opinionated about self-service for data science.
 
 The core assumption is that you understand your work the best. Therefor, it is _you_ who should own your work from end-to-end.
 
-* You don't need a data engineer to extract, transform, and load data for your work. You need Flotilla
+* You shouldn't need to be a "data engineer" to extract, transform, and load data for your work. Run this work with Flotilla.
 
-* You don't need a data engineer to run a model training job. You need Flotilla.
+* You shouldn't need to be an "algorithms engineer" to run a model training job. Run this work with Flotilla.
 
-* You don't need a production engineer to run your recurring jobs or to access logs in case of problems. You need Flotilla
+* You shouldn't need to be a "production engineer" to run your production jobs or to access logs in case of problems. Do this with Flotilla.
 
 ## Quick Start
 
 ### Minimal Assumptions
 
-Before we can doing _anything_ there's some *prerequistes* that must be met.
+Before we can do _anything_ there's some *prerequistes* that must be met.
 
 1. Flotilla by default uses AWS. You must have an AWS account and the credentials available to you in a way that standard AWS tools can access. That is, the standard credential provider chain. This means one of:
 	1. Environment variables
 	2. A shared credentials file
 	3. IAM role
-2. Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
+2. Flotilla uses AWS's Elastic Continer Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
 
 ### Starting the service locally
  
-You can run the service locally using the [docker-compose](https://docs.docker.com/compose/) tool. From inside the repo run:
+You can run the service locally (which will still leverage AWS resources) using the [docker-compose](https://docs.docker.com/compose/) tool. From inside the repo run:
 
 ```
 docker-compose up -d
@@ -157,10 +165,6 @@ curl -XGET localhost:3000/api/v1/<run_id>/logs
 }
 ```
 
-#### Full API Documentation
-
-TODO
-
 ## Deploying
 
 In a production deployment you'll want multiple instances of the flotilla service running and postgres running elsewhere (eg. Amazon RDS). In this case the most salient detail configuration detail is the `DATABASE_URL`.
@@ -215,4 +219,22 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 
 ## Development
 
+### API Documentation
+
 TODO
+
+### Building
+
+Currently Flotilla is built using `go` 1.9.3 and uses the [`govendor`](https://github.com/kardianos/govendor) to manage dependencies.
+
+```
+govendor sync && go build
+```
+
+### Architecture Diagram
+
+TODO
+
+-- descriptions of components
+
+
