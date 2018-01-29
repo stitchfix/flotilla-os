@@ -14,6 +14,7 @@ import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
 import withServerList from "./withServerList"
 import StopRunModal from "./StopRunModal"
+import EmptyTable from "./EmptyTable"
 
 const getUrl = id => `${config.FLOTILLA_API}/task/${id}/history`
 const defaultQuery = {
@@ -46,7 +47,7 @@ class TaskHistory extends Component {
     if (isLoading) {
       content = <Loader containerStyle={{ height: 960 }} />
     } else if (error) {
-      content = get(error, "response.data.error", error.toString())
+      content = <EmptyTable title="An error occurred!" message={error} error />
     } else if (has(data, "history")) {
       if (Array.isArray(data.history) && data.history.length > 0) {
         content = data.history.map(d => (
@@ -94,7 +95,18 @@ class TaskHistory extends Component {
           </Link>
         ))
       } else {
-        content = <h2>No data was found.</h2>
+        content = (
+          <EmptyTable
+            title="This task hasn't been run yet."
+            message="Run it?"
+            actions={
+              <Link
+                className="pl-button pl-intent-primary"
+                to={`/${props.definitionId}/run`}
+              />
+            }
+          />
+        )
       }
     }
 

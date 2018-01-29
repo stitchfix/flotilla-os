@@ -22,6 +22,7 @@ import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
 import withServerList from "./withServerList"
 import TasksRow from "./TasksRow"
+import EmptyTable from "./EmptyTable"
 
 const limit = 20
 const defaultQuery = {
@@ -50,11 +51,7 @@ export class Tasks extends Component {
     if (isLoading) {
       content = <Loader containerStyle={loaderContainerStyle} />
     } else if (error) {
-      content = (
-        <div className="table-error-container">
-          {get(error, "response.data.error", error.toString())}
-        </div>
-      )
+      content = <EmptyTable title="An error occurred!" message={error} error />
     } else if (has(data, "definitions")) {
       if (data.definitions.length > 0) {
         content = data.definitions.map(d => (
@@ -69,7 +66,17 @@ export class Tasks extends Component {
           />
         ))
       } else {
-        content = "No tasks were found."
+        content = (
+          <EmptyTable
+            title="No tasks were found."
+            message="Create one?"
+            actions={
+              <Link className="pl-button pl-intent-primary" to="/tasks/create">
+                <span style={{ marginLeft: 4 }}>Create New Task</span>
+              </Link>
+            }
+          />
+        )
       }
     }
     return (
