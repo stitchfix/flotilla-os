@@ -96,7 +96,7 @@
     "dev": "NODE_ENV=dev npm run babel -- ./node_modules/.bin/webpack-dev-server --progress --hot",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
-    "test": "jest",
+    "test": "NODE_ENV=test jest",
     "test:watch": "npm test -- --watch",
     "precommit": "lint-staged"
   },

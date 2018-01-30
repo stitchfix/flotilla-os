@@ -29,7 +29,7 @@ export const App = props => {
           <Route exact path="/tasks" component={Tasks} />
           <Route path="/tasks/:definitionId" component={TaskContainer} />
           <Route path="/runs/:runId" component={RunContainer} />
-          {process.env.NODE_ENV === "production" ? (
+          {process.env.NODE_ENV !== "test" ? (
             <Redirect from="/" to="/tasks" />
           ) : null}
         </Switch>
