@@ -65,17 +65,6 @@ export const RunView = props => {
         }
         actions={
           <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
-            {/*<Button
-              onClick={() => {
-                const url = `${window.location.origin}/#/runs/${
-                  props.runId
-                }/mini`
-                const windowFeatures = `menubar=no,location=no,toolbar=no,resizable=0,width=360,height=130,toolbar=no`
-                window.open(url, props.runId, windowFeatures)
-              }}
-            >
-              Mini View
-            </Button>*/}
             <Link
               to={{
                 pathname: `/tasks/${get(props.data, "definition_id", "")}/run`,

@@ -183,7 +183,6 @@ export default class RunLogs extends Component {
               if (shouldAutoscroll) {
                 scrollToIndex = !!isLoading ? logs.length : logs.length - 1
               }
-
               return (
                 <List
                   className="code"
