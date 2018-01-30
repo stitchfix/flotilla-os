@@ -10,8 +10,7 @@
 //
 $flot-view-breakpoint-medium: 800px;
 $flot-view-breakpoint-small: 550px;
-$monospace-font-family: "SFMono-Regular", "Source Code Pro", "Roboto Mono",
-  monospace;
+$monospace-font-family: "Source Code Pro", "Roboto Mono", monospace;
 $small-font-size: 0.9rem;
 
 @mixin monospace() {
