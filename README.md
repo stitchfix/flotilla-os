@@ -54,16 +54,35 @@ Verify the service is running by making a `GET` request with cURL (or navigating
 
 ### Using the UI
 
-#### Launch built in task with UI
-TODO - images
+Flotilla has a simple, easy to use UI. Here's some example images for basic usage.
 
-#### View logs with UI
+#### Define a task with the UI
 
-TODO - images
+The UI allows you to quickly create new tasks.
 
-#### Define a task in the UI
+![Define Task](https://user-images.githubusercontent.com/166823/35579884-999e0b04-059c-11e8-8ec7-65a14f7ae647.png "Create New Task")
 
-TODO - images
+
+#### Launch a task with UI
+You can run tasks you've created with the UI as well. Once you've ran a task the run will transition from `Queued` to `Pending` to `Running` before it finishes and shows `Success` or `Failed` (see [Task Life Cycle](#definitions-and-task-life-cycle)). Once a task is in the `Running` state the logs should be visible.
+
+
+
+1. Launch
+
+   ![Run Task](https://user-images.githubusercontent.com/166823/35579954-cc158d8c-059c-11e8-857c-0c0c7e8cd7b9.png "Run Task")
+
+2. Queued --> Pending
+
+   ![Queued Task](https://user-images.githubusercontent.com/166823/35579975-e1e3bb20-059c-11e8-87d5-5c78f8aa96f4.png "Queued Task")
+   
+   ![Pending Task](https://user-images.githubusercontent.com/166823/35579998-eff41368-059c-11e8-8fb7-d5c217998a5d.png "Pending Task")
+3. View logs
+
+   ![Running Task](https://user-images.githubusercontent.com/166823/35580026-038ae348-059d-11e8-95e4-f0150400a1a8.png "Running Task")
+   
+   ![Finished Task](https://user-images.githubusercontent.com/166823/35580037-1455ea10-059d-11e8-92da-dd1249dcf40d.png "Finished Task")
+
 
 ### Basic API Usage
 
@@ -164,6 +183,10 @@ curl -XGET localhost:3000/api/v1/<run_id>/logs
   "log":"+ set -e\n+ echo 'hello yourusername'\nhello yourusername"
 }
 ```
+
+## Definitions and Task Life Cycle
+
+TODO
 
 ## Deploying
 
