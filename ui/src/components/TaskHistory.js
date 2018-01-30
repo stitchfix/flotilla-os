@@ -42,10 +42,10 @@ class TaskHistory extends Component {
   render() {
     const { isLoading, error, data, query, updateQuery, dispatch } = this.props
 
-    let content = <Loader containerStyle={{ height: 960 }} />
+    let content = <EmptyTable isLoading />
 
     if (isLoading) {
-      content = <Loader containerStyle={{ height: 960 }} />
+      content = <EmptyTable isLoading />
     } else if (error) {
       const errorDisplay = error.toString() || "An error occurred."
       content = <EmptyTable title={errorDisplay} error />

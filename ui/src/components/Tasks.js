@@ -7,7 +7,6 @@ import Select from "react-select"
 import {
   View,
   ViewHeader,
-  Loader,
   Button,
   Card,
   FormGroup,
@@ -44,12 +43,11 @@ export class Tasks extends Component {
   }
   render() {
     const { isLoading, data, error, history, query, updateQuery } = this.props
-    const loaderContainerStyle = { height: 960 }
 
-    let content = <Loader containerStyle={loaderContainerStyle} />
+    let content = <EmptyTable isLoading />
 
     if (isLoading) {
-      content = <Loader containerStyle={loaderContainerStyle} />
+      content = <EmptyTable isLoading />
     } else if (error) {
       const errorDisplay = error.toString() || "An error occured."
       content = <EmptyTable title={errorDisplay} error />
