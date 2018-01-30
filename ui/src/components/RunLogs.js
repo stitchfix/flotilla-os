@@ -8,6 +8,7 @@ import axios from "axios"
 import { Card, Loader } from "aa-ui-components"
 import config from "../config"
 import { runStatusTypes } from "../constants/"
+import EmptyTable from "./EmptyTable"
 
 // Constants for React Virtualized to calculate row height based on number of
 // chars per line.
@@ -211,7 +212,7 @@ export default class RunLogs extends Component {
         </div>
       )
     } else if (logs.length === 0) {
-      content = <span>No logs yet.</span>
+      content = <EmptyTable title="No logs yet!" />
     }
 
     return (
