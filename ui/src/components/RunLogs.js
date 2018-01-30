@@ -8,7 +8,6 @@ import axios from "axios"
 import { Card, Loader } from "aa-ui-components"
 import config from "../config"
 import { runStatusTypes } from "../constants/"
-import { checkStatus } from "../utils/"
 
 // Constants for React Virtualized to calculate row height based on number of
 // chars per line.
