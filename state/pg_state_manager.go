@@ -134,7 +134,7 @@ func (sm *SQLStateManager) ListDefinitions(
 		return result, err
 	}
 
-	sql := fmt.Sprintf(ListDefinitionsSQL, whereClause, orderQuery)
+	sql := fmt.Sprintf(ListDefinitionsSQL, whereClause, orderQuery, orderQuery)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
 	err = sm.db.Select(&result.Definitions, sql, limit, offset)

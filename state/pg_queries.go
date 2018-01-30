@@ -1,5 +1,7 @@
 package state
 
+import "fmt"
+
 //
 // CreateTablesSQL postgres specific query for creating task
 // definition, run, and related tables
@@ -121,35 +123,56 @@ select
   coalesce(td.command,'')   as command,
   coalesce(td.task_type,'') as tasktype,
   env::TEXT                 as env,
-  ports                     as ports,
-  tags                      as tags
-  from (select * from task_def) td left outer join
-    (select task_def_id,
-      array_to_json(array_agg(port))::TEXT as ports
-        from task_def_ports group by task_def_id
-    ) tdp
-  on td.definition_id = tdp.task_def_id left outer join
-    (select task_def_id,
-      array_to_json(array_agg(tag_id))::TEXT as tags
-        from task_def_tags group by task_def_id
-    ) tdt
-  on td.definition_id = tdt.task_def_id
+  CASE WHEN
+      array_length(array_remove(array_agg(distinct port), NULL), 1) is null THEN null
+      ELSE array_to_json(array_remove(array_agg(distinct port), NULL))
+  END
+  ::TEXT as ports,
+  CASE WHEN
+      array_length(array_remove(array_agg(distinct tag_id), NULL), 1) is null THEN null
+      ELSE array_to_json(array_remove(array_agg(distinct tag_id), NULL))
+  END
+  ::TEXT as tags
+from
+  (select * from task_def
+    %s --where clause
+    %s --order by
+    %s --limit and offset
+  ) td
+left join
+  task_def_ports tdp on td.definition_id = tdp.task_def_id
+left join
+  task_def_tags tdt on td.definition_id = tdt.task_def_id
+group by
+  td.arn,
+  td.definition_id,
+  td.image,
+  td.group_name,
+  td.container_name,
+  td.user,
+  td.alias,
+  td.memory,
+  td.command,
+  td.task_type,
+  td.env
+  %s --order by
 `
 
 //
 // ListDefinitionsSQL postgres specific query for listing definitions
 //
-const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
+var ListDefinitionsSQL = fmt.Sprintf(DefinitionSelect, "%s", "%s", "limit $1 offset $2", "%s")
 
 //
 // GetDefinitionSQL postgres specific query for getting a single definition
 //
-const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
+
+var GetDefinitionSQL = fmt.Sprintf(DefinitionSelect, "where definition_id = $1", "", "", "")
 
 //
 // GetDefinitionByAliasSQL get definition by alias
 //
-const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
+var GetDefinitionByAliasSQL = fmt.Sprintf(DefinitionSelect, "where alias = $1", "", "", "")
 
 //
 // RunSelect postgres specific query for runs
