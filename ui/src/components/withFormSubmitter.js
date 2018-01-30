@@ -108,6 +108,9 @@ export default function withFormSubmitter(options) {
                   message={get(error, "response.data.error", error.toString())}
                   intent={intentTypes.error}
                   autohide={false}
+                  hide={() => {
+                    this.props.dispatch(popupActions.unrenderPopup())
+                  }}
                 />
               )
             )

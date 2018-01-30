@@ -1,3 +1,5 @@
+import monospaceFontFamily from "./monospaceFontFamily"
+
 export default {
   indentWidth: 2,
   displayObjectSize: false,
@@ -11,5 +13,6 @@ export default {
     whiteSpace: "pre-wrap",
     wordBreak: "break-all",
     width: "100%",
+    fontFamily: monospaceFontFamily,
   },
 }

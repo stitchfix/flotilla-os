@@ -6,6 +6,7 @@ import { withStateFetch } from "aa-ui-components"
 import config from "../config"
 import { runStatusTypes } from "../constants"
 import RunView from "./RunView"
+import RunMiniView from "./RunMiniView"
 
 const interval = 5000
 const getUrl = runId => `${config.FLOTILLA_API}/task/history/${runId}`
@@ -64,6 +65,18 @@ export class RunContainer extends Component {
             path={rootPath}
             render={() => (
               <RunView
+                runId={match.params.runId}
+                isLoading={isLoading}
+                data={data}
+                error={error}
+              />
+            )}
+          />
+          <Route
+            exact
+            path={`${rootPath}/mini`}
+            render={() => (
+              <RunMiniView
                 runId={match.params.runId}
                 isLoading={isLoading}
                 data={data}

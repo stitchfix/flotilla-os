@@ -75,7 +75,9 @@ describe("Tasks", () => {
     })
 
     // Expect to find the error message rendered.
-    expect(wrapper.find(".table-error-container").length).toBe(1)
+    expect(wrapper.find("EmptyTable").length).toBe(1)
+    expect(wrapper.find("EmptyTable").props().title).toEqual(err)
+    expect(wrapper.find("EmptyTable").props().error).toBeTruthy()
     expect(wrapper.html()).toEqual(expect.stringMatching(err))
     expect(wrapper.find("Loader").length).toBe(0)
   })

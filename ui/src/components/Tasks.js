@@ -7,7 +7,6 @@ import Select from "react-select"
 import {
   View,
   ViewHeader,
-  Loader,
   Button,
   Card,
   FormGroup,
@@ -22,6 +21,7 @@ import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
 import withServerList from "./withServerList"
 import TasksRow from "./TasksRow"
+import EmptyTable from "./EmptyTable"
 
 const limit = 20
 const defaultQuery = {
@@ -42,19 +42,15 @@ export class Tasks extends Component {
     this.props.history.push(`/tasks/${definitionId}/run`)
   }
   render() {
-    const { isLoading, error, data, history, query, updateQuery } = this.props
-    const loaderContainerStyle = { height: 960 }
+    const { isLoading, data, error, history, query, updateQuery } = this.props
 
-    let content = <Loader containerStyle={loaderContainerStyle} />
+    let content = <EmptyTable isLoading />
 
     if (isLoading) {
-      content = <Loader containerStyle={loaderContainerStyle} />
+      content = <EmptyTable isLoading />
     } else if (error) {
-      content = (
-        <div className="table-error-container">
-          {get(error, "response.data.error", error.toString())}
-        </div>
-      )
+      const errorDisplay = error.toString() || "An error occured."
+      content = <EmptyTable title={errorDisplay} error />
     } else if (has(data, "definitions")) {
       if (data.definitions.length > 0) {
         content = data.definitions.map(d => (
@@ -69,7 +65,16 @@ export class Tasks extends Component {
           />
         ))
       } else {
-        content = "No tasks were found."
+        content = (
+          <EmptyTable
+            title="No tasks were found. Create one?"
+            actions={
+              <Link className="pl-button pl-intent-primary" to="/tasks/create">
+                <span style={{ marginLeft: 4 }}>Create New Task</span>
+              </Link>
+            }
+          />
+        )
       }
     }
     return (
@@ -191,8 +196,9 @@ export class Tasks extends Component {
                 sortKey="group_name"
                 updateQuery={updateQuery}
                 style={{ flex: 1 }}
+                className="pl-hide-small"
               />
-              <div className="pl-th" style={{ flex: 1 }}>
+              <div className="pl-th pl-hide-small" style={{ flex: 1 }}>
                 Image
               </div>
               <SortHeader
@@ -202,6 +208,7 @@ export class Tasks extends Component {
                 sortKey="memory"
                 updateQuery={updateQuery}
                 style={{ flex: 1 }}
+                className="pl-hide-small"
               />
             </div>
             {content}

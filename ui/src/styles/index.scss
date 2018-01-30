@@ -9,7 +9,14 @@
 // Mixins/Variables
 //
 $flot-view-breakpoint-medium: 800px;
+$flot-view-breakpoint-small: 550px;
 $monospace-font-family: "Source Code Pro", "Roboto Mono", monospace;
+$small-font-size: 0.9rem;
+
+@mixin monospace() {
+  font-family: $monospace-font-family !important;
+  font-size: $small-font-size !important;
+}
 
 @mixin key-value-container($direction) {
   $kv-border: 1px solid $black_2;
@@ -53,11 +60,11 @@ pre,
 code {
   white-space: pre-wrap;
   word-break: break-all;
-  font-family: $monospace-font-family;
+  @include monospace();
 }
 
 .text-small {
-  font-size: 0.85rem;
+  font-size: $small-font-size;
   color: $light_gray_0;
 }
 
@@ -69,15 +76,6 @@ code {
   background: $black_2;
 }
 
-.table-error-container {
-  height: 960px;
-  width: 100%;
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: center;
-  align-items: center;
-}
-
 .sort-header {
   background: transparent;
   font-size: 1rem;
@@ -86,12 +84,17 @@ code {
 //
 // aa-ui-components Overrides
 //
+.pl-topbar-app-name {
+  font-family: $monospace-font-family;
+}
+.pl-textarea {
+  @include monospace();
+}
 .pl-topbar-container {
   background: transparentize(#2d343a, 0.05);
 }
 .pl-tag {
-  font-family: $monospace-font-family;
-  font-size: 0.85rem;
+  @include monospace();
   background: $black_3;
   color: $blue_3;
   letter-spacing: 0.02rem;
@@ -122,6 +125,27 @@ code {
   }
   &.vertical {
     @include key-value-container(vertical);
+  }
+}
+
+//
+// Empty Table
+//
+.flot-empty-table {
+  width: 100%;
+  height: 400px;
+  @include flex(column, nowrap, center, center);
+  &.error {
+    color: $red_0;
+  }
+  & > * {
+    margin-bottom: $spacing;
+  }
+  .flot-empty-table-title {
+    font-size: 1.25rem;
+  }
+  .flot-empty-table-actions {
+    @include flex(row, nowrap, center, center);
   }
 }
 
@@ -169,6 +193,20 @@ code {
     }
   }
 
+  // Views wider than $flot-view-breakpoint-medium
+  @media (min-width: $flot-view-breakpoint-medium) {
+    &.flot-run-view {
+      .flot-detail-view-sidebar {
+        max-height: calc(
+          100vh - #{$topbar-height} - #{$view-header-height} - #{$spacing * 2}
+        );
+        overflow-y: scroll;
+        padding-bottom: $spacing * 2;
+      }
+    }
+  }
+
+  // Views narrower than $flot-view-breakpoint-medium
   @media (max-width: $flot-view-breakpoint-medium) {
     @include flex(column, nowrap, flex-start, stretch);
 
@@ -177,5 +215,17 @@ code {
       margin-bottom: $spacing * 2;
       width: 100%;
     }
+  }
+}
+
+// Hide certain columns for narrow views
+@media (max-width: $flot-view-breakpoint-medium) {
+  .pl-hide-med {
+    display: none;
+  }
+}
+@media (max-width: $flot-view-breakpoint-small) {
+  .pl-hide-small {
+    display: none !important;
   }
 }

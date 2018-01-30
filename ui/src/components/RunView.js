@@ -21,6 +21,7 @@ import StopRunModal from "./StopRunModal"
 import EnhancedRunStatus, { getEnhancedStatus } from "./EnhancedRunStatus"
 import RunInfo from "./RunInfo"
 import RunLogs from "./RunLogs"
+import RunStatusBar from "./RunStatusBar"
 
 const getHelmetEmoji = enhancedStatus => {
   switch (enhancedStatus) {
@@ -43,7 +44,7 @@ export const RunView = props => {
   const helmetEmoji = getHelmetEmoji(enhancedStatus)
 
   return (
-    <View>
+    <div className="pl-view-container">
       <Helmet>
         <title>
           {getHelmetTitle(
@@ -56,8 +57,8 @@ export const RunView = props => {
           <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
             <div>{props.runId}</div>
             <EnhancedRunStatus
-              status={get(props.data, "status", "")}
-              exitCode={get(props.data, "exit_code", "")}
+              status={get(props.data, "status")}
+              exitCode={get(props.data, "exit_code")}
               iconOnly
             />
           </div>
@@ -96,14 +97,24 @@ export const RunView = props => {
           </div>
         }
       />
-      <div className="flot-detail-view">
-        <RunInfo {...props} />
-        <RunLogs
-          runId={props.runId}
-          status={get(props.data, "status", undefined)}
-        />
+      <div className="pl-view-inner" style={{ marginBottom: 0 }}>
+        <div className="flot-detail-view flot-run-view">
+          <RunInfo {...props} />
+          <div className="flex ff-cn j-fs a-s full-width">
+            <RunStatusBar
+              startedAt={get(props.data, "started_at")}
+              finishedAt={get(props.data, "finished_at")}
+              status={get(props.data, "status", "")}
+              exitCode={get(props.data, "exit_code", "")}
+            />
+            <RunLogs
+              runId={props.runId}
+              status={get(props.data, "status", undefined)}
+            />
+          </div>
+        </div>
       </div>
-    </View>
+    </div>
   )
 }
 

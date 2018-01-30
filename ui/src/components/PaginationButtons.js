@@ -32,6 +32,12 @@ export default class PaginationButtons extends Component {
       wrapperEl,
     } = this.props
 
+    // Otherwise a `NaN` will be set as the child of the buttons and cause
+    // an error to be logged.
+    if (limit === undefined || offset === undefined) {
+      return <span />
+    }
+
     const currentPage = this.offsetAndLimitToPage(offset, limit)
     const totalPages = Math.ceil(total / limit)
 

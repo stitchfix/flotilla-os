@@ -8,11 +8,11 @@ import axios from "axios"
 import { Card, Loader } from "aa-ui-components"
 import config from "../config"
 import { runStatusTypes } from "../constants/"
-import { checkStatus } from "../utils/"
+import EmptyTable from "./EmptyTable"
 
 // Constants for React Virtualized to calculate row height based on number of
 // chars per line.
-const rowHeight = 20
+const rowHeight = 26
 
 // Estimated char width.
 const estCharWidth = 7.645
@@ -24,7 +24,7 @@ const maxCharsPerRow = width => width / estCharWidth
 const rowStyles = {
   whiteSpace: "pre-wrap",
   wordBreak: "break-all",
-  lineHeight: 1.5,
+  lineHeight: 1.4,
 }
 
 export default class RunLogs extends Component {
@@ -32,15 +32,17 @@ export default class RunLogs extends Component {
     runId: PropTypes.string.isRequired,
     status: PropTypes.oneOf(Object.values(runStatusTypes)),
   }
+  constructor(props) {
+    super(props)
+    this.rowRenderer = this.rowRenderer.bind(this)
+    this.handleAutoscrollChange = this.handleAutoscrollChange.bind(this)
+  }
   state = {
     isLoading: false,
     error: false,
     lastSeen: undefined,
     logs: [],
-  }
-  constructor(props) {
-    super(props)
-    this.rowRenderer = this.rowRenderer.bind(this)
+    shouldAutoscroll: true,
   }
   componentDidMount() {
     this.fetch(this.props.runId)
@@ -60,7 +62,8 @@ export default class RunLogs extends Component {
     // Compare loading and error states.
     if (
       this.state.isLoading !== nextState.isLoading ||
-      this.state.error !== nextState.error
+      this.state.error !== nextState.error ||
+      this.state.shouldAutoscroll !== nextState.shouldAutoscroll
     ) {
       return true
     }
@@ -146,6 +149,7 @@ export default class RunLogs extends Component {
     const viewHeaderMarginBottom = 24
     const contentMarginBottom = 24
     const viewInnerMarginBottom = 72
+    const runStatusBarHeight = 65 + 24 // height + margin-bottom
 
     return (
       window.innerHeight -
@@ -153,11 +157,15 @@ export default class RunLogs extends Component {
       viewHeaderHeight -
       viewHeaderMarginBottom -
       contentMarginBottom -
-      viewInnerMarginBottom
+      viewInnerMarginBottom -
+      runStatusBarHeight
     )
   }
+  handleAutoscrollChange(evt) {
+    this.setState(state => ({ shouldAutoscroll: !state.shouldAutoscroll }))
+  }
   render() {
-    const { error, isLoading, logs } = this.state
+    const { shouldAutoscroll, error, isLoading, logs } = this.state
     const loaderContainerHeight = 50
     let content
 
@@ -169,7 +177,12 @@ export default class RunLogs extends Component {
           <AutoSizer disableHeight>
             {({ width }) => {
               const rowCount = !!isLoading ? logs.length + 1 : logs.length
-              const scrollToIndex = !!isLoading ? logs.length : logs.length - 1
+
+              let scrollToIndex
+
+              if (shouldAutoscroll) {
+                scrollToIndex = !!isLoading ? logs.length : logs.length - 1
+              }
               return (
                 <List
                   className="code"
@@ -198,11 +211,28 @@ export default class RunLogs extends Component {
         </div>
       )
     } else if (logs.length === 0) {
-      content = <span>No logs yet.</span>
+      content = <EmptyTable title="No logs yet!" />
     }
 
     return (
-      <Card containerStyle={{ width: "100%" }} header="Logs">
+      <Card
+        containerStyle={{ width: "100%" }}
+        header={
+          <div className="flex ff-rn j-sb a-c full-width">
+            <div>Logs</div>
+            <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
+              <div className="pl-button with-horizontal-child-margin">
+                <input
+                  type="checkbox"
+                  onChange={this.handleAutoscrollChange}
+                  checked={shouldAutoscroll}
+                />
+                <div>Autoscroll</div>
+              </div>
+            </div>
+          </div>
+        }
+      >
         {content}
       </Card>
     )

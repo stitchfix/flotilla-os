@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/stitchfix/flotilla-os",
   "dependencies": {
-    "aa-ui-components": "github:stitchfix/aa-ui-components#0.6.2",
+    "aa-ui-components": "github:stitchfix/aa-ui-components#0.6.4",
     "ansi-to-react": "^1.6.0",
     "axios": "0.17.1",
     "classnames": "2.2.5",
@@ -96,7 +96,7 @@
     "dev": "NODE_ENV=dev npm run babel -- ./node_modules/.bin/webpack-dev-server --progress --hot",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
-    "test": "jest",
+    "test": "NODE_ENV=test jest",
     "test:watch": "npm test -- --watch",
     "precommit": "lint-staged"
   },

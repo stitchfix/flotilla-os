@@ -7,7 +7,6 @@ import Select from "react-select"
 import {
   View,
   ViewHeader,
-  Loader,
   Button,
   Card,
   FormGroup,
@@ -23,6 +22,7 @@ import SortHeader from "./SortHeader"
 import StopRunModal from "./StopRunModal"
 import PaginationButtons from "./PaginationButtons"
 import ActiveRunsRow from "./ActiveRunsRow"
+import EmptyTable from "./EmptyTable"
 
 const limit = 20
 const defaultQuery = {
@@ -40,18 +40,13 @@ export const ActiveRuns = ({
   clusterOptions,
   dispatch,
 }) => {
-  const loaderContainerStyle = { height: 960 }
-
-  let content = <Loader containerStyle={loaderContainerStyle} />
+  let content = <EmptyTable isLoading />
 
   if (isLoading) {
-    content = <Loader containerStyle={loaderContainerStyle} />
+    content = <EmptyTable isLoading />
   } else if (error) {
-    content = (
-      <div className="table-error-container">
-        {get(error, "response.data.error", error.toString())}
-      </div>
-    )
+    const errorDisplay = error.toString() || "An error occurred."
+    content = <EmptyTable title={errorDisplay} error />
   } else if (has(data, "history")) {
     if (Array.isArray(data.history) && data.history.length > 0) {
       content = data.history.map(d => (
@@ -71,7 +66,7 @@ export const ActiveRuns = ({
         />
       ))
     } else {
-      content = <div>No data was found.</div>
+      content = <EmptyTable title="No tasks are currently running." />
     }
   }
   return (
@@ -84,7 +79,6 @@ export const ActiveRuns = ({
         <Card
           className="flot-list-view-filters-container"
           contentStyle={{ padding: 0 }}
-          // header="Filters"
         >
           <div className="flot-list-view-filters">
             <FormGroup
@@ -144,6 +138,7 @@ export const ActiveRuns = ({
               display="Cluster"
               sortKey="cluster_name"
               updateQuery={updateQuery}
+              className="pl-hide-small"
             />
           </div>
           {content}

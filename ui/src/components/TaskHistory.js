@@ -14,6 +14,7 @@ import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
 import withServerList from "./withServerList"
 import StopRunModal from "./StopRunModal"
+import EmptyTable from "./EmptyTable"
 
 const getUrl = id => `${config.FLOTILLA_API}/task/${id}/history`
 const defaultQuery = {
@@ -41,12 +42,13 @@ class TaskHistory extends Component {
   render() {
     const { isLoading, error, data, query, updateQuery, dispatch } = this.props
 
-    let content = <Loader containerStyle={{ height: 960 }} />
+    let content = <EmptyTable isLoading />
 
     if (isLoading) {
-      content = <Loader containerStyle={{ height: 960 }} />
+      content = <EmptyTable isLoading />
     } else if (error) {
-      content = get(error, "response.data.error", error.toString())
+      const errorDisplay = error.toString() || "An error occurred."
+      content = <EmptyTable title={errorDisplay} error />
     } else if (has(data, "history")) {
       if (Array.isArray(data.history) && data.history.length > 0) {
         content = data.history.map(d => (
@@ -64,10 +66,10 @@ class TaskHistory extends Component {
                 exitCode={get(d, "exit_code")}
               />
             </div>
-            <div className="pl-td">{getRunDuration(d)}</div>
+            <div className="pl-td pl-hide-small">{getRunDuration(d)}</div>
             <div className="pl-td">{d.run_id}</div>
-            <div className="pl-td">{d.cluster}</div>
-            <div className="pl-td">
+            <div className="pl-td pl-hide-small">{d.cluster}</div>
+            <div className="pl-td pl-hide-small">
               {get(d, "status") === runStatusTypes.pending ||
               get(d, "status") === runStatusTypes.queued ||
               get(d, "status") === runStatusTypes.running ? (
@@ -94,7 +96,19 @@ class TaskHistory extends Component {
           </Link>
         ))
       } else {
-        content = <h2>No data was found.</h2>
+        content = (
+          <EmptyTable
+            title="This task hasn't been run yet. Run it?"
+            actions={
+              <Link
+                className="pl-button pl-intent-primary"
+                to={`/tasks/${this.props.definitionId}/run`}
+              >
+                Run Task
+              </Link>
+            }
+          />
+        )
       }
     }
 
@@ -115,7 +129,7 @@ class TaskHistory extends Component {
             sortKey="status"
             updateQuery={updateQuery}
           />
-          <div className="pl-th">Duration</div>
+          <div className="pl-th pl-hide-small">Duration</div>
           <SortHeader
             currentSortKey={query.sort_by}
             currentOrder={query.order}
@@ -129,8 +143,9 @@ class TaskHistory extends Component {
             display="Cluster"
             sortKey="cluster"
             updateQuery={updateQuery}
+            className="pl-hide-small"
           />
-          <div className="pl-th">Actions</div>
+          <div className="pl-th pl-hide-small">Actions</div>
         </div>
         {content}
         <PaginationButtons

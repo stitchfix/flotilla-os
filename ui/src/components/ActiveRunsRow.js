@@ -17,6 +17,7 @@ const ActiveRunsRow = ({ data, onStopButtonClick }) => (
       <EnhancedRunStatus
         status={get(data, "status")}
         exitCode={get(data, "exit_code")}
+        iconOnly={window.innerWidth < 550}
       />
     </div>
     <div className="pl-td" style={{ flex: 1.5 }}>
@@ -25,7 +26,7 @@ const ActiveRunsRow = ({ data, onStopButtonClick }) => (
     <div className="pl-td" style={{ flex: 4 }}>
       {get(data, "alias", data.definition_id)}
     </div>
-    <div className="pl-td" style={{ flex: 1.5 }}>
+    <div className="pl-td pl-hide-small" style={{ flex: 1.5 }}>
       {data.cluster}
     </div>
   </Link>
