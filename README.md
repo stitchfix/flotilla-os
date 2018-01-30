@@ -266,7 +266,7 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 
 ### API Documentation
 
-TODO
+See [API](docs/api.md)
 
 ### Building
 
