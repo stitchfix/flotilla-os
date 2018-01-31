@@ -20,7 +20,7 @@ import { taskFormTypes } from "../constants/"
 import { taskFormUtils, getHelmetTitle } from "../utils/"
 import EnvFieldArray from "./EnvFieldArray"
 
-class TaskForm extends Component {
+export class TaskForm extends Component {
   static propTypes = {
     taskFormType: PropTypes.oneOf(Object.values(taskFormTypes)),
     handleSubmit: PropTypes.func,
