@@ -19,6 +19,9 @@ export default function RunInfo({ data }) {
 
           return (
             <div className="flot-detail-view-sidebar-card-content">
+              <FormGroup isStatic label="Cluster">
+                {get(data, "cluster", "-")}
+              </FormGroup>
               <FormGroup isStatic label="Exit Code">
                 {get(data, "exit_code", "-")}
               </FormGroup>
@@ -71,6 +74,12 @@ export default function RunInfo({ data }) {
                 ) : (
                   "-"
                 )}
+              </FormGroup>
+              <FormGroup isStatic label="Image">
+                {get(data, "image", "-")}
+              </FormGroup>
+              <FormGroup isStatic label="Task Arn">
+                {get(data, "task_arn", "-")}
               </FormGroup>
               <FormGroup isStatic label="Instance ID">
                 {get(data, "instance.instance_id", "-")}
