@@ -21,7 +21,8 @@ import { runFormValidate, getHelmetTitle } from "../utils/"
 import withFormSubmitter from "./withFormSubmitter"
 import EnvFieldArray from "./EnvFieldArray"
 
-class RunForm extends Component {
+export class RunForm extends Component {
+  static displayName = "RunForm"
   static propTypes = {
     data: PropTypes.object,
     inFlight: PropTypes.bool,
@@ -41,7 +42,7 @@ class RunForm extends Component {
     const { didSetQuery } = this.state
     const { data, query } = this.props
 
-    if (isEmpty(query) && !didSetQuery && !isEmpty(data)) {
+    if (this.shouldSetQuery()) {
       this.setQuery()
     }
   }
@@ -49,18 +50,24 @@ class RunForm extends Component {
     const { didSetQuery } = this.state
     const { data, query } = this.props
 
-    if (isEmpty(query) && !didSetQuery && !isEmpty(data)) {
+    if (this.shouldSetQuery()) {
       this.setQuery()
     }
+  }
+  // Ensure the following conditions are met before setting the query, and
+  // thus, the initial values: 1. there should not be an existing query in
+  // the URL, 2. this.state.didSetQuery should be false, 3. data should have
+  // been fetched.
+  shouldSetQuery() {
+    const { didSetQuery } = this.state
+    const { data, query } = this.props
+
+    return isEmpty(query) && !didSetQuery && !isEmpty(data)
   }
   setQuery() {
     const { didSetQuery } = this.state
     const { data, updateQuery, query } = this.props
 
-    // Ensure the following conditions are met before setting the query, and
-    // thus, the initial values: 1. there should not be an existing query in
-    // the URL, 2. this.state.didSetQuery should be false, 3. data should have
-    // been fetched.
     if (isEmpty(query) && !didSetQuery && !isEmpty(data)) {
       this.setState({ didSetQuery: true }, () => {
         let updates = [
