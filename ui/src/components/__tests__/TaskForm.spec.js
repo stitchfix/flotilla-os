@@ -1,6 +1,4 @@
 import React from "react"
-import { mount } from "enzyme"
-import { MemoryRouter } from "react-router-dom"
 // Note: need to create an actual store w/ form reducer.
 import { reducer as formReducer } from "redux-form"
 import { createStore, combineReducers } from "redux"

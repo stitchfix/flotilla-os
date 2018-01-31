@@ -11,6 +11,13 @@ const setup = configureSetup({
 
 // @TODO: finish this.
 describe("EnvFieldArray", () => {
+  const consoleError = console.error
+  beforeAll(() => {
+    console.error = jest.fn()
+  })
+  afterAll(() => {
+    console.error = consoleError
+  })
   it("works", () => {
     const wrapper = setup({
       connectToRouter: true,

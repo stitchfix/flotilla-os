@@ -13,6 +13,13 @@ const setup = configureSetup({
 })
 
 describe("RunView", () => {
+  const warn = console.warn
+  beforeAll(() => {
+    console.warn = jest.fn()
+  })
+  afterAll(() => {
+    console.warn = warn
+  })
   it("renders a View component", () => {
     const wrapper = setup({ connectToRouter: true })
     expect(wrapper.find(".pl-view-container").length).toEqual(1)

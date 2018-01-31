@@ -12,6 +12,13 @@ const setup = configureSetup({
 const formGroupValueClassName = ".pl-form-group-static"
 
 describe("RunInfo", () => {
+  const warn = console.warn
+  beforeAll(() => {
+    console.warn = jest.fn()
+  })
+  afterAll(() => {
+    console.warn = warn
+  })
   it("renders the correct run metadata", () => {
     const wrapper = setup({ connectToRouter: true })
     // Required metadata + number of env vars
