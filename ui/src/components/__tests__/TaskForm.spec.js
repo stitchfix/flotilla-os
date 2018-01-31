@@ -19,6 +19,13 @@ const setup = configureSetup({
 })
 
 describe("TaskForm", () => {
+  const consoleError = console.error
+  beforeAll(() => {
+    console.error = jest.fn()
+  })
+  afterAll(() => {
+    console.error = consoleError
+  })
   it("doesn't render an `alias` field when editing a task", () => {
     const editForm = setup({
       props: { taskFormType: taskFormTypes.edit },
