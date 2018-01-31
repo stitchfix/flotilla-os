@@ -1,11 +1,12 @@
 import React from "react"
 import { NavLink, Link, withRouter } from "react-router-dom"
+import { get } from "lodash"
 import { Topbar } from "aa-ui-components"
 import Favicon from "../assets/favicon.png"
 
 const FlotillaTopbar = props => {
   // Don't render topbar in <RunMiniView>
-  if (props.location.pathname.endsWith("/mini")) {
+  if (get(props, "location.pathname", "").endsWith("/mini")) {
     return <span />
   }
 
@@ -13,16 +14,7 @@ const FlotillaTopbar = props => {
     <Topbar>
       <div className="pl-topbar-section">
         <Link to="/" className="pl-topbar-app-name">
-          <img
-            src={Favicon}
-            alt="stitchfix-logo"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 6,
-              marginRight: 8,
-            }}
-          />
+          <img src={Favicon} alt="stitchfix-logo" className="topbar-logo" />
           <div>FLOTILLA</div>
         </Link>
         <div className="pl-topbar-nav-link-group">
