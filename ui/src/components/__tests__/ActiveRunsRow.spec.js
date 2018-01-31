@@ -1,67 +1,38 @@
 import React from "react"
 import { mount } from "enzyme"
 import { MemoryRouter } from "react-router-dom"
-import { generateRunRes } from "../../__testutils__"
+import { configureSetup, generateRunRes } from "../../__testutils__"
 import ActiveRunsRow from "../ActiveRunsRow"
 
-const RUN_ID = "RUN_ID"
-const res = generateRunRes(RUN_ID)
+const runId = "runId"
+const setup = configureSetup({
+  baseProps: {
+    data: generateRunRes(runId),
+  },
+  unconnected: ActiveRunsRow,
+})
 
 describe("ActiveRunsRow", () => {
-  const onStopButtonClick = jest.fn()
-  const wrapper = mount(
-    <MemoryRouter>
-      <ActiveRunsRow data={res} onStopButtonClick={onStopButtonClick} />
-    </MemoryRouter>
-  )
-  it("renders a Link to /runs/:run_id", () => {
-    expect(wrapper.find("Link").length).toBe(1)
-    expect(wrapper.find("Link").props().to).toEqual(`/runs/${RUN_ID}`)
+  const warn = console.warn
+  beforeAll(() => {
+    console.warn = jest.fn()
   })
-  it("renders 5 table cells with the correct flex lengths", () => {
-    expect(wrapper.find(".pl-td").length).toEqual(5)
-    expect(
-      wrapper
-        .find(".pl-td")
-        .at(0)
-        .props().style
-    ).toMatchObject({
-      flex: 1,
+  afterAll(() => {
+    console.warn = warn
+  })
+  it("renders a Link to /runs/:run_id", () => {
+    const wrapper = setup({
+      connectToRouter: true,
     })
-    expect(
-      wrapper
-        .find(".pl-td")
-        .at(1)
-        .props().style
-    ).toMatchObject({
-      flex: 1,
-    })
-    expect(
-      wrapper
-        .find(".pl-td")
-        .at(2)
-        .props().style
-    ).toMatchObject({
-      flex: 1.5,
-    })
-    expect(
-      wrapper
-        .find(".pl-td")
-        .at(3)
-        .props().style
-    ).toMatchObject({
-      flex: 4,
-    })
-    expect(
-      wrapper
-        .find(".pl-td")
-        .at(4)
-        .props().style
-    ).toMatchObject({
-      flex: 1.5,
-    })
+    expect(wrapper.find("Link").length).toBe(1)
+    expect(wrapper.find("Link").props().to).toEqual(`/runs/${runId}`)
   })
   it("calls props.onStopButtonClick when clicking on the Stop Button", () => {
+    const onStopButtonClick = jest.fn()
+    const wrapper = setup({
+      connectToRouter: true,
+      props: { onStopButtonClick },
+    })
     wrapper.find("Button").simulate("click")
     expect(onStopButtonClick).toHaveBeenCalledTimes(1)
   })
