@@ -79,7 +79,7 @@ const configureSetup = (opts = {}) => {
     }
 
     if (connectToReduxForm) {
-      ToMount = reduxForm({ formName })(ToMount)
+      ToMount = reduxForm({ formName })(unconnected)
     }
 
     //
