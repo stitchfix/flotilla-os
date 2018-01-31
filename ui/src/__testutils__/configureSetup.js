@@ -2,7 +2,7 @@ import React from "react"
 import { MemoryRouter } from "react-router-dom"
 import { Provider } from "react-redux"
 import { reduxForm } from "redux-form"
-import { mount } from "enzyme"
+import enzyme from "enzyme"
 import configureMockStore from "redux-mock-store"
 import thunk from "redux-thunk"
 
@@ -35,6 +35,7 @@ const configureSetup = (opts = {}) => {
   // again to return an Enzyme-mounted component.
   const setup = (setupOpts = {}) => {
     const {
+      shallow = false,
       // Any specific props you want to pass to your component during testing.
       // This will be merged with the `baseProps` value provided to
       // configureSetup.
@@ -84,9 +85,10 @@ const configureSetup = (opts = {}) => {
     //
     // Determine the mounting strategy for the component.
     //
+    const mountMethod = !!shallow ? "shallow" : "mount"
     const shouldConnectToRedux = connectToRedux || connectToReduxForm
     if (shouldConnectToRedux && connectToRouter) {
-      return mount(
+      return enzyme[mountMethod](
         <Provider store={store}>
           <MemoryRouter {...routerProps}>
             <ToMount {...mergedProps} />
@@ -94,19 +96,19 @@ const configureSetup = (opts = {}) => {
         </Provider>
       )
     } else if (shouldConnectToRedux) {
-      return mount(
+      return enzyme[mountMethod](
         <Provider store={store}>
           <ToMount {...mergedProps} />
         </Provider>
       )
     } else if (connectToRouter) {
-      return mount(
+      return enzyme[mountMethod](
         <MemoryRouter>
           <ToMount {...mergedProps} />
         </MemoryRouter>
       )
     } else {
-      return mount(<ToMount {...mergedProps} />)
+      return enzyme[mountMethod](<ToMount {...mergedProps} />)
     }
   }
 
