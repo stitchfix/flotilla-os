@@ -85,13 +85,6 @@ describe("RunLogs", () => {
       RunLogs.prototype.componentWillUnmount = cwu
     })
     describe("fetch", () => {
-      it("returns false if the run is QUEUED or PENDING", () => {
-        const wrapper = setup({ props: { status: runStatusTypes.queued } })
-        expect(wrapper.instance().fetch(runId)).toEqual(false)
-
-        wrapper.setProps({ status: runStatusTypes.pending })
-        expect(wrapper.instance().fetch(runId)).toEqual(false)
-      })
       it("appends logs to state", async () => {
         axiosMock
           .onGet(`${config.FLOTILLA_API}/${runId}/logs`)
