@@ -7,10 +7,17 @@ import moment from "moment"
 import { reactJsonViewProps } from "../constants/"
 import EnhancedRunStatus from "./EnhancedRunStatus"
 import KeyValueContainer from "./KeyValueContainer"
+import RunStatusBar from "./RunStatusBar"
 
 export default function RunInfo({ data }) {
   return (
     <div className="flot-detail-view-sidebar with-vertical-child-margin">
+      <RunStatusBar
+        startedAt={get(data, "started_at")}
+        finishedAt={get(data, "finished_at")}
+        status={get(data, "status", "")}
+        exitCode={get(data, "exit_code", "")}
+      />
       <KeyValueContainer header="Run Info">
         {({ json, collapsed }) => {
           if (json) {

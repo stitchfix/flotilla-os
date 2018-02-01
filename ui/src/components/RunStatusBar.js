@@ -48,7 +48,7 @@ class RunStatusBar extends Component {
   }
   render() {
     return (
-      <Card containerStyle={{ marginBottom: 24 }}>
+      <Card>
         <div className="flex ff-rn j-sb a-c full-width with-horizontal-child-margin">
           <FormGroup isStatic label="Status">
             <EnhancedRunStatus
