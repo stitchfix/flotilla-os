@@ -3,6 +3,9 @@ const OPTIONS = {
   NODE_ENV: process.env.NODE_ENV,
   VENDOR: [
     "ansi-to-react",
+    "axios",
+    "classnames",
+    "immutability-helper",
     "lodash",
     "moment",
     "query-string",
@@ -19,7 +22,6 @@ const OPTIONS = {
     "react-tooltip",
     "redux",
     "redux-form",
-    "redux-logger",
     "redux-thunk",
   ],
 }
