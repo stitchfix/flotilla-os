@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
