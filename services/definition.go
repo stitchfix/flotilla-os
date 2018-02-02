@@ -19,7 +19,7 @@ type DefinitionService interface {
 	Get(definitionID string) (state.Definition, error)
 	GetByAlias(alias string) (state.Definition, error)
 	List(limit int, offset int, sortBy string,
-		order string, filters map[string]string,
+		order string, filters map[string][]string,
 		envFilters map[string]string) (state.DefinitionList, error)
 	Update(definitionID string, updates state.Definition) (state.Definition, error)
 	Delete(definitionID string) error
@@ -79,7 +79,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 func (ds *definitionService) aliasExists(alias string) (bool, error) {
 	// Short circuit, to check if alias already exists
 	dl, err := ds.sm.ListDefinitions(
-		1024, 0, "alias", "asc", map[string]string{"alias": alias}, nil)
+		1024, 0, "alias", "asc", map[string][]string{"alias": {alias}}, nil)
 
 	if err != nil {
 		return false, err
@@ -106,7 +106,7 @@ func (ds *definitionService) GetByAlias(alias string) (state.Definition, error) 
 
 // List lists definitions
 func (ds *definitionService) List(limit int, offset int, sortBy string,
-	order string, filters map[string]string,
+	order string, filters map[string][]string,
 	envFilters map[string]string) (state.DefinitionList, error) {
 	return ds.sm.ListDefinitions(limit, offset, sortBy, order, filters, envFilters)
 }

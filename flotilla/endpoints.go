@@ -25,7 +25,7 @@ type listRequest struct {
 	offset     int
 	sortBy     string
 	order      string
-	filters    map[string]string
+	filters    map[string][]string
 	envFilters map[string]string
 }
 
@@ -56,10 +56,9 @@ func (ep *endpoints) getURLParam(v url.Values, key string, defaultValue string) 
 	return defaultValue
 }
 
-func (ep *endpoints) getFilters(params url.Values, nonFilters map[string]bool) (map[string]string, map[string]string) {
-	filters := make(map[string]string)
+func (ep *endpoints) getFilters(params url.Values, nonFilters map[string]bool) (map[string][]string, map[string]string) {
+	filters := make(map[string][]string)
 	envFilters := make(map[string]string)
-
 	for k, v := range params {
 		if !nonFilters[k] && len(v) > 0 {
 			// Env filters have the "env" key and are "|" separated key-value pairs
@@ -74,7 +73,7 @@ func (ep *endpoints) getFilters(params url.Values, nonFilters map[string]bool) (
 					}
 				}
 			} else {
-				filters[k] = v[0]
+				filters[k] = v
 			}
 		}
 	}
@@ -220,7 +219,7 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	definitionID, ok := vars["definition_id"]
 	if ok {
-		lr.filters["definition_id"] = definitionID
+		lr.filters["definition_id"] = []string{definitionID}
 	}
 
 	runList, err := ep.executionService.List(
@@ -388,7 +387,12 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
-	name := lr.filters["name"]
+
+	var name string
+	if len(lr.filters["name"]) > 0 {
+		name = lr.filters["name"][0]
+	}
+
 	groups, err := ep.definitionService.ListGroups(lr.limit, lr.offset, &name)
 	if err != nil {
 		ep.encodeError(w, err)
@@ -404,7 +408,12 @@ func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
-	name := lr.filters["name"]
+
+	var name string
+	if len(lr.filters["name"]) > 0 {
+		name = lr.filters["name"][0]
+	}
+
 	tags, err := ep.definitionService.ListTags(lr.limit, lr.offset, &name)
 	if err != nil {
 		ep.encodeError(w, err)

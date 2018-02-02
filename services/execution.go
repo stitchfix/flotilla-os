@@ -24,7 +24,7 @@ type ExecutionService interface {
 		offset int,
 		sortOrder string,
 		sortField string,
-		filters map[string]string,
+		filters map[string][]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
 	UpdateStatus(runID string, status string, exitCode *int64) error
@@ -240,25 +240,28 @@ func (es *executionService) List(
 	offset int,
 	sortOrder string,
 	sortField string,
-	filters map[string]string,
+	filters map[string][]string,
 	envFilters map[string]string) (state.RunList, error) {
 
 	// If definition_id is present in filters, validate its
 	// existence first
 	definitionID, ok := filters["definition_id"]
 	if ok {
-		_, err := es.sm.GetDefinition(definitionID)
+		_, err := es.sm.GetDefinition(definitionID[0])
 		if err != nil {
 			return state.RunList{}, err
 		}
 	}
 
-	status, ok := filters["status"]
-	if ok && !state.IsValidStatus(status) {
-		// Status filter is invalid
-		err := exceptions.MalformedInput{
-			ErrorString: fmt.Sprintf("invalid status [%s]", status)}
-		return state.RunList{}, err
+	if statusFilters, ok := filters["status"]; ok {
+		for _, status := range statusFilters {
+			if !state.IsValidStatus(status) {
+				// Status filter is invalid
+				err := exceptions.MalformedInput{
+					ErrorString: fmt.Sprintf("invalid status [%s]", status)}
+				return state.RunList{}, err
+			}
+		}
 	}
 	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters)
 }

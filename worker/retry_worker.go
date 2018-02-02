@@ -42,7 +42,7 @@ func (rw *retryWorker) runOnce() {
 	runList, err := rw.sm.ListRuns(
 		25, 0,
 		"started_at", "asc",
-		map[string]string{"status": state.StatusNeedsRetry}, nil)
+		map[string][]string{"status": {state.StatusNeedsRetry}}, nil)
 
 	rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 
