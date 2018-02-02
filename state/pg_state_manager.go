@@ -69,16 +69,25 @@ func (sm *SQLStateManager) createTables() error {
 	return err
 }
 
-func (sm *SQLStateManager) makeWhereClause(filters map[string]string) []string {
-	wc := make([]string, len(filters))
-	i := 0
+func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) []string {
+
+	// These will be joined with "AND"
+	wc := []string{}
 	for k, v := range filters {
-		fmtString := "%s='%s'"
-		if k == "image" || k == "alias" || k == "group_name" || k == "text" {
-			fmtString = "%s like '%%%s%%'"
+		if len(v) > 1 {
+			// No like queries for multiple filters with same key
+			quoted := make([]string, len(v))
+			for i, filterVal := range v {
+				quoted[i] = fmt.Sprintf("'%s'", filterVal)
+			}
+			wc = append(wc, fmt.Sprintf("%s in (%s)", k, strings.Join(quoted, ",")))
+		} else if len(v) == 1 {
+			fmtString := "%s='%s'"
+			if k == "image" || k == "alias" || k == "group_name" || k == "command" || k == "text" {
+				fmtString = "%s like '%%%s%%'"
+			}
+			wc = append(wc, fmt.Sprintf(fmtString, k, v[0]))
 		}
-		wc[i] = fmt.Sprintf(fmtString, k, v)
-		i++
 	}
 	return wc
 }
@@ -118,7 +127,7 @@ func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (s
 //
 func (sm *SQLStateManager) ListDefinitions(
 	limit int, offset int, sortBy string,
-	order string, filters map[string]string,
+	order string, filters map[string][]string,
 	envFilters map[string]string) (DefinitionList, error) {
 
 	var err error
@@ -374,7 +383,7 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 //
 func (sm *SQLStateManager) ListRuns(
 	limit int, offset int, sortBy string,
-	order string, filters map[string]string,
+	order string, filters map[string][]string,
 	envFilters map[string]string) (RunList, error) {
 
 	var err error
@@ -520,7 +529,7 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 	)
 	if name != nil && len(*name) > 0 {
 		whereClause = fmt.Sprintf("where %s", strings.Join(
-			sm.makeWhereClause(map[string]string{"group_name": *name}), " and "))
+			sm.makeWhereClause(map[string][]string{"group_name": {*name}}), " and "))
 	}
 
 	sql := fmt.Sprintf(ListGroupsSQL, whereClause)
@@ -546,7 +555,7 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	)
 	if name != nil && len(*name) > 0 {
 		whereClause = fmt.Sprintf("where %s", strings.Join(
-			sm.makeWhereClause(map[string]string{"text": *name}), " and "))
+			sm.makeWhereClause(map[string][]string{"text": {*name}}), " and "))
 	}
 
 	sql := fmt.Sprintf(ListTagsSQL, whereClause)

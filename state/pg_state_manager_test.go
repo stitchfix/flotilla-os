@@ -173,7 +173,7 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	}
 
 	// Test filtering on fields
-	dl, _ = sm.ListDefinitions(1, 0, "alias", "asc", map[string]string{"image": "imageC"}, nil)
+	dl, _ = sm.ListDefinitions(1, 0, "alias", "asc", map[string][]string{"image": {"imageC"}}, nil)
 	if dl.Definitions[0].Image != "imageC" {
 		t.Errorf("Error filtering by field - expected imageC but got %s", dl.Definitions[0].Image)
 	}
@@ -406,7 +406,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	}
 
 	// Test filtering on fields
-	rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string]string{"cluster_name": "clustb"}, nil)
+	rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{"cluster_name": {"clustb"}}, nil)
 	if rl.Runs[0].ClusterName != "clustb" {
 		t.Errorf("Error filtering by field - expected clustb but got %s", rl.Runs[0].ClusterName)
 	}
@@ -421,6 +421,34 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 		t.Errorf(
 			`Expected environment variable filters (E2:V2) to yield
             run run2, but was %s`, rl.Runs[0].RunID)
+	}
+}
+
+func TestSQLStateManager_ListRuns2(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	var err error
+	expectedTotal := 2
+	expectedRuns := map[string]bool{"run3": true, "run5": true}
+	rl, err := sm.ListRuns(100, 0, "started_at", "asc", map[string][]string{
+		"status": {
+			StatusPending,
+			StatusQueued,
+		},
+	}, nil)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if rl.Total != expectedTotal {
+		t.Errorf("Expected total to be %v but was %v", expectedTotal, rl.Total)
+	}
+
+	for _, r := range rl.Runs {
+		if _, ok := expectedRuns[r.RunID]; !ok {
+			t.Errorf("Got unexpected run: %s", r.RunID)
+		}
 	}
 }
 

@@ -15,7 +15,7 @@ type Manager interface {
 	Cleanup() error
 	ListDefinitions(
 		limit int, offset int, sortBy string,
-		order string, filters map[string]string,
+		order string, filters map[string][]string,
 		envFilters map[string]string) (DefinitionList, error)
 	GetDefinition(definitionID string) (Definition, error)
 	GetDefinitionByAlias(alias string) (Definition, error)
@@ -24,7 +24,7 @@ type Manager interface {
 	DeleteDefinition(definitionID string) error
 
 	ListRuns(limit int, offset int, sortBy string,
-		order string, filters map[string]string,
+		order string, filters map[string][]string,
 		envFilters map[string]string) (RunList, error)
 
 	GetRun(runID string) (Run, error)

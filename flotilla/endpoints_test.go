@@ -586,7 +586,9 @@ func TestEndpoints_ListDefinitions(t *testing.T) {
 func TestEndpoints_ListRuns(t *testing.T) {
 	router := setUp(t)
 
-	req := httptest.NewRequest("GET", "/api/v1/history?limit=100&offset=2&sort_by=started_at&order=desc&cluster=cupcake&env=E1%7CV1", nil)
+	req := httptest.NewRequest(
+		"GET",
+		"/api/v1/history?status=RUNNING&status=QUEUED&limit=100&offset=2&sort_by=started_at&order=desc&cluster=cupcake&env=E1%7CV1", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -611,7 +613,7 @@ func TestEndpoints_ListRuns(t *testing.T) {
 	}
 
 	if _, ok := r["history"]; !ok {
-		t.Errorf("Expected definitions in response")
+		t.Errorf("Expected runs in response")
 	}
 
 	if _, ok := r["limit"]; !ok {
@@ -638,9 +640,29 @@ func TestEndpoints_ListRuns(t *testing.T) {
 		t.Errorf("Expected env_filters in response")
 	}
 
+	if _, ok := r["status"]; !ok {
+		t.Errorf("Expected [status] filter in response")
+	}
+
 	runs, _ := r["history"]
 	if _, ok := runs.([]interface{}); !ok {
 		t.Errorf("Cannot cast runs to list, expected list")
+	}
+
+	statusFilters, _ := r["status"]
+	if _, ok := statusFilters.([]interface{}); !ok {
+		t.Errorf("Cannot cast status filters to list, expected list")
+	}
+
+	expectedStatusFilters := map[string]bool{"RUNNING": true, "QUEUED": true}
+	statusFiltersList := statusFilters.([]interface{})
+	if len(statusFiltersList) != 2 {
+		t.Errorf("Expected 2 status filters, was %v", len(statusFiltersList))
+	}
+	for _, statusFilter := range statusFiltersList {
+		if _, ok := expectedStatusFilters[statusFilter.(string)]; !ok {
+			t.Errorf("Unexpected status filter: %s", statusFilter.(string))
+		}
 	}
 
 	envFilters, _ := r["env_filters"]

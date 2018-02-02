@@ -224,7 +224,7 @@ func TestExecutionService_List2(t *testing.T) {
 	es.List(
 		1, 0,
 		"asc", "cluster_name",
-		map[string]string{"definition_id": "A"}, nil)
+		map[string][]string{"definition_id": {"A"}}, nil)
 
 	expectedCalls := map[string]bool{
 		"GetDefinition": true,

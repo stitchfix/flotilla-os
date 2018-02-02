@@ -51,7 +51,7 @@ func (iatt *ImplementsAllTheThings) Cleanup() error {
 // ListDefinitions - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitions(
 	limit int, offset int, sortBy string,
-	order string, filters map[string]string,
+	order string, filters map[string][]string,
 	envFilters map[string]string) (state.DefinitionList, error) {
 	iatt.Calls = append(iatt.Calls, "ListDefinitions")
 	dl := state.DefinitionList{Total: len(iatt.Definitions)}
@@ -108,7 +108,7 @@ func (iatt *ImplementsAllTheThings) DeleteDefinition(definitionID string) error 
 
 // ListRuns - StateManager
 func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy string,
-	order string, filters map[string]string,
+	order string, filters map[string][]string,
 	envFilters map[string]string) (state.RunList, error) {
 	iatt.Calls = append(iatt.Calls, "ListRuns")
 	rl := state.RunList{Total: len(iatt.Runs)}
