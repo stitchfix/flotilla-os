@@ -21,7 +21,6 @@ import StopRunModal from "./StopRunModal"
 import EnhancedRunStatus, { getEnhancedStatus } from "./EnhancedRunStatus"
 import RunInfo from "./RunInfo"
 import RunLogs from "./RunLogs"
-import RunStatusBar from "./RunStatusBar"
 
 const getHelmetEmoji = enhancedStatus => {
   switch (enhancedStatus) {
@@ -100,18 +99,10 @@ export const RunView = props => {
       <div className="pl-view-inner" style={{ marginBottom: 0 }}>
         <div className="flot-detail-view flot-run-view">
           <RunInfo {...props} />
-          <div className="flex ff-cn j-fs a-s full-width">
-            <RunStatusBar
-              startedAt={get(props.data, "started_at")}
-              finishedAt={get(props.data, "finished_at")}
-              status={get(props.data, "status", "")}
-              exitCode={get(props.data, "exit_code", "")}
-            />
-            <RunLogs
-              runId={props.runId}
-              status={get(props.data, "status", undefined)}
-            />
-          </div>
+          <RunLogs
+            runId={props.runId}
+            status={get(props.data, "status", undefined)}
+          />
         </div>
       </div>
     </div>

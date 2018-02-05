@@ -13,15 +13,19 @@ axiosMock.onGet().reply(200)
 const setup = configureSetup({
   connected: TaskDefinitionView,
 })
-const middlewares = [thunk]
-const mockStore = configureMockStore(middlewares)
 
 describe("TaskDefinitionView", () => {
+  const error = console.error
+  beforeAll(() => {
+    console.error = jest.fn()
+  })
+  afterAll(() => {
+    console.error = error
+  })
   it("renders the correct children", () => {
     const wrapper = setup({
       connectToRedux: true,
       connectToRouter: true,
-      store: mockStore({}),
     })
     expect(wrapper.find("View").length).toBe(1)
     expect(wrapper.find("ViewHeader").length).toBe(1)

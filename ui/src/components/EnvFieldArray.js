@@ -6,10 +6,8 @@ import {
   ReduxFormGroupArrayRow,
 } from "aa-ui-components"
 
-export const EnvFieldArray = props => {
+const EnvFieldArray = props => {
   const { handleEnvCreate, handleEnvUpdate, handleEnvRemove } = props
-
-  const prop = { x: 1 }
 
   return (
     <ReduxFormGroupArray

@@ -7,10 +7,17 @@ import moment from "moment"
 import { reactJsonViewProps } from "../constants/"
 import EnhancedRunStatus from "./EnhancedRunStatus"
 import KeyValueContainer from "./KeyValueContainer"
+import RunStatusBar from "./RunStatusBar"
 
 export default function RunInfo({ data }) {
   return (
     <div className="flot-detail-view-sidebar with-vertical-child-margin">
+      <RunStatusBar
+        startedAt={get(data, "started_at")}
+        finishedAt={get(data, "finished_at")}
+        status={get(data, "status", "")}
+        exitCode={get(data, "exit_code", "")}
+      />
       <KeyValueContainer header="Run Info">
         {({ json, collapsed }) => {
           if (json) {
@@ -19,6 +26,9 @@ export default function RunInfo({ data }) {
 
           return (
             <div className="flot-detail-view-sidebar-card-content">
+              <FormGroup isStatic label="Cluster">
+                {get(data, "cluster", "-")}
+              </FormGroup>
               <FormGroup isStatic label="Exit Code">
                 {get(data, "exit_code", "-")}
               </FormGroup>
@@ -71,6 +81,12 @@ export default function RunInfo({ data }) {
                 ) : (
                   "-"
                 )}
+              </FormGroup>
+              <FormGroup isStatic label="Image">
+                {get(data, "image", "-")}
+              </FormGroup>
+              <FormGroup isStatic label="Task Arn">
+                {get(data, "task_arn", "-")}
               </FormGroup>
               <FormGroup isStatic label="Instance ID">
                 {get(data, "instance.instance_id", "-")}

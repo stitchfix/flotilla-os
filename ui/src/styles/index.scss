@@ -69,6 +69,36 @@ code {
 }
 
 //
+// Topbar
+//
+img.topbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  margin-right: 8px;
+}
+
+//
+// Logs
+//
+.flot-logs-container {
+  width: 100%;
+  overflow-y: scroll;
+  line-height: 1.5;
+  // @TODO: un-magic number this.
+  // const topbarHeight = 48
+  // const viewHeaderHeight = 80
+  // const viewHeaderMarginBottom = 24
+  // const contentMarginBottom = 24
+  // const viewInnerMarginBottom = 72
+  // const runStatusBarHeight = 65 + 24
+  height: calc(100vh - 248px);
+  & > code {
+    display: block;
+  }
+}
+
+//
 // Table
 //
 .table-footer {
@@ -188,8 +218,8 @@ code {
     .flot-detail-view-sidebar-card-content {
       @include key-value-container(vertical);
     }
-    & > :nth-child(2) {
-      margin-top: $spacing * 2;
+    & > * {
+      margin-bottom: $spacing * 1.5;
     }
   }
 

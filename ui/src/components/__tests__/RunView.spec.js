@@ -13,6 +13,16 @@ const setup = configureSetup({
 })
 
 describe("RunView", () => {
+  const warn = console.warn
+  const error = console.error
+  beforeAll(() => {
+    console.warn = jest.fn()
+    console.error = jest.fn()
+  })
+  afterAll(() => {
+    console.warn = warn
+    console.error = error
+  })
   it("renders a View component", () => {
     const wrapper = setup({ connectToRouter: true })
     expect(wrapper.find(".pl-view-container").length).toEqual(1)
@@ -35,7 +45,6 @@ describe("RunView", () => {
 
     expect(vh.find("Button").length).toEqual(1)
   })
-  // @TODO
   it("renders a RunInfo component", () => {
     const wrapper = setup({ connectToRouter: true })
     expect(wrapper.find("RunInfo").length).toEqual(1)

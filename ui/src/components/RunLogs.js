@@ -3,29 +3,12 @@ import PropTypes from "prop-types"
 import update from "immutability-helper"
 import Ansi from "ansi-to-react"
 import { has, get } from "lodash"
-import { List, AutoSizer, CellMeasurer } from "react-virtualized"
 import axios from "axios"
-import { Card, Loader } from "aa-ui-components"
+import { ChevronUp, ChevronDown } from "react-feather"
+import { Card, Loader, Button } from "aa-ui-components"
 import config from "../config"
 import { runStatusTypes } from "../constants/"
 import EmptyTable from "./EmptyTable"
-
-// Constants for React Virtualized to calculate row height based on number of
-// chars per line.
-const rowHeight = 26
-
-// Estimated char width.
-const estCharWidth = 7.645
-
-// Max number of chars allowed per row, calculated by dividing the `width`
-// from <Autosizer> by the estimated char width.
-const maxCharsPerRow = width => width / estCharWidth
-
-const rowStyles = {
-  whiteSpace: "pre-wrap",
-  wordBreak: "break-all",
-  lineHeight: 1.4,
-}
 
 export default class RunLogs extends Component {
   static propTypes = {
@@ -34,8 +17,8 @@ export default class RunLogs extends Component {
   }
   constructor(props) {
     super(props)
-    this.rowRenderer = this.rowRenderer.bind(this)
-    this.handleAutoscrollChange = this.handleAutoscrollChange.bind(this)
+    this.scrollToBottom = this.scrollToBottom.bind(this)
+    this.scrollToTop = this.scrollToTop.bind(this)
   }
   state = {
     isLoading: false,
@@ -49,13 +32,21 @@ export default class RunLogs extends Component {
     this.startInterval()
   }
   componentWillReceiveProps(nextProps) {
-    if (nextProps.status === runStatusTypes.stopped) {
-      this.stopInterval()
-    }
     if (this.props.runId !== nextProps.runId) {
       this.stopInterval()
       this.fetch(nextProps.runId)
       this.startInterval()
+    } else if (nextProps.status === runStatusTypes.stopped) {
+      this.stopInterval()
+    }
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      !!this.state.shouldAutoscroll &&
+      this.state.logs.length > 0 &&
+      this.state.logs.length !== prevState.logs.length
+    ) {
+      this.scrollToBottom()
     }
   }
   shouldComponentUpdate(nextProps, nextState) {
@@ -79,14 +70,6 @@ export default class RunLogs extends Component {
     this.stopInterval()
   }
   fetch(runId) {
-    // Don't fetch if the run is pending or queued.
-    if (
-      this.props.status === runStatusTypes.queued ||
-      this.props.status === runStatusTypes.pending
-    ) {
-      return false
-    }
-
     const { lastSeen } = this.state
     let url = `${config.FLOTILLA_API}/${runId}/logs`
 
@@ -126,43 +109,14 @@ export default class RunLogs extends Component {
     this.setState({ isLoading: false })
     window.clearInterval(this._logsInterval)
   }
-  rowRenderer({ index, key, style, isScrolling }) {
-    const { logs, isLoading } = this.state
-
-    if (index === logs.length && !!isLoading) {
-      return (
-        <div key={key} style={style}>
-          <Loader />
-        </div>
-      )
-    }
-
-    return (
-      <div key={key} style={{ ...style, ...rowStyles }}>
-        <Ansi>{logs[index]}</Ansi>
-      </div>
-    )
-  }
-  getVirtualizedHeight() {
-    const topbarHeight = 48
-    const viewHeaderHeight = 80
-    const viewHeaderMarginBottom = 24
-    const contentMarginBottom = 24
-    const viewInnerMarginBottom = 72
-    const runStatusBarHeight = 65 + 24 // height + margin-bottom
-
-    return (
-      window.innerHeight -
-      topbarHeight -
-      viewHeaderHeight -
-      viewHeaderMarginBottom -
-      contentMarginBottom -
-      viewInnerMarginBottom -
-      runStatusBarHeight
-    )
-  }
   handleAutoscrollChange(evt) {
     this.setState(state => ({ shouldAutoscroll: !state.shouldAutoscroll }))
+  }
+  scrollToBottom() {
+    this.logsContainer.scrollTop = this.logsContainer.scrollHeight
+  }
+  scrollToTop() {
+    this.logsContainer.scrollTop = 0
   }
   render() {
     const { shouldAutoscroll, error, isLoading, logs } = this.state
@@ -173,42 +127,15 @@ export default class RunLogs extends Component {
       content = <div>{error}</div>
     } else if (logs.length > 0) {
       content = (
-        <div className="full-width" style={{ height: "100%" }}>
-          <AutoSizer disableHeight>
-            {({ width }) => {
-              const rowCount = !!isLoading ? logs.length + 1 : logs.length
-
-              let scrollToIndex
-
-              if (shouldAutoscroll) {
-                scrollToIndex = !!isLoading ? logs.length : logs.length - 1
-              }
-              return (
-                <List
-                  className="code"
-                  width={width}
-                  height={this.getVirtualizedHeight()}
-                  rowCount={rowCount}
-                  rowRenderer={this.rowRenderer}
-                  rowHeight={({ index }) => {
-                    if (index === logs.length) {
-                      return loaderContainerHeight
-                    }
-
-                    if (logs[index].length <= maxCharsPerRow(width)) {
-                      return rowHeight
-                    } else {
-                      return (
-                        rowHeight * (logs[index].length / maxCharsPerRow(width))
-                      )
-                    }
-                  }}
-                  scrollToIndex={scrollToIndex}
-                />
-              )
-            }}
-          </AutoSizer>
-        </div>
+        <pre
+          className="flot-logs-container"
+          ref={logsContainer => {
+            this.logsContainer = logsContainer
+          }}
+        >
+          {logs.map((line, i) => <Ansi key={i}>{line}</Ansi>)}
+          {!!isLoading && <Loader />}
+        </pre>
       )
     } else if (logs.length === 0) {
       content = <EmptyTable title="No logs yet!" />
@@ -221,6 +148,12 @@ export default class RunLogs extends Component {
           <div className="flex ff-rn j-sb a-c full-width">
             <div>Logs</div>
             <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
+              <Button onClick={this.scrollToBottom}>
+                <ChevronDown size={14} />
+              </Button>
+              <Button onClick={this.scrollToTop}>
+                <ChevronUp size={14} />
+              </Button>
               <div className="pl-button with-horizontal-child-margin">
                 <input
                   type="checkbox"

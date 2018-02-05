@@ -12,6 +12,7 @@ export default runId => ({
   started_at: "some_started_at",
   finished_at: "some_finished_at",
   group_name: "some_group_name",
+  image: "some_image",
   env: [
     {
       name: "foo",

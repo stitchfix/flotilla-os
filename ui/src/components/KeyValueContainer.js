@@ -10,9 +10,7 @@ export default class KeyValueContainer extends Component {
   }
   constructor(props) {
     super(props)
-    this.handleVisibilityButtonClick = this.handleVisibilityButtonClick.bind(
-      this
-    )
+    this.handleCollapseButtonClick = this.handleCollapseButtonClick.bind(this)
     this.handleJsonButtonClick = this.handleJsonButtonClick.bind(this)
     this.getState = this.getState.bind(this)
   }
@@ -26,7 +24,7 @@ export default class KeyValueContainer extends Component {
       collapsed: false,
     }))
   }
-  handleVisibilityButtonClick() {
+  handleCollapseButtonClick() {
     this.setState(state => ({ collapsed: !state.collapsed }))
   }
   getState() {
@@ -44,7 +42,7 @@ export default class KeyValueContainer extends Component {
               <Button onClick={this.handleJsonButtonClick}>
                 {!!json ? "Normal View" : "JSON View"}
               </Button>
-              <Button onClick={this.handleVisibilityButtonClick}>
+              <Button onClick={this.handleCollapseButtonClick}>
                 {!!collapsed ? (
                   <ChevronDown size={14} />
                 ) : (
