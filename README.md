@@ -275,11 +275,3 @@ Currently Flotilla is built using `go` 1.9.3 and uses the [`govendor`](https://g
 ```
 govendor sync && go build
 ```
-
-### Architecture Diagram
-
-TODO
-
--- descriptions of components
-
-
