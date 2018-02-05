@@ -3,6 +3,7 @@
 [![Circle CI](https://circleci.com/gh/stitchfix/flotilla-os.svg?style=shield)](https://circleci.com/gh/stitchfix/flotilla-os)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stitchfix/flotilla-os)](https://goreportcard.com/report/github.com/stitchfix/flotilla-os)
 
+## Introduction
 
 Flotilla is a self-service framework that dramatically simplifies the process of defining and executing containerized jobs. This means you get to focus on the work you're doing rather than _how_ to do it.
 
@@ -18,7 +19,7 @@ Once deployed, Flotilla allows you to:
 
 Flotilla is strongly opinionated about self-service for data science.
 
-The core assumption is that you understand your work the best. Therefor, it is _you_ who should own your work from end-to-end.
+The core assumption is that you understand your work the best. Therefore, it is _you_ who should own your work from end-to-end.
 
 * You shouldn't need to be a "data engineer" to extract, transform, and load data for your work. Run this work with Flotilla.
 
