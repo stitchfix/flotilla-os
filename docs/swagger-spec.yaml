@@ -1,0 +1,828 @@
+swagger: "2.0"
+info:
+  description: "Flotilla server. Define your own integrations, clients, and workflows using the Flotilla API"
+  version: "1.0.0"
+  title: "Flotilla"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+basePath: "/api"
+tags:
+- name: "task"
+  description: "Create, update, delete, and list task definitions"
+- name: "history"
+  description: "View task run history"
+- name: "metadata"
+  description: "Perform read-only metadata operations for tags, groups, and clusters"
+schemes:
+- "http"
+paths:
+  
+  /v1/task:
+    
+    post:
+      tags:
+      - "task"
+      summary: "Create a new task definition. Execute existing definitions with the execute endpoint"
+      operationId: "createDefinition"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Definition object to create"
+        required: true
+        schema:
+          $ref: "#/definitions/Definition"
+      responses:
+        400:
+          description: "Malformed input"
+        409:
+          description: "Another definition with the same alias exists"
+        200:
+          description: "Definition created successfully"
+    get:
+      tags:
+      - "task"
+      summary: "List existing task definitions"
+      operationId: "listDefinitions"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "limit"
+        description: "Limit number of results to this many"
+        type: "integer"
+        default: 1024
+        required: false
+      - in: "query"
+        name: "offset"
+        description: "Page offset"
+        type: "integer"
+        default: 0
+        required: false
+      - in: "query"
+        name: "group_name"
+        description: "Filter to definitions with the specified group_name. Strict match."
+        type: "string"
+        required: false
+      - in: "query"
+        name: "alias"
+        description: "Filter to those definitions with the specified alias. Substring match."
+        type: "string"
+        required: false
+      - in: "query"
+        name: "sort_by"
+        description: "Field on task definitions to sort by"
+        type: "string"
+        required: false
+      - in: "query"
+        name: "order"
+        description: "Sort order; (asc, desc)"
+        type: "string"
+        required: false
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/DefinitionList"
+          
+  /v1/task/{definition_id}:
+    
+    get:
+      tags:
+      - "task"
+      summary: "Get task definition by id"
+      operationId: "getDefinition"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task definition to get"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Definition"
+        404:
+          description: "Definition not found"
+          
+    put:
+      tags:
+      - "task"
+      summary: "Update task definition"
+      operationId: "updateDefinition"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task definition to update"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Definition updates"
+        required: true
+        schema:
+          $ref: "#/definitions/Definition"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Definition"
+        400:
+          description: "Malformed request"
+        404:
+          description: "Definition not found"
+          
+    delete:
+      tags:
+      - "task"
+      summary: "Delete task definition by id"
+      operationId: "deleteDefinition"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task definition to delete"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+        404:
+          description: "Definition not found"
+          
+  /v1/task/alias/{alias}:
+    
+    get:
+      tags:
+      - "task"
+      summary: "Get task definition by alias"
+      operationId: "getDefinitionByAlias"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "alias"
+        in: "path"
+        description: "Alias to task definition to get"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Definition"
+        404:
+          description: "Definition not found"
+          
+  /v1/task/alias/{alias}/execute:
+    
+    put:
+      tags:
+      - "task"
+      summary: "Create new task run by task alias"
+      operationId: "createRunByAlias"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "alias"
+        in: "path"
+        description: "Alias to task definition to launch"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Launch parameters"
+        required: true
+        schema:
+          $ref: "#/definitions/LaunchRequestV2" 
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        400:
+          description: "Malformed request. Most typically this means an invalid image is used or the cluster cannot support running the job"
+        404:
+          description: "Definition not found"
+        
+  /v1/task/{definition_id}/execute:
+    
+    put:
+      tags:
+      - "task"
+      summary: "Create new task run by definition id"
+      operationId: "createRun"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task definition to launch"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Launch parameters"
+        required: true
+        schema:
+          $ref: "#/definitions/LaunchRequestV1" 
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        404:
+          description: "Definition not found"
+          
+  /v2/task/{definition_id}/execute:
+    
+    put:
+      tags:
+      - "task"
+      summary: "Create new task run by definition id"
+      operationId: "createRunV2"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task to launch"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Launch parameters"
+        required: true
+        schema:
+          $ref: "#/definitions/LaunchRequestV2" 
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        400:
+          description: "Malformed request. Most typically this means an invalid image is used or the cluster cannot support running the job"
+        404:
+          description: "Definition not found"
+          
+  /v4/task/{definition_id}/execute:
+    
+    put:
+      tags:
+      - "task"
+      summary: "Create new task run by definition id"
+      operationId: "createRunV4"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "definition_id"
+        in: "path"
+        description: "Definition id of task to launch"
+        required: true
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Launch parameters"
+        required: true
+        schema:
+          $ref: "#/definitions/LaunchRequestV4" 
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        400:
+          description: "Malformed request. Most typically this means an invalid image is used or the cluster cannot support running the job"
+        404:
+          description: "Definition not found"
+          
+  /v1/history:
+    
+    get:
+      tags:
+      - "history"
+      summary: "List all runs"
+      operationId: "listRuns"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "limit"
+        description: "Limit number of results to this many"
+        type: "integer"
+        default: 1024
+        required: false
+      - in: "query"
+        name: "offset"
+        description: "Page offset"
+        type: "integer"
+        default: 0
+        required: false
+      - in: "query"
+        name: "cluster_name"
+        description: "Filter to runs with the specified cluster_name. Strict match."
+        type: "string"
+        required: false
+      - in: "query"
+        name: "status"
+        description: "Filter to those definitions with the specified status."
+        type: "string"
+        required: false
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/RunList"
+          
+        
+  /v1/history/{run_id}:
+    
+    get:
+      tags:
+      - "history"
+      summary: "Get run by run id"
+      operationId: "getRun"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "run_id"
+        description: "Run id of run to get"
+        type: "string"
+        required: true
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        404:
+          description: "No run found"
+            
+  /v1/task/{definition_id}/history:
+    
+    get:
+      tags:
+      - "history"
+      summary: "List all runs for a given task definition id"
+      operationId: "listDefinitionRuns"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "definition_id"
+        required: true
+        description: "Definition id of runs to fetch"
+        type: "string"
+      - in: "query"
+        name: "limit"
+        description: "Limit number of results to this many"
+        type: "integer"
+        default: 1024
+        required: false
+      - in: "query"
+        name: "offset"
+        description: "Page offset"
+        type: "integer"
+        default: 0
+        required: false
+      - in: "query"
+        name: "cluster_name"
+        description: "Filter to runs with the specified cluster_name. Strict match."
+        type: "string"
+        required: false
+      - in: "query"
+        name: "status"
+        description: "Filter to those definitions with the specified status."
+        type: "string"
+        required: false
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/RunList"
+            
+  /v1/task/{definition_id}/history/{run_id}:
+    
+    delete:
+      tags:
+      - "history"
+      summary: "Terminate a run"
+      operationId: "stopRun"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "definition_id"
+        description: "Definition id of run to terminate"
+        type: "string"
+        required: true
+      - in: "path"
+        name: "run_id"
+        description: "Run id of run to terminate"
+        type: "string"
+        required: true
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/Run"
+        404:
+          description: "No run found"
+          
+  /v1/{run_id}/logs:
+    
+    get:
+      tags:
+      - "history"
+      summary: "Get logs for a run"
+      operationId: "getLogs"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "path"
+        name: "run_id"
+        required: true
+        description: "Run id of run to get logs for"
+        type: "string"
+      - in: "query"
+        name: "last_seen"
+        required: false
+        description: "Last seen token (from a previous call to this endpoint). Allows only fetching logs that come after the specified `last_seen` token."
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/RunLogs"
+        404:
+          description: "No run with that run_id found"
+            
+  /groups:
+    
+    get:
+      tags:
+      - "metadata"
+      summary: "Get list of group names in use"
+      operationId: "getGroups"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "limit"
+        required: false
+        type: "integer"
+        description: "Limit results to this many"
+        default: 1024
+      - in: "query"
+        name: "offset"
+        required: false
+        description: "Page offset"
+        default: 0
+        type: "integer"
+      - in: "query"
+        name: "name"
+        required: false
+        description: "Search for group names with this value"
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/GroupsList"
+      
+  /tags:
+    
+    get:
+      tags:
+      - "metadata"
+      summary: "Get list of tags in use"
+      operationId: "getTags"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "limit"
+        required: false
+        type: "integer"
+        description: "Limit results to this many"
+        default: 1024
+      - in: "query"
+        name: "offset"
+        required: false
+        description: "Page offset"
+        default: 0
+        type: "integer"
+      - in: "query"
+        name: "name"
+        required: false
+        description: "Search for tags with this value"
+        type: "string"
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/TagsList"
+            
+  /clusters:
+    
+    get:
+      tags:
+      - "metadata"
+      summary: "Get list of clusters"
+      operationId: "getClusters"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "Successful operation"
+          schema:
+            $ref: "#/definitions/ClustersList"
+  
+definitions:
+  
+  LaunchRequestV1:
+    type: "object"
+    properties:
+      cluster:
+        type: "string"
+        default: "default"
+      env:
+        type: "array"
+        items:
+          $ref: "#/definitions/EnvVar"
+          
+  LaunchRequestV2:
+    type: "object"
+    properties:
+      cluster:
+        type: "string"
+        default: "default"
+      env:
+        type: "array"
+        items:
+          $ref: "#/definitions/EnvVar"
+      run_tags:
+        type: "object"
+        properties:
+          owner_email:
+            type: "string"
+            example: "flotilla@github.com"
+          team_name:
+            type: "string"
+            example: ":team:data_science"
+            
+  LaunchRequestV4:
+    type: "object"
+    properties:
+      cluster:
+        type: "string"
+        default: "default"
+      env:
+        type: "array"
+        items:
+          $ref: "#/definitions/EnvVar"
+      run_tags:
+        type: "object"
+        properties:
+          owner_id:
+            type: "string"
+            example: ":user:flotilla"
+            
+  EnvVar:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        example: "FOO"
+      value:
+        type: "string"
+        example: "bar"
+        
+  Run:
+    type: "object"
+    properties:
+      run_id:
+        type: "string"
+        example: "553c2489-49af-4a68-4c8c-014bd95e6e30"
+      definition_id:
+        type: "string"
+        example: "definition-0a6aa31f-0221-4734-bc34-8054fab1820b"
+      alias:
+        type: "string"
+        example: "my-job"
+      image:
+        type: "string"
+        example: "library/ubuntu:latest"
+      cluster:
+        type: "string"
+        example: "default"
+      exit_code:
+        type: "integer"
+        example: 0
+      status:
+        type: "string"
+        example: "STOPPED"
+        enum:
+        - "RUNNING"
+        - "QUEUED"
+        - "NEEDS_RETRY"
+        - "PENDING"
+        - "STOPPED"
+      started_at:
+        type: "string"
+        format: "date-time"
+        example: "2018-01-31T20:30:45.067Z"
+      finished_at:
+        type: "string"
+        format: "date-time"
+        example: "2018-01-31T22:26:11.483Z"
+      instance:
+        type: "object"
+        properties:
+          instance_id:
+            type: "string"
+            example: "i-8xx"
+          dns_name:
+            type: "string"
+            example: "execution.host.dns"
+      group_name:
+        type: "string"
+        example: "example"
+      env:
+        type: "array"
+        items:
+          $ref: "#/definitions/EnvVar"
+          
+  Definition:
+    type: "object"
+    properties:
+      definition_id:
+        type: "string"
+        example: "definition-0a6aa31f-0221-4734-bc34-8054fab1820b"
+      image:
+        type: "string"
+        example: "library/ubuntu:latest"
+      group_name:
+        type: "string"
+        example: "example"
+      alias:
+        type: "string"
+        example: "my-job"
+      memory:
+        type: "integer"
+        description: "memory in units of megabytes"
+        example: 512
+      command:
+        type: "string"
+        example: "echo 'hello world'"
+      env:
+        type: "array"
+        items:
+          $ref: "#/definitions/EnvVar"
+      tags:
+        type: "array"
+        items: 
+          type: "string"
+      
+  DefinitionList:
+    type: "object"
+    properties:
+      limit:
+        type: "integer"
+        default: 1024
+        example: 1024
+      offset:
+        type: "integer"
+        default: 0
+        example: 0
+      total:
+        type: "integer"
+        example: 100
+      sort_by:
+        type: "string"
+        default: "alias"
+        example: "alias"
+      order:
+        type: "string"
+        default: "asc"
+        example: "asc"
+        enum:
+        - "asc"
+        - "desc"
+      definitions:
+        type: "array"
+        items: 
+          $ref: "#/definitions/Definition"
+          
+  RunList:
+    type: "object"
+    properties:
+      limit:
+        type: "integer"
+        default: 1024
+        example: 1000
+      offset:
+        type: "integer"
+        default: 0
+        example: 0
+      total:
+        type: "integer"
+        example: 100
+      sort_by:
+        type: "string"
+        default: "alias"
+        example: "image"
+      order:
+        type: "string"
+        default: "asc"
+        example: "asc"
+        enum:
+        - "asc"
+        - "desc"
+      status:
+        type: "string"
+        example: "STOPPED"
+      history:
+        type: "array"
+        items: 
+          $ref: "#/definitions/Run"
+          
+  RunLogs:
+    type: "object"
+    properties:
+      log:
+        type: "string"
+        example: "A\nB\nC"
+      last_seen: 
+        type: "string"
+        example: "f/123"
+        
+  GroupsList:
+    type: "object"
+    properties:
+      limit:
+        type: "integer"
+        default: 1024
+        example: 1024
+      offset:
+        type: "integer"
+        default: 0
+        example: 0
+      total:
+        type: "integer"
+        example: 100
+      groups:
+        type: "array"
+        items:
+          type: "string"
+          
+  TagsList:
+    type: "object"
+    properties:
+      limit:
+        type: "integer"
+        default: 1024
+        example: 1024
+      offset:
+        type: "integer"
+        default: 0
+        example: 0
+      total:
+        type: "integer"
+        example: 100
+      tags:
+        type: "array"
+        items:
+          type: "string"
+          
+  ClustersList:
+    type: "object"
+    properties:
+      clusters:
+        type: "array"
+        items:
+          type: "string"
+          
+externalDocs:
+  description: "Find out more about flotilla"
+  url: "https://github.com/stitchfix/flotilla-os"
