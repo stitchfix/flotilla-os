@@ -83,10 +83,17 @@ func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) []string
 			wc = append(wc, fmt.Sprintf("%s in (%s)", k, strings.Join(quoted, ",")))
 		} else if len(v) == 1 {
 			fmtString := "%s='%s'"
+			fieldName := k
 			if k == "image" || k == "alias" || k == "group_name" || k == "command" || k == "text" {
 				fmtString = "%s like '%%%s%%'"
+			} else if strings.HasSuffix(k, "_since") {
+				fieldName = strings.Replace(k, "_since", "", -1)
+				fmtString = "%s > '%s'"
+			} else if strings.HasSuffix(k, "_until") {
+				fieldName = strings.Replace(k, "_until", "", -1)
+				fmtString = "%s < '%s'"
 			}
-			wc = append(wc, fmt.Sprintf(fmtString, k, v[0]))
+			wc = append(wc, fmt.Sprintf(fmtString, fieldName, v[0]))
 		}
 	}
 	return wc

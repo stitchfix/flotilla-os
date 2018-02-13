@@ -429,6 +429,35 @@ func TestSQLStateManager_ListRuns2(t *testing.T) {
 	sm := setUp()
 
 	var err error
+	expectedTotal := 1
+	expectedRun := "run4"
+	rl, err := sm.ListRuns(100, 0, "started_at", "asc", map[string][]string{
+		"started_at_since": {
+			"2017-07-04T00:02:59+00:00",
+		},
+		"started_at_until": {
+			"2017-07-04T00:03:01+00:00",
+		},
+	}, nil)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if rl.Total != expectedTotal {
+		t.Errorf("Expected total to be %v but was %v", expectedTotal, rl.Total)
+	}
+
+	r := rl.Runs[0]
+	if r.RunID != expectedRun {
+		t.Errorf("Got unexpected run: %s", r.RunID)
+	}
+}
+
+func TestSQLStateManager_ListRuns3(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	var err error
 	expectedTotal := 2
 	expectedRuns := map[string]bool{"run3": true, "run5": true}
 	rl, err := sm.ListRuns(100, 0, "started_at", "asc", map[string][]string{
