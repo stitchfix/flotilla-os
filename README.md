@@ -55,7 +55,7 @@ Flotilla has a simple, easy to use UI. Here's some example images for basic usag
 
 The UI allows you to quickly create new tasks.
 
-![Define Task](https://user-images.githubusercontent.com/166823/35579884-999e0b04-059c-11e8-8ec7-65a14f7ae647.png "Create New Task")
+![Define Task](https://user-images.githubusercontent.com/10807627/36404298-bb218ac8-159e-11e8-8830-e92fa3eae393.png "Create New Task")
 
 
 #### Launch a task with UI
@@ -65,18 +65,18 @@ You can run tasks you've created with the UI as well. Once you've ran a task the
 
 1. Launch
 
-   ![Run Task](https://user-images.githubusercontent.com/166823/35579954-cc158d8c-059c-11e8-857c-0c0c7e8cd7b9.png "Run Task")
+   ![Run Task](https://user-images.githubusercontent.com/10807627/36404301-bb8a3b7c-159e-11e8-9364-bf7ab6bc6502.png "Run Task")
 
 2. Queued --> Pending
 
-   ![Queued Task](https://user-images.githubusercontent.com/166823/35579975-e1e3bb20-059c-11e8-87d5-5c78f8aa96f4.png "Queued Task")
+   ![Queued Task](https://user-images.githubusercontent.com/10807627/36404302-bbae6d44-159e-11e8-9217-c1c6287b92fd.png "Queued Task")
    
-   ![Pending Task](https://user-images.githubusercontent.com/166823/35579998-eff41368-059c-11e8-8fb7-d5c217998a5d.png "Pending Task")
+   ![Pending Task](https://user-images.githubusercontent.com/10807627/36404303-bbccd4f0-159e-11e8-8bb0-cc7c5179fae8.png "Pending Task")
 3. View logs
 
-   ![Running Task](https://user-images.githubusercontent.com/166823/35580026-038ae348-059d-11e8-95e4-f0150400a1a8.png "Running Task")
+   ![Running Task](https://user-images.githubusercontent.com/10807627/36404308-bfab2c7a-159e-11e8-8c86-e29cbaf9b1b2.png "Running Task")
    
-   ![Finished Task](https://user-images.githubusercontent.com/166823/35580037-1455ea10-059d-11e8-92da-dd1249dcf40d.png "Finished Task")
+   ![Finished Task](https://user-images.githubusercontent.com/10807627/36404307-bf8b68b8-159e-11e8-9a5d-ef20879c7827.png "Finished Task")
 
 
 ### Basic API Usage
