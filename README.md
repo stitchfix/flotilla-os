@@ -1,3 +1,5 @@
+<img src="https://user-images.githubusercontent.com/10807627/36405385-38266dd0-15a5-11e8-89e1-57a09232c4e4.png" height="64">
+
 # flotilla-os
 
 [![Circle CI](https://circleci.com/gh/stitchfix/flotilla-os.svg?style=shield)](https://circleci.com/gh/stitchfix/flotilla-os)
@@ -55,7 +57,7 @@ Flotilla has a simple, easy to use UI. Here's some example images for basic usag
 
 The UI allows you to quickly create new tasks.
 
-![Define Task](https://user-images.githubusercontent.com/10807627/36404298-bb218ac8-159e-11e8-8830-e92fa3eae393.png "Create New Task")
+![Define Task](https://user-images.githubusercontent.com/10807627/36405382-37baa6c2-15a5-11e8-9775-642ca3edaf7a.png "Create New Task")
 
 
 #### Launch a task with UI
@@ -65,18 +67,18 @@ You can run tasks you've created with the UI as well. Once you've ran a task the
 
 1. Launch
 
-   ![Run Task](https://user-images.githubusercontent.com/10807627/36404301-bb8a3b7c-159e-11e8-9364-bf7ab6bc6502.png "Run Task")
+   ![Run Task](https://user-images.githubusercontent.com/10807627/36405381-37982926-15a5-11e8-9de0-0ad6d2cd30b6.png "Run Task")
 
 2. Queued --> Pending
 
-   ![Queued Task](https://user-images.githubusercontent.com/10807627/36404302-bbae6d44-159e-11e8-9217-c1c6287b92fd.png "Queued Task")
+   ![Queued Task](https://user-images.githubusercontent.com/10807627/36405384-38020422-15a5-11e8-802c-aa02c7a4f89b.png "Queued Task")
    
-   ![Pending Task](https://user-images.githubusercontent.com/10807627/36404303-bbccd4f0-159e-11e8-8bb0-cc7c5179fae8.png "Pending Task")
+   ![Pending Task](https://user-images.githubusercontent.com/10807627/36405383-37dd9cf4-15a5-11e8-848a-535671c92523.png "Pending Task")
 3. View logs
 
-   ![Running Task](https://user-images.githubusercontent.com/10807627/36404308-bfab2c7a-159e-11e8-8c86-e29cbaf9b1b2.png "Running Task")
+   ![Running Task](https://user-images.githubusercontent.com/10807627/36405380-3775e00a-15a5-11e8-96d1-60680d3fcb7a.png "Running Task")
    
-   ![Finished Task](https://user-images.githubusercontent.com/10807627/36404307-bf8b68b8-159e-11e8-9a5d-ef20879c7827.png "Finished Task")
+   ![Finished Task](https://user-images.githubusercontent.com/10807627/36405379-3753150c-15a5-11e8-9463-a3d0f5a81d42.png "Finished Task")
 
 
 ### Basic API Usage
