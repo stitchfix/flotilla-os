@@ -45,6 +45,7 @@ type cloudwatchServiceClient interface {
 
 type sqsClient interface {
 	GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
+	SetQueueAttributes(input *sqs.SetQueueAttributesInput) (*sqs.SetQueueAttributesOutput, error)
 }
 
 type ecsUpdate struct {
@@ -117,7 +118,7 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQueue string) error {
-	_, err := ee.cwClient.PutRule(&cloudwatchevents.PutRuleInput{
+	createUpdate, err := ee.cwClient.PutRule(&cloudwatchevents.PutRuleInput{
 		Description:  aws.String("Routes ecs task status events to flotilla status queues"),
 		Name:         &statusRule,
 		EventPattern: aws.String(`{"source":["aws.ecs"],"detail-type":["ECS Task State Change"]}`),
@@ -163,7 +164,8 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 		return fmt.Errorf("Error creating routing rule for ecs status messages [%s]", *failed.ErrorMessage)
 	}
 
-	return nil
+	// Finally, add permissions to target queue
+	return ee.setTargetPermissions(*createUpdate.RuleArn, targetArn)
 }
 
 func (ee *ECSExecutionEngine) getTargetArn(qurl string) (string, error) {
@@ -181,6 +183,34 @@ func (ee *ECSExecutionEngine) getTargetArn(qurl string) (string, error) {
 		return *res.Attributes["QueueArn"], nil
 	}
 	return arn, fmt.Errorf("Couldn't get queue arn")
+}
+
+func (ee *ECSExecutionEngine) setTargetPermissions(sourceArn string, targetArn string) error {
+	policyDoc := fmt.Sprintf(`{
+		"Version":"2012-10-17",
+		"Id":"flotilla-task-status-updates-to-sqs",
+		"Statement": [{
+			"Sid": "flotilla-task-status-updates-to-sqs-sid",
+			"Effect": "Allow",
+			"Principal": {
+				"AWS": "*"
+			},
+			"Action": "sqs:SendMessage",
+			"Resource": "%s",
+			"Condition": {
+				"ArnEquals": {
+					"aws:SourceArn": "%s"
+				}
+			}
+		}]
+	}`, targetArn, sourceArn)
+	_, err := ee.sqsClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
+		Attributes: map[string]*string{
+			"Policy": &policyDoc,
+		},
+		QueueUrl: &ee.statusQurl,
+	})
+	return err
 }
 
 //
