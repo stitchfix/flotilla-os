@@ -60,6 +60,10 @@ func (msqs *mockSQSClient) GetQueueAttributes(input *sqs.GetQueueAttributesInput
 	}, nil
 }
 
+func (msqs *mockSQSClient) SetQueueAttributes(input *sqs.SetQueueAttributesInput) (*sqs.SetQueueAttributesOutput, error) {
+	return &sqs.SetQueueAttributesOutput{}, nil
+}
+
 type mockCloudWatchClient struct {
 }
 
