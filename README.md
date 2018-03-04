@@ -29,11 +29,50 @@ The core assumption is that you understand your work the best. Therefore, it is 
 
 Before we can do _anything_ there's some *prerequistes* that must be met.
 
-1. Flotilla by default uses AWS. You must have an AWS account and the credentials available to you in a way that standard AWS tools can access. That is, the standard credential provider chain. This means one of:
-	1. Environment variables
-	2. A shared credentials file
-	3. IAM role
-2. Flotilla uses AWS's Elastic Continer Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
+1. Flotilla by default uses AWS. You must have an AWS account and AWS keys available. This quick-start guide uses AWS keys exported into the environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. If you've got credentials configured on your machine you can set these easily by running:
+
+```
+export AWS_ACCESS_KEY_ID=$(aws --profile default configure get aws_access_key_id)
+export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_access_key)
+```
+> Note: When running on AWS EC2 instances or ECS it's better practice to use an IAM profile for AWS credentials
+
+2. The AWS credentials must be authorized. The permissions required are described in the following policy document for AWS (you can attach it to a user or a role depending on how you manage users in AWS).
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "flotilla-policy",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:DeleteMessage",
+                "sqs:ListQueues",
+                "sqs:GetQueueUrl",
+                "logs:DescribeLogGroups",
+                "sqs:ReceiveMessage",
+                "events:PutRule",
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "ecs:DescribeClusters",
+                "ecs:DeregisterTaskDefinition",
+                "events:ListRuleNamesByTarget",
+                "ecs:RunTask",
+                "ecs:RegisterTaskDefinition",
+                "sqs:CreateQueue",
+                "ecs:ListContainerInstances",
+                "ecs:DescribeContainerInstances",
+                "ecs:ListClusters",
+                "ecs:StopTask"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+3. Flotilla uses AWS's Elastic Continer Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
 
 ### Starting the service locally
 
