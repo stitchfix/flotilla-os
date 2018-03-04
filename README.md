@@ -29,13 +29,13 @@ The core assumption is that you understand your work the best. Therefore, it is 
 
 Before we can do _anything_ there's some *prerequistes* that must be met.
 
-1. Flotilla by default uses AWS. You must have an AWS account and AWS keys available. This quick-start guide uses AWS keys exported into the environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. You can set these easily by running:
+1. Flotilla by default uses AWS. You must have an AWS account and AWS keys available. This quick-start guide uses AWS keys exported into the environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. If you've got credentials configured on your machine you can set these easily by running:
 
 ```
 export AWS_ACCESS_KEY_ID=$(aws --profile default configure get aws_access_key_id)
 export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_access_key)
 ```
-> Note: When running on AWS EC2 instances or ECS it's better practice to an IAM profile for AWS credentials
+> Note: When running on AWS EC2 instances or ECS it's better practice to use an IAM profile for AWS credentials
 
 2. The AWS credentials must be authorized. The permissions required are described in the following policy document for AWS (you can attach it to a user or a role depending on how you manage users in AWS).
 
