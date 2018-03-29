@@ -109,14 +109,10 @@ type Definition struct {
 }
 
 var commandWrapper = `
-bash << \_FLOTILLA_EOF
-set -x
 set -e
-{{.Command}}
-_FLOTILLA_EOF
+set -x
 
-exit_code=$?
-exit ${exit_code}
+{{.Command}}
 `
 var commandTemplate, _ = template.New("command").Parse(commandWrapper)
 
