@@ -96,10 +96,6 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	}
 	rti := adapter.AdaptRun(definition, run)
 
-	if rti.StartedBy == nil || *rti.StartedBy != definition.GroupName {
-		t.Errorf("Expected startedBy name groupa")
-	}
-
 	if rti.Cluster == nil || *rti.Cluster != run.ClusterName {
 		t.Errorf("Expected cluster name clusta")
 	}
@@ -197,10 +193,6 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 
 	if adapted.TaskArn != arn {
 		t.Errorf("Expected arn: %s, was %s", arn, adapted.TaskArn)
-	}
-
-	if adapted.GroupName != group {
-		t.Errorf("Expected group: %s, was %s", group, adapted.GroupName)
 	}
 
 	if adapted.StartedAt.UTC().String() != t1.UTC().String() {

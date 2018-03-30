@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
@@ -57,7 +58,6 @@ func NewECSAdapter(conf config.Config, ecsClient ECSServiceClient, ec2Client EC2
 func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 	run := state.Run{
 		TaskArn:    *task.TaskArn,
-		GroupName:  *task.Group,
 		StartedAt:  task.StartedAt,
 		FinishedAt: task.StoppedAt,
 	}
@@ -104,8 +104,9 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		run.Status = *task.LastStatus
 	}
 
-	if len(task.Containers) == 1 {
-		run.ExitCode = task.Containers[0].ExitCode
+	if len(task.Containers) > 0 {
+		mainContainer := task.Containers[0]
+		run.ExitCode = mainContainer.ExitCode
 	}
 
 	if a.needsRetried(run, task) {
@@ -161,7 +162,7 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	rti := ecs.RunTaskInput{
 		Cluster:        &run.ClusterName,
 		Count:          &n,
-		StartedBy:      &definition.GroupName,
+		StartedBy:      aws.String("flotilla"),
 		TaskDefinition: &definition.Arn,
 		Overrides:      &overrides,
 	}
