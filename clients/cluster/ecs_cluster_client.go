@@ -157,7 +157,7 @@ func (ecc *ECSClusterClient) validate(resources *instanceResources, definition s
 func (ecc *ECSClusterClient) fetchResources(clusterName string) (*instanceResources, error) {
 	exists, err := ecc.clusterExists(clusterName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "problem checking for cluster existence of clsuter [%s]", clusterName)
+		return nil, errors.Wrapf(err, "problem checking for cluster existence of cluster [%s]", clusterName)
 	}
 	if exists {
 		rsrc, err := ecc.clusterInstanceResources(clusterName)
