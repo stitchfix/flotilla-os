@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -23,15 +24,18 @@ type Client interface {
 // NewClusterClient returns a cluster client
 //
 func NewClusterClient(conf config.Config) (Client, error) {
-	name := conf.GetString("cluster_client")
-	if len(name) == 0 {
-		name = "ecs"
+	name := "ecs"
+	if conf.IsSet("cluster_client") {
+		name = conf.GetString("cluster_client")
 	}
 
 	switch name {
 	case "ecs":
 		ecsc := &ECSClusterClient{}
-		return ecsc, ecsc.Initialize(conf)
+		if err := ecsc.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing ECSClusterClient")
+		}
+		return ecsc, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/go-connections/sockets"
 	"github.com/moby/moby/registry"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"net"
 	"net/http"
@@ -80,25 +81,25 @@ func NewRegistryClient(c config.Config) (Client, error) {
 	tf.registryService = registry.NewService(registry.ServiceOptions{})
 	tf.authConfigs, err = loadAuthConfigs(c)
 	if err != nil {
-		return &rc, err
+		return &rc, errors.Wrap(err, "error loading docker authentication configuration")
 	}
 	rc.tagFetcher = &tf
-	return &rc, err
+	return &rc, nil
 }
 
 func (rc *registryClient) IsImageValid(imageRef string) (bool, error) {
 	ref, err := reference.ParseAnyReference(imageRef)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "issue parsing image reference [%s]", imageRef)
 	}
 	taggedRef, ok := ref.(reference.Tagged)
 	if !ok {
-		return false, fmt.Errorf("Can't get tag from image ref %s", imageRef)
+		return false, errors.Errorf("can't get tag from image reference [%s]", imageRef)
 	}
 
 	tags, err := rc.tagFetcher.TagsForImage(ref)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "issue fetching tags for image reference [%s]", imageRef)
 	}
 
 	tag := taggedRef.Tag()
@@ -119,10 +120,14 @@ func (tf *imageTagFetcher) TagsForImage(imageRef reference.Reference) ([]string,
 	ctx := context.Background()
 	repo, err := tf.repositoryForRef(ctx, imageRef)
 	if err != nil {
-		return tags, err
+		return tags, errors.Wrap(err, "issue resolving repository")
 	}
 
-	return repo.Tags(ctx).All(ctx)
+	tags, err = repo.Tags(ctx).All(ctx)
+	if err != nil {
+		return tags, errors.Wrap(err, "issue fetching tags from image repository")
+	}
+	return tags, nil
 }
 
 //
@@ -135,7 +140,7 @@ func (tf *imageTagFetcher) repositoryForRef(ctx context.Context, imageRef refere
 	// Resolve repository
 	repoInfo, err := tf.registryService.ResolveRepository(namedRef)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "issue resolving repository")
 	}
 
 	// Get auth for repo
@@ -145,7 +150,7 @@ func (tf *imageTagFetcher) repositoryForRef(ctx context.Context, imageRef refere
 	endpoints, err := tf.registryService.LookupPullEndpoints(
 		reference.Domain(repoInfo.Name))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "issue looking up pull endpoints for [%s]", repoInfo.Name.String())
 	}
 
 	// Get v2 repo - only v2 is supported
@@ -165,7 +170,10 @@ func (tf *imageTagFetcher) repositoryForRef(ctx context.Context, imageRef refere
 			break
 		}
 	}
-	return repository, lastError
+	if lastError != nil {
+		return repository, errors.WithStack(err)
+	}
+	return repository, nil
 }
 
 func (tf *imageTagFetcher) newV2Repository(
@@ -204,7 +212,7 @@ func (tf *imageTagFetcher) newV2Repository(
 
 	challengeManager, _, err := registry.PingV2Registry(endpoint.URL, authTransport)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "issue pinging v2 registry with url [%v]", endpoint.URL)
 	}
 
 	if authConfig.RegistryToken != "" {
@@ -232,10 +240,14 @@ func (tf *imageTagFetcher) newV2Repository(
 
 	repoNameRef, err := reference.WithName(repoName)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "issue getting repository reference for repository name [%s]", repoName)
 	}
 
-	return client.NewRepository(ctx, repoNameRef, endpoint.URL.String(), tr)
+	repo, err := client.NewRepository(ctx, repoNameRef, endpoint.URL.String(), tr)
+	if err != nil {
+		return repo, errors.Wrap(err, "issue creating new repository")
+	}
+	return repo, nil
 }
 
 type existingTokenHandler struct {

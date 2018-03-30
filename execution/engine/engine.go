@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
@@ -39,16 +40,19 @@ type RunReceipt struct {
 // NewExecutionEngine initializes and returns a new Engine
 //
 func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
-	name := conf.GetString("execution_engine")
-	if len(name) == 0 {
-		name = "ecs"
+	name := "ecs"
+	if conf.IsSet("execution_engine") {
+		name = conf.GetString("execution_engine")
 	}
 
 	switch name {
 	case "ecs":
 		eng := &ECSExecutionEngine{qm: qm}
-		return eng, eng.Initialize(conf)
+		if err := eng.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
+		}
+		return eng, nil
 	default:
-		return nil, fmt.Errorf("No Engine named [%s] was found", name)
+		return nil, fmt.Errorf("no Engine named [%s] was found", name)
 	}
 }

@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -41,15 +42,18 @@ type StatusReceipt struct {
 // NewQueueManager returns the Manager configured via `queue_manager`
 //
 func NewQueueManager(conf config.Config) (Manager, error) {
-	name := conf.GetString("queue_manager")
-	if len(name) == 0 {
-		name = "sqs"
+	name := "sqs"
+	if conf.IsSet("queue_manager") {
+		name = conf.GetString("queue_manager")
 	}
 
 	switch name {
 	case "sqs":
 		sqsm := &SQSManager{}
-		return sqsm, sqsm.Initialize(conf)
+		if err := sqsm.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing SQSManager")
+		}
+		return sqsm, nil
 	default:
 		return nil, fmt.Errorf("No QueueManager named [%s] was found", name)
 	}

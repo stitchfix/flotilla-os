@@ -729,10 +729,10 @@
 			"revisionTime": "2017-06-28T01:26:37Z"
 		},
 		{
-			"checksumSHA1": "rJab1YdNhQooDiBWNnt7TLWPyBU=",
+			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
 			"path": "github.com/pkg/errors",
-			"revision": "c605e284fe17294bda444b34710735b29d1a9d90",
-			"revisionTime": "2017-05-05T04:36:39Z"
+			"revision": "816c9085562cd7ee03e7f8188a1cfd942858cded",
+			"revisionTime": "2018-03-11T21:45:15Z"
 		},
 		{
 			"checksumSHA1": "I778b2sbNN/yjwKSdb3y7hz2yUQ=",

@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	"github.com/stitchfix/flotilla-os/queue"
@@ -57,15 +58,15 @@ type ecsUpdate struct {
 //
 func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	if !conf.IsSet("aws_default_region") {
-		return fmt.Errorf("ECSExecutionEngine needs [aws_default_region] set in config")
+		return errors.Errorf("ECSExecutionEngine needs [aws_default_region] set in config")
 	}
 
 	if !conf.IsSet("queue.status") {
-		return fmt.Errorf("ECSExecutionEngine needs [queue.status] set in config")
+		return errors.Errorf("ECSExecutionEngine needs [queue.status] set in config")
 	}
 
 	if !conf.IsSet("queue.status_rule") {
-		return fmt.Errorf("ECSExecutionEngine needs [queue.status_rule] set in config")
+		return errors.Errorf("ECSExecutionEngine needs [queue.status_rule] set in config")
 	}
 
 	var (
@@ -91,14 +92,14 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 		ee.sqsClient = sqs.New(sess)
 		adpt, err = adapter.NewECSAdapter(conf, ecsClient, ec2Client)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "problem initializing ECSAdapter")
 		}
 	}
 
 	ee.adapter = adpt
 
 	if ee.qm == nil {
-		return fmt.Errorf("No queue.Manager implementation; ECSExecutionEngine needs a queue.Manager")
+		return errors.Errorf("no queue.Manager implementation; ECSExecutionEngine needs a queue.Manager")
 	}
 
 	//
@@ -110,7 +111,7 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	statusQueue := conf.GetString("queue.status")
 	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "problem getting queue url for status queue with name [%s]", statusQueue)
 	}
 
 	statusRule := conf.GetString("queue.status_rule")
@@ -125,20 +126,20 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 	})
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "problem creating ecs status event routing rule")
 	}
 
 	// Route status events to the status queue
 	targetArn, err := ee.getTargetArn(ee.statusQurl)
 	if err != nil {
-		return fmt.Errorf("Error getting target arn for %s; message: [%s]", ee.statusQurl, err.Error())
+		return errors.Wrapf(err, "problem getting target arn for [%s]", ee.statusQurl)
 	}
 
 	names, err := ee.cwClient.ListRuleNamesByTarget(&cloudwatchevents.ListRuleNamesByTargetInput{
 		TargetArn: &targetArn,
 	})
 	if err != nil {
-		return fmt.Errorf("Error listing rules for target: [%s]; message: [%s]", targetArn, err.Error())
+		return errors.Wrapf(err, "problem listing rules for target [%s]", targetArn)
 	}
 
 	if len(names.RuleNames) > 0 && *names.RuleNames[0] == statusRule {
@@ -156,12 +157,13 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 	})
 
 	if err != nil {
-		return err
+		return errors.Wrapf(
+			err, "problem adding [%s] as queue target for status rule [%s]", targetArn, statusRule)
 	}
 
 	if *res.FailedEntryCount > 0 {
 		failed := res.FailedEntries[0]
-		return fmt.Errorf("Error creating routing rule for ecs status messages [%s]", *failed.ErrorMessage)
+		return errors.Errorf("error adding routing rule for ecs status messages [%s]", *failed.ErrorMessage)
 	}
 
 	// Finally, add permissions to target queue
@@ -177,12 +179,12 @@ func (ee *ECSExecutionEngine) getTargetArn(qurl string) (string, error) {
 		},
 	})
 	if err != nil {
-		return arn, err
+		return arn, errors.Wrapf(err, "problem getting attribute QueueArn for sqs queue with url [%s]", qurl)
 	}
 	if res.Attributes["QueueArn"] != nil {
 		return *res.Attributes["QueueArn"], nil
 	}
-	return arn, fmt.Errorf("Couldn't get queue arn")
+	return arn, errors.Errorf("couldn't get queue arn")
 }
 
 func (ee *ECSExecutionEngine) setTargetPermissions(sourceArn string, targetArn string) error {
@@ -204,13 +206,16 @@ func (ee *ECSExecutionEngine) setTargetPermissions(sourceArn string, targetArn s
 			}
 		}]
 	}`, targetArn, sourceArn)
-	_, err := ee.sqsClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
+	if _, err := ee.sqsClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
 			"Policy": &policyDoc,
 		},
 		QueueUrl: &ee.statusQurl,
-	})
-	return err
+	}); err != nil {
+		return errors.Wrapf(
+			err, "problem setting permissions allowing [%s] to send events to [%s]", sourceArn, targetArn)
+	}
+	return nil
 }
 
 //
@@ -225,7 +230,7 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 
 	rawReceipt, err := ee.qm.ReceiveStatus(ee.statusQurl)
 	if err != nil {
-		return receipt, err
+		return receipt, errors.Wrapf(err, "problem getting status from [%s]", ee.statusQurl)
 	}
 
 	//
@@ -234,7 +239,7 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 	if rawReceipt.StatusUpdate != nil {
 		err = json.Unmarshal([]byte(*rawReceipt.StatusUpdate), &update)
 		if err != nil {
-			return receipt, fmt.Errorf("Error: %v\nJSON: [%s]", err.Error(), rawReceipt.StatusUpdate)
+			return receipt, errors.Wrapf(err, "unable to parse status update with json [%s]", *rawReceipt.StatusUpdate)
 		}
 		adapted := ee.adapter.AdaptTask(update.Detail)
 		receipt.Run = &adapted
@@ -250,7 +255,7 @@ func (ee *ECSExecutionEngine) PollStatus() (RunReceipt, error) {
 func (ee *ECSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	queues, err := ee.qm.List()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "problem listing queues to poll")
 	}
 
 	var runs []RunReceipt
@@ -261,7 +266,7 @@ func (ee *ECSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 		runReceipt, err := ee.qm.ReceiveRun(qurl)
 
 		if err != nil {
-			return runs, err
+			return runs, errors.Wrapf(err, "problem receiving run from queue url [%s]", qurl)
 		}
 
 		if runReceipt.Run == nil {
@@ -280,11 +285,14 @@ func (ee *ECSExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(run.ClusterName, true)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
-	return ee.qm.Enqueue(qurl, run)
+	if err = ee.qm.Enqueue(qurl, run); err != nil {
+		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
+	}
+	return nil
 }
 
 //
@@ -304,7 +312,7 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 				}
 			}
 		}
-		return executed, retryable, err
+		return executed, retryable, errors.Wrapf(err, "problem executing run [%s]", run.RunID)
 	}
 	if len(result.Failures) != 0 {
 		msg := make([]string, len(result.Failures))
@@ -317,7 +325,7 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 		//
 		// IMPORTANT - log these messages
 		//
-		return executed, true, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
+		return executed, true, errors.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
 	}
 
 	return ee.translateTask(*result.Tasks[0]), false, nil
@@ -327,11 +335,13 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 // Terminate takes a valid run and stops it
 //
 func (ee *ECSExecutionEngine) Terminate(run state.Run) error {
-	_, err := ee.ecsClient.StopTask(&ecs.StopTaskInput{
+	if _, err := ee.ecsClient.StopTask(&ecs.StopTaskInput{
 		Cluster: &run.ClusterName,
 		Task:    &run.TaskArn,
-	})
-	return err
+	}); err != nil {
+		return errors.Wrapf(err, "problem stopping run [%s] with task arn [%s]", run.RunID, run.TaskArn)
+	}
+	return nil
 }
 
 //
@@ -341,7 +351,8 @@ func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definit
 	rti := ee.adapter.AdaptDefinition(definition)
 	result, err := ee.ecsClient.RegisterTaskDefinition(&rti)
 	if err != nil {
-		return state.Definition{}, err
+		return state.Definition{}, errors.Wrapf(
+			err, "problem registering definition [%s] with ecs", definition.DefinitionID)
 	}
 
 	//
@@ -368,10 +379,12 @@ func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definit
 // Deregister deregisters the task definition from ecs
 //
 func (ee *ECSExecutionEngine) Deregister(definition state.Definition) error {
-	_, err := ee.ecsClient.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
+	if _, err := ee.ecsClient.DeregisterTaskDefinition(&ecs.DeregisterTaskDefinitionInput{
 		TaskDefinition: &definition.Arn,
-	})
-	return err
+	}); err != nil {
+		return errors.Wrapf(err, "problem deregistering definition [%s] with ecs", definition.DefinitionID)
+	}
+	return nil
 }
 
 func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run state.Run) ecs.RunTaskInput {

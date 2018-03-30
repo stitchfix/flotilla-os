@@ -1,11 +1,11 @@
 package cluster
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
@@ -53,7 +53,7 @@ func (ecc *ECSClusterClient) Name() string {
 //
 func (ecc *ECSClusterClient) Initialize(conf config.Config) error {
 	if !conf.IsSet("aws_default_region") {
-		return fmt.Errorf("ecsClusterClient needs [aws_default_region] set in config")
+		return errors.Errorf("ecsClusterClient needs [aws_default_region] set in config")
 	}
 
 	flotillaMode := conf.GetString("flotilla_mode")
@@ -87,7 +87,7 @@ func (ecc *ECSClusterClient) CanBeRun(clusterName string, definition state.Defin
 	if !found {
 		resources, err = ecc.fetchResources(clusterName)
 		if err != nil {
-			return false, err
+			return false, errors.Wrapf(err, "problem getting available resources for cluster [%s]", clusterName)
 		}
 		if resources == nil {
 			return false, nil
@@ -108,7 +108,7 @@ func (ecc *ECSClusterClient) ListClusters() ([]string, error) {
 	}
 	clusterNames, err := ecc.getClusterNamesFromApi()
 	if err != nil {
-		return clusterNames, err
+		return clusterNames, errors.Wrap(err, "problem listing cluster names")
 	}
 	ecc.clusterNames.setInstanceResources(clusterNames)
 	return clusterNames, nil
@@ -123,12 +123,12 @@ func (ecc *ECSClusterClient) getClusterNamesFromApi() ([]string, error) {
 				MaxResults: &LIST_CLUSTER_RESULTS,
 				NextToken:  nextToken})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "problem listing ecs clusters")
 		}
 		clusters, err := ecc.ecsClient.DescribeClusters(
 			&ecs.DescribeClustersInput{Clusters: clusterArns.ClusterArns})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "problem describing ecs clusters")
 		}
 		for _, cluster := range clusters.Clusters {
 			if cluster.ClusterName != nil {
@@ -157,10 +157,14 @@ func (ecc *ECSClusterClient) validate(resources *instanceResources, definition s
 func (ecc *ECSClusterClient) fetchResources(clusterName string) (*instanceResources, error) {
 	exists, err := ecc.clusterExists(clusterName)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "problem checking for cluster existence of cluster [%s]", clusterName)
 	}
 	if exists {
-		return ecc.clusterInstanceResources(clusterName)
+		rsrc, err := ecc.clusterInstanceResources(clusterName)
+		if err != nil {
+			return nil, errors.Wrap(err, "problem fetching cluster resources")
+		}
+		return rsrc, nil
 	}
 	return nil, nil
 }
@@ -173,14 +177,14 @@ func (ecc *ECSClusterClient) clusterExists(clusterName string) (bool, error) {
 	})
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "problem describing ecs cluster with name: [%s]", clusterName)
 	}
 	if len(result.Failures) != 0 {
 		msg := make([]string, len(result.Failures))
 		for i, failure := range result.Failures {
 			msg[i] = *failure.Reason
 		}
-		return false, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
+		return false, errors.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
 	}
 	if len(result.Clusters) == 0 {
 		return false, nil
@@ -195,7 +199,7 @@ func (ecc *ECSClusterClient) clusterInstanceResources(clusterName string) (*inst
 		Cluster: &clusterName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "problem listing ecs container instances for cluster [%s]", clusterName)
 	}
 
 	if len(instances) == 0 {
@@ -208,7 +212,7 @@ func (ecc *ECSClusterClient) clusterInstanceResources(clusterName string) (*inst
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "problem describing container instances for cluster [%s]", clusterName)
 	}
 
 	//
@@ -227,7 +231,7 @@ func (ecc *ECSClusterClient) clusterInstanceResources(clusterName string) (*inst
 func (ecc *ECSClusterClient) listInstances(input *ecs.ListContainerInstancesInput) ([]*string, error) {
 	result, err := ecc.ecsClient.ListContainerInstances(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "problem listing container instances")
 	}
 	var subset []*string
 	for _, arn := range result.ContainerInstanceArns {
@@ -238,7 +242,7 @@ func (ecc *ECSClusterClient) listInstances(input *ecs.ListContainerInstancesInpu
 		input.NextToken = result.NextToken
 		more, err := ecc.listInstances(input)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 		subset = append(subset, more...)
 	}
@@ -248,7 +252,7 @@ func (ecc *ECSClusterClient) listInstances(input *ecs.ListContainerInstancesInpu
 func (ecc *ECSClusterClient) describeInstances(input *ecs.DescribeContainerInstancesInput) ([]instanceResources, error) {
 	result, err := ecc.ecsClient.DescribeContainerInstances(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "problem describing ecs container instances")
 	}
 
 	if len(result.Failures) != 0 {
@@ -256,7 +260,7 @@ func (ecc *ECSClusterClient) describeInstances(input *ecs.DescribeContainerInsta
 		for i, failure := range result.Failures {
 			msg[i] = *failure.Reason
 		}
-		return nil, fmt.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
+		return nil, errors.Errorf("ERRORS: %s", strings.Join(msg, "\n"))
 	}
 
 	res := make([]instanceResources, len(result.ContainerInstances))
