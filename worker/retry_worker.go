@@ -47,19 +47,19 @@ func (rw *retryWorker) runOnce() {
 	rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 
 	if err != nil {
-		rw.log.Log("message", "Error listing runs for retry", "error", err.Error())
+		rw.log.Log("message", "Error listing runs for retry", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 
 	for _, run := range runList.Runs {
 
 		if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
-			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", err.Error())
+			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			return
 		}
 
 		if err = rw.ee.Enqueue(run); err != nil {
-			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", err.Error())
+			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			return
 		}
 	}

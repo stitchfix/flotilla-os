@@ -2,6 +2,7 @@ package logs
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
@@ -20,9 +21,9 @@ type Client interface {
 // NewLogsClient creates and initializes a run logs client
 //
 func NewLogsClient(conf config.Config, logger flotillaLog.Logger) (Client, error) {
-	name := conf.GetString("log.driver.name")
-	if len(name) == 0 {
-		name = "awslogs"
+	name := "awslogs"
+	if conf.IsSet("log.driver.name") {
+		name = conf.GetString("log.driver.name")
 	}
 
 	logger.Log("message", "Initializing logs client", "client", name)
@@ -30,7 +31,10 @@ func NewLogsClient(conf config.Config, logger flotillaLog.Logger) (Client, error
 	case "awslogs":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
 		cwlc := &CloudWatchLogsClient{}
-		return cwlc, cwlc.Initialize(conf)
+		if err := cwlc.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing CloudWatchLogsClient")
+		}
+		return cwlc, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}

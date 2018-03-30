@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -39,7 +40,7 @@ func (sw *submitWorker) Run() {
 func (sw *submitWorker) runOnce() {
 	receipts, err := sw.ee.PollRuns()
 	if err != nil {
-		sw.log.Log("message", "Error receiving runs", "error", err.Error())
+		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
 	for _, runReceipt := range receipts {
 		if runReceipt.Run == nil {
@@ -51,9 +52,9 @@ func (sw *submitWorker) runOnce() {
 		//
 		run, err := sw.sm.GetRun(runReceipt.Run.RunID)
 		if err != nil {
-			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", err.Error())
+			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
 			if err = runReceipt.Done(); err != nil {
-				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", err.Error())
+				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
 			continue
 		}
@@ -71,7 +72,7 @@ func (sw *submitWorker) runOnce() {
 				"definition_id", run.DefinitionID,
 				"error", err.Error())
 			if err = runReceipt.Done(); err != nil {
-				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", err.Error())
+				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
 			continue
 		}
@@ -87,7 +88,7 @@ func (sw *submitWorker) runOnce() {
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
 			launched, retryable, err := sw.ee.Execute(definition, run)
 			if err != nil {
-				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", err.Error(), "retryable", retryable)
+				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
 					// Set status to StatusStopped, and ack
 					launched.Status = state.StatusStopped
@@ -102,7 +103,7 @@ func (sw *submitWorker) runOnce() {
 			//
 			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", definition, "run_id", run.RunID)
 			if err != nil {
-				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", err.Error())
+				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
 
 			//
@@ -110,14 +111,14 @@ func (sw *submitWorker) runOnce() {
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
 			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
-				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", err.Error())
+				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", fmt.Sprintf("%+v", err))
 			}
 		} else {
 			sw.log.Log("message", "Received run that is not runnable", "run_id", run.RunID, "status", run.Status)
 		}
 
 		if err = runReceipt.Done(); err != nil {
-			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", err.Error())
+			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 		}
 	}
 }

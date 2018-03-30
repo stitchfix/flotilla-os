@@ -1,7 +1,7 @@
 package state
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 )
 
@@ -40,16 +40,20 @@ type Manager interface {
 // - if no `state_manager` is configured, will use postgres
 //
 func NewStateManager(conf config.Config) (Manager, error) {
-	name := conf.GetString("state_manager")
-	if len(name) == 0 {
-		name = "postgres"
+	name := "postgres"
+	if conf.IsSet("state_manager") {
+		name = conf.GetString("state_manager")
 	}
 
 	switch name {
 	case "postgres":
 		pgm := &SQLStateManager{}
-		return pgm, pgm.Initialize(conf)
+		err := pgm.Initialize(conf)
+		if err != nil {
+			return nil, errors.Wrap(err, "problem initializing SQLStateManager")
+		}
+		return pgm, nil
 	default:
-		return nil, fmt.Errorf("No StateManager named [%s] was found", name)
+		return nil, errors.Errorf("state.Manager named [%s] not found", name)
 	}
 }

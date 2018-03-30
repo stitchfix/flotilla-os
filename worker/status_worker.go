@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -40,7 +41,7 @@ func (sw *statusWorker) Run() {
 func (sw *statusWorker) runOnce() {
 	runReceipt, err := sw.ee.PollStatus()
 	if err != nil {
-		sw.log.Log("message", "unable to receive status message", "error", err.Error())
+		sw.log.Log("message", "unable to receive status message", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 
@@ -64,20 +65,20 @@ func (sw *statusWorker) runOnce() {
 		if shouldProcess {
 			run, err := sw.findRun(update.TaskArn)
 			if err != nil {
-				sw.log.Log("message", "unable to find run to apply update to", "error", err.Error())
+				sw.log.Log("message", "unable to find run to apply update to", "error", fmt.Sprintf("%+v", err))
 				return
 			}
 
 			_, err = sw.sm.UpdateRun(run.RunID, *update)
 			if err != nil {
-				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", err.Error())
+				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}
 		}
 
 		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
 		if err = runReceipt.Done(); err != nil {
-			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", err.Error())
+			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", fmt.Sprintf("%+v", err))
 		}
 	}
 }
@@ -87,10 +88,10 @@ func (sw *statusWorker) findRun(taskArn string) (state.Run, error) {
 		"task_arn": {taskArn},
 	}, nil)
 	if err != nil {
-		return state.Run{}, err
+		return state.Run{}, errors.Wrapf(err, "problem finding run by task arn [%s]", taskArn)
 	}
-	if runs.Total > 0 {
+	if runs.Total > 0 && len(runs.Runs) > 0 {
 		return runs.Runs[0], nil
 	}
-	return state.Run{}, fmt.Errorf("No run found for [%s]", taskArn)
+	return state.Run{}, errors.Errorf("no run found for [%s]", taskArn)
 }

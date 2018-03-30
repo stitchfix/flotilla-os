@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -35,19 +36,21 @@ func NewWorker(
 	case "status":
 		worker = &statusWorker{}
 	default:
-		return nil, fmt.Errorf("No workerType %s exists", workerType)
+		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	err = worker.Initialize(conf, sm, ee, log, pollInterval)
-	return worker, err
+	if err = worker.Initialize(conf, sm, ee, log, pollInterval); err != nil {
+		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
+	}
+	return worker, nil
 }
 
 func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
 	var interval time.Duration
 	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
 	if len(pollIntervalString) == 0 {
-		return interval, fmt.Errorf("Worker type: [%s] needs worker.%s_interval set", workerType, workerType)
+		return interval, errors.Errorf("worker type: [%s] needs worker.%s_interval set", workerType, workerType)
 	}
 	return time.ParseDuration(pollIntervalString)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -41,21 +42,21 @@ func (qm *SQSManager) Name() string {
 //
 func (qm *SQSManager) Initialize(conf config.Config) error {
 	if !conf.IsSet("aws_default_region") {
-		return fmt.Errorf("SQSManager needs [aws_default_region] set in config")
+		return errors.Errorf("SQSManager needs [aws_default_region] set in config")
 	}
 
 	if !conf.IsSet("queue.namespace") {
-		return fmt.Errorf("SQSManager needs [queue.namespace] set in config")
+		return errors.Errorf("SQSManager needs [queue.namespace] set in config")
 	}
 
-	qm.retentionSeconds = conf.GetString("queue.retention_seconds")
-	if len(qm.retentionSeconds) == 0 {
-		qm.retentionSeconds = "604800"
+	qm.retentionSeconds = "604800"
+	if conf.IsSet("queue.retention_seconds") {
+		qm.retentionSeconds = conf.GetString("queue.retention_seconds")
 	}
 
-	qm.visibilityTimeout = conf.GetString("queue.process_time")
-	if len(qm.visibilityTimeout) == 0 {
-		qm.visibilityTimeout = "45"
+	qm.visibilityTimeout = "45"
+	if conf.IsSet("queue.process_time") {
+		qm.visibilityTimeout = conf.GetString("queue.process_time")
 	}
 
 	qm.namespace = conf.GetString("queue.namespace")
@@ -96,7 +97,7 @@ func (qm *SQSManager) getOrCreateQueue(name string, prefixed bool) (string, erro
 		}
 		createQueueResponse, err := qm.qc.CreateQueue(&cqi)
 		if err != nil {
-			return "", err
+			return "", errors.Wrapf(err, "problem trying to create sqs queue with name [%s]", qname)
 		}
 		return *createQueueResponse.QueueUrl, nil
 	}
@@ -106,7 +107,7 @@ func (qm *SQSManager) getOrCreateQueue(name string, prefixed bool) (string, erro
 func (qm *SQSManager) messageFromRun(run state.Run) (*string, error) {
 	jsonized, err := json.Marshal(run)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "problem trying to serialize run with id [%s] as json", run.RunID)
 	}
 	asString := string(jsonized)
 	return &asString, nil
@@ -115,27 +116,30 @@ func (qm *SQSManager) messageFromRun(run state.Run) (*string, error) {
 func (qm *SQSManager) runFromMessage(message *sqs.Message) (state.Run, error) {
 	var run state.Run
 	if message == nil {
-		return run, fmt.Errorf("Can't generate Run from nil message")
+		return run, errors.Errorf("can't generate Run from nil message")
 	}
 
 	body := message.Body
 	if body == nil {
-		return run, fmt.Errorf("Can't generate Run from empty message")
+		return run, errors.Errorf("can't generate Run from empty message")
 	}
 
-	err := json.Unmarshal([]byte(*body), &run)
-	return run, err
+	if err := json.Unmarshal([]byte(*body), &run); err != nil {
+		errors.Wrapf(err, "problem trying to deserialize run from json [%s]", *body)
+	}
+
+	return run, nil
 }
 
 func (qm *SQSManager) statusFromMessage(message *sqs.Message) (string, error) {
 	var statusUpdate string
 	if message == nil {
-		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from nil message")
+		return statusUpdate, errors.Errorf("can't generate StatusUpdate from nil message")
 	}
 
 	body := message.Body
 	if body == nil {
-		return statusUpdate, fmt.Errorf("Can't generate StatusUpdate from empty message")
+		return statusUpdate, errors.Errorf("can't generate StatusUpdate from empty message")
 	}
 
 	return *body, nil
@@ -146,12 +150,12 @@ func (qm *SQSManager) statusFromMessage(message *sqs.Message) (string, error) {
 //
 func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 	if len(qURL) == 0 {
-		return fmt.Errorf("No queue url specified, can't enqueue")
+		return errors.Errorf("no queue url specified, can't enqueue")
 	}
 
 	message, err := qm.messageFromRun(run)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	sme := sqs.SendMessageInput{
@@ -161,7 +165,7 @@ func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 
 	_, err = qm.qc.SendMessage(&sme)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "problem sending sqs message")
 	}
 	return nil
 }
@@ -173,7 +177,7 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 	var receipt RunReceipt
 
 	if len(qURL) == 0 {
-		return receipt, fmt.Errorf("No queue url specified, can't dequeue")
+		return receipt, errors.Errorf("no queue url specified, can't dequeue")
 	}
 
 	maxMessages := int64(1)
@@ -188,7 +192,7 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
-		return receipt, err
+		return receipt, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
 	if len(response.Messages) == 0 {
@@ -196,18 +200,22 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 	}
 
 	run, err := qm.runFromMessage(response.Messages[0])
+	if err != nil {
+		return receipt, errors.WithStack(err)
+	}
+
 	receipt.Run = &run
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}
-	return receipt, err
+	return receipt, nil
 }
 
 func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 	var receipt StatusReceipt
 
 	if len(qURL) == 0 {
-		return receipt, fmt.Errorf("No queue url specified, can't dequeue")
+		return receipt, errors.Errorf("no queue url specified, can't dequeue")
 	}
 
 	maxMessages := int64(1)
@@ -222,7 +230,7 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
-		return receipt, err
+		return receipt, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
 	if len(response.Messages) == 0 {
@@ -230,11 +238,14 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 	}
 
 	statusUpdate, err := qm.statusFromMessage(response.Messages[0])
+	if err != nil {
+		return receipt, errors.WithStack(err)
+	}
 	receipt.StatusUpdate = &statusUpdate
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}
-	return receipt, err
+	return receipt, nil
 }
 
 //
@@ -243,17 +254,20 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 //
 func (qm *SQSManager) ack(qURL string, handle *string) error {
 	if handle == nil {
-		return fmt.Errorf("Cannot acknowledge message with nil receipt")
+		return errors.Errorf("cannot acknowledge message with nil receipt")
 	}
 	if len(*handle) == 0 {
-		return fmt.Errorf("Cannot acknowledge message with empty receipt")
+		return errors.Errorf("cannot acknowledge message with empty receipt")
 	}
 	dmi := sqs.DeleteMessageInput{
 		QueueUrl:      &qURL,
 		ReceiptHandle: handle,
 	}
-	_, err := qm.qc.DeleteMessage(&dmi)
-	return err
+	if _, err := qm.qc.DeleteMessage(&dmi); err != nil {
+		return errors.Wrapf(
+			err, "problem deleting sqs message with handle [%s] from queue url [%s]", *handle, qURL)
+	}
+	return nil
 }
 
 //
@@ -263,7 +277,7 @@ func (qm *SQSManager) List() ([]string, error) {
 	response, err := qm.qc.ListQueues(
 		&sqs.ListQueuesInput{QueueNamePrefix: &qm.namespace})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "problem listing sqs queues")
 	}
 
 	listed := make([]string, len(response.QueueUrls))

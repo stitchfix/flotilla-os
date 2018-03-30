@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"strings"
 )
@@ -33,7 +33,7 @@ func NewConfig(confDir *string) (Config, error) {
 		v.SetConfigType("yaml")
 		v.AddConfigPath(*confDir)
 		if err := v.ReadInConfig(); err != nil {
-			return &conf{}, err
+			return &conf{}, errors.Wrapf(err, "problem reading config from [%s]", *confDir)
 		}
 	}
 	v.AutomaticEnv()

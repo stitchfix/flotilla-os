@@ -8,6 +8,7 @@ import (
 	// Pull in postgres specific drivers
 	"database/sql"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"math"
@@ -38,7 +39,7 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 
 	var err error
 	if sm.db, err = sqlx.Open("postgres", dburl); err != nil {
-		return err
+		return errors.Wrap(err, "unable to open postgres db")
 	}
 
 	if createSchema {
@@ -53,12 +54,12 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 				err = sm.db.Ping()
 			}
 			if err != nil {
-				return fmt.Errorf("error trying to connect to postgres, retries exhausted; error: [%s]", err.Error())
+				return errors.Wrap(err, "error trying to connect to postgres db, retries exhausted")
 			}
 		}
 
 		if err = sm.createTables(); err != nil {
-			return err
+			return errors.Wrap(err, "problem executing create tables sql")
 		}
 	}
 	return nil
@@ -116,11 +117,11 @@ func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (s
 		if obj.validOrderField(field) {
 			return fmt.Sprintf("order by %s %s NULLS LAST", field, order), nil
 		}
-		return "", fmt.Errorf("Invalid field to order by [%s], must be one of [%s]",
+		return "", errors.Errorf("Invalid field to order by [%s], must be one of [%s]",
 			field,
 			strings.Join(obj.validOrderFields(), ", "))
 	}
-	return "", fmt.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
+	return "", errors.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
 }
 
 //
@@ -147,7 +148,7 @@ func (sm *SQLStateManager) ListDefinitions(
 
 	orderQuery, err = sm.orderBy(&Definition{}, sortBy, order)
 	if err != nil {
-		return result, err
+		return result, errors.WithStack(err)
 	}
 
 	sql := fmt.Sprintf(ListDefinitionsSQL, whereClause, orderQuery)
@@ -155,11 +156,11 @@ func (sm *SQLStateManager) ListDefinitions(
 
 	err = sm.db.Select(&result.Definitions, sql, limit, offset)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list definitions sql")
 	}
 	err = sm.db.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list definitions count sql")
 	}
 
 	return result, nil
@@ -172,11 +173,15 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	var err error
 	var definition Definition
 	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
-	if err != nil && err == sql.ErrNoRows {
-		return definition, exceptions.MissingResource{
-			fmt.Sprintf("Definition with ID %s not found", definitionID)}
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return definition, exceptions.MissingResource{
+				fmt.Sprintf("Definition with ID %s not found", definitionID)}
+		} else {
+			return definition, errors.Wrapf(err, "issue getting definition with id [%s]", definitionID)
+		}
 	}
-	return definition, err
+	return definition, nil
 }
 
 //
@@ -186,9 +191,13 @@ func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error
 	var err error
 	var definition Definition
 	err = sm.db.Get(&definition, GetDefinitionByAliasSQL, alias)
-	if err != nil && err == sql.ErrNoRows {
-		return definition, exceptions.MissingResource{
-			fmt.Sprintf("Definition with alias %s not found", alias)}
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return definition, exceptions.MissingResource{
+				fmt.Sprintf("Definition with alias %s not found", alias)}
+		} else {
+			return definition, errors.Wrapf(err, "issue getting definition with alias [%s]", alias)
+		}
 	}
 	return definition, err
 }
@@ -204,7 +213,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	)
 	existing, err = sm.GetDefinition(definitionID)
 	if err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	existing.UpdateWith(updates)
@@ -239,19 +248,19 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(selectForUpdate, definitionID); err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(deletePorts, definitionID); err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(deleteTags, definitionID); err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(
@@ -259,14 +268,14 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
 		existing.Command, existing.Env); err != nil {
-		return existing, err
+		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
 	if existing.Ports != nil {
 		for _, p := range *existing.Ports {
 			if _, err = tx.Exec(insertPorts, definitionID, p); err != nil {
 				tx.Rollback()
-				return existing, err
+				return existing, errors.WithStack(err)
 			}
 		}
 	}
@@ -275,15 +284,19 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		for _, t := range *existing.Tags {
 			if _, err = tx.Exec(insertTags, t, t); err != nil {
 				tx.Rollback()
-				return existing, err
+				return existing, errors.WithStack(err)
 			}
 			if _, err = tx.Exec(insertDefTags, definitionID, t); err != nil {
 				tx.Rollback()
-				return existing, err
+				return existing, errors.WithStack(err)
 			}
 		}
 	}
-	return existing, tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return existing, errors.WithStack(err)
+	}
+	return existing, nil
 }
 
 //
@@ -318,21 +331,22 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
 		d.User, d.Alias, d.Memory, d.Command, d.Env); err != nil {
 		tx.Rollback()
-		return err
+		return errors.Wrapf(
+			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
 	}
 
 	if d.Ports != nil {
 		for _, p := range *d.Ports {
 			if _, err = tx.Exec(insertPorts, d.DefinitionID, p); err != nil {
 				tx.Rollback()
-				return err
+				return errors.WithStack(err)
 			}
 		}
 	}
@@ -341,15 +355,19 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 		for _, t := range *d.Tags {
 			if _, err = tx.Exec(insertTags, t, t); err != nil {
 				tx.Rollback()
-				return err
+				return errors.WithStack(err)
 			}
 			if _, err = tx.Exec(insertDefTags, d.DefinitionID, t); err != nil {
 				tx.Rollback()
-				return err
+				return errors.WithStack(err)
 			}
 		}
 	}
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 //
@@ -366,17 +384,21 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	}
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	for _, stmt := range statements {
 		if _, err = tx.Exec(stmt, definitionID); err != nil {
 			tx.Rollback()
-			return err
+			return errors.Wrapf(err, "issue deleting definition with id [%s]", definitionID)
 		}
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 //
@@ -403,7 +425,7 @@ func (sm *SQLStateManager) ListRuns(
 
 	orderQuery, err = sm.orderBy(&Run{}, sortBy, order)
 	if err != nil {
-		return result, err
+		return result, errors.WithStack(err)
 	}
 
 	sql := fmt.Sprintf(ListRunsSQL, whereClause, orderQuery)
@@ -411,11 +433,11 @@ func (sm *SQLStateManager) ListRuns(
 
 	err = sm.db.Select(&result.Runs, sql, limit, offset)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list runs sql")
 	}
 	err = sm.db.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list runs count sql")
 	}
 
 	return result, nil
@@ -428,7 +450,15 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	var err error
 	var r Run
 	err = sm.db.Get(&r, GetRunSQL, runID)
-	return r, err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return r, exceptions.MissingResource{
+				fmt.Sprintf("Run with id %s not found", runID)}
+		} else {
+			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
+		}
+	}
+	return r, nil
 }
 
 //
@@ -442,13 +472,13 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	rows, err := tx.Query(GetRunSQLForUpdate, runID)
 	if err != nil {
 		tx.Rollback()
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	for rows.Next() {
@@ -459,7 +489,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.User, &existing.TaskType, &existing.Env)
 	}
 	if err != nil {
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
 	existing.UpdateWith(updates)
@@ -486,10 +516,14 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.InstanceDNSName, existing.GroupName,
 		existing.Env); err != nil {
 		tx.Rollback()
-		return existing, err
+		return existing, errors.WithStack(err)
 	}
 
-	return existing, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return existing, errors.WithStack(err)
+	}
+
+	return existing, nil
 }
 
 //
@@ -509,7 +543,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if _, err = tx.Exec(insert,
@@ -519,10 +553,14 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.FinishedAt, r.InstanceID,
 		r.InstanceDNSName, r.GroupName, r.Env); err != nil {
 		tx.Rollback()
-		return err
+		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
 
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
 
 //
@@ -544,11 +582,11 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 
 	err = sm.db.Select(&result.Groups, sql, limit, offset)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list groups sql")
 	}
 	err = sm.db.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list groups count sql")
 	}
 
 	return result, nil
@@ -570,11 +608,11 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 
 	err = sm.db.Select(&result.Tags, sql, limit, offset)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list tags sql")
 	}
 	err = sm.db.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "issue running list tags count sql")
 	}
 
 	return result, nil

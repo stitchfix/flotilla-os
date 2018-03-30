@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	gklog "github.com/go-kit/kit/log"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/clients/registry"
@@ -37,8 +38,8 @@ func main() {
 	confDir := args[1]
 	c, err := config.NewConfig(&confDir)
 	if err != nil {
-		logger.Log("message", "Error initializing configuration")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize config"))
+		os.Exit(1)
 	}
 
 	//
@@ -47,8 +48,8 @@ func main() {
 	//
 	sm, err := state.NewStateManager(c)
 	if err != nil {
-		logger.Log("message", "Error initializing state manager")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize state manager"))
+		os.Exit(1)
 	}
 
 	//
@@ -56,8 +57,8 @@ func main() {
 	//
 	rc, err := registry.NewRegistryClient(c)
 	if err != nil {
-		logger.Log("message", "Error initializing registry client")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize registry client"))
+		os.Exit(1)
 	}
 
 	//
@@ -66,8 +67,8 @@ func main() {
 	//
 	cc, err := cluster.NewClusterClient(c)
 	if err != nil {
-		logger.Log("message", "Error initializing cluster client")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize cluster client"))
+		os.Exit(1)
 	}
 
 	//
@@ -75,8 +76,8 @@ func main() {
 	//
 	lc, err := logs.NewLogsClient(c, logger)
 	if err != nil {
-		logger.Log("message", "Error initializing logs client")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize logs client"))
+		os.Exit(1)
 	}
 
 	//
@@ -84,8 +85,8 @@ func main() {
 	//
 	qm, err := queue.NewQueueManager(c)
 	if err != nil {
-		logger.Log("message", "Error initializing queue manager")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize queue manager"))
+		os.Exit(1)
 	}
 
 	//
@@ -94,10 +95,15 @@ func main() {
 	//
 	ee, err := engine.NewExecutionEngine(c, qm)
 	if err != nil {
-		logger.Log("message", "Error initializing execution engine")
-		log.Fatal(err)
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
+		os.Exit(1)
 	}
 
 	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
+		os.Exit(1)
+	}
+
 	log.Fatal(app.Run())
 }

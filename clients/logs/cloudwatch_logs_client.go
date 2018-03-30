@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
@@ -56,7 +57,7 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 	}
 
 	if len(awsRegion) == 0 {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"CloudWatchLogsClient needs one of [log.driver.options.awslogs-region] or [aws_default_region] set in config")
 	}
 
@@ -69,13 +70,13 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 	}
 
 	if len(cwl.logNamespace) == 0 {
-		return fmt.Errorf(
+		return errors.Errorf(
 			"CloudWatchLogsClient needs one of [log.driver.options.awslogs-group] or [log.namespace] set in config")
 	}
 
 	cwl.logStreamPrefix = confLogOptions["awslogs-stream-prefix"]
 	if len(cwl.logStreamPrefix) == 0 {
-		return fmt.Errorf("CloudWatchLogsClient needs [log.driver.options.awslogs-stream-prefix] set in config")
+		return errors.Errorf("CloudWatchLogsClient needs [log.driver.options.awslogs-stream-prefix] set in config")
 	}
 
 	cwl.logRetentionInDays = int64(conf.GetInt("log.retention_days"))
@@ -123,7 +124,7 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 				return "", nil, exceptions.MissingResource{err.Error()}
 			}
 		}
-		return "", nil, err
+		return "", nil, errors.Wrap(err, "problem getting logs")
 	}
 
 	if len(result.Events) == 0 {
@@ -153,7 +154,7 @@ func (cwl *CloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLo
 func (cwl *CloudWatchLogsClient) createNamespaceIfNotExists() error {
 	exists, err := cwl.namespaceExists()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "problem checking if log namespace [%s] exists", cwl.logNamespace)
 	}
 	if !exists {
 		return cwl.createNamespace()
@@ -167,7 +168,7 @@ func (cwl *CloudWatchLogsClient) namespaceExists() (bool, error) {
 	})
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "problem describing log groups with prefix [%s]", cwl.logNamespace)
 	}
 	if len(result.LogGroups) == 0 {
 		return false, nil
@@ -185,12 +186,15 @@ func (cwl *CloudWatchLogsClient) createNamespace() error {
 		LogGroupName: &cwl.logNamespace,
 	})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "problem creating log group with log group name [%s]", cwl.logNamespace)
 	}
 
 	_, err = cwl.logsClient.PutRetentionPolicy(&cloudwatchlogs.PutRetentionPolicyInput{
 		LogGroupName:    &cwl.logNamespace,
 		RetentionInDays: &cwl.logRetentionInDays,
 	})
-	return err
+	if err != nil {
+		return errors.Wrapf(err, "problem setting log group retention policy for log group name [%s]", cwl.logNamespace)
+	}
+	return nil
 }

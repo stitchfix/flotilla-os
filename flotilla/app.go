@@ -1,6 +1,7 @@
 package flotilla
 
 import (
+	"github.com/pkg/errors"
 	"github.com/rs/cors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
@@ -54,15 +55,15 @@ func NewApp(conf config.Config,
 
 	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc)
 	if err != nil {
-		return app, err
+		return app, errors.Wrap(err, "problem initializing execution service")
 	}
 	definitionService, err := services.NewDefinitionService(conf, ee, sm)
 	if err != nil {
-		return app, err
+		return app, errors.Wrap(err, "problem initializing definition service")
 	}
 	logService, err := services.NewLogService(conf, sm, lc)
 	if err != nil {
-		return app, err
+		return app, errors.Wrap(err, "problem initializing log service")
 	}
 
 	ep := endpoints{
@@ -72,8 +73,10 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-
-	return app, app.initializeWorkers(conf, log, ee, sm)
+	if err = app.initializeWorkers(conf, log, ee, sm); err != nil {
+		return app, errors.Wrap(err, "problem initializing workers")
+	}
+	return app, nil
 }
 
 func (app *App) configure(conf config.Config) {
@@ -122,7 +125,7 @@ func (app *App) initializeWorkers(
 		wk, err := worker.NewWorker(workerName, log, conf, ee, sm)
 		app.logger.Log("message", "Starting worker", "name", workerName)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "problem initializing worker with name [%s]", workerName)
 		}
 		app.workers = append(app.workers, wk)
 	}
