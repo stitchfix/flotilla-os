@@ -98,15 +98,14 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if task.DesiredStatus != nil && *task.DesiredStatus == state.StatusStopped {
-		run.Status = state.StatusStopped
-	} else {
-		run.Status = *task.LastStatus
-	}
-
 	if len(task.Containers) > 0 {
 		mainContainer := task.Containers[0]
 		run.ExitCode = mainContainer.ExitCode
+		run.Status = *mainContainer.LastStatus
+	}
+
+	if task.DesiredStatus != nil && *task.DesiredStatus == state.StatusStopped {
+		run.Status = state.StatusStopped
 	}
 
 	if a.needsRetried(run, task) {

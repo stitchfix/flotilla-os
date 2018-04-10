@@ -160,13 +160,15 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	retriableReason := "CannotPullContainerError"
 
 	container := ecs.Container{
-		ExitCode: &exitCode,
-		Reason:   &reason,
+		ExitCode:   &exitCode,
+		Reason:     &reason,
+		LastStatus: &state.StatusPending,
 	}
 
 	faultyContainer := ecs.Container{
-		ExitCode: nil,
-		Reason:   &retriableReason,
+		ExitCode:   nil,
+		Reason:     &retriableReason,
+		LastStatus: &state.StatusStopped,
 	}
 	containers := []*ecs.Container{&container}
 	faultyContainers := []*ecs.Container{&faultyContainer}
