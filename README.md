@@ -72,7 +72,7 @@ export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_ac
 }
 ```
 
-3. Flotilla uses AWS's Elastic Continer Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
+3. Flotilla uses AWS's Elastic Container Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
 
 ### Starting the service locally
 
