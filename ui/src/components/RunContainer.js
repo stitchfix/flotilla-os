@@ -1,6 +1,6 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import { HashRouter, Route, Switch } from "react-router-dom"
+import { Route, Switch } from "react-router-dom"
 import { get } from "lodash"
 import { withStateFetch } from "aa-ui-components"
 import config from "../config"
@@ -58,34 +58,32 @@ export class RunContainer extends Component {
     const rootPath = match.url
 
     return (
-      <HashRouter>
-        <Switch>
-          <Route
-            exact
-            path={rootPath}
-            render={() => (
-              <RunView
-                runId={match.params.runId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-              />
-            )}
-          />
-          <Route
-            exact
-            path={`${rootPath}/mini`}
-            render={() => (
-              <RunMiniView
-                runId={match.params.runId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-              />
-            )}
-          />
-        </Switch>
-      </HashRouter>
+      <Switch>
+        <Route
+          exact
+          path={rootPath}
+          render={() => (
+            <RunView
+              runId={match.params.runId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+            />
+          )}
+        />
+        <Route
+          exact
+          path={`${rootPath}/mini`}
+          render={() => (
+            <RunMiniView
+              runId={match.params.runId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+            />
+          )}
+        />
+      </Switch>
     )
   }
 }
