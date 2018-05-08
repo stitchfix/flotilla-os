@@ -19,6 +19,7 @@ export default class RunLogs extends Component {
     super(props)
     this.scrollToBottom = this.scrollToBottom.bind(this)
     this.scrollToTop = this.scrollToTop.bind(this)
+    this.handleAutoscrollChange = this.handleAutoscrollChange.bind(this)
   }
   state = {
     isLoading: false,
@@ -154,7 +155,7 @@ export default class RunLogs extends Component {
               <Button onClick={this.scrollToTop}>
                 <ChevronUp size={14} />
               </Button>
-              <div className="pl-button with-horizontal-child-margin">
+              <div className="flex with-horizontal-child-margin">
                 <input
                   type="checkbox"
                   onChange={this.handleAutoscrollChange}
