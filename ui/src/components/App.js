@@ -8,6 +8,7 @@ import FlotillaTopbar from "./FlotillaTopbar"
 import Tasks from "./Tasks"
 import ActiveRuns from "./ActiveRuns"
 import TaskContainer from "./TaskContainer"
+import TaskByAliasRedirect from "./TaskByAliasRedirect"
 import RunContainer from "./RunContainer"
 import CreateTaskForm from "./CreateTaskForm"
 
@@ -27,6 +28,7 @@ export const App = props => {
           <Route exact path="/tasks/create" component={CreateTaskForm} />
           <Route exact path="/runs" component={ActiveRuns} />
           <Route exact path="/tasks" component={Tasks} />
+          <Route path="/tasks/alias/:alias" component={TaskByAliasRedirect} />
           <Route path="/tasks/:definitionId" component={TaskContainer} />
           <Route path="/runs/:runId" component={RunContainer} />
           {process.env.NODE_ENV !== "test" ? (
