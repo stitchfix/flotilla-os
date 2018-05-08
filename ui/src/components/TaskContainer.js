@@ -1,5 +1,5 @@
 import React, { Component } from "react"
-import { HashRouter, Route, Switch } from "react-router-dom"
+import { Route, Switch } from "react-router-dom"
 import { connect } from "react-redux"
 import { withStateFetch } from "aa-ui-components"
 import config from "../config"
@@ -33,60 +33,58 @@ export class TaskContainer extends Component {
     const rootPath = match.url
 
     return (
-      <HashRouter>
-        <Switch>
-          <Route
-            exact
-            path={rootPath}
-            render={() => (
-              <TaskDefinitionView
-                definitionId={match.params.definitionId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-                dispatch={dispatch}
-              />
-            )}
-          />
-          <Route
-            exact
-            path={`${rootPath}/copy`}
-            render={() => (
-              <CopyTaskForm
-                definitionId={match.params.definitionId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-              />
-            )}
-          />
-          <Route
-            exact
-            path={`${rootPath}/edit`}
-            render={() => (
-              <EditTaskForm
-                definitionId={match.params.definitionId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-                fetch={this.fetch}
-              />
-            )}
-          />
-          <Route
-            exact
-            path={`${rootPath}/run`}
-            render={() => (
-              <RunForm
-                definitionId={match.params.definitionId}
-                isLoading={isLoading}
-                data={data}
-                error={error}
-              />
-            )}
-          />
-        </Switch>
-      </HashRouter>
+      <Switch>
+        <Route
+          exact
+          path={rootPath}
+          render={() => (
+            <TaskDefinitionView
+              definitionId={match.params.definitionId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+              dispatch={dispatch}
+            />
+          )}
+        />
+        <Route
+          exact
+          path={`${rootPath}/copy`}
+          render={() => (
+            <CopyTaskForm
+              definitionId={match.params.definitionId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+            />
+          )}
+        />
+        <Route
+          exact
+          path={`${rootPath}/edit`}
+          render={() => (
+            <EditTaskForm
+              definitionId={match.params.definitionId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+              fetch={this.fetch}
+            />
+          )}
+        />
+        <Route
+          exact
+          path={`${rootPath}/run`}
+          render={() => (
+            <RunForm
+              definitionId={match.params.definitionId}
+              isLoading={isLoading}
+              data={data}
+              error={error}
+            />
+          )}
+        />
+      </Switch>
     )
   }
 }

@@ -1,6 +1,6 @@
 import React, { Component } from "react"
 import { PropTypes } from "prop-types"
-import { HashRouter, Route, Switch, Redirect, Link } from "react-router-dom"
+import { BrowserRouter, Route, Switch, Redirect, Link } from "react-router-dom"
 import { connect } from "react-redux"
 import { View, Card, ModalContainer } from "aa-ui-components"
 import { fetchSelectOpts } from "../actions/"
@@ -19,7 +19,7 @@ export const App = props => {
   } = props
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div>
         {!!modalVisible && !!modal && <ModalContainer modal={modal} />}
         {!!popupVisible && !!popup && popup}
@@ -36,7 +36,7 @@ export const App = props => {
           ) : null}
         </Switch>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
 

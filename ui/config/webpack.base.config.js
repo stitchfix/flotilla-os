@@ -13,6 +13,10 @@ module.exports = opts => {
     output: {
       path: path.resolve(ROOT, "build/"),
       filename: "[name].[hash].js",
+      publicPath: "/",
+    },
+    devServer: {
+      historyApiFallback: true,
     },
     module: {
       rules: [
