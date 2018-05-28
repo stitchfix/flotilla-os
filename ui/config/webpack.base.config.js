@@ -11,7 +11,7 @@ module.exports = opts => {
       vendor: VENDOR,
     },
     output: {
-      path: path.resolve(ROOT, "build/"),
+      path: path.resolve(ROOT, "build", "static"),
       filename: "[name].[hash].js",
       publicPath: "/",
     },
