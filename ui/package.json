@@ -92,6 +92,7 @@
     "babel": "./node_modules/.bin/babel-node --presets latest,stage-0",
     "webpack": "NODE_ENV=production npm run babel -- ./node_modules/.bin/webpack --progress --optimize-minimize",
     "dev": "NODE_ENV=dev npm run babel -- ./node_modules/.bin/webpack-dev-server --progress --hot",
+    "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
     "test": "NODE_ENV=test jest",
