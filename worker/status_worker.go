@@ -74,12 +74,74 @@ func (sw *statusWorker) runOnce() {
 				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}
+
+			// emit status update event
+			sw.logStatusUpdate(*update)
 		}
 
 		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
 		if err = runReceipt.Done(); err != nil {
 			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", fmt.Sprintf("%+v", err))
 		}
+	}
+}
+
+func (sw *statusWorker) logStatusUpdate(update state.Run) {
+	var err error
+	var startedAt, finishedAt time.Time
+	var env state.EnvList
+
+	if update.StartedAt != nil {
+		startedAt = *update.StartedAt
+	}
+
+	if update.FinishedAt != nil {
+		finishedAt = *update.FinishedAt
+	}
+
+	if update.Env != nil {
+		env = *update.Env
+	}
+
+	if update.ExitCode != nil {
+		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
+			"run_id", update.RunID,
+			"task_arn", update.TaskArn,
+			"definition_id", update.DefinitionID,
+			"alias", update.Alias,
+			"image", update.Image,
+			"cluster_name", update.ClusterName,
+			"exit_code", *update.ExitCode,
+			"status", update.Status,
+			"started_at", startedAt,
+			"finished_at", finishedAt,
+			"instance_id", update.InstanceID,
+			"instance_dns_name", update.InstanceDNSName,
+			"group_name", update.GroupName,
+			"user", update.User,
+			"task_type", update.TaskType,
+			"env", env)
+	} else {
+		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
+			"run_id", update.RunID,
+			"task_arn", update.TaskArn,
+			"definition_id", update.DefinitionID,
+			"alias", update.Alias,
+			"image", update.Image,
+			"cluster_name", update.ClusterName,
+			"status", update.Status,
+			"started_at", startedAt,
+			"finished_at", finishedAt,
+			"instance_id", update.InstanceID,
+			"instance_dns_name", update.InstanceDNSName,
+			"group_name", update.GroupName,
+			"user", update.User,
+			"task_type", update.TaskType,
+			"env", env)
+	}
+
+	if err != nil {
+		sw.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
 }
 
