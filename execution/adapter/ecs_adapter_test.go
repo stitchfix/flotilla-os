@@ -297,9 +297,6 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 	}
 
 	adapted := adapter.AdaptDefinition(d)
-	if len(adapted.ContainerDefinitions) != 1 {
-		t.Errorf("Expected exactly 1 container definition, was %v", len(adapted.ContainerDefinitions))
-	}
 
 	if adapted.Family == nil || len(*adapted.Family) == 0 {
 		t.Errorf("Expected non-nil and non-empty Family")
@@ -313,7 +310,14 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 	// Just make sure that the data -from- the definition is in the right place; other
 	// fields (defaults) subject to much change
 	//
-	container := adapted.ContainerDefinitions[0]
+	var container *ecs.ContainerDefinition
+	for i := range adapted.ContainerDefinitions {
+		if *adapted.ContainerDefinitions[i].Name == mainContainerName {
+			container = adapted.ContainerDefinitions[i]
+			break
+		}
+	}
+
 	if len(container.Command) == 0 {
 		t.Errorf("Expected non-nil and non-empty command")
 	}
