@@ -138,7 +138,7 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 func (cwl *CloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
 	arnSplits := strings.Split(run.TaskArn, "/")
 	return fmt.Sprintf(
-		"%s/%s/%s", cwl.logStreamPrefix, definition.ContainerName, arnSplits[len(arnSplits)-1])
+		"%s/%s/%s", cwl.logStreamPrefix, "main", arnSplits[len(arnSplits)-1])
 }
 
 func (cwl *CloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {

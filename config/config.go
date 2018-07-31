@@ -13,6 +13,7 @@ type Config interface {
 	GetString(key string) string
 	GetStringSlice(key string) []string
 	GetStringMapString(key string) map[string]string
+	GetStringMapInterfaceSlice(key string) []map[string]interface{}
 	GetInt(key string) int
 	GetBool(key string) bool
 	IsSet(key string) bool
@@ -63,6 +64,21 @@ func (c *conf) GetStringMapString(key string) map[string]string {
 
 func (c *conf) GetStringSlice(key string) []string {
 	return c.v.GetStringSlice(key)
+}
+
+func (c *conf) GetStringMapInterfaceSlice(key string) []map[string]interface{} {
+	x := c.v.Get(key)
+	cast := x.([]interface{})
+	res := make([]map[string]interface{}, len(cast))
+	for i := range cast {
+		m := cast[i].(map[interface{}]interface{})
+		res[i] = make(map[string]interface{}, len(m))
+		for rawKey, v := range m {
+			k := rawKey.(string)
+			res[i][k] = v
+		}
+	}
+	return res
 }
 
 func (c *conf) IsSet(key string) bool {

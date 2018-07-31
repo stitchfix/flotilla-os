@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -33,6 +34,8 @@ type ecsAdapter struct {
 	conf      config.Config
 	retriable []string
 }
+
+var mainContainerName = "main"
 
 //
 // NewECSAdapter configures and returns an ecs adapter for translating
@@ -83,8 +86,11 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if task.Overrides != nil && len(task.Overrides.ContainerOverrides) == 1 {
-		env := task.Overrides.ContainerOverrides[0].Environment
+	mainContainer := a.extractMainContainer(task.Containers)
+	mainContainerOverrides := a.extractMainOverrides(task.Overrides.ContainerOverrides)
+
+	if mainContainerOverrides != nil {
+		env := mainContainerOverrides.Environment
 		if len(env) > 0 {
 			runEnv := make([]state.EnvVar, len(env))
 			for i, kv := range env {
@@ -98,8 +104,7 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if len(task.Containers) > 0 {
-		mainContainer := task.Containers[0]
+	if mainContainer != nil {
 		run.ExitCode = mainContainer.ExitCode
 		run.Status = *mainContainer.LastStatus
 	}
@@ -122,31 +127,52 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 	// This is a -strong- indication of abnormal exit, not internal to the run
 	//
 	if run.Status == state.StatusStopped && run.ExitCode == nil {
-		containerReason := "?"
-		if len(task.Containers) == 1 {
-			container := task.Containers[0]
-			if container != nil && container.Reason != nil {
-				containerReason = *container.Reason
-			}
-		}
-
-		for _, retriable := range a.retriable {
-			// Container's stopped reason contains a retriable error
-			if strings.Contains(containerReason, retriable) {
-				return true
+		container := a.extractMainContainer(task.Containers)
+		if container != nil && container.Reason != nil {
+			for _, retriable := range a.retriable {
+				// Container's stopped reason contains a retriable error
+				if strings.Contains(*container.Reason, retriable) {
+					return true
+				}
 			}
 		}
 	}
 	return false
 }
 
+func (a *ecsAdapter) extractMainContainer(containers []*ecs.Container) *ecs.Container {
+	// Handle both the legacy case of 1 container and the multiple containers case
+	if len(containers) == 1 {
+		return containers[0]
+	} else {
+		for i := range containers {
+			if *containers[i].Name == mainContainerName {
+				return containers[i]
+			}
+		}
+	}
+	return nil
+}
+
+func (a *ecsAdapter) extractMainOverrides(overrides []*ecs.ContainerOverride) *ecs.ContainerOverride {
+	if len(overrides) == 1 {
+		return overrides[0]
+	} else {
+		for i := range overrides {
+			if *overrides[i].Name == mainContainerName {
+				return overrides[i]
+			}
+		}
+	}
+	return nil
+}
+
 //
 // AdaptRun translates the definition and run into the required arguments
 // to run an ecs task. There are -several- simplifications to be aware of
 //
-// 1. There is currently only ever *1* container per definition
-// 2. There is only ever *1* task launched per run at a time
-// 3. Only environment variable overrides are supported (think of these as parameters)
+// 1. There is only ever *1* task launched per run at a time
+// 2. Only environment variable overrides are supported (think of these as parameters)
 //    Once we start copying the definition information (eg. command, memory, cpu) directly
 //    onto the run we will make use of these overrides since it's important to run what
 //    we asked for -at the time- of run creation
@@ -183,16 +209,8 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 		}
 	}
 
-	//
-	// Support legacy case of differing container name and definition id
-	//
-	containerName := definition.DefinitionID
-	if definition.ContainerName != definition.DefinitionID {
-		containerName = definition.ContainerName
-	}
-
 	res := ecs.ContainerOverride{
-		Name:        &containerName,
+		Name:        &mainContainerName,
 		Environment: pairs,
 	}
 	return &res
@@ -203,21 +221,22 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 //
 // Several simplifications and assumptions are made
 // * see `defaultContainerDefinition` for chosen defaults regarding user, privileged mode, networking, etc
-// * for now, exactly -one- container per definition is defined AND the DefinitionID == ecs family == container name
-// * we -always- use host networking; this dramatically simplifies the reasoning the end-users have to do
-//   about the way in which their runs are going to function; esp wrt external libraries and frameworks
-//   *** port mappings are maintained as a mechanism to pre-allocate what ports to use and allows some flexibility in
-//       networking; MOST runs will not use this currently as we're using "host" networking mode
 // * we wrap the command specified to ensure lines are echoed and the exit code is captured and is an injection
 //   point for other infra related concerns
 //
 // TODO - add CPU
 //
 func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput {
+	// Get additional containers and corresponding networking links
+	additionalContainers := a.additionalContainers()
+	links := a.getLinks(additionalContainers)
+
+	// Get main container
 	containerDef := a.defaultContainerDefinition()
+	containerDef.Links = links // Link additional containers into main container
 	containerDef.Image = &definition.Image
 	containerDef.Memory = definition.Memory
-	containerDef.Name = &definition.DefinitionID
+	containerDef.Name = &mainContainerName
 	containerDef.DockerLabels = map[string]*string{
 		"alias":      &definition.Alias,
 		"group.name": &definition.GroupName,
@@ -263,9 +282,12 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		containerDef.DockerLabels["tags"] = &tagsList
 	}
 
-	networkMode := "host"
+	networkMode := "bridge"
+	containerDefns := []*ecs.ContainerDefinition{containerDef}
+	containerDefns = append(containerDefns, additionalContainers...)
+
 	return ecs.RegisterTaskDefinitionInput{
-		ContainerDefinitions: []*ecs.ContainerDefinition{containerDef},
+		ContainerDefinitions: containerDefns,
 		Family:               &definition.DefinitionID,
 		NetworkMode:          &networkMode,
 	}
@@ -282,9 +304,8 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 		ContainerName: *taskDef.Family,
 	}
 
-	if len(taskDef.ContainerDefinitions) == 1 {
-		container := taskDef.ContainerDefinitions[0]
-
+	container := a.extractMainDefinition(taskDef.ContainerDefinitions)
+	if container != nil {
 		adapted.Memory = container.Memory
 		adapted.Image = *container.Image
 
@@ -323,12 +344,88 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	return adapted
 }
 
-func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
-	essential := true
-	user := "root"
-	disableNetworking := false
-	privileged := true
+func (a *ecsAdapter) extractMainDefinition(definitions []*ecs.ContainerDefinition) *ecs.ContainerDefinition {
+	if len(definitions) == 1 {
+		return definitions[0]
+	} else {
+		for i := range definitions {
+			if *definitions[i].Name == mainContainerName {
+				return definitions[i]
+			}
+		}
+	}
+	return nil
+}
 
+func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
+	// Default container -must- be essential
+	return &ecs.ContainerDefinition{
+		Essential:         aws.Bool(true),
+		User:              aws.String("root"),
+		DisableNetworking: aws.Bool(false),
+		Privileged:        aws.Bool(true),
+		LogConfiguration:  a.logConfiguration(),
+	}
+}
+
+func (a *ecsAdapter) additionalContainers() []*ecs.ContainerDefinition {
+	res := []*ecs.ContainerDefinition{}
+	if !a.conf.IsSet("additional_containers") {
+		return res
+	}
+
+	fromConf := a.conf.GetStringMapInterfaceSlice("additional_containers")
+	for _, c := range fromConf {
+		var (
+			name    string
+			image   string
+			user    string
+			memory  int64
+			cpu     int64
+			command string
+		)
+
+		name = c["name"].(string)
+		image = c["image"].(string)
+		if memRaw, ok := c["memory"]; ok {
+			memory = int64(memRaw.(int))
+		} else {
+			memory = 100
+		}
+
+		if cpuRaw, ok := c["cpu"]; ok {
+			cpu = int64(cpuRaw.(int))
+		} else {
+			cpu = 100
+		}
+
+		if userRaw, ok := c["user"]; ok {
+			user = userRaw.(string)
+		} else {
+			user = "root"
+		}
+
+		if cmdRaw, ok := c["command"]; ok {
+			command = cmdRaw.(string)
+		}
+
+		res = append(res, &ecs.ContainerDefinition{
+			Name:              &name,
+			Image:             &image,
+			Command:           []*string{&command},
+			Memory:            &memory,
+			Cpu:               &cpu,
+			User:              &user,
+			Essential:         aws.Bool(false),
+			DisableNetworking: aws.Bool(false),
+			Privileged:        aws.Bool(true),
+			LogConfiguration:  a.logConfiguration(),
+		})
+	}
+	return res
+}
+
+func (a *ecsAdapter) logConfiguration() *ecs.LogConfiguration {
 	logDriver := a.conf.GetString("log.driver.name")
 	if len(logDriver) == 0 {
 		logDriver = "awslogs"
@@ -350,16 +447,17 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 		logOptions["awslogs-group"] = &logGroup
 	}
 
-	logConfiguration := ecs.LogConfiguration{
+	return &ecs.LogConfiguration{
 		LogDriver: &logDriver,
 		Options:   logOptions,
 	}
+}
 
-	return &ecs.ContainerDefinition{
-		Essential:         &essential,
-		User:              &user,
-		DisableNetworking: &disableNetworking,
-		Privileged:        &privileged,
-		LogConfiguration:  &logConfiguration,
+func (a *ecsAdapter) getLinks(additionalContainers []*ecs.ContainerDefinition) []*string {
+	res := make([]*string, len(additionalContainers))
+	for i, ac := range additionalContainers {
+		name := fmt.Sprintf("%s:%s", *ac.Name, *ac.Name)
+		res[i] = &name
 	}
+	return res
 }

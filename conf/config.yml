@@ -64,3 +64,19 @@ http:
 # with ownership information set - "who -owns- this run?"
 #
 owner_id_var: FLOTILLA_RUN_OWNER_ID
+
+#
+# Additional Containers
+# These container specifications become a part of the definition
+# and facilitate cross-cutting concerns like monitoring and auditing
+#
+additional_containers:
+  #
+  # Provided as example - uses mitmproxy to enable logging all outgoing
+  # http traffic from job (set env var http_proxy=http://sidecar:8080)
+  #
+  - name: sidecar
+    image: mitmproxy/mitmproxy
+    memory: 100
+    cpu: 100
+    command: mitmdump
