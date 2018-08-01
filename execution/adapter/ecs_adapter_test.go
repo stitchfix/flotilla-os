@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
@@ -75,9 +76,8 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	adapter := setUp(t)
 
 	definition := state.Definition{
-		Arn:           "darn",
-		GroupName:     "groupa",
-		ContainerName: "mynameiswhat",
+		Arn:       "darn",
+		GroupName: "groupa",
 	}
 
 	k1 := "ENVVAR_A"
@@ -100,8 +100,18 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 		t.Errorf("Expected cluster name clusta")
 	}
 
-	if rti.Overrides != nil && len(rti.Overrides.ContainerOverrides) > 0 {
-		envOverrides := rti.Overrides.ContainerOverrides[0].Environment
+	var containerOverrides *ecs.ContainerOverride
+	if rti.Overrides != nil {
+		for i := range rti.Overrides.ContainerOverrides {
+			if *rti.Overrides.ContainerOverrides[i].Name == mainContainerName {
+				containerOverrides = rti.Overrides.ContainerOverrides[i]
+				break
+			}
+		}
+	}
+
+	if containerOverrides != nil {
+		envOverrides := containerOverrides.Environment
 		if len(envOverrides) != len(env) {
 			t.Errorf("Expected %v env vars, got %v", len(env), len(envOverrides))
 		}
@@ -160,17 +170,34 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	retriableReason := "CannotPullContainerError"
 
 	container := ecs.Container{
+		Name:       &mainContainerName,
+		ExitCode:   &exitCode,
+		Reason:     &reason,
+		LastStatus: &state.StatusPending,
+	}
+
+	notMainContainer := ecs.Container{
+		Name:       aws.String("something"),
 		ExitCode:   &exitCode,
 		Reason:     &reason,
 		LastStatus: &state.StatusPending,
 	}
 
 	faultyContainer := ecs.Container{
+		Name:       &mainContainerName,
 		ExitCode:   nil,
 		Reason:     &retriableReason,
 		LastStatus: &state.StatusStopped,
 	}
-	containers := []*ecs.Container{&container}
+
+	//
+	// Legacy situation is exactly one container
+	// Default situation is multiple containers, one container named "main"
+	//
+	containers := []*ecs.Container{&container, &notMainContainer}
+
+	// not named "main" but still needs to work for backwards compatibility
+	legacyContainers := []*ecs.Container{&notMainContainer}
 	faultyContainers := []*ecs.Container{&faultyContainer}
 
 	lastStatus := state.StatusPending
@@ -275,6 +302,25 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	adapted = adapter.AdaptTask(task3)
 	if adapted.Status != state.StatusNeedsRetry {
 		t.Errorf("Expected status %s, was %s", state.StatusNeedsRetry, adapted.Status)
+	}
+
+	// Legacy
+	task4 := ecs.Task{
+		TaskArn:              &arn,
+		Group:                &group,
+		ClusterArn:           &clusterArn,
+		ContainerInstanceArn: &containerInstanceArn,
+		StartedAt:            &t1,
+		StoppedAt:            &t2,
+		Overrides:            &overrides,
+		LastStatus:           &lastStatus,
+		Containers:           legacyContainers,
+	}
+	adapted = adapter.AdaptTask(task4)
+
+	// Just check that status is correct (since it's pulled from the containers on the task)
+	if adapted.Status != state.StatusPending {
+		t.Errorf("Expected status %s, was %s", state.StatusPending, adapted.Status)
 	}
 }
 
@@ -420,7 +466,7 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 		{ContainerPort: &port},
 	}
 	container := ecs.ContainerDefinition{
-		Name:   &family,
+		Name:   &mainContainerName,
 		Memory: &memory,
 		Image:  &image,
 		DockerLabels: map[string]*string{
@@ -431,10 +477,31 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 		Environment:  env,
 		PortMappings: ports,
 	}
+
+	nonMainContainer := ecs.ContainerDefinition{
+		Name:   aws.String("NOTMAIN"),
+		Memory: &memory,
+		Image:  &image,
+		DockerLabels: map[string]*string{
+			"alias":      &alias,
+			"group.name": &group,
+			"tags":       &tagsList,
+		},
+		Environment: env,
+	}
+
 	taskDef := ecs.TaskDefinition{
-		Family:               &family,
-		TaskDefinitionArn:    &arn,
-		ContainerDefinitions: []*ecs.ContainerDefinition{&container},
+		Family:            &family,
+		TaskDefinitionArn: &arn,
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			&nonMainContainer, &container},
+	}
+
+	legacyTaskDef := ecs.TaskDefinition{
+		Family:            &family,
+		TaskDefinitionArn: &arn,
+		ContainerDefinitions: []*ecs.ContainerDefinition{
+			&nonMainContainer},
 	}
 
 	adapted := adapter.AdaptTaskDef(taskDef)
@@ -488,5 +555,12 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 
 	if len(*adapted.Env) != 1 {
 		t.Errorf("Expected exactly one env variable")
+	}
+
+	// Legacy case
+	adapted = adapter.AdaptTaskDef(legacyTaskDef)
+	// Check that data is pulled from the single task def
+	if adapted.Image != image {
+		t.Errorf("Expected image %s but was %s", image, adapted.Image)
 	}
 }
