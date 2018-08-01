@@ -1,22 +1,24 @@
 package logs
 
 import (
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"os"
+	"strings"
 	"testing"
 )
 
 type testLogsClient struct {
-	t       *testing.T
-	calls   []string
-	nextTok string
+	t                *testing.T
+	calls            []string
+	logStreamsCalled []string
+	nextTok          string
 }
 
 func (tlc *testLogsClient) DescribeLogGroups(input *cloudwatchlogs.DescribeLogGroupsInput) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
 	tlc.calls = append(tlc.calls, "DescribeLogGroups")
-
 	pref := input.LogGroupNamePrefix
 	if pref == nil || len(*pref) == 0 {
 		tlc.t.Errorf("Expected non-nil and non-empty LogGroupNamePrefix")
@@ -70,6 +72,12 @@ func (tlc *testLogsClient) GetLogEvents(input *cloudwatchlogs.GetLogEventsInput)
 
 	if input.LogStreamName == nil || len(*input.LogStreamName) == 0 {
 		tlc.t.Errorf("Expected non-nil and non-empty LogStreamName")
+	}
+	tlc.logStreamsCalled = append(tlc.logStreamsCalled, *input.LogStreamName)
+
+	if strings.HasSuffix(*input.LogStreamName, "main/failonce") {
+		return nil, awserr.New(
+			cloudwatchlogs.ErrCodeResourceNotFoundException, "no log stream", nil)
 	}
 
 	m1 := "logs"
@@ -160,10 +168,10 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	expectedNextTok := "next!"
 	tlc.nextTok = expectedNextTok
 
-	d := state.Definition{ContainerName: "container"}
+	d := state.Definition{DefinitionID: "container"}
 	r := state.Run{TaskArn: "a/b/c"}
 
-	// StreamName == cupcake/container/c
+	// StreamName == cupcake/main/c
 	msg, tok, _ := cwlc.Logs(d, r, nil)
 	if msg != expectedMsg {
 		t.Errorf("Expected log message [%v] but was [%v]", expectedMsg, msg)
@@ -174,4 +182,41 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	} else if *tok != expectedNextTok {
 		t.Errorf("Expected next token [%v] but was [%v]", expectedNextTok, *tok)
 	}
+}
+
+func TestCloudWatchLogsClient_Logs2(t *testing.T) {
+	// Test fallback logic
+	confDir := "../../conf"
+	c, _ := config.NewConfig(&confDir)
+	cwlc := CloudWatchLogsClient{}
+	tlc := testLogsClient{t: t}
+	cwlc.logsClient = &tlc
+	os.Setenv("LOG_NAMESPACE", "existing")
+	if err := cwlc.Initialize(c); err != nil {
+		t.Errorf("error initializing logs client: [%+v]\n", err)
+	}
+
+	cwlc.logStreamPrefix = "cupcake"
+	d := state.Definition{DefinitionID: "container"}
+	r := state.Run{TaskArn: "a/b/failonce"}
+
+	// First streamName == cupcake/main/failonce
+	// Second streamName == cupcake/container/failonce
+	cwlc.Logs(d, r, nil)
+	if len(tlc.logStreamsCalled) != 2 {
+		t.Errorf("expected 2 logs stream to be hit with fallback logic, got %v", len(tlc.logStreamsCalled))
+	}
+
+	stream1 := tlc.logStreamsCalled[0]
+	stream2 := tlc.logStreamsCalled[1]
+
+	// Ensure correct order and format
+	if stream1 != "cupcake/main/failonce" {
+		t.Errorf("expected stream name [cupcake/main/failonce] to be hit first, was: [%s]", stream1)
+	}
+
+	if stream2 != "cupcake/container/failonce" {
+		t.Errorf("expected stream name [cupcake/container/failonce] to be hit second, was: [%s]", stream2)
+	}
+
 }
