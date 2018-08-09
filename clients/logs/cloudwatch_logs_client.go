@@ -98,47 +98,8 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
 func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
-
-	containerName := "main"
-	result, err := cwl.getLogs(containerName, run.TaskArn, lastSeen)
-
-	if err != nil {
-		if cwl.isMissing(err) {
-			// Fallback logic for legacy container names
-			result, err = cwl.getLogs(definition.DefinitionID, run.TaskArn, lastSeen)
-			if err != nil {
-				if cwl.isMissing(err) {
-					return "", nil, exceptions.MissingResource{err.Error()}
-				} else {
-					return "", nil, errors.Wrap(err, "problem getting logs")
-				}
-			}
-		} else {
-			return "", nil, errors.Wrap(err, "problem getting logs")
-		}
-	}
-
-	if len(result.Events) == 0 {
-		return "", result.NextForwardToken, nil
-	}
-
-	message := cwl.logsToMessage(result.Events)
-	return message, result.NextForwardToken, nil
-}
-
-func (cwl *CloudWatchLogsClient) isMissing(err error) bool {
-	if aerr, ok := err.(awserr.Error); ok {
-		if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
-			return true
-		}
-	}
-	return false
-}
-
-func (cwl *CloudWatchLogsClient) getLogs(containerName string, arn string, lastSeen *string) (
-	*cloudwatchlogs.GetLogEventsOutput, error) {
 	startFromHead := true
-	handle := cwl.streamNameForContainer(containerName, arn)
+	handle := cwl.toStreamName(definition, run)
 	args := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  &cwl.logNamespace,
 		LogStreamName: &handle,
@@ -149,13 +110,35 @@ func (cwl *CloudWatchLogsClient) getLogs(containerName string, arn string, lastS
 		args.NextToken = lastSeen
 	}
 
-	return cwl.logsClient.GetLogEvents(args)
+	result, err := cwl.logsClient.GetLogEvents(args)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+				// Fallback logic for legacy container names
+				if strings.HasPrefix(definition.ContainerName, definition.GroupName) {
+					definition.ContainerName = strings.Replace(
+						definition.ContainerName, fmt.Sprintf("%s-", definition.GroupName), "", -1)
+					return cwl.Logs(definition, run, lastSeen)
+				}
+
+				return "", nil, exceptions.MissingResource{err.Error()}
+			}
+		}
+		return "", nil, errors.Wrap(err, "problem getting logs")
+	}
+
+	if len(result.Events) == 0 {
+		return "", result.NextForwardToken, nil
+	}
+
+	message := cwl.logsToMessage(result.Events)
+	return message, result.NextForwardToken, nil
 }
 
-func (cwl *CloudWatchLogsClient) streamNameForContainer(containerName string, arn string) string {
-	arnSplits := strings.Split(arn, "/")
+func (cwl *CloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
+	arnSplits := strings.Split(run.TaskArn, "/")
 	return fmt.Sprintf(
-		"%s/%s/%s", cwl.logStreamPrefix, containerName, arnSplits[len(arnSplits)-1])
+		"%s/%s/%s", cwl.logStreamPrefix, definition.ContainerName, arnSplits[len(arnSplits)-1])
 }
 
 func (cwl *CloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {

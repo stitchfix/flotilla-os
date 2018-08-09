@@ -300,8 +300,8 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	adapted := state.Definition{
 		Arn:           *taskDef.TaskDefinitionArn,
-		DefinitionID:  *taskDef.Family, // Family==ContainerName==DefinitionID
-		ContainerName: *taskDef.Family,
+		DefinitionID:  *taskDef.Family,   // Family==DefinitionID
+		ContainerName: mainContainerName, // ContainerName is always `mainContainerName`
 	}
 
 	container := a.extractMainDefinition(taskDef.ContainerDefinitions)
