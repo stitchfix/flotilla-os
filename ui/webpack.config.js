@@ -8,7 +8,7 @@ const OPTIONS = {
     "immutability-helper",
     "lodash",
     "moment",
-    "query-string",
+    "qs",
     "react",
     "react-debounce-input",
     "react-dom",

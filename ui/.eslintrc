@@ -1,15 +1,7 @@
 {
-  "extends": ["prettier"],
-  "installedESLint": true,
-  "parser": "babel-eslint",
-  "plugins": ["react", "prettier"],
+  "extends": "react-app",
   "rules": {
-    "prettier/prettier": ["error", {
-      "semi": false,
-      "trailingComma": "es5"
-    }]
-  },
-  "env": {
-    "browser": true
+    "react/prop-types": 2,
+    "react/sort-prop-types": 2
   }
 }
