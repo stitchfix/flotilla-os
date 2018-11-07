@@ -4,10 +4,12 @@ import { Link } from "react-router-dom"
 import withQueryParams from "react-router-query-params"
 import { isEmpty } from "lodash"
 
+import Card from "../Card"
 import EmptyTable from "../EmptyTable"
 
 import AsyncDataTableFilter from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
+import AsyncDataTablePagination from "./AsyncDataTablePagination"
 
 const requestStates = {
   READY: "READY",
@@ -101,7 +103,7 @@ class AsyncDataTable extends Component {
   }
 
   render() {
-    const { columns, filters, getItems } = this.props
+    const { columns, filters, getItems, getTotal, limit } = this.props
     const { requestState, data } = this.state
 
     switch (requestState) {
@@ -109,18 +111,24 @@ class AsyncDataTable extends Component {
         return "uh oh"
       case requestStates.READY:
         const items = getItems(data)
+        const total = getTotal(data)
         return (
           <div className="flot-list-view">
             {!isEmpty(filters) && (
-              <div className="flot-list-view-filters">
-                {Object.keys(filters).map(key => (
-                  <AsyncDataTableFilter
-                    {...filters[key]}
-                    filterKey={key}
-                    key={key}
-                  />
-                ))}
-              </div>
+              <Card
+                className="flot-list-view-filters-container"
+                contentStyle={{ padding: 0 }}
+              >
+                <div className="flot-list-view-filters">
+                  {Object.keys(filters).map(key => (
+                    <AsyncDataTableFilter
+                      {...filters[key]}
+                      filterKey={key}
+                      key={key}
+                    />
+                  ))}
+                </div>
+              </Card>
             )}
             <div className="pl-table pl-bordered">
               <div className="pl-tr">
@@ -153,6 +161,9 @@ class AsyncDataTable extends Component {
                   ))}
                 </div>
               ))}
+            </div>
+            <div className="flex ff-rn j-sb a-c">
+              <AsyncDataTablePagination total={total} limit={limit} />
             </div>
           </div>
         )
@@ -187,6 +198,7 @@ AsyncDataTable.propTypes = {
     })
   ),
   getItems: PropTypes.func.isRequired,
+  getTotal: PropTypes.func.isRequired,
   initialQuery: PropTypes.object,
   limit: PropTypes.number.isRequired,
   queryParams: PropTypes.object.isRequired,
