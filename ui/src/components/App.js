@@ -3,14 +3,15 @@ import { PropTypes } from "prop-types"
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
 import { connect } from "react-redux"
 
-import ActiveRuns from "./ActiveRuns"
 import CreateTaskForm from "./CreateTaskForm"
 import FlotillaTopbar from "./FlotillaTopbar"
 import ModalContainer from "./ModalContainer"
 import RunContainer from "./RunContainer"
 import TaskByAliasRedirect from "./TaskByAliasRedirect"
 import TaskContainer from "./TaskContainer"
-import Tasks from "./Tasks"
+
+import ActiveRuns from "./ActiveRuns/ActiveRuns"
+import Tasks from "./Tasks/Tasks"
 
 export const App = props => {
   const {
