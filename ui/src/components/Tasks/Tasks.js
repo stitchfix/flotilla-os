@@ -20,7 +20,7 @@ const Tasks = props => {
         title="Tasks"
         actions={
           <Link className="pl-button pl-intent-primary" to="/tasks/create">
-            <span style={{ marginLeft: 4 }}>Create New Task</span>
+            Create New Task
           </Link>
         }
       />
