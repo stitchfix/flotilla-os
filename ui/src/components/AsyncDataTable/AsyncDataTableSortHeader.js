@@ -78,12 +78,15 @@ class AsyncDataTableSortHeader extends Component {
   }
 }
 
+AsyncDataTableSortHeader.displayName = "AsyncDataTableSortHeader"
+
 AsyncDataTableSortHeader.propTypes = {
   displayName: PropTypes.node.isRequired,
   queryParams: PropTypes.object.isRequired,
   setQueryParams: PropTypes.func.isRequired,
   sortKey: PropTypes.string.isRequired,
 }
+
 AsyncDataTableSortHeader.defaultProps = {}
 
 export default withQueryParams()(AsyncDataTableSortHeader)

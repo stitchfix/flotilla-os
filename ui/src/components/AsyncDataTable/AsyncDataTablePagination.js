@@ -56,6 +56,7 @@ class AsyncDataTablePagination extends Component {
     return [
       <button
         className="pl-button"
+        key="first"
         disabled={isFirstPage}
         onClick={this.handleFirstClick}
       >
@@ -63,6 +64,7 @@ class AsyncDataTablePagination extends Component {
       </button>,
       <button
         className="pl-button"
+        key="prev"
         disabled={isFirstPage}
         onClick={this.handlePrevClick}
       >
@@ -70,6 +72,7 @@ class AsyncDataTablePagination extends Component {
       </button>,
       <button
         className="pl-button"
+        key="next"
         disabled={isLastPage}
         onClick={this.handleNextClick}
       >
@@ -77,6 +80,7 @@ class AsyncDataTablePagination extends Component {
       </button>,
       <button
         className="pl-button"
+        key="last"
         disabled={isLastPage}
         onClick={this.handleLastClick}
       >
@@ -85,6 +89,8 @@ class AsyncDataTablePagination extends Component {
     ]
   }
 }
+
+AsyncDataTablePagination.displayName = "AsyncDataTablePagination"
 
 AsyncDataTablePagination.propTypes = {
   limit: PropTypes.number.isRequired,

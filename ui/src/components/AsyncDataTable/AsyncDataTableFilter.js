@@ -7,9 +7,10 @@ import { get, has } from "lodash"
 
 import FormGroup from "../FormGroup"
 
-const filterTypes = {
+export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",
   SELECT: "SELECT",
+  CUSTOM: "CUSTOM",
 }
 
 class AsyncDataTableFilter extends Component {
@@ -43,7 +44,7 @@ class AsyncDataTableFilter extends Component {
     const { filterKey, queryParams, type, displayName, options } = this.props
     const value = get(queryParams, filterKey, "")
     switch (type) {
-      case filterTypes.SELECT:
+      case asyncDataTableFilterTypes.SELECT:
         return (
           <FormGroup
             label={displayName}
@@ -56,7 +57,7 @@ class AsyncDataTableFilter extends Component {
             }
           />
         )
-      case filterTypes.INPUT:
+      case asyncDataTableFilterTypes.INPUT:
       default:
         return (
           <FormGroup
@@ -77,6 +78,8 @@ class AsyncDataTableFilter extends Component {
   }
 }
 
+AsyncDataTableFilter.displayName = "AsyncDataTableFilter"
+
 AsyncDataTableFilter.propTypes = {
   displayName: PropTypes.string.isRequired,
   filterKey: PropTypes.string.isRequired,
@@ -88,8 +91,9 @@ AsyncDataTableFilter.propTypes = {
   ),
   queryParams: PropTypes.object.isRequired,
   setQueryParams: PropTypes.func.isRequired,
-  type: PropTypes.oneOf(Object.values(filterTypes)).isRequired,
+  type: PropTypes.oneOf(Object.values(asyncDataTableFilterTypes)).isRequired,
 }
+
 AsyncDataTableFilter.defaultProps = {}
 
 export default withQueryParams()(AsyncDataTableFilter)

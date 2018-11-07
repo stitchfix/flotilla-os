@@ -7,7 +7,9 @@ import { isEmpty } from "lodash"
 import Card from "../Card"
 import EmptyTable from "../EmptyTable"
 
-import AsyncDataTableFilter from "./AsyncDataTableFilter"
+import AsyncDataTableFilter, {
+  asyncDataTableFilterTypes,
+} from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
 import AsyncDataTablePagination from "./AsyncDataTablePagination"
 
@@ -162,7 +164,14 @@ class AsyncDataTable extends Component {
                 </div>
               ))}
             </div>
-            <div className="flex ff-rn j-sb a-c">
+            <div
+              style={{
+                display: "flex",
+                flexFlow: "row nowrap",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <AsyncDataTablePagination total={total} limit={limit} />
             </div>
           </div>
@@ -183,6 +192,8 @@ class AsyncDataTable extends Component {
   }
 }
 
+AsyncDataTable.displayName = "AsyncDataTable"
+
 AsyncDataTable.propTypes = {
   children: PropTypes.func.isRequired,
   columns: PropTypes.objectOf(
@@ -194,7 +205,15 @@ AsyncDataTable.propTypes = {
   ).isRequired,
   filters: PropTypes.objectOf(
     PropTypes.shape({
-      // @TODO: fill this out.
+      displayName: PropTypes.string.isRequired,
+      type: PropTypes.oneOf(Object.values(asyncDataTableFilterTypes))
+        .isRequired,
+      options: PropTypes.arrayOf(
+        PropTypes.shape({
+          label: PropTypes.string,
+          value: PropTypes.string,
+        })
+      ),
     })
   ),
   getItems: PropTypes.func.isRequired,

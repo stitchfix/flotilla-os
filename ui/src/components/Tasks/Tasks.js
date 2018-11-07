@@ -5,6 +5,7 @@ import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
+import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
@@ -62,16 +63,16 @@ const Tasks = props => {
         filters={{
           alias: {
             displayName: "Alias",
-            type: "INPUT",
+            type: asyncDataTableFilterTypes.INPUT,
           },
           group_name: {
             displayName: "Group Name",
-            type: "SELECT",
+            type: asyncDataTableFilterTypes.SELECT,
             options: props.groupOptions,
           },
           image: {
             displayName: "Image",
-            type: "INPUT",
+            type: asyncDataTableFilterTypes.INPUT,
           },
         }}
       />
