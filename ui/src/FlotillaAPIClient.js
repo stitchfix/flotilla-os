@@ -1,6 +1,7 @@
 import axios from "axios"
 import { isEmpty, isString, isObject } from "lodash"
 import qs from "qs"
+import urljoin from "url-join"
 
 /**
  * API client to communicate with the Flotilla API
@@ -45,7 +46,7 @@ class FlotillaAPIClient {
       }
     }
 
-    return `${this.location}/${path}?${q}`
+    return `${urljoin(this.location, path)}?${q}`
   }
 
   _request({ method, path, query, payload }) {
