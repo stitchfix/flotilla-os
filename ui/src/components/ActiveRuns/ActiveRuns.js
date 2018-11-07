@@ -72,12 +72,12 @@ class ActiveRuns extends Component {
               ),
             },
             started_at: {
-              allowSort: false,
+              allowSort: true,
               displayName: "Started At",
               render: item => moment(item.started_at).fromNow(),
             },
             run_id: {
-              allowSort: false,
+              allowSort: true,
               displayName: "Run ID",
               render: item => (
                 <Link to={`/runs/${item.run_id}`}>{item.run_id}</Link>
