@@ -1,0 +1,14 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  font-size: 14px;
+  font-family: $default-font-family;
+}
+body {
+  background: $body-bg;
+  font-size: 1rem;
+  color: $default-font-color;
+}

@@ -1,0 +1,51 @@
+$mini-loader-size: 18px;
+
+.loader-container {
+  @include flex(row, nowrap, center, center);
+  width: 100%;
+  &.mini {
+    width: $mini-loader-size;
+    margin: 0;
+  }
+}
+.loader {
+  $_size: 4em;
+  $_border-width: calc(#{$_size} / 12);
+  $_border: $_border-width solid $black_3;
+  border-radius: 50%;
+  width: $_size;
+  height: $_size;
+  position: relative;
+  text-indent: -9999em;
+  border-top: $_border;
+  border-right: $_border;
+  border-bottom: $_border;
+  border-left: $_border-width solid $color-primary;
+  transform: translateZ(0);
+  animation: loader 1.1s infinite linear;
+  &:after {
+    border-radius: 50%;
+    width: $_size;
+    height: $_size;
+  }
+  &.mini {
+    $_size: $mini-loader-size;
+    $_border-width: calc(#{$_size} / 6);
+    $_border: $_border-width solid $black_3;
+    width: $_size;
+    height: $_size;
+    border-top: $_border;
+    border-right: $_border;
+    border-bottom: $_border;
+    border-left: $_border-width solid $color-primary;
+  }
+}
+
+@keyframes loader {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

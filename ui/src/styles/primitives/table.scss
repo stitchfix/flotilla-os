@@ -1,0 +1,62 @@
+.pl-table {
+  width: 100%;
+  %pl-table-cell {
+    @include flex(row, nowrap, flex-start, center);
+    @include overflow-ellipsis();
+    flex: 1;
+    min-height: $tr-height;
+    min-width: 0;
+    padding: 0 $spacing;
+  }
+  &.pl-striped {
+    .pl-tr:nth-child(even) {
+      background: $tr-striped-even-child-bg;
+    }
+  }
+  &.pl-bordered {
+    border: $default-border;
+    .pl-tr:last-child {
+      border-bottom: none;
+    }
+  }
+  .pl-tr {
+    @include flex(row, nowrap, flex-start, center);
+    width: 100%;
+    background: $tr-bg;
+    border-bottom: $tr-border-bottom;
+    &.hoverable:hover {
+      background: $tr-hover-bg;
+    }
+  }
+  .pl-th {
+    @extend %pl-table-cell;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.85rem;
+    background: $th-bg;
+    color: $white;
+  }
+  .pl-td {
+    @extend %pl-table-cell;
+  }
+}
+
+.pl-th-sort {
+  @include button-reset();
+  cursor: pointer;
+  &:hover,
+  &.pl-th-sort-active {
+    color: $color-primary;
+    background: $black_2;
+  }
+  &.asc:after {
+    content: "▲";
+    margin-left: 4px;
+    font-size: 0.6rem;
+  }
+  &.desc:after {
+    content: "▼";
+    margin-left: 4px;
+    font-size: 0.6rem;
+  }
+}

@@ -1,6 +1,4 @@
 import React from "react"
-import { mount } from "enzyme"
-import { MemoryRouter } from "react-router-dom"
 import { configureSetup, generateRunRes } from "../../__testutils__"
 import ActiveRunsRow from "../ActiveRunsRow"
 

@@ -1,17 +1,18 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { get, has } from "lodash"
-import { Card, FormGroup } from "aa-ui-components"
+import Card from "./Card"
 import EnhancedRunStatus from "./EnhancedRunStatus"
-import { runStatusTypes } from "../constants/"
-import { getRunDuration } from "../utils/"
+import FormGroup from "./FormGroup"
+import runStatusTypes from "../constants/runStatusTypes"
+import getRunDuration from "../utils/getRunDuration"
 
 class RunStatusBar extends Component {
   static propTypes = {
-    startedAt: PropTypes.string,
-    finishedAt: PropTypes.string,
-    status: PropTypes.oneOf(Object.values(runStatusTypes)),
     exitCode: PropTypes.any,
+    finishedAt: PropTypes.string,
+    startedAt: PropTypes.string,
+    status: PropTypes.oneOf(Object.values(runStatusTypes)),
   }
   state = { duration: "-" }
   componentDidMount() {

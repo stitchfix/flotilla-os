@@ -1,12 +1,13 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { ChevronUp, ChevronDown } from "react-feather"
-import { Button, Card, FormGroup } from "aa-ui-components"
+import Button from "./Button"
+import Card from "./Card"
 
 export default class KeyValueContainer extends Component {
   static propTypes = {
-    header: PropTypes.string,
     children: PropTypes.func,
+    header: PropTypes.string,
   }
   constructor(props) {
     super(props)

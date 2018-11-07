@@ -1,0 +1,9 @@
+.pl-tag {
+  background: $tag-default-bg;
+  color: $tag-default-color;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: $tag-font-size;
+  font-weight: $tag-font-weight;
+  @include with-intent-color();
+}

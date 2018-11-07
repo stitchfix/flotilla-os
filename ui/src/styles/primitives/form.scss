@@ -1,0 +1,189 @@
+%pl-form-component {
+  background: $form-component-bg;
+  border: $form-component-border;
+  border-radius: $form-component-border-radius;
+  font-size: $form-component-font-size;
+  width: 100%;
+  color: $form-component-color;
+  &::placeholder {
+    color: $form-component-placeholder-color;
+  }
+}
+
+//
+// form primitives
+//
+input.pl-input,
+select.pl-input {
+  @extend %pl-form-component;
+  height: $form-component-height;
+  padding: 0 $spacing;
+}
+textarea.pl-textarea {
+  @extend %pl-form-component;
+  height: $textarea-height;
+  padding: $spacing;
+  resize: vertical;
+}
+
+//
+// .form-container
+//
+.pl-form-container {
+  @include flex(column, nowrap, flex-start, center);
+  width: 100%;
+  & > * {
+    margin-bottom: $spacing * 2;
+    max-width: $form-container-width;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+//
+// .form-group
+//
+%pl-form-group-helper-text {
+  font-size: 0.9rem;
+  margin-top: ($spacing / 2);
+  color: $form-component-description-color;
+}
+.pl-form-group-helper-text {
+  @extend %pl-form-group-helper-text;
+}
+
+.pl-form-group {
+  @include flex(column, nowrap, flex-start, flex-start);
+  font-size: 1rem !important;
+  .pl-form-group-label {
+    color: $form-component-label-color;
+    &.is-required:after {
+      content: "*";
+      color: $red_0;
+      margin-left: 2px;
+    }
+  }
+  .pl-form-group-content {
+    width: 100%;
+  }
+  .pl-form-group-static {
+    display: flex;
+    color: $gray_3;
+    font-size: 1.125rem;
+  }
+  .pl-form-group-description {
+    @extend %pl-form-group-helper-text;
+  }
+  .pl-form-group-error {
+    @extend %pl-form-group-helper-text;
+    color: $red_0;
+  }
+  //
+  // Horizontal
+  //
+  &.horizontal {
+    width: 100%;
+    .pl-form-group-content {
+      @include flex(row, nowrap, flex-start, flex-start);
+      .pl-form-group-label {
+        @include flex(row, nowrap, flex-start, center);
+        flex: 2.4;
+        text-transform: uppercase;
+        font-weight: 500;
+        word-break: break-all;
+      }
+      .pl-form-group-input,
+      .pl-form-group-static {
+        @include flex(row, nowrap, flex-start, center);
+        padding-left: 4px;
+        flex: 4;
+        word-break: break-all;
+      }
+    }
+  }
+  //
+  // Vertical
+  //
+  &.vertical {
+    @include flex(column, nowrap, flex-start, flex-start);
+    width: 100%;
+    .pl-form-group-label {
+      text-transform: uppercase;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: $spacing / 2;
+    }
+    .pl-form-group-input {
+      width: 100%;
+      &.has-error {
+        .input,
+        .textarea,
+        .Select-control {
+          // border-color: $red_0 !important;
+        }
+      }
+    }
+  }
+}
+
+//
+// react-select overrides
+//
+.Select {
+  &.is-disabled {
+    .Select-control {
+      cursor: not-allowed !important;
+      opacity: 0.5;
+    }
+  }
+}
+.Select-loading {
+  border-color: $black_3 !important;
+  border-right-color: $color-primary !important;
+  animation-duration: 1.1s !important;
+}
+.Select-control {
+  background: $form-component-bg !important;
+  color: $form-component-color !important;
+  border: $form-component-border !important;
+  height: $form-component-height !important;
+  & * {
+    color: $form-component-color !important;
+  }
+}
+.Select--multi > .Select-control {
+  .Select-value {
+    background: $form-component-bg !important;
+    flex-grow: 0 !important;
+    padding: 0 !important;
+    border: 1px solid $form-component-border-color !important;
+    .Select-value-icon {
+      background: $red_0 !important;
+      color: $white !important;
+      &:hover {
+        background: $white !important;
+        color: $red_0 !important;
+      }
+    }
+    .Select-value-label {
+      padding: 0 8px !important;
+    }
+    & * {
+      color: $default-font-color !important;
+      border: none !important;
+    }
+  }
+}
+.Select-menu-outer {
+  background: white !important;
+  border: $form-component-border !important;
+}
+.Select-option {
+  color: $default-font-color !important;
+  background: transparent !important;
+  &.is-focused {
+    background: $color-primary !important;
+    color: white !important;
+  }
+}

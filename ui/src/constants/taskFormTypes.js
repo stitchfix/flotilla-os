@@ -1,3 +1,5 @@
-export const create = "create"
-export const edit = "edit"
-export const copy = "copy"
+export default {
+  create: "create",
+  edit: "edit",
+  copy: "copy",
+}

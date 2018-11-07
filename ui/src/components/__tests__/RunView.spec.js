@@ -1,8 +1,8 @@
 import React from "react"
-import qs from "query-string"
+import qs from "qs"
 import { configureSetup, generateRunRes } from "../../__testutils__"
-import { runStatusTypes } from "../../constants/"
-import { getRetryEnv } from "../../utils/"
+import runStatusTypes from "../../constants/runStatusTypes"
+import getRetryEnv from "../../utils/getRetryEnv"
 import { RunView } from "../RunView"
 
 const runId = "some_id"

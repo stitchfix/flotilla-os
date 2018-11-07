@@ -1,8 +1,8 @@
 import React, { Component } from "react"
 import { Redirect } from "react-router-dom"
 import { connect } from "react-redux"
-import { withStateFetch } from "aa-ui-components"
-import { View } from "aa-ui-components"
+import View from "./View"
+import withStateFetch from "./withStateFetch"
 import config from "../config"
 
 export class TaskByAliasRedirect extends Component {
@@ -10,18 +10,22 @@ export class TaskByAliasRedirect extends Component {
     super(props)
     this.fetch = this.fetch.bind(this)
   }
+
   componentDidMount() {
     const id = this.props.match.params.alias
     this.fetch(id)
   }
+
   componentWillReceiveProps(nextProps) {
     if (this.props.match.params.alias !== nextProps.match.params.alias) {
       this.fetch(nextProps.match.params.definitionId)
     }
   }
+
   fetch(alias) {
     this.props.fetch(`${config.FLOTILLA_API}/task/alias/${alias}`)
   }
+
   render() {
     const { isLoading, data, error, match, dispatch } = this.props
 

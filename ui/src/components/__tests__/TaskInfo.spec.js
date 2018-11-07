@@ -1,5 +1,4 @@
 import React from "react"
-import moment from "moment"
 import { configureSetup, generateTaskRes } from "../../__testutils__"
 import TaskInfo from "../TaskInfo"
 

@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { has } from "lodash"
-import { Loader } from "aa-ui-components"
+import Loader from "./Loader"
 
 const EmptyTable = props => {
   const loaderContainerStyle = { height: 960 }
@@ -23,10 +23,10 @@ const EmptyTable = props => {
 }
 
 EmptyTable.propTypes = {
-  error: PropTypes.bool.isRequired,
-  title: PropTypes.node,
   actions: PropTypes.node,
+  error: PropTypes.bool.isRequired,
   isLoading: PropTypes.bool.isRequired,
+  title: PropTypes.node,
 }
 
 EmptyTable.defaultProps = {

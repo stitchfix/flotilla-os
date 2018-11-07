@@ -1,28 +1,9 @@
 import React, { Component } from "react"
-import PropTypes from "prop-types"
-import { Link } from "react-router-dom"
-import {
-  withRouterSync,
-  Loader,
-  queryUpdateTypes,
-  withStateFetch,
-} from "aa-ui-components"
-import querystring from "query-string"
+import withRouterSync from "./withRouterSync"
+import queryUpdateTypes from "../utils/queryUpdateTypes"
+import withStateFetch from "./withStateFetch"
 import { has, isEmpty, isEqual } from "lodash"
-import SortHeader from "./SortHeader"
 import withQueryOffsetTransform from "./withQueryOffsetTransform"
-
-const validateOpts = opts => {
-  if (!has(opts, "limit") || typeof opts.limit !== "number") {
-    console.error("You must pass a `limit` option (number) to withServerList.")
-  }
-
-  if (!has(opts, "getUrl") || typeof opts.getUrl !== "function") {
-    console.error(
-      "You must pass a `getUrl` option (function) to withServerList."
-    )
-  }
-}
 
 export default function withServerList(opts = {}) {
   return UnwrappedComponent => {
@@ -33,9 +14,7 @@ export default function withServerList(opts = {}) {
         super(props)
         this.fetch = this.fetch.bind(this)
       }
-      componentWillMount() {
-        validateOpts(opts)
-      }
+
       componentDidMount() {
         const { query } = this.props
 
@@ -54,22 +33,24 @@ export default function withServerList(opts = {}) {
           )
         }
       }
-      componentWillReceiveProps(nextProps) {
-        if (!isEqual(this.props.query, nextProps.query)) {
+
+      componentDidUpdate(prevProps) {
+        if (!isEqual(this.props.query, prevProps.query)) {
           this.fetch(
-            opts.getUrl(this.props, { ...nextProps.query, limit: opts.limit })
+            opts.getUrl(this.props, { ...this.props.query, limit: opts.limit })
           )
         }
       }
+
       fetch(url) {
         this.props.fetch(url)
       }
+
       render() {
         return <UnwrappedComponent {...this.props} fetch={this.fetch} />
       }
     }
 
-    // Note: withoutHOCStack is used for testing.
     return {
       withHOCStack: withRouterSync(
         withQueryOffsetTransform(opts.limit)(withStateFetch(WrappedComponent))

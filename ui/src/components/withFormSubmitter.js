@@ -2,7 +2,9 @@ import React, { Component } from "react"
 import { connect } from "react-redux"
 import axios from "axios"
 import { isFunction, get } from "lodash"
-import { intentTypes, Popup, popupActions, Button } from "aa-ui-components"
+import intentTypes from "../constants/intentTypes"
+import popupActions from "../actions/popupActions"
+import Popup from "./Popup"
 
 const validateOptions = options => {
   if (!options.getUrl) {

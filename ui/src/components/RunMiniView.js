@@ -1,5 +1,5 @@
 import React from "react"
-import { get, isEmpty } from "lodash"
+import { get } from "lodash"
 import RunStatusBar from "./RunStatusBar"
 
 const RunMiniView = ({ data }) => {

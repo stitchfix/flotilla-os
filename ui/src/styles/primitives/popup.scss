@@ -1,0 +1,55 @@
+$popup-bg: $black_2;
+$popup-content-padding: $spacing;
+$popup-intent-bg: $gray_0;
+$popup-intent-width: $spacing;
+$popup-width: 320px;
+$popup-window-distance: $spacing * 4;
+$z-index-popup: 8000;
+
+.pl-popup-container {
+  position: fixed;
+  bottom: $popup-window-distance;
+  right: $popup-window-distance;
+  z-index: $z-index-popup;
+  background: $popup-bg;
+  width: $popup-width;
+  animation-duration: 0.2s;
+  animation-name: popupAnimation;
+  animation-timing-function: ease;
+
+  .pl-popup {
+    @include flex(row, nowrap, flex-start, stretch);
+    @extend .full-width;
+    height: 100%;
+
+    .pl-popup-intent {
+      background: $popup-intent-bg;
+      @include with-intent-color();
+      width: $popup-intent-width;
+      min-width: $popup-intent-width;
+    }
+
+    .pl-popup-content {
+      @include flex(column, nowrap, flex-start, flex-start);
+      padding: $popup-content-padding;
+
+      & > * {
+        margin-bottom: $spacing;
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
+@keyframes popupAnimation {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}

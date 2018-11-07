@@ -1,9 +1,8 @@
 import React from "react"
 import { reducer as formReducer } from "redux-form"
 import { createStore, combineReducers } from "redux"
-import { get } from "lodash"
 import { configureSetup, generateTaskRes } from "../../__testutils__"
-import { envNameValueDelimiterChar } from "../../constants"
+import envNameValueDelimiterChar from "../../constants/envNameValueDelimiterChar"
 import ConnectedRunForm, { RunForm } from "../RunForm"
 
 const definitionId = "definitionId"

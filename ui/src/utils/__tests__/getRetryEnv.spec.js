@@ -1,4 +1,5 @@
-import { invalidRunEnv, envNameValueDelimiterChar } from "../../constants"
+import invalidRunEnv from "../../constants/invalidRunEnv"
+import envNameValueDelimiterChar from "../../constants/envNameValueDelimiterChar"
 import getRetryEnv from "../getRetryEnv"
 
 describe("getRetryEnv", () => {

@@ -1,7 +1,7 @@
 import React from "react"
 import { NavLink, Link, withRouter } from "react-router-dom"
 import { get } from "lodash"
-import { Topbar } from "aa-ui-components"
+import Topbar from "./Topbar"
 import Favicon from "../assets/favicon.png"
 
 const FlotillaTopbar = props => {

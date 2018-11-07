@@ -1,20 +1,20 @@
 import React from "react"
-import { intentTypes, Popup, popupActions } from "aa-ui-components"
 import axios from "axios"
 import { has } from "lodash"
+import actionTypes from "../constants/actionTypes"
+import intentTypes from "../constants/intentTypes"
+import popupActions from "./popupActions"
+import Popup from "../components/Popup"
 import config from "../config"
-import { actionTypes } from "../constants/"
-
-const strToSelectOpt = opt => ({ label: opt, value: opt })
-
-const requestDropdownOpts = () => ({ type: actionTypes.REQUEST_SELECT_OPTS })
 
 const mapStringArrayToSelectObjectArray = (obj, key) => {
   if (has(obj, key) && Array.isArray(obj[key])) {
-    return obj[key].map(strToSelectOpt)
+    return obj[key].map(opt => ({ label: opt, value: opt }))
   }
   return []
 }
+
+const requestDropdownOpts = () => ({ type: actionTypes.REQUEST_SELECT_OPTS })
 const receiveDropdownOpts = res => {
   return {
     type: actionTypes.RECEIVE_SELECT_OPTS,
@@ -25,7 +25,6 @@ const receiveDropdownOpts = res => {
     },
   }
 }
-
 const receiveDropdownOptsError = error => dispatch => {
   dispatch(
     popupActions.renderPopup(
@@ -42,23 +41,23 @@ const receiveDropdownOptsError = error => dispatch => {
   )
 }
 
-export default function fetchDropdownOpts() {
-  return dispatch => {
-    dispatch(requestDropdownOpts())
+const fetchDropdownOpts = () => dispatch => {
+  dispatch(requestDropdownOpts())
 
-    axios
-      .all([
-        axios.get(`${config.FLOTILLA_API}/groups?limit=2000`),
-        axios.get(`${config.FLOTILLA_API}/clusters`),
-        axios.get(`${config.FLOTILLA_API}/tags?limit=5000`),
-      ])
-      .then(
-        axios.spread((group, cluster, tag) => {
-          dispatch(receiveDropdownOpts([group.data, cluster.data, tag.data]))
-        })
-      )
-      .catch(err => {
-        dispatch(receiveDropdownOptsError(err))
+  axios
+    .all([
+      axios.get(`${config.FLOTILLA_API}/groups?limit=2000`),
+      axios.get(`${config.FLOTILLA_API}/clusters`),
+      axios.get(`${config.FLOTILLA_API}/tags?limit=5000`),
+    ])
+    .then(
+      axios.spread((group, cluster, tag) => {
+        dispatch(receiveDropdownOpts([group.data, cluster.data, tag.data]))
       })
-  }
+    )
+    .catch(err => {
+      dispatch(receiveDropdownOptsError(err))
+    })
 }
+
+export default fetchDropdownOpts

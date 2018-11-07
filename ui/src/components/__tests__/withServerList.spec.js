@@ -1,14 +1,12 @@
 import React from "react"
 import { MemoryRouter } from "react-router-dom"
 import { mount } from "enzyme"
-import qs from "query-string"
-import {
-  withRouterSync,
-  queryUpdateTypes,
-  withStateFetch,
-} from "aa-ui-components"
+import qs from "qs"
 import withQueryOffsetTransform from "../withQueryOffsetTransform"
+import withRouterSync from "../withRouterSync"
 import withServerList from "../withServerList"
+import withStateFetch from "../withStateFetch"
+import queryUpdateTypes from "../../utils/queryUpdateTypes"
 
 const baseProps = {}
 const DummyComponent = props => {

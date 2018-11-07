@@ -1,22 +1,24 @@
 import React, { Component } from "react"
 import { Route, Switch } from "react-router-dom"
 import { connect } from "react-redux"
-import { withStateFetch } from "aa-ui-components"
-import config from "../config"
-import RunForm from "./RunForm"
-import TaskDefinitionView from "./TaskDefinitionView"
 import CopyTaskForm from "./CopyTaskForm"
 import EditTaskForm from "./EditTaskForm"
+import RunForm from "./RunForm"
+import TaskDefinitionView from "./TaskDefinitionView"
+import withStateFetch from "./withStateFetch"
+import config from "../config"
 
 export class TaskContainer extends Component {
   constructor(props) {
     super(props)
     this.fetch = this.fetch.bind(this)
   }
+
   componentDidMount() {
     const id = this.props.match.params.definitionId
     this.fetch(id)
   }
+
   componentWillReceiveProps(nextProps) {
     if (
       this.props.match.params.definitionId !==
@@ -25,9 +27,11 @@ export class TaskContainer extends Component {
       this.fetch(nextProps.match.params.definitionId)
     }
   }
+
   fetch(definitionId) {
     this.props.fetch(`${config.FLOTILLA_API}/task/${definitionId}`)
   }
+
   render() {
     const { isLoading, data, error, match, dispatch } = this.props
     const rootPath = match.url

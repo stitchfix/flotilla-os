@@ -1,10 +1,9 @@
 import React from "react"
-// Note: need to create an actual store w/ form reducer.
 import { reducer as formReducer } from "redux-form"
 import { createStore, combineReducers } from "redux"
 import { get } from "lodash"
 import { configureSetup, generateTaskRes } from "../../__testutils__"
-import { taskFormTypes } from "../../constants/"
+import taskFormTypes from "../../constants/taskFormTypes"
 import ConnectedTaskForm, { TaskForm } from "../TaskForm"
 
 const definitionId = "definitionId"

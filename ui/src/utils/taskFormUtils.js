@@ -1,9 +1,8 @@
 import { get, has, isEmpty } from "lodash"
-import config from "../config"
-import { taskFormTypes } from "../constants/"
+import taskFormTypes from "../constants/taskFormTypes"
 
 // Set initial values (for non-create forms).
-export const mapStateToProps = (state, ownProps) => {
+const mapStateToProps = (state, ownProps) => {
   const ret = {
     selectOptionsRequestInFlight: state.selectOpts.inFlight,
     groupOptions: get(state, "selectOpts.group", []),
@@ -33,7 +32,7 @@ export const mapStateToProps = (state, ownProps) => {
   return ret
 }
 
-export const transformFormValues = values => {
+const transformFormValues = values => {
   const body = {
     alias: values.alias,
     command: values.command,
@@ -59,7 +58,7 @@ export const transformFormValues = values => {
 }
 
 // Validation
-export const validate = values => {
+const validate = values => {
   const defaultErrMessage = "This is a required field."
   const errors = {}
 
@@ -89,4 +88,10 @@ export const validate = values => {
     }
   }
   return errors
+}
+
+export default {
+  mapStateToProps,
+  transformFormValues,
+  validate,
 }

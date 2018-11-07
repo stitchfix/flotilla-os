@@ -1,5 +1,5 @@
 import moment from "moment"
-import { has, get } from "lodash"
+import { has } from "lodash"
 
 const addZeroPadding = str => (str.toString().length === 1 ? `0${str}` : str)
 const formatDuration = ({ days, hours, minutes, seconds }) => {

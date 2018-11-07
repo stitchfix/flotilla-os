@@ -1,7 +1,6 @@
 import { generateTaskRes } from "../../__testutils__"
-import config from "../../config"
-import { taskFormTypes } from "../../constants/"
-import * as taskFormUtils from "../taskFormUtils"
+import taskFormTypes from "../../constants/taskFormTypes"
+import taskFormUtils from "../taskFormUtils"
 
 describe("taskFormUtils", () => {
   describe("mapStateToProps", () => {

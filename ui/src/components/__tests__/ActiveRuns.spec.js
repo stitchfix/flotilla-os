@@ -1,7 +1,5 @@
 import React from "react"
-import { mount } from "enzyme"
-import { MemoryRouter } from "react-router-dom"
-import { queryUpdateTypes } from "aa-ui-components"
+import queryUpdateTypes from "../../utils/queryUpdateTypes"
 import { configureSetup, generateRunRes } from "../../__testutils__"
 import ConnectedActiveRuns, { ActiveRuns } from "../ActiveRuns"
 

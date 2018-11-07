@@ -1,9 +1,10 @@
 import React from "react"
-import { Card, FormGroup, Tag } from "aa-ui-components"
-import { get, has } from "lodash"
+import { get } from "lodash"
 import JsonView from "react-json-view"
-import { reactJsonViewProps } from "../constants/"
+import reactJsonViewProps from "../constants/reactJsonViewProps"
 import KeyValueContainer from "./KeyValueContainer"
+import FormGroup from "./FormGroup"
+import Tag from "./Tag"
 
 const TaskInfo = ({ data }) => (
   <div className="flot-detail-view-sidebar">
