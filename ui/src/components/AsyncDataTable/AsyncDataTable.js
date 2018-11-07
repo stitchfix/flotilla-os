@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import withQueryParams from "react-router-query-params"
-import { isEmpty } from "lodash"
+import { get, isEmpty, omit, isObject, size, has, toString } from "lodash"
 
 import Card from "../Card"
 import EmptyTable from "../EmptyTable"
@@ -38,63 +38,79 @@ class AsyncDataTable extends Component {
   }
 
   componentDidMount() {
-    const { initialQuery, setQueryParams, queryParams } = this.props
+    const { initialQuery, queryParams, setQueryParams } = this.props
 
-    setQueryParams(initialQuery)
+    const q = {
+      ...initialQuery,
+      ...queryParams,
+    }
+
+    if (!this.areQueriesEqual(initialQuery, queryParams)) {
+      setQueryParams(q)
+    } else {
+      this.requestData(q)
+    }
   }
 
   componentDidUpdate(prevProps) {
-    // Check custom compare prop.
-    if (this.props.shouldRequest(prevProps, this.props) === true) {
-      this.requestData()
-      return
+    const { queryParams } = this.props
+
+    const prevQ = prevProps.queryParams
+    const currQ = queryParams
+
+    if (!this.areQueriesEqual(prevQ, currQ)) {
+      this.requestData(currQ)
+    }
+  }
+
+  /**
+   * Performs a shallow comparison of two query objects.
+   *
+   * @param {object} a
+   * @param {object} b
+   * @returns {boolean}
+   */
+  areQueriesEqual(a = {}, b = {}) {
+    if (!isObject(a) || !isObject(b)) {
+      return false
     }
 
-    // Check query parameters.
-    this.compareQueryParams(prevProps.queryParams, this.props.queryParams)
-  }
+    if (size(a) !== size(b)) {
+      return false
+    }
 
-  getNecessaryQueryParamKeys() {
-    return ["page", "order", "sort_by", ...Object.keys(this.props.filters)]
-  }
+    for (let key in a) {
+      if (!has(b, key)) {
+        return false
+      }
 
-  compareQueryParams(prev, curr) {
-    // Compare necessary query params (page, filter, sort_by, order)
-    const keys = this.getNecessaryQueryParamKeys()
-
-    for (let i = 0; i < keys.length; i++) {
-      if (prev[keys[i]] !== curr[keys[i]]) {
-        this.requestData()
-        break
+      if (toString(a[key]) !== toString(b[key])) {
+        return false
       }
     }
+
+    return true
   }
 
-  requestData() {
-    const { requestFn } = this.props
+  /**
+   * Sends a request via the requestFn prop then stores data in state.
+   *
+   * @param {object} query
+   */
+  requestData(query) {
+    const { requestFn, limit } = this.props
 
-    requestFn(this.constructRequestQuery())
+    let q = omit(query, "page")
+    q.offset = AsyncDataTable.pageToOffset(get(query, "page", 1), limit)
+    q.limit = limit
+
+    requestFn(q)
       .then(data => {
         this.setState({ data, requestState: requestStates.READY })
       })
       .catch(error => {
         this.setState({ error })
       })
-  }
-
-  constructRequestQuery() {
-    const { queryParams, limit } = this.props
-    const ks = this.getNecessaryQueryParamKeys()
-
-    return Object.keys(queryParams).reduce((acc, key) => {
-      if (key === "page") {
-        acc.offset = AsyncDataTable.pageToOffset(queryParams[key], limit)
-        acc.limit = limit
-      } else if (ks.includes(key)) {
-        acc[key] = queryParams[key]
-      }
-      return acc
-    }, {})
   }
 
   render() {
@@ -224,9 +240,7 @@ AsyncDataTable.defaultProps = {
   columns: {},
   filters: {},
   getItems: data => [],
-  initialQuery: {
-    page: 1,
-  },
+  initialQuery: {},
   limit: 20,
   requestFn: () => {},
   shouldRequest: (prevProps, currProps) => false,
