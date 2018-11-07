@@ -39,7 +39,8 @@
     "redux": "^3.7.2",
     "redux-form": "7.1.2",
     "redux-logger": "^3.0.6",
-    "redux-thunk": "^2.2.0"
+    "redux-thunk": "^2.2.0",
+    "url-join": "4.0.0"
   },
   "devDependencies": {
     "autoprefixer-loader": "3.2.0",
