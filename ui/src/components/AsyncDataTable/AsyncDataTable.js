@@ -174,6 +174,7 @@ class AsyncDataTable extends Component {
               ))}
             </div>
             <div
+              className="table-footer"
               style={{
                 display: "flex",
                 flexFlow: "row nowrap",

@@ -30,7 +30,7 @@ class AsyncDataTablePagination extends Component {
 
   handleLastClick() {
     const { total, limit } = this.props
-    this.updateQuery(total - total % limit)
+    this.updateQuery((total - total % limit) / limit)
   }
 
   getCurrPage() {
