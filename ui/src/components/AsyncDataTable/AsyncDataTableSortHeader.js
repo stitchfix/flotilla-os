@@ -58,7 +58,15 @@ class AsyncDataTableSortHeader extends Component {
   }
 
   render() {
-    const { displayName, sortKey } = this.props
+    const { allowSort, displayName, sortKey, width } = this.props
+
+    if (allowSort !== true) {
+      return (
+        <div className="pl-th" style={{ flex: width }}>
+          {displayName}
+        </div>
+      )
+    }
     const currSortKey = this.getCurrSortKey()
     const currSortOrder = this.getCurrSortOrder()
 
@@ -71,7 +79,11 @@ class AsyncDataTableSortHeader extends Component {
     })
 
     return (
-      <button onClick={this.handleClick} className={className}>
+      <button
+        onClick={this.handleClick}
+        className={className}
+        style={{ flex: width }}
+      >
         {displayName}
       </button>
     )
@@ -81,12 +93,17 @@ class AsyncDataTableSortHeader extends Component {
 AsyncDataTableSortHeader.displayName = "AsyncDataTableSortHeader"
 
 AsyncDataTableSortHeader.propTypes = {
+  allowSort: PropTypes.bool.isRequired,
   displayName: PropTypes.node.isRequired,
   queryParams: PropTypes.object.isRequired,
   setQueryParams: PropTypes.func.isRequired,
   sortKey: PropTypes.string.isRequired,
+  width: PropTypes.number.isRequired,
 }
 
-AsyncDataTableSortHeader.defaultProps = {}
+AsyncDataTableSortHeader.defaultProps = {
+  allowSort: false,
+  width: 1,
+}
 
 export default withQueryParams()(AsyncDataTableSortHeader)

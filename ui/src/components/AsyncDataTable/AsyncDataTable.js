@@ -143,30 +143,24 @@ class AsyncDataTable extends Component {
             )}
             <div className="pl-table pl-bordered">
               <div className="pl-tr">
-                {Object.keys(columns).map(key => {
-                  const col = columns[key]
-
-                  if (col.allowSort) {
-                    return (
-                      <AsyncDataTableSortHeader
-                        displayName={col.displayName}
-                        sortKey={key}
-                        key={key}
-                      />
-                    )
-                  }
-
-                  return (
-                    <div className="pl-th" key={key}>
-                      {col.displayName}
-                    </div>
-                  )
-                })}
+                {Object.keys(columns).map(key => (
+                  <AsyncDataTableSortHeader
+                    allowSort={columns[key].allowSort}
+                    displayName={columns[key].displayName}
+                    sortKey={key}
+                    key={key}
+                    width={columns[key].width}
+                  />
+                ))}
               </div>
               {items.map((item, i) => (
                 <div className="pl-tr" key={i}>
                   {Object.keys(columns).map(key => (
-                    <div className="pl-td" key={`${i}-${key}`}>
+                    <div
+                      className="pl-td"
+                      key={`${i}-${key}`}
+                      style={{ flex: get(columns[key], "width", 1) }}
+                    >
                       {columns[key].render(item)}
                     </div>
                   ))}
@@ -202,6 +196,7 @@ AsyncDataTable.propTypes = {
       allowSort: PropTypes.bool.isRequired,
       displayName: PropTypes.string.isRequired,
       render: PropTypes.func.isRequired,
+      width: PropTypes.number,
     })
   ).isRequired,
   filters: PropTypes.objectOf(

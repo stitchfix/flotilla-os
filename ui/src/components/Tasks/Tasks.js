@@ -33,7 +33,7 @@ const Tasks = props => {
             displayName: "Run",
             render: item => (
               <Link
-                className="pl-button pl-intent-primary"
+                className="pl-button"
                 to={`/tasks/${item.definition_id}/run`}
               >
                 Run
@@ -46,6 +46,7 @@ const Tasks = props => {
             render: item => (
               <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
             ),
+            width: 4,
           },
           group_name: {
             allowSort: true,
