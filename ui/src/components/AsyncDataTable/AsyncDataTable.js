@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import { Link } from "react-router-dom"
 import withQueryParams from "react-router-query-params"
 import { get, isEmpty, omit, isObject, size, has, toString } from "lodash"
 
@@ -45,7 +44,10 @@ class AsyncDataTable extends Component {
       ...queryParams,
     }
 
-    if (!this.areQueriesEqual(initialQuery, queryParams)) {
+    if (
+      isEmpty(queryParams) &&
+      !this.areQueriesEqual(initialQuery, queryParams)
+    ) {
       setQueryParams(q)
     } else {
       this.requestData(q)
@@ -60,6 +62,7 @@ class AsyncDataTable extends Component {
 
     if (!this.areQueriesEqual(prevQ, currQ)) {
       this.requestData(currQ)
+    } else {
     }
   }
 
@@ -154,7 +157,7 @@ class AsyncDataTable extends Component {
                 ))}
               </div>
               {items.map((item, i) => (
-                <div className="pl-tr" key={i}>
+                <div className="pl-tr hoverable" key={i}>
                   {Object.keys(columns).map(key => (
                     <div
                       className="pl-td"
