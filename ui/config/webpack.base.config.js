@@ -58,6 +58,7 @@ module.exports = opts => {
             process.env.DOCKER_REPOSITORY_HOST
           ),
           DEFAULT_CLUSTER: JSON.stringify(process.env.DEFAULT_CLUSTER),
+          IMAGE_PREFIX: JSON.stringify(process.env.IMAGE_PREFIX),
         },
       }),
       new ExtractTextPlugin({

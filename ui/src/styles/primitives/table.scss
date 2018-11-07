@@ -26,6 +26,9 @@
     border-bottom: $tr-border-bottom;
     &.hoverable:hover {
       background: $tr-hover-bg;
+      a {
+        text-decoration: underline;
+      }
     }
   }
   .pl-th {

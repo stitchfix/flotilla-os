@@ -9,6 +9,7 @@ import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilte
 import View from "../View"
 import ViewHeader from "../ViewHeader"
 import api from "../../api"
+import config from "../../config"
 
 const Tasks = props => {
   return (
@@ -46,7 +47,7 @@ const Tasks = props => {
             render: item => (
               <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
             ),
-            width: 4,
+            width: 3,
           },
           group_name: {
             allowSort: true,
@@ -56,7 +57,7 @@ const Tasks = props => {
           image: {
             allowSort: true,
             displayName: "Image",
-            render: item => item.image,
+            render: item => item.image.substr(config.IMAGE_PREFIX.length),
           },
           memory: {
             allowSort: true,
@@ -86,6 +87,12 @@ const Tasks = props => {
           sort_by: "alias",
           order: "asc",
         }}
+        emptyTableTitle="No tasks were found. Create one?"
+        emptyTableBody={
+          <Link className="pl-button pl-intent-primary" to="/tasks/create">
+            Create New Task
+          </Link>
+        }
       />
     </View>
   )

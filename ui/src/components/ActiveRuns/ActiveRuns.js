@@ -75,6 +75,7 @@ class ActiveRuns extends Component {
               allowSort: true,
               displayName: "Started At",
               render: item => moment(item.started_at).fromNow(),
+              width: 1,
             },
             run_id: {
               allowSort: true,
@@ -112,6 +113,7 @@ class ActiveRuns extends Component {
             sort_by: "started_at",
             order: "desc",
           }}
+          emptyTableTitle="No tasks are currently running."
         />
       </View>
     )

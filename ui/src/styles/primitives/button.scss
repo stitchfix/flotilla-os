@@ -36,3 +36,7 @@
   }
   @include with-intent-color();
 }
+
+a.pl-button {
+  text-decoration: none !important;
+}
