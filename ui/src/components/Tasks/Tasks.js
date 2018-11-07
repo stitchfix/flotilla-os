@@ -6,9 +6,9 @@ import Helmet from "react-helmet"
 import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
-import api from "../../api"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
+import api from "../../api"
 
 const Tasks = props => {
   return (
@@ -32,7 +32,12 @@ const Tasks = props => {
             allowSort: false,
             displayName: "Run",
             render: item => (
-              <Link to={`/tasks/${item.definition_id}/run`}>Run</Link>
+              <Link
+                className="pl-button pl-intent-primary"
+                to={`/tasks/${item.definition_id}/run`}
+              >
+                Run
+              </Link>
             ),
           },
           alias: {
