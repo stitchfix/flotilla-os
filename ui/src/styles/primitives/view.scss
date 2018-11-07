@@ -1,0 +1,21 @@
+.pl-view-container {
+  $distance-to-header: $spacing * 2;
+  @include layout-component-container();
+  margin-top: $topbar-height;
+  .pl-view-inner {
+    @include layout-component-inner();
+    position: relative;
+    margin-top: $distance-to-header + $view-header-height;
+    margin-bottom: $spacing * 6;
+  }
+  &.no-max-width {
+    .pl-view-inner {
+      max-width: 100%;
+    }
+  }
+  &.no-header {
+    .pl-view-inner {
+      margin-top: $distance-to-header;
+    }
+  }
+}

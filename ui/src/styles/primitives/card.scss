@@ -1,0 +1,37 @@
+.pl-card-container {
+  @extend .full-width;
+  background: $card-bg;
+  border: $card-border;
+  border-radius: $card-border-radius;
+  box-shadow: $card-box-shadow;
+
+  %pl-card-header-footer {
+    @include flex(row, nowrap, flex-start, center);
+    min-height: 48px;
+    width: 100%;
+    padding: $card-inner-padding;
+  }
+  .pl-card-header-container {
+    @extend %pl-card-header-footer;
+    border-bottom: $default-border;
+    background: $card-header-bg;
+    border-top-right-radius: $card-border-radius;
+    border-top-left-radius: $card-border-radius;
+  }
+  .pl-card-footer-container {
+    @extend %pl-card-header-footer;
+    border-top: $default-border;
+    border-bottom-right-radius: $card-border-radius;
+    border-bottom-left-radius: $card-border-radius;
+  }
+  .pl-card-content {
+    @include flex(row, nowrap, flex-start, center);
+    padding: $card-inner-padding;
+    height: 100%;
+  }
+  &.pl-hoverable:hover {
+    box-shadow: 0px 2px 16px 6px rgba(0, 0, 0, 0.05);
+    transition-duration: 0.04s;
+    transition-timing-function: ease-out;
+  }
+}

@@ -1,0 +1,56 @@
+@mixin flex($direction, $wrap, $justify, $align) {
+  display: flex;
+  flex-flow: $direction $wrap;
+  justify-content: $justify;
+  @if $wrap == "wrap" {
+    align-content: $align;
+  } @else {
+    align-items: $align;
+  }
+}
+
+@mixin layout-component-container() {
+  @include flex(row, nowrap, center, center);
+  width: 100vw;
+}
+
+@mixin layout-component-inner() {
+  @include flex(row, nowrap, space-between, center);
+  width: 100%;
+  max-width: $content-max-width;
+  padding: 0 $spacing;
+}
+
+@mixin button-reset() {
+  border: none;
+  -webkit-appearance: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 $spacing;
+}
+
+@mixin overflow-ellipsis() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-wrap: normal;
+}
+
+@mixin with-intent-color() {
+  @each $intent, $color in $intents {
+    &.pl-intent-#{$intent} {
+      color: $white;
+      background: $color;
+      border-color: $color;
+      &:hover {
+        box-shadow: 0px 3px 20px 4px transparentize($color, 0.95);
+      }
+      &.invert {
+        color: $color;
+        background: $black_3;
+        border-color: $black_3;
+      }
+    }
+  }
+}

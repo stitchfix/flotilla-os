@@ -1,0 +1,16 @@
+.pl-view-header-container {
+  @include layout-component-container();
+  position: fixed;
+  top: $topbar-height;
+  left: 0;
+  right: 0;
+  height: $view-header-height;
+  background: $view-header-bg;
+  color: $view-header-font-color;
+  z-index: 2000;
+  box-shadow: $view-header-box-shadow;
+  border-bottom: $view-header-border-bottom;
+  .pl-view-header-inner {
+    @include layout-component-inner();
+  }
+}

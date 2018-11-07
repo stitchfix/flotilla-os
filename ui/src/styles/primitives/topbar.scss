@@ -1,0 +1,54 @@
+.pl-topbar-container {
+  @include layout-component-container();
+  background: $topbar-bg;
+  height: $topbar-height;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: $z-topbar;
+  box-shadow: $topbar-box-shadow;
+  border-bottom: $topbar-border-bottom;
+  .pl-topbar-inner {
+    @include layout-component-inner();
+    position: relative;
+  }
+}
+
+$topbar-el-spacing: $spacing;
+.pl-topbar-section {
+  @include flex(row, nowrap, flex-start, center);
+}
+.pl-topbar-el {
+  @include flex(row, nowrap, center, center);
+  color: $topbar-font-color;
+  height: $topbar-height;
+  border: none;
+  padding: 0 $topbar-el-spacing;
+}
+.pl-topbar-app-name {
+  @extend .pl-topbar-el;
+  font-size: $topbar-app-name-font-size;
+  font-weight: $topbar-app-name-font-weight;
+  letter-spacing: $topbar-app-name-letter-spacing;
+  padding: 0;
+  margin-right: $topbar-app-name-margin-right;
+}
+.pl-topbar-nav-link-group {
+  @include flex(row, nowrap, flex-start, center);
+  & > .pl-topbar-nav-link {
+    border-left: $topbar-nav-link-border;
+    &:last-child {
+      border-right: $topbar-nav-link-border;
+    }
+  }
+}
+.pl-topbar-nav-link {
+  @extend .pl-topbar-el;
+  border: none;
+  &.active,
+  &:hover {
+    color: $topbar-nav-link-hover-color;
+    background: $topbar-nav-link-hover-bg;
+  }
+}

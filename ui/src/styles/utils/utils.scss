@@ -1,0 +1,51 @@
+.full-width {
+  width: 100%;
+}
+.overflow-ellipsis {
+  @include overflow-ellipsis();
+}
+
+.with-horizontal-child-margin {
+  & > * {
+    margin-right: $spacing / 2;
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}
+.with-vertical-child-margin {
+  & > * {
+    margin-bottom: $spacing / 2;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+.loading-text {
+  background: $black_2;
+  height: 14px;
+  width: 100%;
+  position: relative;
+  .loading-text-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 14px;
+    width: 80px;
+    animation: loading-text-animation 2s infinite ease-in-out;
+    background: $black_1;
+  }
+}
+@keyframes loading-text-animation {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    left: calc(100% - 80px);
+    opacity: 0;
+  }
+}

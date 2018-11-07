@@ -1,0 +1,45 @@
+// modal
+$z-modal-container: 6000;
+$z-modal-overlay: 6100;
+$z-modal: 6200;
+.pl-modal-container {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  @include flex(row, nowrap, center, flex-start);
+  overflow: scroll;
+  z-index: $z-modal-container;
+}
+.pl-modal-overlay {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparentize($black_0, 0.04);
+  z-index: $z-modal-overlay;
+}
+.pl-modal {
+  animation-duration: 0.04s;
+  animation-name: modalAnimation;
+  animation-timing-function: ease;
+  z-index: $z-modal;
+  width: 400px;
+  margin-top: $spacing * 2;
+}
+@keyframes modalAnimation {
+  0% {
+    transform: translateY(-70%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}

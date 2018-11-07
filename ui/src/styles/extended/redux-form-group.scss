@@ -1,0 +1,17 @@
+.redux-form-group-array-container {
+  @extend .full-width;
+  .redux-form-group-array-header {
+    @include flex(row, nowrap, space-between, flex-start);
+    @extend .full-width;
+  }
+  .redux-form-group-array-row {
+    @include flex(row, nowrap, flex-start, flex-start);
+    margin-top: $spacing;
+    & > * {
+      margin-right: $spacing;
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+}
