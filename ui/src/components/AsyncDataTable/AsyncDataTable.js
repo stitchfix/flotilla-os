@@ -188,16 +188,7 @@ class AsyncDataTable extends Component {
         )
       case requestStates.NOT_READY:
       default:
-        return (
-          <EmptyTable
-            title="No tasks were found. Create one?"
-            actions={
-              <Link className="pl-button pl-intent-primary" to="/tasks/create">
-                <span style={{ marginLeft: 4 }}>Create New Task</span>
-              </Link>
-            }
-          />
-        )
+        return <EmptyTable isLoading />
     }
   }
 }
