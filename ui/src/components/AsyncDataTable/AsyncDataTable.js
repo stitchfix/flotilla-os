@@ -40,14 +40,7 @@ class AsyncDataTable extends Component {
   componentDidMount() {
     const { initialQuery, setQueryParams, queryParams } = this.props
 
-    if (isEmpty(queryParams) && !isEmpty(initialQuery)) {
-      // If the `initialQuery` prop isn't empty, set the query. This will kick
-      // off a data fetching request in the componentDidUpdate lifecycle method
-      setQueryParams(initialQuery)
-    } else {
-      // Otherwise, request data.
-      this.requestData()
-    }
+    setQueryParams(initialQuery)
   }
 
   componentDidUpdate(prevProps) {

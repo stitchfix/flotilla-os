@@ -75,6 +75,11 @@ const Tasks = props => {
             type: asyncDataTableFilterTypes.INPUT,
           },
         }}
+        initialQuery={{
+          page: 1,
+          sort_by: "alias",
+          order: "asc",
+        }}
       />
     </View>
   )

@@ -1,5 +1,5 @@
 import axios from "axios"
-import { isEmpty } from "lodash"
+import { isEmpty, isString, isObject } from "lodash"
 import qs from "qs"
 
 /**
@@ -9,6 +9,7 @@ class FlotillaAPIClient {
   constructor({ location }) {
     this.location = location
     this.getTasks = this.getTasks.bind(this)
+    this.getActiveRuns = this.getActiveRuns.bind(this)
   }
 
   getTasks(query = { offset: 0, limit: 20 }) {
@@ -20,8 +21,31 @@ class FlotillaAPIClient {
     })
   }
 
+  getActiveRuns(query = { offset: 0, limit: 20 }) {
+    const q = `status=RUNNING&status=PENDING&status=QUEUED&${qs.stringify(
+      query
+    )}`
+
+    return this._request({
+      method: "get",
+      path: "/history",
+      query: q,
+      payload: null,
+    })
+  }
+
   _constructURL({ path, query }) {
-    return `${this.location}/${path}?${qs.stringify(query)}`
+    let q = ""
+
+    if (!!query) {
+      if (isString(query)) {
+        q = query
+      } else if (isObject(query)) {
+        q = qs.stringify(query)
+      }
+    }
+
+    return `${this.location}/${path}?${q}`
   }
 
   _request({ method, path, query, payload }) {

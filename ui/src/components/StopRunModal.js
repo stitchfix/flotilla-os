@@ -14,9 +14,9 @@ import config from "../config"
 
 export class StopRunModal extends Component {
   static propTypes = {
-    definitionId: PropTypes.string,
+    definitionID: PropTypes.string,
     dispatch: PropTypes.func,
-    runId: PropTypes.string,
+    runID: PropTypes.string,
   }
   constructor(props) {
     super(props)
@@ -27,12 +27,12 @@ export class StopRunModal extends Component {
     error: false,
   }
   handleStopButtonClick() {
-    const { definitionId, runId } = this.props
+    const { definitionID, runID } = this.props
 
     this.setState({ inFlight: true })
 
     return axios
-      .delete(`${config.FLOTILLA_API}/task/${definitionId}/history/${runId}`)
+      .delete(`${config.FLOTILLA_API}/task/${definitionID}/history/${runID}`)
       .then(res => {
         this.setState({ inFlight: false })
         this.props.dispatch(modalActions.unrenderModal())
