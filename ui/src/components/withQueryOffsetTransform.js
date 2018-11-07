@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { has, omit } from "lodash"
-import querystring from "query-string"
+import querystring from "qs"
 
 const offsetToPage = (offset, limit) => +offset / +limit + 1
 const pageToOffset = (page, limit) => (+page - 1) * +limit
@@ -17,9 +17,9 @@ export default LIMIT => Unwrapped => {
     static displayName = `withQueryOffsetTransform(${Unwrapped.displayName ||
       "Unwrapped"})`
     static propTypes = {
-      updateQuery: PropTypes.func.isRequired,
       query: PropTypes.object.isRequired,
       search: PropTypes.string.isRequired,
+      updateQuery: PropTypes.func.isRequired,
     }
     constructor(props) {
       super(props)

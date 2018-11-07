@@ -1,44 +1,42 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { connect } from "react-redux"
-import { Link } from "react-router-dom"
 import { reduxForm } from "redux-form"
 import Helmet from "react-helmet"
 import { get } from "lodash"
-import {
-  ReduxFormGroupInput,
-  ReduxFormGroupSelect,
-  ReduxFormGroupTextarea,
-  Card,
-  View,
-  ViewHeader,
-  Button,
-  intentTypes,
-} from "aa-ui-components"
-import config from "../config"
-import { taskFormTypes } from "../constants/"
-import { taskFormUtils, getHelmetTitle } from "../utils/"
+import Button from "./Button"
+import Card from "./Card"
 import EnvFieldArray from "./EnvFieldArray"
+import ReduxFormGroupInput from "./ReduxFormGroupInput"
+import ReduxFormGroupSelect from "./ReduxFormGroupSelect"
+import ReduxFormGroupTextarea from "./ReduxFormGroupTextarea"
+import View from "./View"
+import ViewHeader from "./ViewHeader"
+import intentTypes from "../constants/intentTypes"
+import taskFormTypes from "../constants/taskFormTypes"
+import getHelmetTitle from "../utils/getHelmetTitle"
+import taskFormUtils from "../utils/taskFormUtils"
 
 export class TaskForm extends Component {
   static propTypes = {
-    taskFormType: PropTypes.oneOf(Object.values(taskFormTypes)),
-    handleSubmit: PropTypes.func,
-    inFlight: PropTypes.bool,
     groupOptions: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string,
         value: PropTypes.string,
       })
     ),
+    handleSubmit: PropTypes.func,
+    inFlight: PropTypes.bool,
+    selectOptionsRequestInFlight: PropTypes.bool,
     tagOptions: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string,
         value: PropTypes.string,
       })
     ),
-    selectOptionsRequestInFlight: PropTypes.bool,
+    taskFormType: PropTypes.oneOf(Object.values(taskFormTypes)),
   }
+
   getTitle() {
     const { taskFormType, definitionId, data } = this.props
 
@@ -53,6 +51,7 @@ export class TaskForm extends Component {
         return ""
     }
   }
+
   render() {
     const {
       handleSubmit,

@@ -2,19 +2,16 @@ import React from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import Helmet from "react-helmet"
-import { get, has } from "lodash"
-import {
-  View,
-  ViewHeader,
-  Button,
-  intentTypes,
-  modalActions,
-} from "aa-ui-components"
-import { taskDefinitionPropTypes } from "../constants/"
-import { getHelmetTitle } from "../utils/"
-import TaskInfo from "./TaskInfo"
-import TaskHistory from "./TaskHistory"
+import { has } from "lodash"
+import Button from "./Button"
 import DeleteTaskModal from "./DeleteTaskModal"
+import TaskHistory from "./TaskHistory"
+import TaskInfo from "./TaskInfo"
+import View from "./View"
+import ViewHeader from "./ViewHeader"
+import modalActions from "../actions/modalActions"
+import intentTypes from "../constants/intentTypes"
+import getHelmetTitle from "../utils/getHelmetTitle"
 
 const TaskDefinitionView = props => {
   let title = ""
@@ -76,9 +73,9 @@ const TaskDefinitionView = props => {
 }
 
 TaskDefinitionView.propTypes = {
+  data: PropTypes.object,
   definitionId: PropTypes.string,
   dispatch: PropTypes.func,
-  data: PropTypes.shape(taskDefinitionPropTypes),
 }
 
 export default TaskDefinitionView

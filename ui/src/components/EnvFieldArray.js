@@ -1,10 +1,8 @@
 import React from "react"
 import PropTypes from "prop-types"
-import {
-  ReduxFormGroupInput,
-  ReduxFormGroupArray,
-  ReduxFormGroupArrayRow,
-} from "aa-ui-components"
+import ReduxFormGroupInput from "./ReduxFormGroupInput"
+import ReduxFormGroupArray from "./ReduxFormGroupArray"
+import ReduxFormGroupArrayRow from "./ReduxFormGroupArrayRow"
 
 const EnvFieldArray = props => {
   const { handleEnvCreate, handleEnvUpdate, handleEnvRemove } = props

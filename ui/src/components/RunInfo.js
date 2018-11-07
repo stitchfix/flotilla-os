@@ -1,13 +1,13 @@
-import React, { Component } from "react"
+import React from "react"
 import { Link } from "react-router-dom"
 import JsonView from "react-json-view"
-import { Card, FormGroup, Button, Tag, colors } from "aa-ui-components"
 import { has, get } from "lodash"
 import moment from "moment"
-import { reactJsonViewProps } from "../constants/"
-import EnhancedRunStatus from "./EnhancedRunStatus"
+import FormGroup from "./FormGroup"
 import KeyValueContainer from "./KeyValueContainer"
 import RunStatusBar from "./RunStatusBar"
+import colors from "../constants/colors"
+import reactJsonViewProps from "../constants/reactJsonViewProps"
 
 export default function RunInfo({ data }) {
   return (

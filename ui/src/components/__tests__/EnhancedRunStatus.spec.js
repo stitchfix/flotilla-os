@@ -1,7 +1,7 @@
 import React from "react"
 import { mount } from "enzyme"
 import EnhancedRunStatus, { getEnhancedStatus } from "../EnhancedRunStatus"
-import { runStatusTypes } from "../../constants"
+import runStatusTypes from "../../constants/runStatusTypes"
 
 describe("getEnhancedStatus", () => {
   it("returns the correct status", () => {

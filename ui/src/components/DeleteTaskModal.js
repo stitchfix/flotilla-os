@@ -2,17 +2,15 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { connect } from "react-redux"
 import { withRouter } from "react-router-dom"
-import {
-  Button,
-  Card,
-  Modal,
-  modalActions,
-  intentTypes,
-  popupActions,
-  Popup,
-} from "aa-ui-components"
-import { get } from "lodash"
 import axios from "axios"
+import { get } from "lodash"
+import modalActions from "../actions/modalActions"
+import popupActions from "../actions/popupActions"
+import intentTypes from "../constants/intentTypes"
+import Button from "./Button"
+import Card from "./Card"
+import Modal from "./Modal"
+import Popup from "./Popup"
 import config from "../config"
 
 export class DeleteTaskModal extends Component {

@@ -1,27 +1,23 @@
 import React, { Component } from "react"
-import PropTypes from "prop-types"
 import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { Link } from "react-router-dom"
 import Select from "react-select"
-import {
-  View,
-  ViewHeader,
-  Button,
-  Card,
-  FormGroup,
-  queryUpdateTypes,
-} from "aa-ui-components"
-import qs from "query-string"
+import qs from "qs"
 import DebounceInput from "react-debounce-input"
-import { has, isEmpty, isEqual, get, pickBy, identity } from "lodash"
-import config from "../config"
-import { getHelmetTitle } from "../utils/"
+import { has, get, pickBy, identity } from "lodash"
+import Card from "./Card"
+import EmptyTable from "./EmptyTable"
+import FormGroup from "./FormGroup"
 import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
-import withServerList from "./withServerList"
 import TasksRow from "./TasksRow"
-import EmptyTable from "./EmptyTable"
+import View from "./View"
+import ViewHeader from "./ViewHeader"
+import withServerList from "./withServerList"
+import getHelmetTitle from "../utils/getHelmetTitle"
+import queryUpdateTypes from "../utils/queryUpdateTypes"
+import config from "../config"
 
 const limit = 20
 const defaultQuery = {
@@ -35,12 +31,15 @@ export class Tasks extends Component {
     super(props)
     this.handleRunButtonClick = this.handleRunButtonClick.bind(this)
   }
+
   componentDidMount() {
     this.aliasInput.focus()
   }
+
   handleRunButtonClick(definitionId) {
     this.props.history.push(`/tasks/${definitionId}/run`)
   }
+
   render() {
     const { isLoading, data, error, history, query, updateQuery } = this.props
 

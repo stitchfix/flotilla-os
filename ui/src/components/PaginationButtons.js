@@ -3,12 +3,12 @@ import PropTypes from "prop-types"
 
 export default class PaginationButtons extends Component {
   static propTypes = {
-    total: PropTypes.number,
+    activeButtonClassName: PropTypes.string,
     buttonCount: PropTypes.number,
     buttonEl: PropTypes.node,
-    activeButtonClassName: PropTypes.string,
-    offset: PropTypes.number,
     limit: PropTypes.number,
+    offset: PropTypes.number,
+    total: PropTypes.number,
     updateQuery: PropTypes.func,
     wrapperEl: PropTypes.node,
   }
@@ -26,7 +26,6 @@ export default class PaginationButtons extends Component {
       total,
       buttonCount,
       buttonEl,
-      activeButtonClassName,
       offset,
       limit,
       wrapperEl,

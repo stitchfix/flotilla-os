@@ -1,4 +1,5 @@
-import { invalidRunEnv, envNameValueDelimiterChar } from "../constants"
+import invalidRunEnv from "../constants/invalidRunEnv"
+import envNameValueDelimiterChar from "../constants/envNameValueDelimiterChar"
 
 export default function getRetryEnv(env) {
   return env

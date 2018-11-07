@@ -2,19 +2,19 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import { connect } from "react-redux"
-import { withRouterSync, Loader, modalActions } from "aa-ui-components"
-import qs from "query-string"
-import { has, get, isEmpty, isEqual, pickBy, identity } from "lodash"
+import qs from "qs"
+import { has, get, pickBy, identity } from "lodash"
 import moment from "moment"
-import config from "../config"
-import { runStatusTypes } from "../constants/"
-import { getRunDuration } from "../utils/"
+import EmptyTable from "./EmptyTable"
 import EnhancedRunStatus from "./EnhancedRunStatus"
 import PaginationButtons from "./PaginationButtons"
 import SortHeader from "./SortHeader"
-import withServerList from "./withServerList"
 import StopRunModal from "./StopRunModal"
-import EmptyTable from "./EmptyTable"
+import withServerList from "./withServerList"
+import modalActions from "../actions/modalActions"
+import runStatusTypes from "../constants/runStatusTypes"
+import getRunDuration from "../utils/getRunDuration"
+import config from "../config"
 
 const getUrl = id => `${config.FLOTILLA_API}/task/${id}/history`
 const defaultQuery = {
@@ -29,9 +29,7 @@ class TaskHistory extends Component {
     definitionId: PropTypes.string.isRequired,
     fetch: PropTypes.func.isRequired,
   }
-  constructor(props) {
-    super(props)
-  }
+
   componentWillReceiveProps(nextProps) {
     if (this.props.definitionId !== nextProps.definitionId) {
       this.props.fetch(
@@ -39,6 +37,7 @@ class TaskHistory extends Component {
       )
     }
   }
+
   render() {
     const { isLoading, error, data, query, updateQuery, dispatch } = this.props
 

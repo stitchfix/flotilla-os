@@ -1,9 +1,9 @@
 import React from "react"
 import { CheckCircle, XCircle } from "react-feather"
 import { capitalize } from "lodash"
-import { Loader, colors } from "aa-ui-components"
-import { runStatusTypes } from "../constants/"
-import { getRunStatus } from "../utils/"
+import colors from "../constants/colors"
+import runStatusTypes from "../constants/runStatusTypes"
+import Loader from "./Loader"
 
 export const getEnhancedStatus = (status, exitCode) => {
   if (status === runStatusTypes.stopped) {

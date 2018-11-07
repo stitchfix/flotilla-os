@@ -2,25 +2,19 @@ import React from "react"
 import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { Link } from "react-router-dom"
-import {
-  Button,
-  View,
-  ViewHeader,
-  modalActions,
-  intentTypes,
-} from "aa-ui-components"
 import { get } from "lodash"
-import qs from "query-string"
-import {
-  runStatusTypes,
-  invalidRunEnv,
-  envNameValueDelimiterChar,
-} from "../constants"
-import { getRetryEnv, getHelmetTitle } from "../utils/"
-import StopRunModal from "./StopRunModal"
+import qs from "qs"
+import Button from "./Button"
 import EnhancedRunStatus, { getEnhancedStatus } from "./EnhancedRunStatus"
 import RunInfo from "./RunInfo"
 import RunLogs from "./RunLogs"
+import StopRunModal from "./StopRunModal"
+import ViewHeader from "./ViewHeader"
+import modalActions from "../actions/modalActions"
+import intentTypes from "../constants/intentTypes"
+import runStatusTypes from "../constants/runStatusTypes"
+import getRetryEnv from "../utils/getRetryEnv"
+import getHelmetTitle from "../utils/getHelmetTitle"
 
 const getHelmetEmoji = enhancedStatus => {
   switch (enhancedStatus) {

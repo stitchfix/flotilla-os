@@ -4,13 +4,13 @@ import cn from "classnames"
 
 export default class SortHeader extends Component {
   static propTypes = {
-    currentSortKey: PropTypes.string,
+    className: PropTypes.string,
     currentOrder: PropTypes.string,
+    currentSortKey: PropTypes.string,
     display: PropTypes.node,
     sortKey: PropTypes.string,
-    updateQuery: PropTypes.func,
     style: PropTypes.object,
-    className: PropTypes.string,
+    updateQuery: PropTypes.func,
   }
   static defaultProps = {
     className: "",

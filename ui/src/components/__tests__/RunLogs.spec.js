@@ -4,7 +4,7 @@ import axios from "axios"
 import axiosMockAdapter from "axios-mock-adapter"
 import RunLogs from "../RunLogs"
 import { simpleLogRes, configureSetup } from "../../__testutils__/"
-import { runStatusTypes } from "../../constants/"
+import runStatusTypes from "../../constants/runStatusTypes"
 import config from "../../config"
 
 jest.useFakeTimers()

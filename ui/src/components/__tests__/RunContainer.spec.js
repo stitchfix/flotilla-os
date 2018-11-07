@@ -1,7 +1,7 @@
 import React from "react"
 import { shallow } from "enzyme"
 import fetchMock from "fetch-mock"
-import WrappedRunContainer, { RunContainer } from "../RunContainer"
+import { RunContainer } from "../RunContainer"
 
 jest.useFakeTimers()
 

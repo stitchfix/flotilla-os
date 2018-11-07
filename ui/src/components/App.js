@@ -1,16 +1,16 @@
-import React, { Component } from "react"
+import React from "react"
 import { PropTypes } from "prop-types"
-import { BrowserRouter, Route, Switch, Redirect, Link } from "react-router-dom"
+import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
 import { connect } from "react-redux"
-import { View, Card, ModalContainer } from "aa-ui-components"
-import { fetchSelectOpts } from "../actions/"
-import FlotillaTopbar from "./FlotillaTopbar"
-import Tasks from "./Tasks"
+
 import ActiveRuns from "./ActiveRuns"
-import TaskContainer from "./TaskContainer"
-import TaskByAliasRedirect from "./TaskByAliasRedirect"
-import RunContainer from "./RunContainer"
 import CreateTaskForm from "./CreateTaskForm"
+import FlotillaTopbar from "./FlotillaTopbar"
+import ModalContainer from "./ModalContainer"
+import RunContainer from "./RunContainer"
+import TaskByAliasRedirect from "./TaskByAliasRedirect"
+import TaskContainer from "./TaskContainer"
+import Tasks from "./Tasks"
 
 export const App = props => {
   const {

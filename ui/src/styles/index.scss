@@ -1,9 +1,26 @@
 @import url("https://fonts.googleapis.com/css?family=Source+Code+Pro");
 @import "../../node_modules/flex-utils/css/flex-utils.min.css";
-@import "../../node_modules/aa-ui-components/lib/index.css";
-@import "../../node_modules/aa-ui-components/lib/colors.scss";
-@import "../../node_modules/aa-ui-components/lib/variables.scss";
-@import "../../node_modules/aa-ui-components/lib/mixins.scss";
+@import "../../node_modules/react-select/dist/react-select.min.css";
+@import "./utils/colors.scss";
+@import "./utils/variables.scss";
+@import "./utils/mixins.scss";
+@import "./utils/base.scss";
+@import "./utils/typography.scss";
+@import "./utils/utils.scss";
+
+@import "./primitives/button.scss";
+@import "./primitives/card.scss";
+@import "./primitives/form.scss";
+@import "./primitives/loader.scss";
+@import "./primitives/modal.scss";
+@import "./primitives/popup.scss";
+@import "./primitives/table.scss";
+@import "./primitives/tabs.scss";
+@import "./primitives/tag.scss";
+@import "./primitives/topbar.scss";
+@import "./primitives/view-header.scss";
+@import "./primitives/view.scss";
+@import "./extended/redux-form-group.scss";
 
 //
 // Mixins/Variables
@@ -111,9 +128,6 @@ img.topbar-logo {
   font-size: 1rem;
 }
 
-//
-// aa-ui-components Overrides
-//
 .pl-topbar-app-name {
   font-family: $monospace-font-family;
 }

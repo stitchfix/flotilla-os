@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
-import { Button } from "aa-ui-components"
+import Button from "./Button"
 
 const TasksRow = ({ data, onRunButtonClick }) => {
   return (
