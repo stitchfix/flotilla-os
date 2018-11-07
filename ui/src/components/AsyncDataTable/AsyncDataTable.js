@@ -117,15 +117,29 @@ class AsyncDataTable extends Component {
   }
 
   render() {
-    const { columns, filters, getItems, getTotal, limit } = this.props
-    const { requestState, data } = this.state
+    const {
+      columns,
+      filters,
+      getItems,
+      getTotal,
+      limit,
+      emptyTableBody,
+      emptyTableTitle,
+    } = this.props
+    const { requestState, data, error } = this.state
 
     switch (requestState) {
       case requestStates.ERROR:
-        return "uh oh"
+        const errorDisplay = error.toString() || "An error occurred."
+        return <EmptyTable title={errorDisplay} error />
       case requestStates.READY:
         const items = getItems(data)
         const total = getTotal(data)
+
+        if (isEmpty(items)) {
+          return <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
+        }
+
         return (
           <div className="flot-list-view">
             {!isEmpty(filters) && (
@@ -202,6 +216,8 @@ AsyncDataTable.propTypes = {
       width: PropTypes.number,
     })
   ).isRequired,
+  emptyTableBody: PropTypes.node,
+  emptyTableTitle: PropTypes.string.isRequired,
   filters: PropTypes.objectOf(
     PropTypes.shape({
       displayName: PropTypes.string.isRequired,
@@ -228,6 +244,8 @@ AsyncDataTable.propTypes = {
 AsyncDataTable.defaultProps = {
   children: () => <span />,
   columns: {},
+  emptyTableBody: "",
+  emptyTableTitle: "This collection is empty",
   filters: {},
   getItems: data => [],
   initialQuery: {},
