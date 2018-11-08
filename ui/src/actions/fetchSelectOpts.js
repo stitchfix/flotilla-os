@@ -1,10 +1,6 @@
-import React from "react"
 import axios from "axios"
 import { has } from "lodash"
 import actionTypes from "../constants/actionTypes"
-import intentTypes from "../constants/intentTypes"
-import popupActions from "./popupActions"
-import Popup from "../components/Popup"
 import config from "../config"
 
 const mapStringArrayToSelectObjectArray = (obj, key) => {
@@ -25,21 +21,11 @@ const receiveDropdownOpts = res => {
     },
   }
 }
-const receiveDropdownOptsError = error => dispatch => {
-  dispatch(
-    popupActions.renderPopup(
-      <Popup
-        title="Error fetching select options!"
-        message={error.toString()}
-        intent={intentTypes.error}
-        hide={() => {
-          dispatch(popupActions.unrenderPopup())
-        }}
-        autohide={false}
-      />
-    )
-  )
-}
+const receiveDropdownOptsError = error => ({
+  type: actionTypes.RECEIVE_SELECT_OPTS_ERROR,
+  payload: error,
+  error: true,
+})
 
 const fetchDropdownOpts = () => dispatch => {
   dispatch(requestDropdownOpts())

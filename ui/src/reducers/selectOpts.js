@@ -28,7 +28,6 @@ export default function selectOpts(state = initialState, action) {
     case actionTypes.RECEIVE_SELECT_OPTS_ERROR:
       return {
         ...state,
-        error: true,
         error: action.payload,
       }
     default:
