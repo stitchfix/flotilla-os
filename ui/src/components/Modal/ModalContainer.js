@@ -1,10 +1,6 @@
-import React, { createContext, Component } from "react"
+import React, { Component } from "react"
 import PropTypes from "prop-types"
-
-export const ModalContext = createContext({
-  renderModal: () => {},
-  unrenderModal: () => {},
-})
+import ModalContext from "./ModalContext"
 
 class ModalContainer extends Component {
   state = {

@@ -1,10 +1,6 @@
 import React, { createContext, Component } from "react"
 import PropTypes from "prop-types"
-
-export const PopupContext = createContext({
-  renderPopup: () => {},
-  unrenderPopup: () => {},
-})
+import PopupContext from "./PopupContext"
 
 class PopupContainer extends Component {
   state = {

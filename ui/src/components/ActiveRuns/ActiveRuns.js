@@ -12,10 +12,9 @@ import EnhancedRunStatus from "../EnhancedRunStatus"
 import StopRunModal from "../StopRunModal"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
-import modalActions from "../../actions/modalActions"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
-import { ModalContext } from "../App/Modal"
+import ModalContext from "../Modal/ModalContext"
 
 class ActiveRuns extends Component {
   handleStopButtonClick = runData => {
@@ -124,10 +123,12 @@ ActiveRuns.propTypes = {
   clusterOptions: PropTypes.arrayOf(
     PropTypes.shape({ label: PropTypes.string, value: PropTypes.string })
   ),
+  renderModal: PropTypes.func.isRequired,
 }
 
 ActiveRuns.defaultProps = {
   clusterOptions: [],
+  renderModal: () => {},
 }
 
 const mapStateToProps = state => ({

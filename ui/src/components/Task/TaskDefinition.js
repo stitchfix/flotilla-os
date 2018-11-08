@@ -1,5 +1,4 @@
 import React, { Fragment } from "react"
-import { connect } from "react-redux"
 import { Link } from "react-router-dom"
 import JSONView from "react-json-view"
 import { get, omit } from "lodash"
@@ -10,7 +9,6 @@ import ViewHeader from "../ViewHeader"
 import Loader from "../Loader"
 import TaskHistoryTable from "./TaskHistoryTable"
 import Button from "../Button"
-import modalActions from "../../actions/modalActions"
 import intentTypes from "../../constants/intentTypes"
 import DeleteTaskModal from "../DeleteTaskModal"
 import ButtonGroup from "../ButtonGroup"
@@ -18,7 +16,7 @@ import KeyValueContainer from "../KeyValueContainer"
 import FormGroup from "../FormGroup"
 import Tag from "../Tag"
 import reactJsonViewProps from "../../constants/reactJsonViewProps"
-import { ModalContext } from "../App/Modal"
+import ModalContext from "../Modal/ModalContext"
 
 const TaskDefinitionSidebar = ({ data }) => {
   return (
@@ -124,7 +122,7 @@ const TaskDefinition = props => {
                   intent={intentTypes.error}
                   onClick={() => {
                     props.renderModal(
-                      <DeleteTaskModal definitionId={ctx.definitionID} />
+                      <DeleteTaskModal definitionID={ctx.definitionID} />
                     )
                   }}
                 >
@@ -182,7 +180,9 @@ export default props => (
     {ctx => (
       <TaskDefinition
         {...omit(props, ["history", "location", "match", "staticContext"])}
+        push={props.history.push}
         renderModal={ctx.renderModal}
+        unrenderModal={ctx.unrenderModal}
       />
     )}
   </ModalContext.Consumer>

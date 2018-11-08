@@ -10,7 +10,7 @@ import Button from "../Button"
 import runStatusTypes from "../../constants/runStatusTypes"
 import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../StopRunModal"
-import { ModalContext } from "../App/Modal"
+import ModalContext from "../Modal/ModalContext"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>
