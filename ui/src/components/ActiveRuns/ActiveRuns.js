@@ -13,6 +13,7 @@ import StopRunModal from "../StopRunModal"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
 import modalActions from "../../actions/modalActions"
+import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 
 class ActiveRuns extends Component {
@@ -112,6 +113,11 @@ class ActiveRuns extends Component {
             page: 1,
             sort_by: "started_at",
             order: "desc",
+            status: [
+              runStatusTypes.running,
+              runStatusTypes.pending,
+              runStatusTypes.queued,
+            ],
           }}
           emptyTableTitle="No tasks are currently running."
         />
