@@ -1,9 +1,9 @@
-import qs from "qs"
 import React, { Component } from "react"
 import PropTypes from "prop-types"
+import { connect } from "react-redux"
 import { Link } from "react-router-dom"
 import moment from "moment"
-import { get } from "lodash"
+import { get, has } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
@@ -11,13 +11,27 @@ import config from "../../config"
 import EnhancedRunStatus from "../EnhancedRunStatus"
 import Button from "../Button"
 import runStatusTypes from "../../constants/runStatusTypes"
+import intentTypes from "../../constants/intentTypes"
 import getRunDuration from "../../utils/getRunDuration"
+import StopRunModal from "../StopRunModal"
+import modalActions from "../../actions/modalActions"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>
     status === runStatusTypes.pending ||
     status === runStatusTypes.queued ||
     status === runStatusTypes.running
+
+  handleStopButtonClick = runData => {
+    this.props.dispatch(
+      modalActions.renderModal(
+        <StopRunModal
+          runID={runData.run_id}
+          definitionID={runData.definition_id}
+        />
+      )
+    )
+  }
 
   render() {
     const { definitionID } = this.props
@@ -38,7 +52,11 @@ class TaskHistoryTable extends Component {
             displayName: "Stop Run",
             render: item => {
               if (TaskHistoryTable.isTaskActive(item.status)) {
-                return <Button>Stop</Button>
+                return (
+                  <Button onClick={this.handleStopButtonClick.bind(this, item)}>
+                    Stop
+                  </Button>
+                )
               }
 
               return null
@@ -57,7 +75,8 @@ class TaskHistoryTable extends Component {
           started_at: {
             allowSort: true,
             displayName: "Started At",
-            render: item => moment(item.started_at).fromNow(),
+            render: item =>
+              has(item, "started_at") ? moment(item.started_at).fromNow() : "-",
             width: 1,
           },
           duration: {
@@ -99,8 +118,9 @@ class TaskHistoryTable extends Component {
 
 TaskHistoryTable.propTypes = {
   definitionID: PropTypes.string.isRequired,
+  dispatch: PropTypes.func.isRequired,
 }
 
 TaskHistoryTable.defaultProps = {}
 
-export default TaskHistoryTable
+export default connect()(TaskHistoryTable)
