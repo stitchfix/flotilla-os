@@ -1,17 +1,13 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import { connect } from "react-redux"
 import { Link } from "react-router-dom"
 import moment from "moment"
 import { get, has } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
-import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
-import config from "../../config"
 import EnhancedRunStatus from "../EnhancedRunStatus"
 import Button from "../Button"
 import runStatusTypes from "../../constants/runStatusTypes"
-import intentTypes from "../../constants/intentTypes"
 import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../StopRunModal"
 import modalActions from "../../actions/modalActions"
@@ -23,14 +19,14 @@ class TaskHistoryTable extends Component {
     status === runStatusTypes.running
 
   handleStopButtonClick = runData => {
-    this.props.dispatch(
-      modalActions.renderModal(
-        <StopRunModal
-          runID={runData.run_id}
-          definitionID={runData.definition_id}
-        />
-      )
-    )
+    // this.props.dispatch(
+    //   modalActions.renderModal(
+    //     <StopRunModal
+    //       runID={runData.run_id}
+    //       definitionID={runData.definition_id}
+    //     />
+    //   )
+    // )
   }
 
   render() {
@@ -107,8 +103,11 @@ class TaskHistoryTable extends Component {
         }}
         emptyTableTitle="This task hasn't been run yet."
         emptyTableBody={
-          <Link className="pl-button pl-intent-primary" to="/tasks/create">
-            TODO: make this
+          <Link
+            className="pl-button pl-intent-primary"
+            to={`/tasks/${definitionID}/run`}
+          >
+            Run Task
           </Link>
         }
       />
@@ -118,9 +117,8 @@ class TaskHistoryTable extends Component {
 
 TaskHistoryTable.propTypes = {
   definitionID: PropTypes.string.isRequired,
-  dispatch: PropTypes.func.isRequired,
 }
 
 TaskHistoryTable.defaultProps = {}
 
-export default connect()(TaskHistoryTable)
+export default TaskHistoryTable

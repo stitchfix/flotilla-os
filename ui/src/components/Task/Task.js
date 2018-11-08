@@ -7,6 +7,8 @@ import * as requestStateTypes from "../../constants/requestStateTypes"
 import api from "../../api"
 import TaskContext from "./TaskContext"
 import TaskDefinition from "./TaskDefinition"
+import RunForm from "../RunForm/RunForm"
+import { UpdateTaskForm, CloneTaskForm } from "../TaskForm/TaskForm"
 
 class Task extends Component {
   state = {
@@ -63,6 +65,9 @@ class Task extends Component {
       <TaskContext.Provider value={this.getCtx()}>
         <Switch>
           <Route exact path={rootPath} component={TaskDefinition} />
+          <Route exact path={`${rootPath}/run`} component={RunForm} />
+          <Route exact path={`${rootPath}/copy`} component={CloneTaskForm} />
+          <Route exact path={`${rootPath}/edit`} component={UpdateTaskForm} />
         </Switch>
       </TaskContext.Provider>
     )

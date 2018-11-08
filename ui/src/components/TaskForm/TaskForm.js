@@ -13,7 +13,10 @@ import Form from "../Form/Form"
 import FieldText from "../Form/FieldText"
 import FieldSelect from "../Form/FieldSelect"
 import FieldKeyValue from "../Form/FieldKeyValue"
+import TaskContext from "../Task/TaskContext"
 import api from "../../api"
+
+import * as requestStateTypes from "../../constants/requestStateTypes"
 
 const taskFormTypes = {
   CREATE: "CREATE",
@@ -70,23 +73,50 @@ class TaskForm extends Component {
     }
   }
 
-  getDefaultValues() {
-    const { taskDefinition, type } = this.props
+  shouldNotRenderForm() {
+    const { type, groupOptions, tagOptions, requestState } = this.props
 
-    switch (type) {
-      // @TODO: fill these out
-      case taskFormTypes.UPDATE:
-      case taskFormTypes.CLONE:
-      case taskFormTypes.CREATE:
-      default:
-        return {}
+    if (isEmpty(groupOptions) || isEmpty(tagOptions)) {
+      return true
+    }
+
+    if (
+      type !== taskFormTypes.CREATE &&
+      requestState === requestStateTypes.NOT_READY
+    ) {
+      return true
+    }
+
+    return false
+  }
+
+  getDefaultValues() {
+    const { data, type } = this.props
+
+    let ret = {
+      memory: get(data, "memory", 1024),
+    }
+
+    if (type === taskFormTypes.CREATE) {
+      return ret
+    }
+
+    if (!isEmpty(data)) {
+      return {
+        ...ret,
+        group_name: get(data, "group_name", ""),
+        image: get(data, "image", ""),
+        command: get(data, "command", ""),
+        tags: get(data, "tags", []),
+        env: get(data, "env", []).map(e => ({ key: e.name, value: e.value })),
+      }
     }
   }
 
   render() {
     const { type, groupOptions, tagOptions } = this.props
 
-    if (isEmpty(groupOptions) || isEmpty(tagOptions)) {
+    if (this.shouldNotRenderForm()) {
       return <Loader />
     }
 
@@ -108,7 +138,9 @@ class TaskForm extends Component {
                   }
                 />
                 <Form>
-                  <FieldText label="Alias" field="alias" />
+                  {type !== taskFormTypes.UPDATE && (
+                    <FieldText label="Alias" field="alias" />
+                  )}
                   <FieldSelect
                     label="Group Name"
                     field="group_name"
@@ -155,10 +187,6 @@ TaskForm.propTypes = {
       value: PropTypes.string,
     })
   ),
-
-  // @TODO: fill this out.
-  taskDefinition: PropTypes.object,
-  type: PropTypes.oneOf(Object.values(taskFormTypes)),
 }
 
 const mapStateToProps = state => ({
@@ -172,16 +200,14 @@ export const CreateTaskForm = () => (
   <ConnectedTaskForm type={taskFormTypes.CREATE} />
 )
 
-export const UpdateTaskForm = ({ taskDefinition }) => (
-  <ConnectedTaskForm
-    type={taskFormTypes.UPDATE}
-    taskDefinition={taskDefinition}
-  />
+export const UpdateTaskForm = props => (
+  <TaskContext.Consumer>
+    {ctx => <ConnectedTaskForm type={taskFormTypes.UPDATE} {...ctx} />}
+  </TaskContext.Consumer>
 )
 
-export const CloneTaskForm = ({ taskDefinition }) => (
-  <ConnectedTaskForm
-    type={taskFormTypes.CLONE}
-    taskDefinition={taskDefinition}
-  />
+export const CloneTaskForm = props => (
+  <TaskContext.Consumer>
+    {ctx => <ConnectedTaskForm type={taskFormTypes.CLONE} {...ctx} />}
+  </TaskContext.Consumer>
 )
