@@ -10,7 +10,7 @@ import Button from "../Button"
 import runStatusTypes from "../../constants/runStatusTypes"
 import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../StopRunModal"
-import modalActions from "../../actions/modalActions"
+import { ModalContext } from "../App/Modal"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>
@@ -19,14 +19,12 @@ class TaskHistoryTable extends Component {
     status === runStatusTypes.running
 
   handleStopButtonClick = runData => {
-    // this.props.dispatch(
-    //   modalActions.renderModal(
-    //     <StopRunModal
-    //       runID={runData.run_id}
-    //       definitionID={runData.definition_id}
-    //     />
-    //   )
-    // )
+    this.props.renderModal(
+      <StopRunModal
+        runID={runData.run_id}
+        definitionID={runData.definition_id}
+      />
+    )
   }
 
   render() {
@@ -117,8 +115,13 @@ class TaskHistoryTable extends Component {
 
 TaskHistoryTable.propTypes = {
   definitionID: PropTypes.string.isRequired,
+  renderModal: PropTypes.func.isRequired,
 }
 
 TaskHistoryTable.defaultProps = {}
 
-export default TaskHistoryTable
+export default props => (
+  <ModalContext.Consumer>
+    {ctx => <TaskHistoryTable {...props} renderModal={ctx.renderModal} />}
+  </ModalContext.Consumer>
+)

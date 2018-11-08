@@ -3,7 +3,7 @@ import { render } from "react-dom"
 import { Provider } from "react-redux"
 import "./styles/index.scss"
 import Store from "./store"
-import App from "./components/App"
+import App from "./components/App/App"
 import fetchSelectOpts from "./actions/fetchSelectOpts"
 
 const store = Store()

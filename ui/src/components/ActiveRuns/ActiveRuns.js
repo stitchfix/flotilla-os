@@ -15,16 +15,15 @@ import ViewHeader from "../ViewHeader"
 import modalActions from "../../actions/modalActions"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
+import { ModalContext } from "../App/Modal"
 
 class ActiveRuns extends Component {
   handleStopButtonClick = runData => {
-    this.props.dispatch(
-      modalActions.renderModal(
-        <StopRunModal
-          runID={runData.run_id}
-          definitionID={runData.definition_id}
-        />
-      )
+    this.props.renderModal(
+      <StopRunModal
+        runID={runData.run_id}
+        definitionID={runData.definition_id}
+      />
     )
   }
 
@@ -125,16 +124,24 @@ ActiveRuns.propTypes = {
   clusterOptions: PropTypes.arrayOf(
     PropTypes.shape({ label: PropTypes.string, value: PropTypes.string })
   ),
-  dispatch: PropTypes.func.isRequired,
 }
 
 ActiveRuns.defaultProps = {
   clusterOptions: [],
-  dispatch: () => {},
 }
 
 const mapStateToProps = state => ({
   clusterOptions: get(state, "selectOpts.cluster", []),
 })
 
-export default connect(mapStateToProps)(ActiveRuns)
+export default connect(mapStateToProps)(props => (
+  <ModalContext.Consumer>
+    {ctx => (
+      <ActiveRuns
+        {...props}
+        renderModal={ctx.renderModal}
+        unrenderModal={ctx.unrenderModal}
+      />
+    )}
+  </ModalContext.Consumer>
+))

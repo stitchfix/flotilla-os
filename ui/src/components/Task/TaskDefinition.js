@@ -18,6 +18,7 @@ import KeyValueContainer from "../KeyValueContainer"
 import FormGroup from "../FormGroup"
 import Tag from "../Tag"
 import reactJsonViewProps from "../../constants/reactJsonViewProps"
+import { ModalContext } from "../App/Modal"
 
 const TaskDefinitionSidebar = ({ data }) => {
   return (
@@ -122,10 +123,8 @@ const TaskDefinition = props => {
                 <Button
                   intent={intentTypes.error}
                   onClick={() => {
-                    props.dispatch(
-                      modalActions.renderModal(
-                        <DeleteTaskModal definitionId={ctx.definitionID} />
-                      )
+                    props.renderModal(
+                      <DeleteTaskModal definitionId={ctx.definitionID} />
                     )
                   }}
                 >
@@ -178,10 +177,13 @@ const TaskDefinition = props => {
   )
 }
 
-export default props => {
-  return (
-    <TaskDefinition
-      {...omit(props, ["history", "location", "match", "staticContext"])}
-    />
-  )
-}
+export default props => (
+  <ModalContext.Consumer>
+    {ctx => (
+      <TaskDefinition
+        {...omit(props, ["history", "location", "match", "staticContext"])}
+        renderModal={ctx.renderModal}
+      />
+    )}
+  </ModalContext.Consumer>
+)
