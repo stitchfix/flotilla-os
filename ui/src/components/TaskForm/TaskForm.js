@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from "react"
+import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { connect } from "react-redux"
 import { Form as ReactForm } from "react-form"
@@ -15,6 +15,7 @@ import FieldSelect from "../Form/FieldSelect"
 import FieldKeyValue from "../Form/FieldKeyValue"
 import TaskContext from "../Task/TaskContext"
 import api from "../../api"
+import config from "../../config"
 
 import * as requestStateTypes from "../../constants/requestStateTypes"
 
@@ -95,6 +96,7 @@ class TaskForm extends Component {
 
     let ret = {
       memory: get(data, "memory", 1024),
+      image: `${get(config, "IMAGE_PREFIX", "")}IMAGE_NAME:IMAGE_TAG`,
     }
 
     if (type === taskFormTypes.CREATE) {
