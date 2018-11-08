@@ -40,7 +40,6 @@ class TaskForm extends Component {
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
-          console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
@@ -71,6 +70,7 @@ class TaskForm extends Component {
                     options={tagOptions}
                   />
                   <FieldKeyValue
+                    label="Environment Variables"
                     field="env"
                     addValue={formAPI.addValue}
                     removeValue={formAPI.removeValue}

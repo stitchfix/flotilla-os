@@ -3,7 +3,7 @@ import PropTypes from "prop-types"
 
 const Field = ({ label, children, description, error }) => (
   <div className="pl-form-group full-width">
-    <label className="pl-form-group-label">{label}</label>
+    {!!label && <label className="pl-form-group-label">{label}</label>}
     {children}
     {!!error && <div className="pl-form-group-error">{error}</div>}
     {!!description && (
@@ -18,7 +18,7 @@ Field.propTypes = {
   children: PropTypes.node.isRequired,
   description: PropTypes.string,
   error: PropTypes.any,
-  label: PropTypes.string.isRequired,
+  label: PropTypes.string,
 }
 
 Field.defaultProps = {
