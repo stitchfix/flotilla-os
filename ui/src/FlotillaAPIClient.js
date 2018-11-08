@@ -10,7 +10,11 @@ class FlotillaAPIClient {
   constructor({ location }) {
     this.location = location
     this.getTasks = this.getTasks.bind(this)
+    this.getTask = this.getTask.bind(this)
+    this.getTaskHistory = this.getTaskHistory.bind(this)
     this.getActiveRuns = this.getActiveRuns.bind(this)
+    this.createTask = this.createTask.bind(this)
+    this.updateTask = this.updateTask.bind(this)
   }
 
   getTasks(query = { offset: 0, limit: 20 }) {
@@ -22,15 +26,31 @@ class FlotillaAPIClient {
     })
   }
 
-  getActiveRuns(query = { offset: 0, limit: 20 }) {
-    const q = `status=RUNNING&status=PENDING&status=QUEUED&${qs.stringify(
-      query
-    )}`
+  getTask({ definitionID }) {
+    return this._request({
+      method: "get",
+      path: `/task/${definitionID}`,
+      query: null,
+      payload: null,
+    })
+  }
 
+  getTaskHistory(
+    { definitionID, query } = { query: { limit: 20, offset: 0 } }
+  ) {
+    return this._request({
+      method: "get",
+      path: `/task/${definitionID}/history`,
+      query,
+      payload: null,
+    })
+  }
+
+  getActiveRuns(query = { offset: 0, limit: 20 }) {
     return this._request({
       method: "get",
       path: "/history",
-      query: q,
+      query,
       payload: null,
     })
   }
@@ -45,7 +65,7 @@ class FlotillaAPIClient {
       if (isString(query)) {
         q = query
       } else if (isObject(query)) {
-        q = qs.stringify(query)
+        q = qs.stringify(query, { indices: false })
       }
     }
 
