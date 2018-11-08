@@ -24,8 +24,8 @@ const Button = props => {
         <Loader
           mini
           spinnerStyle={{
-            borderColor: colors.gray.gray_2,
-            borderLeftColor: colors.light_gray.light_gray_3,
+            borderColor: colors.gray[2],
+            borderLeftColor: colors.light_gray[3],
           }}
         />
       ) : (

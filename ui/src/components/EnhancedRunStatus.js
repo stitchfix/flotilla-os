@@ -18,23 +18,18 @@ export const getEnhancedStatus = (status, exitCode) => {
 export const getIcon = enhancedStatus => {
   switch (enhancedStatus) {
     case runStatusTypes.queued:
-      return (
-        <Loader mini spinnerStyle={{ borderLeftColor: colors.gray.gray_4 }} />
-      )
+      return <Loader mini spinnerStyle={{ borderLeftColor: colors.gray[4] }} />
     case runStatusTypes.pending:
       return (
-        <Loader
-          mini
-          spinnerStyle={{ borderLeftColor: colors.yellow.yellow_0 }}
-        />
+        <Loader mini spinnerStyle={{ borderLeftColor: colors.yellow[0] }} />
       )
     case runStatusTypes.running:
       return <Loader mini />
     case runStatusTypes.success:
-      return <CheckCircle size={14} color={colors.green.green_0} />
+      return <CheckCircle size={14} color={colors.green[0]} />
     case runStatusTypes.failed:
     case runStatusTypes.needs_retry:
-      return <XCircle size={14} color={colors.red.red_0} />
+      return <XCircle size={14} color={colors.red[0]} />
     default:
       return null
   }

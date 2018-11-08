@@ -58,7 +58,7 @@ export default function RunInfo({ data }) {
                     to={`/runs/${data.run_id}`}
                     style={{
                       textDecoration: "underline",
-                      color: colors.gray.gray_3,
+                      color: colors.gray[3],
                     }}
                   >
                     {data.run_id}
@@ -73,7 +73,7 @@ export default function RunInfo({ data }) {
                     to={`/tasks/${data.definition_id}`}
                     style={{
                       textDecoration: "underline",
-                      color: colors.gray.gray_3,
+                      color: colors.gray[3],
                     }}
                   >
                     {data.definition_id}
