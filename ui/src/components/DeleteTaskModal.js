@@ -1,14 +1,14 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
-
 import ConfirmModal from "./ConfirmModal"
+import api from "../api"
 
 const DeleteTaskModal = props => (
   <ConfirmModal
     body="Are you sure you want to delete this task?"
     getRequestArgs={() => ({ definitionID: props.definitionID })}
-    requestFn={() => Promise.resolve()}
+    requestFn={api.deleteTask}
     onSuccess={() => {
       props.history.push("/tasks")
     }}

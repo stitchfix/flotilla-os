@@ -1,12 +1,12 @@
 import React from "react"
 import PropTypes from "prop-types"
-
 import ConfirmModal from "./ConfirmModal"
+import api from "../api"
 
 const StopRunModal = props => (
   <ConfirmModal
     body="Are you sure you want to stop this run?"
-    requestFn={() => Promise.resolve()}
+    requestFn={api.stopRun}
     getRequestArgs={() => {
       return {
         definitionID: props.definitionID,
