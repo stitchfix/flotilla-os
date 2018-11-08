@@ -101,13 +101,13 @@ class AsyncDataTable extends Component {
    * @param {object} query
    */
   requestData(query) {
-    const { requestFn, limit } = this.props
+    const { getRequestArgs, requestFn, limit } = this.props
 
     let q = omit(query, "page")
     q.offset = AsyncDataTable.pageToOffset(get(query, "page", 1), limit)
     q.limit = limit
 
-    requestFn(q)
+    requestFn(getRequestArgs(q))
       .then(data => {
         this.setState({ data, requestState: requestStates.READY })
       })
@@ -232,6 +232,7 @@ AsyncDataTable.propTypes = {
     })
   ),
   getItems: PropTypes.func.isRequired,
+  getRequestArgs: PropTypes.func.isRequired,
   getTotal: PropTypes.func.isRequired,
   initialQuery: PropTypes.object,
   limit: PropTypes.number.isRequired,
@@ -248,6 +249,7 @@ AsyncDataTable.defaultProps = {
   emptyTableTitle: "This collection is empty",
   filters: {},
   getItems: data => [],
+  getRequestArgs: query => query,
   initialQuery: {},
   limit: 20,
   requestFn: () => {},
