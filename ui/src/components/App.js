@@ -7,11 +7,11 @@ import FlotillaTopbar from "./FlotillaTopbar"
 import ModalContainer from "./ModalContainer"
 import RunContainer from "./RunContainer"
 import TaskByAliasRedirect from "./TaskByAliasRedirect"
-import TaskContainer from "./TaskContainer"
 
 import ActiveRuns from "./ActiveRuns/ActiveRuns"
 import Tasks from "./Tasks/Tasks"
-import { CreateTaskForm } from "./TaskForm/TaskFormView"
+import Task from "./Task/Task"
+import { CreateTaskForm } from "./TaskForm/TaskForm"
 
 export const App = props => {
   const {
@@ -30,7 +30,7 @@ export const App = props => {
           <Route exact path="/runs" component={ActiveRuns} />
           <Route exact path="/tasks" component={Tasks} />
           <Route path="/tasks/alias/:alias" component={TaskByAliasRedirect} />
-          <Route path="/tasks/:definitionId" component={TaskContainer} />
+          <Route path="/tasks/:definitionID" component={Task} />
           <Route path="/runs/:runId" component={RunContainer} />
           {process.env.NODE_ENV !== "test" ? (
             <Redirect from="/" to="/tasks" />
