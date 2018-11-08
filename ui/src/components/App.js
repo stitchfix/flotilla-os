@@ -3,7 +3,6 @@ import { PropTypes } from "prop-types"
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
 import { connect } from "react-redux"
 
-import CreateTaskForm from "./CreateTaskForm"
 import FlotillaTopbar from "./FlotillaTopbar"
 import ModalContainer from "./ModalContainer"
 import RunContainer from "./RunContainer"
@@ -12,6 +11,7 @@ import TaskContainer from "./TaskContainer"
 
 import ActiveRuns from "./ActiveRuns/ActiveRuns"
 import Tasks from "./Tasks/Tasks"
+import { CreateTaskForm } from "./TaskForm/TaskFormView"
 
 export const App = props => {
   const {
