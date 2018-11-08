@@ -55,8 +55,41 @@ class FlotillaAPIClient {
     })
   }
 
-  createTask({ values }) {}
-  updateTask({ definitionID, values }) {}
+  createTask({ values }) {
+    return this._request({
+      method: "post",
+      path: "/task",
+      query: null,
+      payload: values,
+    })
+  }
+
+  updateTask({ definitionID, values }) {
+    return this._request({
+      method: "put",
+      path: `/task/${definitionID}`,
+      query: null,
+      payload: values,
+    })
+  }
+
+  deleteTask({ definitionID }) {
+    return this._request({
+      method: "delete",
+      path: `/task/${definitionID}`,
+      query: null,
+      payload: null,
+    })
+  }
+
+  stopRun({ definitionID, runID }) {
+    return this._request({
+      method: "delete",
+      path: `/task/${definitionID}/history/${runID}`,
+      query: null,
+      payload: null,
+    })
+  }
 
   _constructURL({ path, query }) {
     let q = ""
