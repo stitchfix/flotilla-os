@@ -5,6 +5,7 @@ import { Form as ReactForm } from "react-form"
 import { get, isEmpty } from "lodash"
 
 import Button from "../Button"
+import Loader from "../Loader"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
 
@@ -22,21 +23,76 @@ const taskFormTypes = {
 
 class TaskForm extends Component {
   handleSubmit = values => {
-    console.log(values)
+    const { taskDefinition, type } = this.props
+
+    switch (type) {
+      case taskFormTypes.UPDATE:
+        api
+          .updateTask({
+            definitionID: get(taskDefinition, "definition_id", ""),
+            values,
+          })
+          .then(res => ({
+            // Go back to task definition
+          }))
+          .catch(err => {
+            // handle err
+          })
+        break
+      case taskFormTypes.CREATE:
+      case taskFormTypes.CLONE:
+        api
+          .createTask({ values })
+          .then(res => ({
+            // Go to task definition
+          }))
+          .catch(err => {
+            // handle err
+          })
+        break
+      default:
+        console.warn("TaskForm's `type` prop was not specified, doing nothing.")
+    }
   }
 
-  renderTitle() {}
+  renderTitle() {
+    const { taskDefinition, type } = this.props
+
+    switch (type) {
+      case taskFormTypes.CREATE:
+        return "Create New Task"
+      case taskFormTypes.UPDATE:
+        return `Update ${get(taskDefinition, "definition_id", "Task")}`
+      case taskFormTypes.CLONE:
+        return `Clone ${get(taskDefinition, "definition_id", "Task")}`
+      default:
+        return "Task Form"
+    }
+  }
+
+  getDefaultValues() {
+    const { taskDefinition, type } = this.props
+
+    switch (type) {
+      // @TODO: fill these out
+      case taskFormTypes.UPDATE:
+      case taskFormTypes.CLONE:
+      case taskFormTypes.CREATE:
+      default:
+        return {}
+    }
+  }
 
   render() {
     const { type, groupOptions, tagOptions } = this.props
 
     if (isEmpty(groupOptions) || isEmpty(tagOptions)) {
-      return "loadding"
+      return <Loader />
     }
 
     return (
       <ReactForm
-        // DEFAULT VALUES
+        defaultValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
@@ -44,7 +100,7 @@ class TaskForm extends Component {
             <form onSubmit={formAPI.submitForm}>
               <View>
                 <ViewHeader
-                  title="FILL THIS OUT"
+                  title={this.renderTitle()}
                   actions={
                     <Button type="submit" intent="primary">
                       submit
@@ -81,17 +137,6 @@ class TaskForm extends Component {
             </form>
           )
         }}
-        {/* {fuck => {
-            console.log(fuck)
-            return (
-              <Fragment>
-                <FieldText label="Alias" field="alias" id={type} />
-                
-                
-                <Button type="submit">submit</Button>
-              </Fragment>
-            )
-          }} */}
       </ReactForm>
     )
   }
@@ -110,6 +155,9 @@ TaskForm.propTypes = {
       value: PropTypes.string,
     })
   ),
+
+  // @TODO: fill this out.
+  taskDefinition: PropTypes.object,
   type: PropTypes.oneOf(Object.values(taskFormTypes)),
 }
 
@@ -123,9 +171,17 @@ const ConnectedTaskForm = connect(mapStateToProps)(TaskForm)
 export const CreateTaskForm = () => (
   <ConnectedTaskForm type={taskFormTypes.CREATE} />
 )
-export const UpdateTaskForm = () => (
-  <ConnectedTaskForm type={taskFormTypes.UPDATE} />
+
+export const UpdateTaskForm = ({ taskDefinition }) => (
+  <ConnectedTaskForm
+    type={taskFormTypes.UPDATE}
+    taskDefinition={taskDefinition}
+  />
 )
-export const CloneTaskForm = () => (
-  <ConnectedTaskForm type={taskFormTypes.CLONE} />
+
+export const CloneTaskForm = ({ taskDefinition }) => (
+  <ConnectedTaskForm
+    type={taskFormTypes.CLONE}
+    taskDefinition={taskDefinition}
+  />
 )

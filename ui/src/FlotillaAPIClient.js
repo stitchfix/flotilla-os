@@ -35,6 +35,9 @@ class FlotillaAPIClient {
     })
   }
 
+  createTask({ values }) {}
+  updateTask({ definitionID, values }) {}
+
   _constructURL({ path, query }) {
     let q = ""
 
