@@ -1,18 +1,62 @@
 import React from "react"
-import { asField } from "informed"
+import PropTypes from "prop-types"
+import { Field as RFField } from "react-form"
+import { get } from "lodash"
 import Field from "./Field"
 
-const FieldText = asField(({ fieldState, fieldApi, ...props }) => (
-  <Field label={props.label}>
-    <input
-      type="text"
-      className="pl-input"
-      value={fieldState.value || ""}
-      onChange={evt => {
-        fieldApi.setValue(evt.target.value)
+const FieldText = props => {
+  return (
+    <RFField field={props.field}>
+      {fieldAPI => {
+        const sharedProps = {
+          value: get(fieldAPI, "value", ""),
+          onChange: evt => {
+            fieldAPI.setValue(evt.target.value)
+          },
+        }
+
+        let input
+
+        if (props.isTextArea) {
+          input = <textarea className="pl-textarea" {...sharedProps} />
+        } else {
+          input = (
+            <input
+              type={props.isNumber ? "number" : "text"}
+              className="pl-input"
+              {...sharedProps}
+            />
+          )
+        }
+
+        return (
+          <Field
+            label={props.label}
+            isRequired={props.isRequired}
+            description={props.description}
+            error={fieldAPI.error}
+          >
+            {input}
+          </Field>
+        )
       }}
-    />
-  </Field>
-))
+    </RFField>
+  )
+}
+
+FieldText.propTypes = {
+  description: PropTypes.string,
+  field: PropTypes.string.isRequired,
+  isNumber: PropTypes.bool.isRequired,
+  isRequired: PropTypes.bool.isRequired,
+  isTextArea: PropTypes.bool.isRequired,
+  label: PropTypes.string,
+}
+
+FieldText.defaultProps = {
+  isNumber: false,
+  isRequired: false,
+  isTextArea: false,
+}
 
 export default FieldText
