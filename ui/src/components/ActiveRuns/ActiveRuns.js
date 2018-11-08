@@ -17,12 +17,7 @@ import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 
 class ActiveRuns extends Component {
-  constructor(props) {
-    super(props)
-    this.handleStopButtonClick = this.handleStopButtonClick.bind(this)
-  }
-
-  handleStopButtonClick(runData) {
+  handleStopButtonClick = runData => {
     this.props.dispatch(
       modalActions.renderModal(
         <StopRunModal

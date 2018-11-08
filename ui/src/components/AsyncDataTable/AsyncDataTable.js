@@ -62,7 +62,6 @@ class AsyncDataTable extends Component {
 
     if (!this.areQueriesEqual(prevQ, currQ)) {
       this.requestData(currQ)
-    } else {
     }
   }
 
