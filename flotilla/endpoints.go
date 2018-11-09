@@ -36,6 +36,9 @@ type launchRequest struct {
 
 type launchRequestV2 struct {
 	RunTags RunTags `json:"run_tags"`
+	Command *string
+	Memory  *int64
+	Cpu     *int64
 	*launchRequest
 }
 
@@ -261,7 +264,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown")
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -284,7 +287,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -307,7 +310,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -330,7 +333,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
+	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {

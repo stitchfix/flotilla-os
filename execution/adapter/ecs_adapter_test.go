@@ -80,6 +80,9 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 		ContainerName: "mynameiswhat",
 	}
 
+	cmd := "_overridden_cmd"
+	mem := int64(11)
+	cpu := int64(111)
 	k1 := "ENVVAR_A"
 	k2 := "ENVVAR_B"
 	v1 := "VALUEA"
@@ -93,6 +96,9 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 		ClusterName: "clusta",
 		GroupName:   "groupa",
 		Env:         &env,
+		Command:     &cmd,
+		Memory:      &mem,
+		Cpu:         &cpu,
 	}
 	rti := adapter.AdaptRun(definition, run)
 
@@ -117,6 +123,31 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 				t.Errorf("Expected %s value %v but was %v", k2, v2, *e.Value)
 			}
 		}
+
+		if ovrdCmd := rti.Overrides.ContainerOverrides[0].Command; len(ovrdCmd) != 1 {
+			t.Errorf("Unexpected command override len: [%d]", len(ovrdCmd))
+		} else {
+			if *ovrdCmd[0] != cmd {
+				t.Errorf("Expected command [%s], got [%s]", cmd, *ovrdCmd[0])
+			}
+		}
+
+		if ovrdMem := rti.Overrides.ContainerOverrides[0].Memory; ovrdMem == nil {
+			t.Errorf("Expected non-nil mem override")
+		} else {
+			if *ovrdMem != mem {
+				t.Errorf("Expcted mem [%d], got [%d]", mem, *ovrdMem)
+			}
+		}
+
+		if ovrdCpu := rti.Overrides.ContainerOverrides[0].Cpu; ovrdCpu == nil {
+			t.Errorf("Expected non-nil cpu override")
+		} else {
+			if *ovrdCpu != cpu {
+				t.Errorf("Expcted mem [%d], got [%d]", cpu, *ovrdCpu)
+			}
+		}
+
 	} else {
 		t.Errorf("Expected non-nil and non empty container overrides")
 	}
