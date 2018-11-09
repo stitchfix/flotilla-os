@@ -135,10 +135,6 @@ class AsyncDataTable extends Component {
         const items = getItems(data)
         const total = getTotal(data)
 
-        if (isEmpty(items)) {
-          return <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
-        }
-
         return (
           <div className="flot-list-view">
             {!isEmpty(filters) && (
@@ -157,32 +153,36 @@ class AsyncDataTable extends Component {
                 </div>
               </Card>
             )}
-            <div className="pl-table pl-bordered">
-              <div className="pl-tr">
-                {Object.keys(columns).map(key => (
-                  <AsyncDataTableSortHeader
-                    allowSort={columns[key].allowSort}
-                    displayName={columns[key].displayName}
-                    sortKey={key}
-                    key={key}
-                    width={columns[key].width}
-                  />
-                ))}
-              </div>
-              {items.map((item, i) => (
-                <div className="pl-tr hoverable" key={i}>
+            {isEmpty(items) ? (
+              <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
+            ) : (
+              <div className="pl-table pl-bordered">
+                <div className="pl-tr">
                   {Object.keys(columns).map(key => (
-                    <div
-                      className="pl-td"
-                      key={`${i}-${key}`}
-                      style={{ flex: get(columns[key], "width", 1) }}
-                    >
-                      {columns[key].render(item)}
-                    </div>
+                    <AsyncDataTableSortHeader
+                      allowSort={columns[key].allowSort}
+                      displayName={columns[key].displayName}
+                      sortKey={key}
+                      key={key}
+                      width={columns[key].width}
+                    />
                   ))}
                 </div>
-              ))}
-            </div>
+                {items.map((item, i) => (
+                  <div className="pl-tr hoverable" key={i}>
+                    {Object.keys(columns).map(key => (
+                      <div
+                        className="pl-td"
+                        key={`${i}-${key}`}
+                        style={{ flex: get(columns[key], "width", 1) }}
+                      >
+                        {columns[key].render(item)}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
             <div
               className="table-footer"
               style={{

@@ -91,6 +91,15 @@ class FlotillaAPIClient {
     })
   }
 
+  getRun({ runID }) {
+    return this._request({
+      method: "get",
+      path: `/task/history/${runID}`,
+      query: null,
+      payload: null,
+    })
+  }
+
   _constructURL({ path, query }) {
     let q = ""
 

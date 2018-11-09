@@ -8,6 +8,7 @@ import FlotillaTopbar from "../FlotillaTopbar"
 import ActiveRuns from "../ActiveRuns/ActiveRuns"
 import Tasks from "../Tasks/Tasks"
 import Task from "../Task/Task"
+import Run from "../Run/Run"
 import { CreateTaskForm } from "../TaskForm/TaskForm"
 
 import ModalContainer from "../Modal/ModalContainer"
@@ -24,7 +25,7 @@ const App = () => (
           <Route exact path="/tasks" component={Tasks} />
           {/* <Route path="/tasks/alias/:alias" component={TaskByAliasRedirect} /> */}
           <Route path="/tasks/:definitionID" component={Task} />
-          {/* <Route path="/runs/:runId" component={RunContainer} /> */}
+          <Route path="/runs/:runID" component={Run} />
           {process.env.NODE_ENV !== "test" ? (
             <Redirect from="/" to="/tasks" />
           ) : null}

@@ -8,8 +8,8 @@ import moment from "moment"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import Button from "../Button"
-import EnhancedRunStatus from "../EnhancedRunStatus"
-import StopRunModal from "../StopRunModal"
+import RunStatus from "../Run/RunStatus"
+import StopRunModal from "../Modal/StopRunModal"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
 import runStatusTypes from "../../constants/runStatusTypes"
@@ -59,7 +59,7 @@ class ActiveRuns extends Component {
               allowSort: true,
               displayName: "Status",
               render: item => (
-                <EnhancedRunStatus
+                <RunStatus
                   status={get(item, "status")}
                   exitCode={get(item, "exit_code")}
                 />

@@ -1,13 +1,13 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import Button from "./Button"
-import ButtonGroup from "./ButtonGroup"
-import Card from "./Card"
-import ModalContext from "./Modal/ModalContext"
-import Modal from "./Modal/Modal"
-import PopupContext from "./Popup/PopupContext"
-import Popup from "./Popup/Popup"
-import * as intentTypes from "../constants/intentTypes"
+import Button from "../Button"
+import ButtonGroup from "../ButtonGroup"
+import Card from "../Card"
+import ModalContext from "./ModalContext"
+import Modal from "./Modal"
+import PopupContext from "../Popup/PopupContext"
+import Popup from "../Popup/Popup"
+import * as intentTypes from "../../constants/intentTypes"
 
 class ConfirmModal extends Component {
   state = {

@@ -5,11 +5,11 @@ import moment from "moment"
 import { get, has } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import api from "../../api"
-import EnhancedRunStatus from "../EnhancedRunStatus"
+import RunStatus from "../Run/RunStatus"
 import Button from "../Button"
 import runStatusTypes from "../../constants/runStatusTypes"
 import getRunDuration from "../../utils/getRunDuration"
-import StopRunModal from "../StopRunModal"
+import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
 
 class TaskHistoryTable extends Component {
@@ -60,7 +60,7 @@ class TaskHistoryTable extends Component {
             allowSort: true,
             displayName: "Status",
             render: item => (
-              <EnhancedRunStatus
+              <RunStatus
                 status={get(item, "status")}
                 exitCode={get(item, "exit_code")}
               />

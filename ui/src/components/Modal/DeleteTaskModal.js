@@ -2,7 +2,7 @@ import React from "react"
 import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
 import ConfirmModal from "./ConfirmModal"
-import api from "../api"
+import api from "../../api"
 
 const DeleteTaskModal = props => (
   <ConfirmModal

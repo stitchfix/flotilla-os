@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import ConfirmModal from "./ConfirmModal"
-import api from "../api"
+import api from "../../api"
 
 const StopRunModal = props => (
   <ConfirmModal
