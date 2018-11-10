@@ -8,9 +8,9 @@ export default {
   /** Prefix for Docker images, e.g. `my-docker-repository:4567` */
   IMAGE_PREFIX: process.env.IMAGE_PREFIX || "",
 
-  /** The rate at which run data will be requested in the RunView */
+  /** The rate at which run data will be requested in the RunView component. */
   RUN_REQUEST_INTERVAL_MS: 10000,
 
-  /** The rate at which run logs will be requested in the RunLogs component */
+  /** The rate at which run logs will be requested in the RunLogs component. */
   RUN_LOGS_REQUEST_INTERVAL_MS: 5000,
 }
