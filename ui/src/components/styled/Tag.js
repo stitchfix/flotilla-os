@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import cn from "classnames"
-import intentTypes from "../constants/intentTypes"
+import intentTypes from "../../constants/intentTypes"
 
 const Tag = props => (
   <div

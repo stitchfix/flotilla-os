@@ -4,8 +4,8 @@ import { get, has } from "lodash"
 import Card from "./Card"
 import EnhancedRunStatus from "./EnhancedRunStatus"
 import FormGroup from "./FormGroup"
-import runStatusTypes from "../constants/runStatusTypes"
-import getRunDuration from "../utils/getRunDuration"
+import runStatusTypes from "../../constants/runStatusTypes"
+import getRunDuration from "../../utils/getRunDuration"
 
 class RunStatusBar extends Component {
   static propTypes = {

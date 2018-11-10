@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import cn from "classnames"
-import Button from "../Button"
+import Button from "../styled/Button"
 import intentTypes from "../../constants/intentTypes"
 
 export default class Popup extends Component {

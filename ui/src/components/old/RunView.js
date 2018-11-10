@@ -8,13 +8,13 @@ import Button from "./Button"
 import EnhancedRunStatus, { getEnhancedStatus } from "./EnhancedRunStatus"
 import RunInfo from "./RunInfo"
 import RunLogs from "./RunLogs"
-import StopRunModal from "./Modal/StopRunModal"
+import StopRunModal from "../Modal/StopRunModal"
 import ViewHeader from "./ViewHeader"
 import modalActions from "../actions/modalActions"
-import intentTypes from "../constants/intentTypes"
-import runStatusTypes from "../constants/runStatusTypes"
-import getRetryEnv from "../utils/getRetryEnv"
-import getHelmetTitle from "../utils/getHelmetTitle"
+import intentTypes from "../../constants/intentTypes"
+import runStatusTypes from "../../constants/runStatusTypes"
+import getRetryEnv from "../../utils/getRetryEnv"
+import getHelmetTitle from "../../utils/getHelmetTitle"
 
 const getHelmetEmoji = enhancedStatus => {
   switch (enhancedStatus) {

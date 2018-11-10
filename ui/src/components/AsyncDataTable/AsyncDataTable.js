@@ -2,21 +2,14 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { get, isEmpty, omit, isObject, size, has, toString } from "lodash"
-
-import Card from "../Card"
-import EmptyTable from "../EmptyTable"
-
+import Card from "../styled/Card"
+import EmptyTable from "../styled/EmptyTable"
 import AsyncDataTableFilter, {
   asyncDataTableFilterTypes,
 } from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
 import AsyncDataTablePagination from "./AsyncDataTablePagination"
-
-const requestStates = {
-  READY: "READY",
-  ERROR: "ERROR",
-  NOT_READY: "NOT_READY",
-}
+import * as requestStateTypes from "../../constants/requestStateTypes"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -30,7 +23,7 @@ class AsyncDataTable extends Component {
   static pageToOffset = (page, limit) => (+page - 1) * +limit
 
   state = {
-    requestState: requestStates.NOT_READY,
+    requestState: requestStateTypes.NOT_READY,
     data: null,
     error: false,
     inFlight: false,
@@ -108,7 +101,7 @@ class AsyncDataTable extends Component {
 
     requestFn(getRequestArgs(q))
       .then(data => {
-        this.setState({ data, requestState: requestStates.READY })
+        this.setState({ data, requestState: requestStateTypes.READY })
       })
       .catch(error => {
         this.setState({ error })
@@ -128,10 +121,10 @@ class AsyncDataTable extends Component {
     const { requestState, data, error } = this.state
 
     switch (requestState) {
-      case requestStates.ERROR:
+      case requestStateTypes.ERROR:
         const errorDisplay = error.toString() || "An error occurred."
         return <EmptyTable title={errorDisplay} error />
-      case requestStates.READY:
+      case requestStateTypes.READY:
         const items = getItems(data)
         const total = getTotal(data)
 
@@ -196,7 +189,7 @@ class AsyncDataTable extends Component {
             </div>
           </div>
         )
-      case requestStates.NOT_READY:
+      case requestStateTypes.NOT_READY:
       default:
         return <EmptyTable isLoading />
     }

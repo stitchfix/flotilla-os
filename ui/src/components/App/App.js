@@ -1,24 +1,19 @@
 import React from "react"
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
-
-import FlotillaTopbar from "../FlotillaTopbar"
-// import RunContainer from "../RunContainer"
-// import TaskByAliasRedirect from "../TaskByAliasRedirect"
-
 import ActiveRuns from "../ActiveRuns/ActiveRuns"
 import Tasks from "../Tasks/Tasks"
 import Task from "../Task/Task"
 import Run from "../Run/Run"
 import { CreateTaskForm } from "../TaskForm/TaskForm"
-
 import ModalContainer from "../Modal/ModalContainer"
 import PopupContainer from "../Popup/PopupContainer"
+import Navigation from "./Navigation"
 
 const App = () => (
   <BrowserRouter>
     <ModalContainer>
       <PopupContainer>
-        <FlotillaTopbar />
+        <Navigation />
         <Switch>
           <Route exact path="/tasks/create" component={CreateTaskForm} />
           <Route exact path="/runs" component={ActiveRuns} />

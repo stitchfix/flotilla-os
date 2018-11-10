@@ -5,8 +5,8 @@ import { get } from "lodash"
 import RunMiniView from "./RunMiniView"
 import RunView from "./RunView"
 import withStateFetch from "./withStateFetch"
-import runStatusTypes from "../constants/runStatusTypes"
-import config from "../config"
+import runStatusTypes from "../../constants/runStatusTypes"
+import config from "../../config"
 
 const interval = 5000
 const getUrl = runId => `${config.FLOTILLA_API}/task/history/${runId}`

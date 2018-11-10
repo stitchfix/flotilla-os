@@ -3,7 +3,7 @@ import { Redirect } from "react-router-dom"
 import { connect } from "react-redux"
 import View from "./View"
 import withStateFetch from "./withStateFetch"
-import config from "../config"
+import config from "../../config"
 
 export class TaskByAliasRedirect extends Component {
   constructor(props) {

@@ -3,7 +3,7 @@ import PropTypes from "prop-types"
 import { NestedField } from "react-form"
 import { X } from "react-feather"
 import FieldText from "./FieldText"
-import Button from "../Button"
+import Button from "../styled/Button"
 import intentTypes from "../../constants/intentTypes"
 
 class FieldKeyValue extends Component {

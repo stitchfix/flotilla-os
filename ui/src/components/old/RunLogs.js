@@ -7,10 +7,10 @@ import axios from "axios"
 import { ChevronUp, ChevronDown } from "react-feather"
 import Button from "./Button"
 import Card from "./Card"
-import EmptyTable from "./EmptyTable"
+import EmptyTable from "../styled/EmptyTable"
 import Loader from "./Loader"
-import runStatusTypes from "../constants/runStatusTypes"
-import config from "../config"
+import runStatusTypes from "../../constants/runStatusTypes"
+import config from "../../config"
 
 export default class RunLogs extends Component {
   static propTypes = {

@@ -3,8 +3,8 @@ import { get } from "lodash"
 import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
 import RunLogs from "./RunLogs"
-import View from "../View"
-import ViewHeader from "../ViewHeader"
+import View from "../styled/View"
+import ViewHeader from "../styled/ViewHeader"
 
 const RunView = props => {
   return (

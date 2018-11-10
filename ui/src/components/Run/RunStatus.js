@@ -5,7 +5,7 @@ import { capitalize } from "lodash"
 import { CheckCircle, XCircle } from "react-feather"
 import colors from "../../constants/colors"
 import runStatusTypes from "../../constants/runStatusTypes"
-import Loader from "../Loader"
+import Loader from "../styled/Loader"
 
 const RunStatusContainer = styled.div`
   display: flex;

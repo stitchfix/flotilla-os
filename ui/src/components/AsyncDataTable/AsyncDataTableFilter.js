@@ -4,8 +4,7 @@ import withQueryParams from "react-router-query-params"
 import DebounceInput from "react-debounce-input"
 import Select from "react-select"
 import { get, has } from "lodash"
-
-import FormGroup from "../FormGroup"
+import FormGroup from "../styled/FormGroup"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",

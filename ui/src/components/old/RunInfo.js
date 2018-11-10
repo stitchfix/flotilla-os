@@ -6,8 +6,8 @@ import moment from "moment"
 import FormGroup from "./FormGroup"
 import KeyValueContainer from "./KeyValueContainer"
 import RunStatusBar from "./RunStatusBar"
-import colors from "../constants/colors"
-import reactJsonViewProps from "../constants/reactJsonViewProps"
+import colors from "../../constants/colors"
+import reactJsonViewProps from "../../constants/reactJsonViewProps"
 
 export default function RunInfo({ data }) {
   return (

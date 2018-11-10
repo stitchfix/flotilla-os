@@ -1,6 +1,6 @@
 import React from "react"
 import PropTypes from "prop-types"
-import Card from "../Card"
+import Card from "../styled/Card"
 
 const Form = ({ children }) => (
   <Card containerStyle={{ maxWidth: 600 }} contentStyle={{ padding: 0 }}>

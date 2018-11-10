@@ -1,8 +1,8 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import colors from "../constants/colors"
-import intentTypes from "../constants/intentTypes"
+import colors from "../../constants/colors"
+import intentTypes from "../../constants/intentTypes"
 import Loader from "./Loader"
 
 const StyledButton = styled.button`
