@@ -20,7 +20,7 @@ class FieldKeyValue extends Component {
   }
 
   render() {
-    const { field, values, label } = this.props
+    const { field, values, label, keyField, valueField } = this.props
 
     return (
       <div>
@@ -33,7 +33,9 @@ class FieldKeyValue extends Component {
           }}
         >
           <div>{label}</div>
-          <Button onClick={this.handleAddClick}>Add</Button>
+          <Button onClick={this.handleAddClick} type="button">
+            Add
+          </Button>
         </div>
         {!!values &&
           values.map((v, i) => (
@@ -47,12 +49,12 @@ class FieldKeyValue extends Component {
                 }}
               >
                 <FieldText
-                  field="key"
+                  field={keyField}
                   label={i === 0 ? "Key" : null}
                   isRequired
                 />
                 <FieldText
-                  field="value"
+                  field={valueField}
                   label={i === 0 ? "Value" : null}
                   isRequired
                 />
@@ -77,9 +79,17 @@ FieldKeyValue.displayName = "FieldKeyValue"
 FieldKeyValue.propTypes = {
   addValue: PropTypes.func.isRequired,
   field: PropTypes.string.isRequired,
+  keyField: PropTypes.string.isRequired,
+
   label: PropTypes.string,
   removeValue: PropTypes.func.isRequired,
+  valueField: PropTypes.string.isRequired,
   values: PropTypes.array.isRequired,
+}
+
+FieldKeyValue.defaultProps = {
+  keyField: "name",
+  valueField: "value",
 }
 
 export default FieldKeyValue
