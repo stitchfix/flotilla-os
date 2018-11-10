@@ -32,9 +32,9 @@ const fetchDropdownOpts = () => dispatch => {
 
   axios
     .all([
-      axios.get(`${config.FLOTILLA_API}/groups?limit=2000`),
-      axios.get(`${config.FLOTILLA_API}/clusters`),
-      axios.get(`${config.FLOTILLA_API}/tags?limit=5000`),
+      axios.get(`${config.FLOTILLA_API}/v1/groups?limit=2000`),
+      axios.get(`${config.FLOTILLA_API}/v1/clusters`),
+      axios.get(`${config.FLOTILLA_API}/v1/tags?limit=5000`),
     ])
     .then(
       axios.spread((group, cluster, tag) => {
