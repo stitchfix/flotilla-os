@@ -131,10 +131,7 @@ class AsyncDataTable extends Component {
         return (
           <div className="flot-list-view">
             {!isEmpty(filters) && (
-              <Card
-                className="flot-list-view-filters-container"
-                contentStyle={{ padding: 0 }}
-              >
+              <Card>
                 <div className="flot-list-view-filters">
                   {Object.keys(filters).map(key => (
                     <AsyncDataTableFilter

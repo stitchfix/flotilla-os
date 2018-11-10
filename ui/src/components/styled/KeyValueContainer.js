@@ -33,29 +33,18 @@ export default class KeyValueContainer extends Component {
   }
   render() {
     const { json, collapsed } = this.state
-    const { header, children, cardProps } = this.props
+    const { header, children } = this.props
     return (
       <Card
-        header={
-          <div className="flex ff-rn j-sb a-c full-width">
-            <div>{header}</div>
-            <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
-              <Button onClick={this.handleJsonButtonClick}>
-                {!!json ? "Normal View" : "JSON View"}
-              </Button>
-              <Button onClick={this.handleCollapseButtonClick}>
-                {!!collapsed ? (
-                  <ChevronDown size={14} />
-                ) : (
-                  <ChevronUp size={14} />
-                )}
-              </Button>
-            </div>
-          </div>
-        }
-        collapsed={collapsed}
-        contentStyle={{ padding: 0 }}
-        {...cardProps}
+        title={header}
+        actions={[
+          <Button onClick={this.handleJsonButtonClick}>
+            {!!json ? "Normal View" : "JSON View"}
+          </Button>,
+          <Button onClick={this.handleCollapseButtonClick}>
+            {!!collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </Button>,
+        ]}
       >
         {children(this.getState())}
       </Card>

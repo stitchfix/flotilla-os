@@ -1,50 +1,70 @@
 import React from "react"
 import PropTypes from "prop-types"
-import cn from "classnames"
+import styled from "styled-components"
+import colors from "../../constants/colors"
+import { DEFAULT_BORDER, SPACING_PX } from "../../constants/styles"
+import ButtonGroup from "./ButtonGroup"
 
-const Card = props => {
-  const className = cn({
-    "pl-card-container": true,
-    "pl-hoverable": !!props.hoverable,
-  })
+const CARD_HEADER_FOOTER_HEIGHT_PX = 48
+
+const CardContainer = styled.div`
+  background: ${colors.black[0]};
+  border: ${DEFAULT_BORDER};
+  width: 100%;
+`
+
+const CardHeader = styled.div`
+  border-bottom: ${DEFAULT_BORDER};
+  background: inherit;
+  min-height: ${CARD_HEADER_FOOTER_HEIGHT_PX}px;
+  width: 100%;
+  padding: ${SPACING_PX}px;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+`
+
+const CardContent = styled.div`
+  padding: ${SPACING_PX}px;
+`
+
+const CardFooter = styled.div`
+  border-top: ${DEFAULT_BORDER};
+  background: inherit;
+  min-height: ${CARD_HEADER_FOOTER_HEIGHT_PX}px;
+  width: 100%;
+  padding: ${SPACING_PX}px;
+`
+
+const Card = ({ title, actions, footerActions, children }) => {
+  const shouldRenderHeader = !!title || !!actions
+  const shouldRenderFooter = !!footerActions
 
   return (
-    <div
-      className={`${props.className} ${className}`}
-      style={props.containerStyle}
-    >
-      {!!props.header && (
-        <div className="pl-card-header-container">{props.header}</div>
+    <CardContainer>
+      {shouldRenderHeader && (
+        <CardHeader>
+          <div>{title}</div>
+          <ButtonGroup>{actions}</ButtonGroup>
+        </CardHeader>
       )}
-      {!props.collapsed && (
-        <div className="pl-card-content" style={props.contentStyle}>
-          {props.children}
-        </div>
+      <CardContent>{children}</CardContent>
+      {shouldRenderFooter && (
+        <CardFooter>
+          <ButtonGroup>{footerActions}</ButtonGroup>
+        </CardFooter>
       )}
-      {!!props.footer && (
-        <div className="pl-card-footer-container">{props.footer}</div>
-      )}
-    </div>
+    </CardContainer>
   )
 }
 
 Card.displayName = "Card"
 Card.propTypes = {
+  actions: PropTypes.node,
   children: PropTypes.node,
-  className: PropTypes.string,
-  collapsed: PropTypes.bool,
-  containerStyle: PropTypes.object,
-  contentStyle: PropTypes.object,
-  footer: PropTypes.node,
-  header: PropTypes.node,
-  hoverable: PropTypes.bool,
-}
-Card.defaultProps = {
-  containerStyle: {},
-  contentStyle: {},
-  hoverable: false,
-  className: "",
-  collapsed: false,
+  footerActions: PropTypes.node,
+  title: PropTypes.node,
 }
 
 export default Card

@@ -8,7 +8,6 @@
 @import "./utils/utils.scss";
 
 @import "./primitives/button.scss";
-@import "./primitives/card.scss";
 @import "./primitives/form.scss";
 @import "./primitives/loader.scss";
 @import "./primitives/modal.scss";
@@ -237,9 +236,9 @@ img.topbar-logo {
   @media (min-width: $flot-view-breakpoint-medium) {
     &.flot-run-view {
       .flot-detail-view-sidebar {
-        max-height: calc(
-          100vh - #{$topbar-height} - #{$view-header-height} - #{$spacing * 2}
-        );
+        // max-height: calc(
+        //   100vh - #{$topbar-height} - #{$view-header-height} - #{$spacing * 2}
+        // );
         overflow-y: scroll;
         padding-bottom: $spacing * 2;
       }

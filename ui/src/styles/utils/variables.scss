@@ -43,34 +43,6 @@ $default-font-weight: 300;
 $secondary-font-color: $gray_0;
 
 //
-// Topbar
-//
-$topbar-bg: $black_2;
-$topbar-border-bottom: $default-border;
-$topbar-box-shadow: none;
-$topbar-font-color: $default-font-color;
-$topbar-height: 48px;
-$topbar-el-spacing: $spacing;
-
-$topbar-app-name-font-size: 1.05rem;
-$topbar-app-name-font-weight: 300;
-$topbar-app-name-letter-spacing: 0.04rem;
-$topbar-app-name-margin-right: $topbar-el-spacing;
-
-$topbar-nav-link-border: 1px solid $black_4;
-$topbar-nav-link-hover-bg: $black_1;
-$topbar-nav-link-hover-color: $color-primary;
-
-//
-// View Header
-//
-$view-header-bg: transparentize($black_0, 0.05);
-$view-header-border-bottom: $default-border;
-$view-header-box-shadow: 0px 2px 8px 1px rgba(0, 0, 0, 0.05);
-$view-header-font-color: $default-font-color;
-$view-header-height: 80px;
-
-//
 // Buttons
 //
 $button-bg: $black_3;
@@ -94,16 +66,6 @@ $button-small-padding: 0 8px;
 $button-invert-bg: $white;
 $button-invert-box-shadow: none;
 $button-invert-color: $black_0;
-
-//
-// Cards
-//
-$card-bg: $black_0;
-$card-border-radius: 0;
-$card-border: $default-border;
-$card-box-shadow: none;
-$card-header-bg: $black_1;
-$card-inner-padding: $spacing;
 
 //
 // Forms

@@ -65,19 +65,17 @@ class ConfirmModal extends Component {
     return (
       <Modal>
         <Card
-          header={title}
-          footer={
-            <ButtonGroup>
-              <Button onClick={unrenderModal}>Cancel</Button>
-              <Button
-                intent={intentTypes.error}
-                onClick={this.handleConfirm}
-                isLoading={inFlight}
-              >
-                Delete Task
-              </Button>
-            </ButtonGroup>
-          }
+          title={title}
+          footerActions={[
+            <Button onClick={unrenderModal}>Cancel</Button>,
+            <Button
+              intent={intentTypes.error}
+              onClick={this.handleConfirm}
+              isLoading={inFlight}
+            >
+              Delete Task
+            </Button>,
+          ]}
         >
           {!!error && error}
           {body}
