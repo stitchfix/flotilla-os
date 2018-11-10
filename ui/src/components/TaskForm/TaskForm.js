@@ -29,6 +29,16 @@ const taskFormTypes = {
 }
 
 class TaskForm extends Component {
+  static transformValues = values =>
+    Object.keys(values).reduce((acc, k) => {
+      if (k === "memory") {
+        acc[k] = +values[k]
+      } else {
+        acc[k] = values[k]
+      }
+
+      return acc
+    }, {})
   handleSubmit = values => {
     const { data, type, push, renderPopup } = this.props
 
@@ -37,7 +47,7 @@ class TaskForm extends Component {
         api
           .updateTask({
             definitionID: get(data, "definition_id", ""),
-            values,
+            values: TaskForm.transformValues(values),
           })
           .then(responseData => {
             push(`/tasks/${get(responseData, "definition_id", "")}`)
