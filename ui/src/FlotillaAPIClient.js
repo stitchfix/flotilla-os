@@ -20,7 +20,7 @@ class FlotillaAPIClient {
   getTasks(query = { offset: 0, limit: 20 }) {
     return this._request({
       method: "get",
-      path: "/task",
+      path: "/v1/task",
       query,
       payload: null,
     })
@@ -29,7 +29,7 @@ class FlotillaAPIClient {
   getTask({ definitionID }) {
     return this._request({
       method: "get",
-      path: `/task/${definitionID}`,
+      path: `/v1/task/${definitionID}`,
       query: null,
       payload: null,
     })
@@ -40,7 +40,7 @@ class FlotillaAPIClient {
   ) {
     return this._request({
       method: "get",
-      path: `/task/${definitionID}/history`,
+      path: `/v1/task/${definitionID}/history`,
       query,
       payload: null,
     })
@@ -49,7 +49,7 @@ class FlotillaAPIClient {
   getActiveRuns(query = { offset: 0, limit: 20 }) {
     return this._request({
       method: "get",
-      path: "/history",
+      path: "/v1/history",
       query,
       payload: null,
     })
@@ -58,7 +58,7 @@ class FlotillaAPIClient {
   createTask({ values }) {
     return this._request({
       method: "post",
-      path: "/task",
+      path: "/v1/task",
       query: null,
       payload: values,
     })
@@ -67,7 +67,7 @@ class FlotillaAPIClient {
   updateTask({ definitionID, values }) {
     return this._request({
       method: "put",
-      path: `/task/${definitionID}`,
+      path: `/v1/task/${definitionID}`,
       query: null,
       payload: values,
     })
@@ -76,16 +76,25 @@ class FlotillaAPIClient {
   deleteTask({ definitionID }) {
     return this._request({
       method: "delete",
-      path: `/task/${definitionID}`,
+      path: `/v1/task/${definitionID}`,
       query: null,
       payload: null,
+    })
+  }
+
+  runTask({ definitionID, values }) {
+    return this._request({
+      method: "put",
+      path: `/v4/task/${definitionID}/execute`,
+      query: null,
+      payload: values,
     })
   }
 
   stopRun({ definitionID, runID }) {
     return this._request({
       method: "delete",
-      path: `/task/${definitionID}/history/${runID}`,
+      path: `/v1/task/${definitionID}/history/${runID}`,
       query: null,
       payload: null,
     })
@@ -94,7 +103,7 @@ class FlotillaAPIClient {
   getRun({ runID }) {
     return this._request({
       method: "get",
-      path: `/task/history/${runID}`,
+      path: `/v1/task/history/${runID}`,
       query: null,
       payload: null,
     })
