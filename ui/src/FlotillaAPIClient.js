@@ -109,6 +109,21 @@ class FlotillaAPIClient {
     })
   }
 
+  getRunLogs({ runID, lastSeen }) {
+    let q
+
+    if (!!lastSeen) {
+      q.last_seen = lastSeen
+    }
+
+    return this._request({
+      method: "get",
+      path: `/v1/${runID}/logs`,
+      query: q,
+      payload: null,
+    })
+  }
+
   _constructURL({ path, query }) {
     let q = ""
 
