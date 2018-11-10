@@ -2,7 +2,7 @@ import React from "react"
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
 import ActiveRuns from "../ActiveRuns/ActiveRuns"
 import Tasks from "../Tasks/Tasks"
-import Task from "../Task/Task"
+import TaskRouter from "../Task/TaskRouter"
 import Run from "../Run/Run"
 import { CreateTaskForm } from "../TaskForm/TaskForm"
 import ModalContainer from "../Modal/ModalContainer"
@@ -19,7 +19,7 @@ const App = () => (
           <Route exact path="/runs" component={ActiveRuns} />
           <Route exact path="/tasks" component={Tasks} />
           {/* <Route path="/tasks/alias/:alias" component={TaskByAliasRedirect} /> */}
-          <Route path="/tasks/:definitionID" component={Task} />
+          <Route path="/tasks/:definitionID" component={TaskRouter} />
           <Route path="/runs/:runID" component={Run} />
           {process.env.NODE_ENV !== "test" ? (
             <Redirect from="/" to="/tasks" />

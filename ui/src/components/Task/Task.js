@@ -1,14 +1,9 @@
 import React, { Component, createContext } from "react"
 import PropTypes from "prop-types"
-import { Switch, Route } from "react-router-dom"
-import { get, omit, isEqual } from "lodash"
-
+import { isEqual } from "lodash"
 import * as requestStateTypes from "../../constants/requestStateTypes"
 import api from "../../api"
 import TaskContext from "./TaskContext"
-import TaskDefinition from "./TaskDefinition"
-import RunForm from "../RunForm/RunForm"
-import { UpdateTaskForm, CloneTaskForm } from "../TaskForm/TaskForm"
 
 class Task extends Component {
   state = {
@@ -59,30 +54,19 @@ class Task extends Component {
   }
 
   render() {
-    const { rootPath } = this.props
+    const { children } = this.props
 
     return (
       <TaskContext.Provider value={this.getCtx()}>
-        <Switch>
-          <Route exact path={rootPath} component={TaskDefinition} />
-          <Route exact path={`${rootPath}/run`} component={RunForm} />
-          <Route exact path={`${rootPath}/copy`} component={CloneTaskForm} />
-          <Route exact path={`${rootPath}/edit`} component={UpdateTaskForm} />
-        </Switch>
+        {children}
       </TaskContext.Provider>
     )
   }
 }
 
 Task.propTypes = {
+  children: PropTypes.node,
   definitionID: PropTypes.string.isRequired,
-  rootPath: PropTypes.string.isRequired,
 }
 
-export default props => (
-  <Task
-    {...omit(props, ["history", "location", "match", "staticContext"])}
-    definitionID={get(props, ["match", "params", "definitionID"], "")}
-    rootPath={get(props, ["match", "url"], "")}
-  />
-)
+export default Task
