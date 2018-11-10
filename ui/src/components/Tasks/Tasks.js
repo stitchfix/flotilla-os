@@ -11,92 +11,86 @@ import ViewHeader from "../ViewHeader"
 import api from "../../api"
 import config from "../../config"
 
-const Tasks = props => {
-  return (
-    <View>
-      <Helmet>
-        <title>Tasks</title>
-      </Helmet>
-      <ViewHeader
-        title="Tasks"
-        actions={
-          <Link className="pl-button pl-intent-primary" to="/tasks/create">
-            Create New Task
-          </Link>
-        }
-      />
-      <AsyncDataTable
-        requestFn={api.getTasks}
-        shouldRequest={(prevProps, currProps) => false}
-        columns={{
-          run_task: {
-            allowSort: false,
-            displayName: "Run",
-            render: item => (
-              <Link
-                className="pl-button"
-                to={`/tasks/${item.definition_id}/run`}
-              >
-                Run
-              </Link>
-            ),
-          },
-          alias: {
-            allowSort: true,
-            displayName: "Alias",
-            render: item => (
-              <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
-            ),
-            width: 3,
-          },
-          group_name: {
-            allowSort: true,
-            displayName: "Group Name",
-            render: item => item.group_name,
-          },
-          image: {
-            allowSort: true,
-            displayName: "Image",
-            render: item => item.image.substr(config.IMAGE_PREFIX.length),
-          },
-          memory: {
-            allowSort: true,
-            displayName: "Memory",
-            render: item => item.memory,
-          },
-        }}
-        getItems={data => data.definitions}
-        getTotal={data => data.total}
-        filters={{
-          alias: {
-            displayName: "Alias",
-            type: asyncDataTableFilterTypes.INPUT,
-          },
-          group_name: {
-            displayName: "Group Name",
-            type: asyncDataTableFilterTypes.SELECT,
-            options: props.groupOptions,
-          },
-          image: {
-            displayName: "Image",
-            type: asyncDataTableFilterTypes.INPUT,
-          },
-        }}
-        initialQuery={{
-          page: 1,
-          sort_by: "alias",
-          order: "asc",
-        }}
-        emptyTableTitle="No tasks were found. Create one?"
-        emptyTableBody={
-          <Link className="pl-button pl-intent-primary" to="/tasks/create">
-            Create New Task
-          </Link>
-        }
-      />
-    </View>
-  )
-}
+const Tasks = props => (
+  <View>
+    <Helmet>
+      <title>Tasks</title>
+    </Helmet>
+    <ViewHeader
+      title="Tasks"
+      actions={
+        <Link className="pl-button pl-intent-primary" to="/tasks/create">
+          Create New Task
+        </Link>
+      }
+    />
+    <AsyncDataTable
+      requestFn={api.getTasks}
+      columns={{
+        run_task: {
+          allowSort: false,
+          displayName: "Run",
+          render: item => (
+            <Link className="pl-button" to={`/tasks/${item.definition_id}/run`}>
+              Run
+            </Link>
+          ),
+        },
+        alias: {
+          allowSort: true,
+          displayName: "Alias",
+          render: item => (
+            <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
+          ),
+          width: 3,
+        },
+        group_name: {
+          allowSort: true,
+          displayName: "Group Name",
+          render: item => item.group_name,
+        },
+        image: {
+          allowSort: true,
+          displayName: "Image",
+          render: item => item.image.substr(config.IMAGE_PREFIX.length),
+        },
+        memory: {
+          allowSort: true,
+          displayName: "Memory",
+          render: item => item.memory,
+        },
+      }}
+      getItems={data => data.definitions}
+      getTotal={data => data.total}
+      filters={{
+        alias: {
+          displayName: "Alias",
+          type: asyncDataTableFilterTypes.INPUT,
+        },
+        group_name: {
+          displayName: "Group Name",
+          type: asyncDataTableFilterTypes.SELECT,
+          options: props.groupOptions,
+        },
+        image: {
+          displayName: "Image",
+          type: asyncDataTableFilterTypes.INPUT,
+        },
+      }}
+      initialQuery={{
+        page: 1,
+        sort_by: "alias",
+        order: "asc",
+      }}
+      emptyTableTitle="No tasks were found. Create one?"
+      emptyTableBody={
+        <Link className="pl-button pl-intent-primary" to="/tasks/create">
+          Create New Task
+        </Link>
+      }
+    />
+  </View>
+)
 
 Tasks.propTypes = {
   groupOptions: PropTypes.arrayOf(

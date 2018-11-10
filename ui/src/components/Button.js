@@ -1,26 +1,36 @@
 import React from "react"
 import PropTypes from "prop-types"
-import cn from "classnames"
+import styled from "styled-components"
 import colors from "../constants/colors"
 import intentTypes from "../constants/intentTypes"
 import Loader from "./Loader"
 
-const Button = props => {
-  const className = cn({
-    "pl-button": true,
-    [`pl-intent-${props.intent}`]: !!props.intent,
-    "pl-small": !!props.small,
-    "pl-invert": !!props.invert,
-  })
+const StyledButton = styled.button`
+  background: ${colors.black[3]};
+  border-radius: 2px;
+  border: 1px solid ${colors.black[3]};
+  box-shadow: none;
+  color: ${colors.gray[4]};
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: 34px;
+  letter-spacing: 0.02rem;
+  padding: 0 12px;
+  text-transform: uppercase;
+  transition-duration: 200ms;
+  white-space: nowrap;
+`
 
+const Button = ({ isLoading, intent, isDisabled, type, onClick, children }) => {
   return (
-    <button
-      className={className}
-      onClick={props.onClick}
-      disabled={props.disabled || props.isLoading}
-      type={props.type}
+    <StyledButton
+      isDisabled={isDisabled}
+      type={type}
+      intent={intent}
+      onClick={onClick}
     >
-      {props.isLoading ? (
+      {isLoading ? (
         <Loader
           mini
           spinnerStyle={{
@@ -29,29 +39,27 @@ const Button = props => {
           }}
         />
       ) : (
-        props.children
+        children
       )}
-    </button>
+    </StyledButton>
   )
 }
 
 Button.displayName = "Button"
+
 Button.propTypes = {
   children: PropTypes.node,
-  disabled: PropTypes.bool.isRequired,
   intent: PropTypes.oneOf(Object.values(intentTypes)),
-  invert: PropTypes.bool.isRequired,
+  isDisabled: PropTypes.bool.isRequired,
   isLoading: PropTypes.bool.isRequired,
   onClick: PropTypes.func,
-  small: PropTypes.bool.isRequired,
   type: PropTypes.string.isRequired,
 }
+
 Button.defaultProps = {
+  isDisabled: false,
   isLoading: false,
-  small: false,
-  invert: false,
-  disabled: false,
-  type: "button",
+  type: "type",
 }
 
 export default Button

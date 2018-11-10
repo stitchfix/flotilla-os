@@ -22,7 +22,6 @@ const withStateFetch = UnwrappedComponent =>
           this.setState({ isLoading: false, data })
         })
         .catch(error => {
-          console.log(error)
           this.setState({ isLoading: false, error })
         })
     }

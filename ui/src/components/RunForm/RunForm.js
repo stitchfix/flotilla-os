@@ -36,8 +36,6 @@ class RunForm extends Component {
   render() {
     const { clusterOptions, requestState } = this.props
 
-    console.log(this.props)
-
     if (
       isEmpty(clusterOptions) ||
       requestState === requestStateTypes.NOT_READY

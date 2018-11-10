@@ -8,7 +8,6 @@ const RunView = props => {
   return (
     <RunContext.Consumer>
       {ctx => {
-        console.log(ctx)
         return (
           <View>
             <ViewHeader title="hi" />
