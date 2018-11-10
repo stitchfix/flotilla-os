@@ -7,6 +7,7 @@ import api from "../../api"
 import config from "../../config"
 import RunContext from "./RunContext"
 import RunView from "./RunView"
+import runStatusTypes from "../../constants/runStatusTypes"
 
 class Run extends Component {
   state = {
@@ -24,13 +25,24 @@ class Run extends Component {
     }, config.RUN_REQUEST_INTERVAL_MS)
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (!isEqual(prevProps.runID, this.props.runID)) {
       this.requestData()
+    }
+
+    if (
+      get(prevState, ["data", "status"]) !== runStatusTypes.stopped &&
+      get(this.state, ["data", "status"]) === runStatusTypes.stopped
+    ) {
+      this.clearInterval()
     }
   }
 
   componentWillUnmount() {
+    this.clearInterval()
+  }
+
+  clearInterval = () => {
     window.clearInterval(this.requestInterval)
   }
 
