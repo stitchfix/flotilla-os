@@ -4,6 +4,7 @@ import { Switch, Route } from "react-router-dom"
 import { get, omit, isEqual } from "lodash"
 import * as requestStateTypes from "../../constants/requestStateTypes"
 import api from "../../api"
+import config from "../../config"
 import RunContext from "./RunContext"
 import RunView from "./RunView"
 
@@ -17,6 +18,10 @@ class Run extends Component {
 
   componentDidMount() {
     this.requestData()
+
+    this.requestInterval = window.setInterval(() => {
+      this.requestData()
+    }, config.RUN_REQUEST_INTERVAL_MS)
   }
 
   componentDidUpdate(prevProps) {
@@ -25,7 +30,11 @@ class Run extends Component {
     }
   }
 
-  requestData() {
+  componentWillUnmount() {
+    window.clearInterval(this.requestInterval)
+  }
+
+  requestData = () => {
     this.setState({ inFlight: false, error: false })
 
     api
