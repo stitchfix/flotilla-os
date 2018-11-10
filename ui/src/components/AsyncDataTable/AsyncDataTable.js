@@ -250,7 +250,7 @@ AsyncDataTable.defaultProps = {
   getItems: data => [],
   getRequestArgs: query => query,
   initialQuery: {},
-  limit: 20,
+  limit: 50,
   requestFn: () => {},
   shouldRequest: (prevProps, currProps) => false,
 }
