@@ -1,11 +1,14 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
+import { withRouter } from "react-router-dom"
 import { connect } from "react-redux"
 import { Form as ReactForm } from "react-form"
-import { get, isEmpty } from "lodash"
+import { get, isEmpty, omit } from "lodash"
 
 import Button from "../Button"
 import Loader from "../Loader"
+import Popup from "../Popup/Popup"
+import PopupContext from "../Popup/PopupContext"
 import View from "../View"
 import ViewHeader from "../ViewHeader"
 
@@ -27,31 +30,31 @@ const taskFormTypes = {
 
 class TaskForm extends Component {
   handleSubmit = values => {
-    const { taskDefinition, type } = this.props
+    const { data, type, push, renderPopup } = this.props
 
     switch (type) {
       case taskFormTypes.UPDATE:
         api
           .updateTask({
-            definitionID: get(taskDefinition, "definition_id", ""),
+            definitionID: get(data, "definition_id", ""),
             values,
           })
-          .then(res => ({
-            // Go back to task definition
-          }))
-          .catch(err => {
-            // handle err
+          .then(responseData => {
+            push(`/tasks/${get(responseData, "definition_id", "")}`)
+          })
+          .catch(error => {
+            console.error(error)
           })
         break
       case taskFormTypes.CREATE:
       case taskFormTypes.CLONE:
         api
           .createTask({ values })
-          .then(res => ({
-            // Go to task definition
-          }))
-          .catch(err => {
-            // handle err
+          .then(responseData => {
+            push(`/tasks/${get(responseData, "definition_id", "")}`)
+          })
+          .catch(error => {
+            console.error(error)
           })
         break
       default:
@@ -60,15 +63,15 @@ class TaskForm extends Component {
   }
 
   renderTitle() {
-    const { taskDefinition, type } = this.props
+    const { data, type } = this.props
 
     switch (type) {
       case taskFormTypes.CREATE:
         return "Create New Task"
       case taskFormTypes.UPDATE:
-        return `Update ${get(taskDefinition, "definition_id", "Task")}`
+        return `Update ${get(data, "definition_id", "Task")}`
       case taskFormTypes.CLONE:
-        return `Clone ${get(taskDefinition, "definition_id", "Task")}`
+        return `Clone ${get(data, "definition_id", "Task")}`
       default:
         return "Task Form"
     }
@@ -110,7 +113,7 @@ class TaskForm extends Component {
         image: get(data, "image", ""),
         command: get(data, "command", ""),
         tags: get(data, "tags", []),
-        env: get(data, "env", []).map(e => ({ key: e.name, value: e.value })),
+        env: get(data, "env", []),
       }
     }
   }
@@ -177,18 +180,23 @@ class TaskForm extends Component {
 }
 
 TaskForm.propTypes = {
+  data: PropTypes.object,
   groupOptions: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string,
       value: PropTypes.string,
     })
   ),
+  push: PropTypes.func.isRequired,
+  renderPopup: PropTypes.func.isRequired,
+  requestState: PropTypes.oneOf(Object.values(requestStateTypes)),
   tagOptions: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string,
       value: PropTypes.string,
     })
   ),
+  type: PropTypes.oneOf(Object.values(taskFormTypes)).isRequired,
 }
 
 const mapStateToProps = state => ({
@@ -196,7 +204,18 @@ const mapStateToProps = state => ({
   tagOptions: get(state, ["selectOpts", "tag"], []),
 })
 
-const ConnectedTaskForm = connect(mapStateToProps)(TaskForm)
+const ReduxConnectedTaskForm = connect(mapStateToProps)(TaskForm)
+const ConnectedTaskForm = withRouter(props => (
+  <PopupContext.Consumer>
+    {ctx => (
+      <ReduxConnectedTaskForm
+        {...omit(props, ["history", "location", "match", "staticContext"])}
+        push={props.history.push}
+        renderPopup={ctx.renderPopup}
+      />
+    )}
+  </PopupContext.Consumer>
+))
 
 export const CreateTaskForm = () => (
   <ConnectedTaskForm type={taskFormTypes.CREATE} />

@@ -1,8 +1,9 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { connect } from "react-redux"
+import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
-import { get, isEmpty } from "lodash"
+import { get, isEmpty, omit } from "lodash"
 
 import Button from "../Button"
 import Loader from "../Loader"
@@ -20,8 +21,29 @@ import * as requestStateTypes from "../../constants/requestStateTypes"
 import TaskContext from "../Task/TaskContext"
 
 class RunForm extends Component {
+  static transformRunTags = arr =>
+    arr.reduce((acc, val) => {
+      acc[val.name] = val.value
+      return acc
+    }, {})
+
   handleSubmit = values => {
-    // api.runTask()
+    const { data, push } = this.props
+
+    api
+      .runTask({
+        values: {
+          ...values,
+          run_tags: RunForm.transformRunTags(values.run_tags),
+        },
+        definitionID: data.definition_id,
+      })
+      .then(res => {
+        push(`/runs/${res.run_id}`)
+      })
+      .catch(error => {
+        console.log(error)
+      })
   }
 
   getDefaultValues = () => {
@@ -29,7 +51,8 @@ class RunForm extends Component {
 
     return {
       cluster: get(config, "DEFAULT_CLUSTER", ""),
-      env: get(data, ["env"], []).map(e => ({ key: e.name, value: e.value })),
+      run_tags: [{ name: "owner_id", value: "" }],
+      env: get(data, ["env"], []),
     }
   }
 
@@ -54,7 +77,6 @@ class RunForm extends Component {
               <View>
                 <ViewHeader
                   title="fill me out"
-                  // title={this.renderTitle()}
                   actions={
                     <Button type="submit" intent="primary">
                       submit
@@ -66,6 +88,13 @@ class RunForm extends Component {
                     label="Cluster"
                     field="cluster"
                     options={clusterOptions}
+                  />
+                  <FieldKeyValue
+                    label="Run Tags"
+                    field="run_tags"
+                    addValue={formAPI.addValue}
+                    removeValue={formAPI.removeValue}
+                    values={get(formAPI, ["values", "run_tags"], [])}
                   />
                   <FieldKeyValue
                     label="Environment Variables"
@@ -97,8 +126,16 @@ const mapStateToProps = state => ({
   clusterOptions: get(state, ["selectOpts", "cluster"], []),
 })
 
-export default connect(mapStateToProps)(props => (
+const ReduxConnectedRunForm = connect(mapStateToProps)(RunForm)
+
+export default withRouter(props => (
   <TaskContext.Consumer>
-    {ctx => <RunForm {...props} {...ctx} />}
+    {ctx => (
+      <ReduxConnectedRunForm
+        push={props.history.push}
+        {...omit(props, ["history", "location", "match", "staticContext"])}
+        {...ctx}
+      />
+    )}
   </TaskContext.Consumer>
 ))
