@@ -13,6 +13,7 @@ import RunStatus from "../Run/RunStatus"
 import Button from "../styled/Button"
 import View from "../styled/View"
 import ViewHeader from "../styled/ViewHeader"
+import SecondaryText from "../styled/SecondaryText"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 
@@ -46,7 +47,7 @@ class ActiveRuns extends Component {
           columns={{
             stop: {
               allowSort: false,
-              displayName: "Stop Run",
+              displayName: "Stop",
               render: item => {
                 return (
                   <Button onClick={this.handleStopButtonClick.bind(this, item)}>
@@ -54,6 +55,7 @@ class ActiveRuns extends Component {
                   </Button>
                 )
               },
+              width: 0.6,
             },
             status: {
               allowSort: true,
@@ -64,19 +66,25 @@ class ActiveRuns extends Component {
                   exitCode={get(item, "exit_code")}
                 />
               ),
+              width: 0.4,
             },
             started_at: {
               allowSort: true,
               displayName: "Started At",
-              render: item => moment(item.started_at).fromNow(),
+              render: item => {
+                if (!!get(item, "started_at")) {
+                  return (
+                    <div>
+                      <div style={{ marginBottom: 4 }}>
+                        {moment(item.started_at).fromNow()}
+                      </div>
+                      <SecondaryText>{item.started_at}</SecondaryText>
+                    </div>
+                  )
+                }
+                return "-"
+              },
               width: 1,
-            },
-            run_id: {
-              allowSort: true,
-              displayName: "Run ID",
-              render: item => (
-                <Link to={`/runs/${item.run_id}`}>{item.run_id}</Link>
-              ),
             },
             alias: {
               allowSort: false,
@@ -86,11 +94,21 @@ class ActiveRuns extends Component {
                   {get(item, "alias", item.definition_id)}
                 </Link>
               ),
+              width: 2.5,
+            },
+            run_id: {
+              allowSort: true,
+              displayName: "Run ID",
+              render: item => (
+                <Link to={`/runs/${item.run_id}`}>{item.run_id}</Link>
+              ),
+              width: 1,
             },
             cluster: {
               allowSort: false,
               displayName: "Cluster",
               render: item => item.cluster,
+              width: 1,
             },
           }}
           getItems={data => data.history}
@@ -100,6 +118,7 @@ class ActiveRuns extends Component {
               displayName: "Cluster Name",
               type: asyncDataTableFilterTypes.SELECT,
               options: this.props.clusterOptions,
+              description: "Search runs running on a specific cluster.",
             },
           }}
           initialQuery={{

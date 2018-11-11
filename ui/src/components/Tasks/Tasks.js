@@ -35,6 +35,7 @@ const Tasks = props => (
               Run
             </Link>
           ),
+          width: 0.5,
         },
         alias: {
           allowSort: true,
@@ -48,16 +49,19 @@ const Tasks = props => (
           allowSort: true,
           displayName: "Group Name",
           render: item => item.group_name,
+          width: 1,
         },
         image: {
           allowSort: true,
           displayName: "Image",
           render: item => item.image.substr(config.IMAGE_PREFIX.length),
+          width: 1,
         },
         memory: {
           allowSort: true,
           displayName: "Memory",
           render: item => item.memory,
+          width: 1,
         },
       }}
       getItems={data => data.definitions}
@@ -66,15 +70,18 @@ const Tasks = props => (
         alias: {
           displayName: "Alias",
           type: asyncDataTableFilterTypes.INPUT,
+          description: "Search tasks by alias.",
         },
         group_name: {
           displayName: "Group Name",
           type: asyncDataTableFilterTypes.SELECT,
           options: props.groupOptions,
+          description: "Search tasks by existing group names.",
         },
         image: {
           displayName: "Image",
           type: asyncDataTableFilterTypes.INPUT,
+          description: "Search tasks by Docker image.",
         },
       }}
       initialQuery={{

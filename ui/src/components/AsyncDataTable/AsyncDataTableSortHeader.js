@@ -3,6 +3,11 @@ import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { get } from "lodash"
 import cn from "classnames"
+import {
+  TableHeaderCell,
+  TableHeaderSortIcon,
+  TableHeaderCellSortable,
+} from "../styled/Table"
 
 class AsyncDataTableSortHeader extends Component {
   constructor(props) {
@@ -61,11 +66,7 @@ class AsyncDataTableSortHeader extends Component {
     const { allowSort, displayName, sortKey, width } = this.props
 
     if (allowSort !== true) {
-      return (
-        <div className="pl-th" style={{ flex: width }}>
-          {displayName}
-        </div>
-      )
+      return <TableHeaderCell width={width}>{displayName}</TableHeaderCell>
     }
     const currSortKey = this.getCurrSortKey()
     const currSortOrder = this.getCurrSortOrder()
@@ -73,19 +74,32 @@ class AsyncDataTableSortHeader extends Component {
     const className = cn({
       "pl-th": true,
       "pl-th-sort": true,
-      "pl-th-sort-active": currSortKey === sortKey,
       desc: currSortKey === sortKey && currSortOrder === "desc",
       asc: currSortKey === sortKey && currSortOrder === "asc",
     })
 
+    const isActive = currSortKey === sortKey
+    let direction = null
+
+    if (isActive) {
+      direction = currSortOrder
+    }
+
     return (
-      <button
+      <TableHeaderCellSortable
         onClick={this.handleClick}
-        className={className}
-        style={{ flex: width }}
+        width={width}
+        isActive={isActive}
+        direction={direction}
       >
         {displayName}
-      </button>
+        {!!isActive &&
+          !!direction && (
+            <TableHeaderSortIcon>
+              {direction === "asc" ? "▲" : "▼"}
+            </TableHeaderSortIcon>
+          )}
+      </TableHeaderCellSortable>
     )
   }
 }

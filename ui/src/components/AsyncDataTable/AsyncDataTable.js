@@ -2,14 +2,19 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { get, isEmpty, omit, isObject, size, has, toString } from "lodash"
-import Card from "../styled/Card"
 import EmptyTable from "../styled/EmptyTable"
+import { Table, TableRow, TableCell } from "../styled/Table"
 import AsyncDataTableFilter, {
   asyncDataTableFilterTypes,
 } from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
 import AsyncDataTablePagination from "./AsyncDataTablePagination"
 import * as requestStateTypes from "../../constants/requestStateTypes"
+import {
+  AsyncDataTableContainer,
+  AsyncDataTableFilters,
+  AsyncDataTableContent,
+} from "../styled/AsyncDataTable"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -129,62 +134,61 @@ class AsyncDataTable extends Component {
         const total = getTotal(data)
 
         return (
-          <div className="flot-list-view">
+          <AsyncDataTableContainer>
             {!isEmpty(filters) && (
-              <Card>
-                <div className="flot-list-view-filters">
-                  {Object.keys(filters).map(key => (
-                    <AsyncDataTableFilter
-                      {...filters[key]}
-                      filterKey={key}
-                      key={key}
-                    />
-                  ))}
-                </div>
-              </Card>
-            )}
-            {isEmpty(items) ? (
-              <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
-            ) : (
-              <div className="pl-table pl-bordered">
-                <div className="pl-tr">
-                  {Object.keys(columns).map(key => (
-                    <AsyncDataTableSortHeader
-                      allowSort={columns[key].allowSort}
-                      displayName={columns[key].displayName}
-                      sortKey={key}
-                      key={key}
-                      width={columns[key].width}
-                    />
-                  ))}
-                </div>
-                {items.map((item, i) => (
-                  <div className="pl-tr hoverable" key={i}>
-                    {Object.keys(columns).map(key => (
-                      <div
-                        className="pl-td"
-                        key={`${i}-${key}`}
-                        style={{ flex: get(columns[key], "width", 1) }}
-                      >
-                        {columns[key].render(item)}
-                      </div>
-                    ))}
-                  </div>
+              <AsyncDataTableFilters>
+                {Object.keys(filters).map(key => (
+                  <AsyncDataTableFilter
+                    {...filters[key]}
+                    filterKey={key}
+                    key={key}
+                  />
                 ))}
-              </div>
+              </AsyncDataTableFilters>
             )}
-            <div
-              className="table-footer"
-              style={{
-                display: "flex",
-                flexFlow: "row nowrap",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <AsyncDataTablePagination total={total} limit={limit} />
-            </div>
-          </div>
+            <AsyncDataTableContent>
+              {isEmpty(items) ? (
+                <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
+              ) : (
+                <Table>
+                  <TableRow>
+                    {Object.keys(columns).map(key => (
+                      <AsyncDataTableSortHeader
+                        allowSort={columns[key].allowSort}
+                        displayName={columns[key].displayName}
+                        sortKey={key}
+                        key={key}
+                        width={columns[key].width}
+                      />
+                    ))}
+                  </TableRow>
+                  {items.map((item, i) => (
+                    <TableRow key={i}>
+                      {Object.keys(columns).map(key => (
+                        <TableCell
+                          key={`${i}-${key}`}
+                          width={columns[key].width}
+                        >
+                          {columns[key].render(item)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </Table>
+              )}
+              <div
+                className="table-footer"
+                style={{
+                  display: "flex",
+                  flexFlow: "row nowrap",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <AsyncDataTablePagination total={total} limit={limit} />
+              </div>
+            </AsyncDataTableContent>
+          </AsyncDataTableContainer>
         )
       case requestStateTypes.NOT_READY:
       default:
