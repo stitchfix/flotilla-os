@@ -6,6 +6,7 @@ import { Form as ReactForm } from "react-form"
 import { get, isEmpty, omit } from "lodash"
 
 import Button from "../styled/Button"
+import ButtonGroup from "../styled/ButtonGroup"
 import Loader from "../styled/Loader"
 import Popup from "../Popup/Popup"
 import PopupContext from "../Popup/PopupContext"
@@ -129,7 +130,7 @@ class TaskForm extends Component {
   }
 
   render() {
-    const { type, groupOptions, tagOptions } = this.props
+    const { type, groupOptions, tagOptions, goBack } = this.props
 
     if (this.shouldNotRenderForm()) {
       return <Loader />
@@ -141,30 +142,55 @@ class TaskForm extends Component {
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
+          console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
                 <ViewHeader
                   title={this.renderTitle()}
                   actions={
-                    <Button type="submit" intent="primary">
-                      submit
-                    </Button>
+                    <ButtonGroup>
+                      <Button type="cancel" onClick={goBack}>
+                        cancel
+                      </Button>
+                      <Button type="submit" intent="primary">
+                        submit
+                      </Button>
+                    </ButtonGroup>
                   }
                 />
                 <Form>
                   {type !== taskFormTypes.UPDATE && (
-                    <FieldText label="Alias" field="alias" />
+                    <FieldText
+                      label="Alias"
+                      field="alias"
+                      description="Choose a descriptive alias for this task."
+                    />
                   )}
                   <FieldSelect
                     label="Group Name"
                     field="group_name"
                     options={groupOptions}
                     isCreatable
+                    description="Create a new group name or select an existing one to help searching for this task in the future."
                   />
-                  <FieldText label="Image" field="image" />
-                  <FieldText isTextArea label="Command" field="command" />
-                  <FieldText isNumber label="Memory" field="memory" />
+                  <FieldText
+                    label="Image"
+                    field="image"
+                    description="The full URL of the Docker image and tag."
+                  />
+                  <FieldText
+                    isTextArea
+                    label="Command"
+                    field="command"
+                    description="The command for this task to execute."
+                  />
+                  <FieldText
+                    isNumber
+                    label="Memory (MB)"
+                    field="memory"
+                    description="The amount of memory this task needs."
+                  />
                   <FieldSelect
                     isCreatable
                     isMulti
@@ -178,6 +204,7 @@ class TaskForm extends Component {
                     addValue={formAPI.addValue}
                     removeValue={formAPI.removeValue}
                     values={get(formAPI, ["values", "env"], [])}
+                    descripion="Environment variables that can be adjusted during runtime."
                   />
                 </Form>
               </View>
@@ -191,6 +218,7 @@ class TaskForm extends Component {
 
 TaskForm.propTypes = {
   data: PropTypes.object,
+  goBack: PropTypes.func.isRequired,
   groupOptions: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string,
@@ -221,6 +249,7 @@ const ConnectedTaskForm = withRouter(props => (
       <ReduxConnectedTaskForm
         {...omit(props, ["history", "location", "match", "staticContext"])}
         push={props.history.push}
+        goBack={props.history.goBack}
         renderPopup={ctx.renderPopup}
       />
     )}

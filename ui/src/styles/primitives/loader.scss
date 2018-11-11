@@ -10,7 +10,7 @@ $mini-loader-size: 18px;
 }
 .loader {
   $_size: 4em;
-  $_border-width: calc(#{$_size} / 12);
+  $_border-width: calc(#{$_size} / 16);
   $_border: $_border-width solid $black_3;
   border-radius: 50%;
   width: $_size;
@@ -30,7 +30,7 @@ $mini-loader-size: 18px;
   }
   &.mini {
     $_size: $mini-loader-size;
-    $_border-width: calc(#{$_size} / 6);
+    $_border-width: calc(#{$_size} / 10);
     $_border: $_border-width solid $black_3;
     width: $_size;
     height: $_size;

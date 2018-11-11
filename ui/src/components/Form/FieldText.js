@@ -8,11 +8,15 @@ const FieldText = props => {
   return (
     <RFField field={props.field}>
       {fieldAPI => {
-        const sharedProps = {
+        let sharedProps = {
           value: get(fieldAPI, "value", ""),
           onChange: evt => {
             fieldAPI.setValue(evt.target.value)
           },
+        }
+
+        if (props.inputRef) {
+          sharedProps.ref = props.inputRef
         }
 
         let input
@@ -47,6 +51,7 @@ const FieldText = props => {
 FieldText.propTypes = {
   description: PropTypes.string,
   field: PropTypes.string.isRequired,
+  inputRef: PropTypes.func,
   isNumber: PropTypes.bool.isRequired,
   isRequired: PropTypes.bool.isRequired,
   isTextArea: PropTypes.bool.isRequired,

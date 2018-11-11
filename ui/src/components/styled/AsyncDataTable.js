@@ -18,10 +18,10 @@ export const AsyncDataTableFilters = styled.div`
   min-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
   position: fixed;
   top: calc(${TOPBAR_HEIGHT_PX}px + ${VIEW_HEADER_HEIGHT_PX}px);
-  left: 0;
+  right: 0;
 `
 
 export const AsyncDataTableContent = styled.div`
   flex: 1;
-  margin-left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  margin-right: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
 `
