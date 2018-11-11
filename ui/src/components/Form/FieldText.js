@@ -1,6 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { Field as RFField } from "react-form"
+import DebounceInput from "react-debounce-input"
 import { get } from "lodash"
 import Field from "../styled/Field"
 
@@ -23,6 +24,16 @@ const FieldText = props => {
 
         if (props.isTextArea) {
           input = <textarea className="pl-textarea" {...sharedProps} />
+        } else if (props.shouldDebounce) {
+          input = (
+            <DebounceInput
+              {...sharedProps}
+              className="pl-input"
+              debounceTimeout={250}
+              minLength={1}
+              type={props.isNumber ? "number" : "text"}
+            />
+          )
         } else {
           input = (
             <input
@@ -56,12 +67,14 @@ FieldText.propTypes = {
   isRequired: PropTypes.bool.isRequired,
   isTextArea: PropTypes.bool.isRequired,
   label: PropTypes.string,
+  shouldDebounce: PropTypes.bool.isRequired,
 }
 
 FieldText.defaultProps = {
   isNumber: false,
   isRequired: false,
   isTextArea: false,
+  shouldDebounce: false,
 }
 
 export default FieldText

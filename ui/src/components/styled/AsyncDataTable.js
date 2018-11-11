@@ -10,13 +10,15 @@ const ASYNC_DATA_TABLE_FILTERS_WIDTH_PX = 360
 
 export const AsyncDataTableContainer = styled.div`
   width: 100%;
+  position: relative;
 `
 
 export const AsyncDataTableFilters = styled.div`
   padding: ${SPACING_PX}px;
   min-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
-  position: fixed;
-  top: calc(${TOPBAR_HEIGHT_PX}px + ${VIEW_HEADER_HEIGHT_PX}px);
+  max-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  position: absolute;
+  top: 0; //calc(${TOPBAR_HEIGHT_PX}px + ${VIEW_HEADER_HEIGHT_PX}px);
   left: 0;
   bottom: 0;
 `
@@ -26,4 +28,5 @@ export const AsyncDataTableContent = styled.div`
   margin-left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
   overflow-y: scroll;
   height: calc(100vh - ${TOPBAR_HEIGHT_PX}px - ${VIEW_HEADER_HEIGHT_PX}px);
+  min-width: 800px;
 `

@@ -1,7 +1,17 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
-import { get, isEmpty, omit, isObject, size, has, toString } from "lodash"
+import { Form as ReactForm } from "react-form"
+import {
+  get,
+  isEmpty,
+  omit,
+  isObject,
+  size,
+  has,
+  toString,
+  isNumber,
+} from "lodash"
 import EmptyTable from "../styled/EmptyTable"
 import { Table, TableRow, TableCell } from "../styled/Table"
 import AsyncDataTableFilter, {
@@ -15,6 +25,7 @@ import {
   AsyncDataTableFilters,
   AsyncDataTableContent,
 } from "../styled/AsyncDataTable"
+import config from "../../config"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -35,7 +46,12 @@ class AsyncDataTable extends Component {
   }
 
   componentDidMount() {
-    const { initialQuery, queryParams, setQueryParams } = this.props
+    const {
+      initialQuery,
+      queryParams,
+      setQueryParams,
+      shouldContinuouslyFetch,
+    } = this.props
 
     const q = {
       ...initialQuery,
@@ -48,7 +64,13 @@ class AsyncDataTable extends Component {
     ) {
       setQueryParams(q)
     } else {
-      this.requestData(q)
+      this.requestData()
+    }
+
+    if (shouldContinuouslyFetch) {
+      this.requestInterval = window.setInterval(() => {
+        this.requestData()
+      }, config.RUN_REQUEST_INTERVAL_MS)
     }
   }
 
@@ -59,7 +81,13 @@ class AsyncDataTable extends Component {
     const currQ = queryParams
 
     if (!this.areQueriesEqual(prevQ, currQ)) {
-      this.requestData(currQ)
+      this.requestData()
+    }
+  }
+
+  componentWillUnmount() {
+    if (isNumber(this.requestInterval)) {
+      window.clearInterval(this.requestInterval)
     }
   }
 
@@ -97,11 +125,11 @@ class AsyncDataTable extends Component {
    *
    * @param {object} query
    */
-  requestData(query) {
-    const { getRequestArgs, requestFn, limit } = this.props
+  requestData() {
+    const { queryParams, getRequestArgs, requestFn, limit } = this.props
 
-    let q = omit(query, "page")
-    q.offset = AsyncDataTable.pageToOffset(get(query, "page", 1), limit)
+    let q = omit(queryParams, "page")
+    q.offset = AsyncDataTable.pageToOffset(get(queryParams, "page", 1), limit)
     q.limit = limit
 
     requestFn(getRequestArgs(q))
@@ -113,6 +141,12 @@ class AsyncDataTable extends Component {
       })
   }
 
+  handleFiltersChange = (formState, formAPI) => {
+    const { setQueryParams } = this.props
+
+    setQueryParams(get(formState, "values", {}))
+  }
+
   render() {
     const {
       columns,
@@ -122,6 +156,8 @@ class AsyncDataTable extends Component {
       limit,
       emptyTableBody,
       emptyTableTitle,
+      queryParams,
+      getItemKey,
     } = this.props
     const { requestState, data, error } = this.state
 
@@ -136,15 +172,25 @@ class AsyncDataTable extends Component {
         return (
           <AsyncDataTableContainer>
             {!isEmpty(filters) && (
-              <AsyncDataTableFilters>
-                {Object.keys(filters).map(key => (
-                  <AsyncDataTableFilter
-                    {...filters[key]}
-                    filterKey={key}
-                    key={key}
-                  />
-                ))}
-              </AsyncDataTableFilters>
+              <ReactForm
+                onChange={this.handleFiltersChange}
+                defaultValues={queryParams}
+                pure={false}
+              >
+                {formAPI => {
+                  return (
+                    <AsyncDataTableFilters>
+                      {Object.keys(filters).map(key => (
+                        <AsyncDataTableFilter
+                          {...filters[key]}
+                          field={key}
+                          key={key}
+                        />
+                      ))}
+                    </AsyncDataTableFilters>
+                  )
+                }}
+              </ReactForm>
             )}
             <AsyncDataTableContent>
               {isEmpty(items) ? (
@@ -163,7 +209,7 @@ class AsyncDataTable extends Component {
                     ))}
                   </TableRow>
                   {items.map((item, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={getItemKey(item, i)}>
                       {Object.keys(columns).map(key => (
                         <TableCell
                           key={`${i}-${key}`}
@@ -224,6 +270,7 @@ AsyncDataTable.propTypes = {
       ),
     })
   ),
+  getItemKey: PropTypes.func.isRequired,
   getItems: PropTypes.func.isRequired,
   getRequestArgs: PropTypes.func.isRequired,
   getTotal: PropTypes.func.isRequired,
@@ -232,6 +279,7 @@ AsyncDataTable.propTypes = {
   queryParams: PropTypes.object.isRequired,
   requestFn: PropTypes.func.isRequired,
   setQueryParams: PropTypes.func.isRequired,
+  shouldContinuouslyFetch: PropTypes.bool.isRequired,
   shouldRequest: PropTypes.func.isRequired,
 }
 
@@ -241,11 +289,13 @@ AsyncDataTable.defaultProps = {
   emptyTableBody: "",
   emptyTableTitle: "This collection is empty",
   filters: {},
+  getItemKey: (item, index) => index,
   getItems: data => [],
   getRequestArgs: query => query,
   initialQuery: {},
   limit: 50,
   requestFn: () => {},
+  shouldContinuouslyFetch: false,
   shouldRequest: (prevProps, currProps) => false,
 }
 
