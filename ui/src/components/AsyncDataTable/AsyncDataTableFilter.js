@@ -5,6 +5,12 @@ import DebounceInput from "react-debounce-input"
 import Select from "react-select"
 import { get, has } from "lodash"
 import Field from "../styled/Field"
+import {
+  stringToSelectOpt,
+  selectOptToString,
+  selectTheme,
+  selectStyles,
+} from "../../utils/reactSelectHelpers"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",
@@ -25,8 +31,14 @@ class AsyncDataTableFilter extends Component {
   }
 
   handleSelectChange(selected) {
+    if (selected === null) {
+      this.updateQuery(null)
+      return
+    }
+
     if (has(selected, "value")) {
       this.updateQuery(selected.value)
+      return
     }
   }
 
@@ -48,7 +60,9 @@ class AsyncDataTableFilter extends Component {
       options,
       description,
     } = this.props
+
     const value = get(queryParams, filterKey, "")
+
     switch (type) {
       case asyncDataTableFilterTypes.SELECT:
         return (
@@ -56,7 +70,10 @@ class AsyncDataTableFilter extends Component {
             <Select
               onChange={this.handleSelectChange}
               options={options}
-              value={value}
+              value={stringToSelectOpt(value)}
+              theme={selectTheme}
+              styles={selectStyles}
+              isClearable
             />
           </Field>
         )

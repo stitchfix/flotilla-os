@@ -2,15 +2,15 @@ import React from "react"
 import PropTypes from "prop-types"
 import Select from "react-select"
 import CreatableSelect from "react-select/lib/Creatable"
-import { get, isString } from "lodash"
+import { get } from "lodash"
 import { Field as RFField } from "react-form"
 import Field from "../styled/Field"
-
-const stringToSelectOpt = (str = "") => {
-  let ret = isString(str) ? str : ""
-  return { label: ret, value: ret }
-}
-const selectOptToString = opt => get(opt, "value", "")
+import {
+  stringToSelectOpt,
+  selectOptToString,
+  selectTheme,
+  selectStyles,
+} from "../../utils/reactSelectHelpers"
 
 const FieldSelect = props => {
   return (
@@ -32,12 +32,8 @@ const FieldSelect = props => {
 
             fieldAPI.setValue(selected.value)
           },
-          styles: {
-            container: provided => ({
-              ...provided,
-              width: "100%",
-            }),
-          },
+          theme: selectTheme,
+          styles: selectStyles,
         }
         let select
 
