@@ -40,6 +40,7 @@
     "redux-form": "7.1.2",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
+    "reset-css": "^4.0.1",
     "styled-components": "4.0.3",
     "url-join": "4.0.0"
   },

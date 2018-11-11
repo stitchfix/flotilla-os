@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css?family=Source+Code+Pro");
+@import "../../node_modules/reset-css/reset.css";
 @import "../../node_modules/flex-utils/css/flex-utils.min.css";
 @import "./utils/colors.scss";
 @import "./utils/variables.scss";
@@ -12,7 +13,6 @@
 @import "./primitives/loader.scss";
 @import "./primitives/modal.scss";
 @import "./primitives/popup.scss";
-@import "./primitives/table.scss";
 @import "./primitives/tabs.scss";
 @import "./primitives/tag.scss";
 @import "./extended/redux-form-group.scss";
