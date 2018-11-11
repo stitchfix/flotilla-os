@@ -2,7 +2,7 @@ import React from "react"
 import PropTypes from "prop-types"
 import { Field as RFField } from "react-form"
 import { get } from "lodash"
-import Field from "./Field"
+import Field from "../styled/Field"
 
 const FieldText = props => {
   return (

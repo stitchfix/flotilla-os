@@ -4,7 +4,7 @@ import withQueryParams from "react-router-query-params"
 import DebounceInput from "react-debounce-input"
 import Select from "react-select"
 import { get, has } from "lodash"
-import FormGroup from "../styled/FormGroup"
+import Field from "../styled/Field"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",
@@ -40,38 +40,39 @@ class AsyncDataTableFilter extends Component {
   }
 
   render() {
-    const { filterKey, queryParams, type, displayName, options } = this.props
+    const {
+      filterKey,
+      queryParams,
+      type,
+      displayName,
+      options,
+      description,
+    } = this.props
     const value = get(queryParams, filterKey, "")
     switch (type) {
       case asyncDataTableFilterTypes.SELECT:
         return (
-          <FormGroup
-            label={displayName}
-            input={
-              <Select
-                onChange={this.handleSelectChange}
-                options={options}
-                value={value}
-              />
-            }
-          />
+          <Field label={displayName} description={description}>
+            <Select
+              onChange={this.handleSelectChange}
+              options={options}
+              value={value}
+            />
+          </Field>
         )
       case asyncDataTableFilterTypes.INPUT:
       default:
         return (
-          <FormGroup
-            label={displayName}
-            input={
-              <DebounceInput
-                className="pl-input"
-                debounceTimeout={250}
-                minLength={1}
-                onChange={this.handleInputChange}
-                type="text"
-                value={value}
-              />
-            }
-          />
+          <Field label={displayName} description={description}>
+            <DebounceInput
+              className="pl-input"
+              debounceTimeout={250}
+              minLength={1}
+              onChange={this.handleInputChange}
+              type="text"
+              value={value}
+            />
+          </Field>
         )
     }
   }
@@ -80,6 +81,7 @@ class AsyncDataTableFilter extends Component {
 AsyncDataTableFilter.displayName = "AsyncDataTableFilter"
 
 AsyncDataTableFilter.propTypes = {
+  description: PropTypes.string,
   displayName: PropTypes.string.isRequired,
   filterKey: PropTypes.string.isRequired,
   options: PropTypes.arrayOf(

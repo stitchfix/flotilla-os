@@ -4,7 +4,7 @@ import Select from "react-select"
 import CreatableSelect from "react-select/lib/Creatable"
 import { get, isString } from "lodash"
 import { Field as RFField } from "react-form"
-import Field from "./Field"
+import Field from "../styled/Field"
 
 const stringToSelectOpt = (str = "") => {
   let ret = isString(str) ? str : ""
