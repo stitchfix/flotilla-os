@@ -3,6 +3,7 @@ import PropTypes from "prop-types"
 import styled from "styled-components"
 import colors from "../../constants/colors"
 import Loader from "./Loader"
+import SecondaryText from "./SecondaryText"
 
 const FIELD_HEIGHT_PX = 28
 const FIELD_EL_MARGIN_LEFT_PX = 8
@@ -25,11 +26,13 @@ export const FieldLabel = styled.div`
   margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px;
 `
 
-export const FieldDescription = styled.div`
-  font-size: 0.9rem;
+export const FieldDescription = styled(SecondaryText)`
   margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px;
-  margin-top: 4px;
-  color: ${colors.gray[0]};
+  margin-top: 8px;
+`
+
+export const FieldError = styled(FieldDescription)`
+  color: ${colors.red[0]};
 `
 
 const FieldLoaderContainer = styled.div`
@@ -42,7 +45,7 @@ const Field = ({ label, children, description, error, isLoading }) => (
   <FieldContainer>
     {!!label && <FieldLabel>{label}</FieldLabel>}
     {children}
-    {!!error && <div className="pl-form-group-error">{error}</div>}
+    {!!error && <FieldError>{error}</FieldError>}
     {!!description && <FieldDescription>{description}</FieldDescription>}
     {!!isLoading && (
       <FieldLoaderContainer>

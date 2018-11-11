@@ -35,7 +35,7 @@ const Tasks = props => (
               Run
             </Link>
           ),
-          width: 0.5,
+          width: 0.4,
         },
         alias: {
           allowSort: true,
@@ -61,7 +61,7 @@ const Tasks = props => (
           allowSort: true,
           displayName: "Memory",
           render: item => item.memory,
-          width: 1,
+          width: 0.5,
         },
       }}
       getItems={data => data.definitions}

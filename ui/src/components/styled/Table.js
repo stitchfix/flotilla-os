@@ -32,7 +32,7 @@ const cellStyles = css`
   text-overflow: ellipsis;
   white-space: nowrap;
   height: 100%;
-  border-right: ${DEFAULT_BORDER};
+  border-left: ${DEFAULT_BORDER};
 `
 
 export const TableCell = styled.div`
