@@ -2,6 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { Form as ReactForm } from "react-form"
+import PageVisibility from "react-page-visibility"
 import {
   get,
   isEmpty,
@@ -299,4 +300,8 @@ AsyncDataTable.defaultProps = {
   shouldRequest: (prevProps, currProps) => false,
 }
 
-export default withQueryParams()(AsyncDataTable)
+export default withQueryParams()(props => (
+  <PageVisibility>
+    {isVisible => <AsyncDataTable {...props} isVisible={isVisible} />}
+  </PageVisibility>
+))
