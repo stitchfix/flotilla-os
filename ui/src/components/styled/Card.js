@@ -11,6 +11,7 @@ const CardContainer = styled.div`
   background: ${colors.black[0]};
   border: ${DEFAULT_BORDER};
   width: 100%;
+  border-radius: 8px;
 `
 
 const CardHeader = styled.div`

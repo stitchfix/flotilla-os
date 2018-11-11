@@ -22,8 +22,7 @@ const ViewInner = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 0 ${SPACING_PX}px;
-  margin-top: ${VIEW_HEADER_HEIGHT_PX + SPACING_PX * 2}px;
+  margin-top: ${VIEW_HEADER_HEIGHT_PX}px;
 `
 
 const View = ({ children }) => (
