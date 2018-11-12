@@ -1,4 +1,3 @@
-import webpack from "webpack"
 import HtmlWebpackPlugin from "html-webpack-plugin"
 import baseConfig from "./webpack.base.config"
 

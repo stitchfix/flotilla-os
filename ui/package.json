@@ -1,7 +1,6 @@
 {
-  "name": "flotilla-os-ui",
+  "name": "flotilla-ui",
   "version": "4.0.0",
-  "private": true,
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -16,8 +15,6 @@
   "dependencies": {
     "ansi-to-react": "^1.6.0",
     "axios": "0.17.1",
-    "classnames": "2.2.5",
-    "flex-utils": "0.1.0",
     "immutability-helper": "2.6.1",
     "lodash": "^4.17.4",
     "moment": "^2.19.2",
@@ -36,12 +33,9 @@
     "react-router-dom": "4.2.2",
     "react-router-query-params": "1.0.2",
     "react-select": "2.1.1",
-    "react-tooltip": "^3.4.0",
     "redux": "^3.7.2",
-    "redux-form": "7.1.2",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
-    "reset-css": "^4.0.1",
     "styled-components": "4.0.3",
     "url-join": "4.0.0"
   },
@@ -59,7 +53,6 @@
     "babel-preset-latest": "6.16.0",
     "babel-preset-react": "6.16.0",
     "babel-preset-stage-0": "6.16.0",
-    "css-loader": "0.26.1",
     "enzyme": "3.2.0",
     "enzyme-adapter-react-16": "1.1.0",
     "eslint": "5.5.0",
@@ -68,47 +61,30 @@
     "eslint-plugin-import": "2.14.0",
     "eslint-plugin-jsx-a11y": "5.1.1",
     "eslint-plugin-react": "7.11.1",
-    "extract-text-webpack-plugin": "2.1.0",
     "fetch-mock": "5.13.1",
     "file-loader": "1.1.5",
     "html-webpack-plugin": "2.24.1",
-    "husky": "0.14.3",
     "jest": "21.2.1",
-    "less": "2.7.3",
-    "less-loader": "4.0.5",
-    "lint-staged": "6.0.0",
-    "node-sass": "^4.10.0",
     "prettier": "1.9.2",
     "raf": "3.4.0",
     "react-addons-perf": "15.4.2",
-    "react-hot-loader": "3.0.0-beta.6",
     "react-test-renderer": "16.2.0",
     "redux-mock-store": "1.2.3",
     "rimraf": "2.6.1",
-    "sass-loader": "6.0.0",
     "sinon": "4.1.2",
-    "style-loader": "0.13.1",
     "url-loader": "0.5.7",
     "webpack": "3.8.1",
     "webpack-dev-server": "2.9.5"
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "babel": "./node_modules/.bin/babel-node --presets latest,stage-0",
-    "webpack": "NODE_ENV=production npm run babel -- ./node_modules/.bin/webpack --progress --optimize-minimize",
-    "dev": "NODE_ENV=dev npm run babel -- ./node_modules/.bin/webpack-dev-server --progress --hot",
+    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
     "test": "NODE_ENV=test jest",
-    "test:watch": "npm test -- --watch",
-    "precommit": "lint-staged"
-  },
-  "lint-staged": {
-    "*.{js,scss}": [
-      "prettier --no-semi --trailing-comma es5 --write",
-      "git add"
-    ]
+    "test:watch": "npm test -- --watch"
   },
   "jest": {
     "setupFiles": [

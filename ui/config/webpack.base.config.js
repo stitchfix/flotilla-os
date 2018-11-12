@@ -1,6 +1,5 @@
 import path from "path"
 import webpack from "webpack"
-import ExtractTextPlugin from "extract-text-webpack-plugin"
 
 module.exports = opts => {
   const { ROOT, VENDOR } = opts
@@ -20,21 +19,6 @@ module.exports = opts => {
     },
     module: {
       rules: [
-        {
-          test: /\.s?css$/,
-          exclude: /node_modules/,
-          use: ExtractTextPlugin.extract({
-            // Including style-loader in the list of loaders will
-            // result in an error (`window is not defined`).
-            fallback: "style-loader",
-            use: ["css-loader", "autoprefixer-loader", "sass-loader"],
-          }),
-        },
-        {
-          test: /\.less$/,
-          // exclude: /node_modules/,
-          loaders: ["css-loader", "less-loader"],
-        },
         {
           test: /\.jsx?$/,
           exclude: /node_modules/,
@@ -60,9 +44,6 @@ module.exports = opts => {
           DEFAULT_CLUSTER: JSON.stringify(process.env.DEFAULT_CLUSTER),
           IMAGE_PREFIX: JSON.stringify(process.env.IMAGE_PREFIX),
         },
-      }),
-      new ExtractTextPlugin({
-        filename: "[name].[hash].css",
       }),
     ],
     resolve: {
