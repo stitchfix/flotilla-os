@@ -1,5 +1,5 @@
-import HtmlWebpackPlugin from "html-webpack-plugin"
-import baseConfig from "./webpack.base.config"
+const HtmlWebpackPlugin = require("html-webpack-plugin")
+const baseConfig = require("./webpack.base.config")
 
 module.exports = opts => {
   return {

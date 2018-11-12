@@ -1,12 +1,12 @@
-import path from "path"
-import webpack from "webpack"
+const path = require("path")
+const webpack = require("webpack")
 
 module.exports = opts => {
   const { ROOT, VENDOR } = opts
   return {
     context: ROOT,
     entry: {
-      main: ["babel-polyfill", path.resolve(ROOT, "src/index.js")],
+      main: path.resolve(ROOT, "src/index.js"),
       vendor: VENDOR,
     },
     output: {
@@ -20,7 +20,7 @@ module.exports = opts => {
     module: {
       rules: [
         {
-          test: /\.jsx?$/,
+          test: /\.js$/,
           exclude: /node_modules/,
           loaders: ["babel-loader"],
         },
@@ -35,16 +35,11 @@ module.exports = opts => {
       ],
     },
     plugins: [
-      new webpack.DefinePlugin({
-        "process.env": {
-          FLOTILLA_API: JSON.stringify(process.env.FLOTILLA_API),
-          DOCKER_REPOSITORY_HOST: JSON.stringify(
-            process.env.DOCKER_REPOSITORY_HOST
-          ),
-          DEFAULT_CLUSTER: JSON.stringify(process.env.DEFAULT_CLUSTER),
-          IMAGE_PREFIX: JSON.stringify(process.env.IMAGE_PREFIX),
-        },
-      }),
+      new webpack.EnvironmentPlugin([
+        "FLOTILLA_API",
+        "DEFAULT_CLUSTER",
+        "IMAGE_PREFIX",
+      ]),
     ],
     resolve: {
       extensions: [".js", ".jsx"],
