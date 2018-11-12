@@ -7,13 +7,11 @@ import Run from "../Run/Run"
 import { CreateTaskForm } from "../TaskForm/TaskForm"
 import ModalContainer from "../Modal/ModalContainer"
 import PopupContainer from "../Popup/PopupContainer"
-import Navigation from "./Navigation"
 
 const App = () => (
   <BrowserRouter>
     <ModalContainer>
       <PopupContainer>
-        <Navigation />
         <Switch>
           <Route exact path="/tasks/create" component={CreateTaskForm} />
           <Route exact path="/runs" component={ActiveRuns} />

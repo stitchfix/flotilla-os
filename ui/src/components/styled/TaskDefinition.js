@@ -2,7 +2,7 @@ import s from "styled-components"
 
 export const TaskDefinitionView = s.div`
   display: flex;
-  flex-flow: column nowrap;
+  flex-flow: row nowrap;
   justify-content: flex-start;
   align-items: flex-start;
   width: 100%;

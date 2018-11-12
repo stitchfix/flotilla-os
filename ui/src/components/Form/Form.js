@@ -1,6 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
+import HeaderText from "../styled/HeaderText"
 
 const FormContainer = styled.div`
   display: flex;
@@ -11,6 +12,10 @@ const FormContainer = styled.div`
 `
 
 const FormInner = styled.div`
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
   width: 600px;
   padding-top: 24px;
   & > * {
@@ -18,9 +23,12 @@ const FormInner = styled.div`
   }
 `
 
-const Form = ({ children }) => (
+const Form = ({ children, title }) => (
   <FormContainer>
-    <FormInner>{children}</FormInner>
+    <FormInner>
+      {!!title && <HeaderText>{title}</HeaderText>}
+      {children}
+    </FormInner>
   </FormContainer>
 )
 
@@ -28,6 +36,11 @@ Form.displayName = "Form"
 
 Form.propTypes = {
   children: PropTypes.node,
+  title: PropTypes.string,
+}
+
+Form.defaultProps = {
+  title: "",
 }
 
 export default Form

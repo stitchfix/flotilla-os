@@ -44,22 +44,22 @@ class TaskHistoryTable extends Component {
           prevProps.definitionID !== currProps.definitionID
         }
         columns={{
-          stop: {
-            allowSort: false,
-            displayName: "Stop",
-            render: item => {
-              if (TaskHistoryTable.isTaskActive(item.status)) {
-                return (
-                  <Button onClick={this.handleStopButtonClick.bind(this, item)}>
-                    Stop
-                  </Button>
-                )
-              }
+          // stop: {
+          //   allowSort: false,
+          //   displayName: "Stop",
+          //   render: item => {
+          //     if (TaskHistoryTable.isTaskActive(item.status)) {
+          //       return (
+          //         <Button onClick={this.handleStopButtonClick.bind(this, item)}>
+          //           Stop
+          //         </Button>
+          //       )
+          //     }
 
-              return null
-            },
-            width: 0.6,
-          },
+          //     return null
+          //   },
+          //   width: 0.6,
+          // },
           status: {
             allowSort: true,
             displayName: "Status",
@@ -69,7 +69,7 @@ class TaskHistoryTable extends Component {
                 exitCode={get(item, "exit_code")}
               />
             ),
-            width: 0.4,
+            width: 0.2,
           },
           started_at: {
             allowSort: true,
@@ -87,12 +87,13 @@ class TaskHistoryTable extends Component {
               }
               return "-"
             },
-            width: 1,
+            width: 0.8,
           },
           duration: {
             allowSort: false,
             displayName: "Duration",
             render: item => getRunDuration(item),
+            width: 0.5,
           },
           run_id: {
             allowSort: true,
@@ -102,12 +103,12 @@ class TaskHistoryTable extends Component {
             ),
             width: 1,
           },
-          cluster: {
-            allowSort: false,
-            displayName: "Cluster",
-            render: item => item.cluster,
-            width: 1,
-          },
+          // cluster: {
+          //   allowSort: false,
+          //   displayName: "Cluster",
+          //   render: item => item.cluster,
+          //   width: 1,
+          // },
         }}
         getItems={data => data.history}
         getTotal={data => data.total}

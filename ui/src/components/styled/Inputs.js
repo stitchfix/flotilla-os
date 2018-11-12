@@ -8,7 +8,7 @@ import {
 const sharedInputStyles = css`
   border-color: ${colors.blue[0]};
   background: ${colors.black[1]};
-  border: 1px solid ${colors.black[3]};
+  border: 2px solid ${colors.black[3]};
   border-radius: 4px;
   font-size: 1rem;
   width: 100%;
@@ -17,6 +17,9 @@ const sharedInputStyles = css`
   padding: 0 8px;
   &::placeholder {
     color: ${SECONDARY_FONT_COLOR};
+  }
+  &:focus {
+    border-color: ${colors.blue[0]};
   }
 `
 

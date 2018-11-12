@@ -3,12 +3,10 @@ import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
 import { get, isEmpty, omit } from "lodash"
-import Button from "../styled/Button"
-import ButtonGroup from "../styled/ButtonGroup"
+import Navigation from "../Navigation/Navigation"
 import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
 import View from "../styled/View"
-import ViewHeader from "../styled/ViewHeader"
 import Form from "../Form/Form"
 import FieldText from "../Form/FieldText"
 import FieldSelect from "../Form/FieldSelect"
@@ -18,6 +16,7 @@ import api from "../../api"
 import config from "../../config"
 
 import * as requestStateTypes from "../../constants/requestStateTypes"
+import intentTypes from "../../constants/intentTypes"
 
 const taskFormTypes = {
   CREATE: "CREATE",
@@ -70,15 +69,13 @@ class TaskForm extends Component {
   }
 
   renderTitle() {
-    const { data, type } = this.props
-
-    switch (type) {
+    switch (this.props.type) {
       case taskFormTypes.CREATE:
         return "Create New Task"
       case taskFormTypes.UPDATE:
-        return `Update ${get(data, "definition_id", "Task")}`
+        return `Update`
       case taskFormTypes.CLONE:
-        return `Clone ${get(data, "definition_id", "Task")}`
+        return `Clone`
       default:
         return "Task Form"
     }
@@ -121,8 +118,55 @@ class TaskForm extends Component {
     }
   }
 
+  getBreadcrumbs = () => {
+    const { type, data, definitionID } = this.props
+
+    if (type === taskFormTypes.CREATE) {
+      return [
+        { text: "Tasks", href: "/tasks" },
+        { text: "Create Task", href: "/tasks/create" },
+      ]
+    }
+
+    const hrefSuffix = type === taskFormTypes.CLONE ? "copy" : "edit"
+
+    return [
+      { text: "Tasks", href: "/tasks" },
+      {
+        text: get(data, "alias", definitionID),
+        href: `/tasks/${definitionID}`,
+      },
+      {
+        text: this.renderTitle(),
+        href: `/tasks/${definitionID}/${hrefSuffix}`,
+      },
+    ]
+  }
+
+  getActions = () => {
+    const { goBack } = this.props
+
+    return [
+      {
+        isLink: false,
+        text: "Cancel",
+        buttonProps: {
+          onClick: goBack,
+        },
+      },
+      {
+        isLink: false,
+        text: "Submit",
+        buttonProps: {
+          type: "submit",
+          intent: intentTypes.primary,
+        },
+      },
+    ]
+  }
+
   render() {
-    const { type, goBack } = this.props
+    const { type } = this.props
 
     if (this.shouldNotRenderForm()) {
       return <Loader />
@@ -137,20 +181,11 @@ class TaskForm extends Component {
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
-                <ViewHeader
-                  title={this.renderTitle()}
-                  actions={
-                    <ButtonGroup>
-                      <Button type="cancel" onClick={goBack}>
-                        cancel
-                      </Button>
-                      <Button type="submit" intent="primary">
-                        submit
-                      </Button>
-                    </ButtonGroup>
-                  }
+                <Navigation
+                  breadcrumbs={this.getBreadcrumbs()}
+                  actions={this.getActions()}
                 />
-                <Form>
+                <Form title={this.renderTitle()}>
                   {type !== taskFormTypes.UPDATE && (
                     <FieldText
                       label="Alias"

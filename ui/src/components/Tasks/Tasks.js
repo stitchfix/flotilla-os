@@ -1,24 +1,29 @@
 import React from "react"
-import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import Helmet from "react-helmet"
-import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
+import Navigation from "../Navigation/Navigation"
 import ButtonLink from "../styled/ButtonLink"
 import View from "../styled/View"
-import ViewHeader from "../styled/ViewHeader"
 import api from "../../api"
 import config from "../../config"
+import intentTypes from "../../constants/intentTypes"
 
 const Tasks = props => (
   <View>
     <Helmet>
       <title>Tasks</title>
     </Helmet>
-    <ViewHeader
-      title="Tasks"
-      actions={<ButtonLink to="/tasks/create">Create New Task</ButtonLink>}
+    <Navigation
+      actions={[
+        {
+          isLink: true,
+          href: "/tasks/create",
+          text: "Create New Task",
+          intent: intentTypes.primary,
+        },
+      ]}
     />
     <AsyncDataTable
       requestFn={api.getTasks}

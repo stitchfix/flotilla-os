@@ -22,7 +22,7 @@ const ViewInner = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: ${VIEW_HEADER_HEIGHT_PX}px;
+  /* margin-top: ${VIEW_HEADER_HEIGHT_PX}px; */
 `
 
 const View = ({ children }) => (

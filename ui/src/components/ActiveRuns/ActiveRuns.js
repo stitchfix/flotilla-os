@@ -9,11 +9,10 @@ import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilte
 import ModalContext from "../Modal/ModalContext"
 import StopRunModal from "../Modal/StopRunModal"
 import RunStatus from "../Run/RunStatus"
+import Navigation from "../Navigation/Navigation"
 import Button from "../styled/Button"
 import View from "../styled/View"
-import ViewHeader from "../styled/ViewHeader"
 import SecondaryText from "../styled/SecondaryText"
-import ButtonLink from "../styled/ButtonLink"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 import { stringToSelectOpt } from "../../utils/reactSelectHelpers"
@@ -32,12 +31,9 @@ class ActiveRuns extends Component {
     return (
       <View>
         <Helmet>
-          <title>Tasks</title>
+          <title>Runs</title>
         </Helmet>
-        <ViewHeader
-          title="Active Runs"
-          actions={<ButtonLink to="/generic">Run Generic Task</ButtonLink>}
-        />
+        <Navigation />
         <AsyncDataTable
           shouldContinuouslyFetch
           requestFn={api.getActiveRuns}

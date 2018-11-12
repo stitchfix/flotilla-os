@@ -4,7 +4,6 @@ import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
 import RunLogs from "./RunLogs"
 import View from "../styled/View"
-import ViewHeader from "../styled/ViewHeader"
 
 const RunView = props => {
   return (
@@ -12,7 +11,6 @@ const RunView = props => {
       {ctx => {
         return (
           <View>
-            <ViewHeader title="hi" />
             <div className="flot-detail-view flot-run-view">
               <RunSidebar />
               <RunLogs

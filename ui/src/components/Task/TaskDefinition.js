@@ -1,16 +1,13 @@
 import React from "react"
+import PropTypes from "prop-types"
 import { get, omit } from "lodash"
 import TaskContext from "./TaskContext"
 import * as requestStateTypes from "../../constants/requestStateTypes"
 import View from "../styled/View"
-import ViewHeader from "../styled/ViewHeader"
-import Loader from "../styled/Loader"
 import TaskHistoryTable from "./TaskHistoryTable"
-import Button from "../styled/Button"
-import ButtonLink from "../styled/ButtonLink"
 import intentTypes from "../../constants/intentTypes"
+import Navigation from "../Navigation/Navigation"
 import DeleteTaskModal from "../Modal/DeleteTaskModal"
-import ButtonGroup from "../styled/ButtonGroup"
 import ModalContext from "../Modal/ModalContext"
 import { TaskDefinitionView } from "../styled/TaskDefinition"
 import TaskDefinitionSidebar from "./TaskDefinitionSidebar"
@@ -19,61 +16,74 @@ const TaskDefinition = props => {
   return (
     <TaskContext.Consumer>
       {ctx => {
-        let title = <Loader mini />
-        let actions
-        let sidebar = <Loader />
+        const breadcrumbs = [
+          { text: "Tasks", href: "/tasks" },
+          {
+            text: get(ctx, ["data", "alias"], ctx.definitionID),
+            href: `/tasks/${ctx.definitionID}`,
+          },
+        ]
+        let actions = []
+        let sidebar = null
 
         switch (ctx.requestState) {
           case requestStateTypes.READY:
-            title = get(ctx, ["data", "alias"], "")
-            actions = (
-              <ButtonGroup>
-                <Button
-                  intent={intentTypes.error}
-                  onClick={() => {
+            actions = [
+              {
+                isLink: false,
+                text: "Delete",
+                buttonProps: {
+                  intent: intentTypes.error,
+                  onClick: () => {
                     props.renderModal(
                       <DeleteTaskModal definitionID={ctx.definitionID} />
                     )
-                  }}
-                >
-                  Delete
-                </Button>
-                <ButtonLink to={`/tasks/${ctx.definitionID}/copy`}>
-                  Copy
-                </ButtonLink>
-                <ButtonLink to={`/tasks/${ctx.definitionID}/edit`}>
-                  Edit
-                </ButtonLink>
-                <ButtonLink to={`/tasks/${ctx.definitionID}/run`}>
-                  Run
-                </ButtonLink>
-              </ButtonGroup>
-            )
+                  },
+                },
+              },
+              {
+                isLink: true,
+                text: "Copy",
+                href: `/tasks/${ctx.definitionID}/copy`,
+              },
+              {
+                isLink: true,
+                text: "Edit",
+                href: `/tasks/${ctx.definitionID}/edit`,
+              },
+              {
+                isLink: true,
+                text: "Run",
+                href: `/tasks/${ctx.definitionID}/run`,
+              },
+            ]
             sidebar = <TaskDefinitionSidebar data={ctx.data} />
             break
           case requestStateTypes.ERROR:
-            title = "Error"
             sidebar = "blork"
             break
           case requestStateTypes.NOT_READY:
           default:
-            title = "loading"
             sidebar = "loading"
             break
         }
 
         return (
           <View>
-            <ViewHeader title={title} actions={actions} />
+            <Navigation breadcrumbs={breadcrumbs} actions={actions} />
             <TaskDefinitionView>
-              <div>{sidebar}</div>
               <TaskHistoryTable definitionID={ctx.definitionID} />
+              <div>{sidebar}</div>
             </TaskDefinitionView>
           </View>
         )
       }}
     </TaskContext.Consumer>
   )
+}
+
+TaskDefinition.propTypes = {
+  renderModal: PropTypes.func.isRequired,
 }
 
 export default props => (

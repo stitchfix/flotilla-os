@@ -1,9 +1,13 @@
-import styled from "styled-components"
+import styled, { css } from "styled-components"
 import colors from "../../constants/colors"
 
-const SecondaryText = styled.div`
+export const secondaryTextStyles = css`
   font-size: 0.9rem;
   color: ${colors.gray[1]};
+`
+
+const SecondaryText = styled.div`
+  ${secondaryTextStyles};
 `
 
 export default SecondaryText
