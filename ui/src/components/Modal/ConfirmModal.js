@@ -5,7 +5,7 @@ import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import * as intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../constants/intentTypes"
 
 class ConfirmModal extends Component {
   state = {
@@ -18,7 +18,6 @@ class ConfirmModal extends Component {
       requestFn,
       renderPopup,
       unrenderModal,
-      unrenderPopup,
       onSuccess,
       onFailure,
       getRequestArgs,

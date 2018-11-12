@@ -14,6 +14,7 @@ const sharedInputStyles = css`
   width: 100%;
   color: ${DEFAULT_FONT_COLOR};
   height: 38px;
+  padding: 0 8px;
   &::placeholder {
     color: ${SECONDARY_FONT_COLOR};
   }
