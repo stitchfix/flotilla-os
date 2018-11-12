@@ -91,13 +91,11 @@ class FieldKeyValue extends Component {
   }
 
   toggleKeyInputFocus = () => {
-    console.log("A")
     this.setState(prevState => ({
       isKeyInputFocused: !prevState.isKeyInputFocused,
     }))
   }
   toggleValueInputFocus = () => {
-    console.log("B")
     this.setState(prevState => ({
       isValueInputFocused: !prevState.isValueInputFocused,
     }))
