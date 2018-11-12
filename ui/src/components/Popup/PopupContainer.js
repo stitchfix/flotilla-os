@@ -1,19 +1,20 @@
 import React, { createContext, Component } from "react"
 import PropTypes from "prop-types"
 import PopupContext from "./PopupContext"
+import Popup from "./Popup"
 
 class PopupContainer extends Component {
   state = {
     isVisible: false,
-    popup: null,
+    popupProps: null,
   }
 
-  renderPopup = popup => {
-    this.setState({ isVisible: true, popup })
+  renderPopup = popupProps => {
+    this.setState({ isVisible: true, popupProps })
   }
 
   unrenderPopup = () => {
-    this.setState({ isVisible: false, popup: null })
+    this.setState({ isVisible: false, popupProps: null })
   }
 
   getCtx() {
@@ -24,11 +25,11 @@ class PopupContainer extends Component {
   }
 
   render() {
-    const { popup, isVisible } = this.state
+    const { popupProps, isVisible } = this.state
 
     return (
       <PopupContext.Provider value={this.getCtx()}>
-        {!!isVisible && popup}
+        {!!isVisible && <Popup {...popupProps} />}
         {this.props.children}
       </PopupContext.Provider>
     )

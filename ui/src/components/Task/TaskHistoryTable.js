@@ -1,12 +1,16 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
+import { connect } from "react-redux"
 import moment from "moment"
-import { get, has } from "lodash"
+import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
+import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
 import RunStatus from "../Run/RunStatus"
 import Button from "../styled/Button"
+import ButtonLink from "../styled/ButtonLink"
+import SecondaryText from "../styled/SecondaryText"
 import runStatusTypes from "../../constants/runStatusTypes"
 import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
@@ -43,7 +47,7 @@ class TaskHistoryTable extends Component {
         columns={{
           stop: {
             allowSort: false,
-            displayName: "Stop Run",
+            displayName: "Stop",
             render: item => {
               if (TaskHistoryTable.isTaskActive(item.status)) {
                 return (
@@ -55,6 +59,7 @@ class TaskHistoryTable extends Component {
 
               return null
             },
+            width: 0.6,
           },
           status: {
             allowSort: true,
@@ -65,12 +70,24 @@ class TaskHistoryTable extends Component {
                 exitCode={get(item, "exit_code")}
               />
             ),
+            width: 0.4,
           },
           started_at: {
             allowSort: true,
             displayName: "Started At",
-            render: item =>
-              has(item, "started_at") ? moment(item.started_at).fromNow() : "-",
+            render: item => {
+              if (!!get(item, "started_at")) {
+                return (
+                  <div>
+                    <div style={{ marginBottom: 4 }}>
+                      {moment(item.started_at).fromNow()}
+                    </div>
+                    <SecondaryText>{item.started_at}</SecondaryText>
+                  </div>
+                )
+              }
+              return "-"
+            },
             width: 1,
           },
           duration: {
@@ -84,16 +101,25 @@ class TaskHistoryTable extends Component {
             render: item => (
               <Link to={`/runs/${item.run_id}`}>{item.run_id}</Link>
             ),
+            width: 1,
           },
           cluster: {
             allowSort: false,
             displayName: "Cluster",
             render: item => item.cluster,
+            width: 1,
           },
         }}
         getItems={data => data.history}
         getTotal={data => data.total}
-        filters={{}}
+        filters={{
+          cluster_name: {
+            displayName: "Cluster Name",
+            type: asyncDataTableFilterTypes.SELECT,
+            options: this.props.clusterOptions,
+            description: "Search runs running on a specific cluster.",
+          },
+        }}
         initialQuery={{
           page: 1,
           sort_by: "started_at",
@@ -101,12 +127,7 @@ class TaskHistoryTable extends Component {
         }}
         emptyTableTitle="This task hasn't been run yet."
         emptyTableBody={
-          <Link
-            className="pl-button pl-intent-primary"
-            to={`/tasks/${definitionID}/run`}
-          >
-            Run Task
-          </Link>
+          <ButtonLink to={`/tasks/${definitionID}/run`}>Run Task</ButtonLink>
         }
       />
     )
@@ -114,14 +135,24 @@ class TaskHistoryTable extends Component {
 }
 
 TaskHistoryTable.propTypes = {
+  clusterOptions: PropTypes.arrayOf(
+    PropTypes.shape({ label: PropTypes.string, value: PropTypes.string })
+  ),
   definitionID: PropTypes.string.isRequired,
   renderModal: PropTypes.func.isRequired,
 }
 
-TaskHistoryTable.defaultProps = {}
+TaskHistoryTable.defaultProps = {
+  clusterOptions: [],
+  renderModal: () => {},
+}
 
-export default props => (
+const mapStateToProps = state => ({
+  clusterOptions: get(state, "selectOpts.cluster", []),
+})
+
+export default connect(mapStateToProps)(props => (
   <ModalContext.Consumer>
     {ctx => <TaskHistoryTable {...props} renderModal={ctx.renderModal} />}
   </ModalContext.Consumer>
-)
+))

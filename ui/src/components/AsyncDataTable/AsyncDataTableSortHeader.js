@@ -2,7 +2,6 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { get } from "lodash"
-import cn from "classnames"
 import {
   TableHeaderCell,
   TableHeaderSortIcon,
@@ -70,13 +69,6 @@ class AsyncDataTableSortHeader extends Component {
     }
     const currSortKey = this.getCurrSortKey()
     const currSortOrder = this.getCurrSortOrder()
-
-    const className = cn({
-      "pl-th": true,
-      "pl-th-sort": true,
-      desc: currSortKey === sortKey && currSortOrder === "desc",
-      asc: currSortKey === sortKey && currSortOrder === "asc",
-    })
 
     const isActive = currSortKey === sortKey
     let direction = null

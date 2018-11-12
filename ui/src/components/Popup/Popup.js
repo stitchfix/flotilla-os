@@ -1,58 +1,75 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import cn from "classnames"
-import Button from "../styled/Button"
+import styled from "styled-components"
+import PopupContext from "./PopupContext"
+import { Z_INDICES } from "../../constants/styles"
+import colors from "../../constants/colors"
 import intentTypes from "../../constants/intentTypes"
 
-export default class Popup extends Component {
-  static displayName = "Popup"
-  static propTypes = {
-    actions: PropTypes.node,
-    autohide: PropTypes.bool.isRequired,
-    duration: PropTypes.number,
-    hide: PropTypes.func,
-    intent: PropTypes.oneOf(Object.values(intentTypes)),
-    message: PropTypes.node,
-    title: PropTypes.node,
-  }
+const POPUP_WINDOW_DISTANCE_PX = 48
+const POPUP_WIDTH_PX = 320
 
-  static defaultProps = {
-    autohide: true,
-    duration: 5000,
-  }
+const PopupPositioner = styled.div`
+  position: fixed;
+  bottom: ${POPUP_WINDOW_DISTANCE_PX}px;
+  right: ${POPUP_WINDOW_DISTANCE_PX}px;
+  z-index: ${Z_INDICES.POPUP};
+  background: ${colors.black[2]};
+  width: ${POPUP_WIDTH_PX}px;
+`
 
+const PopupContainer = styled.div`
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+`
+
+const PopupTitle = styled.div``
+const PopupBody = styled.div``
+
+class Popup extends Component {
   componentDidMount() {
-    const { autohide, duration, hide } = this.props
+    const { shouldAutohide, unrenderPopup, visibleDuration } = this.props
 
-    if (autohide) {
+    if (!!shouldAutohide) {
       window.setTimeout(() => {
-        hide()
-      }, duration)
+        unrenderPopup()
+      }, visibleDuration)
     }
   }
 
   render() {
-    const { intent, title, message, actions, hide } = this.props
-
-    const intentClassName = cn({
-      "pl-popup-intent": true,
-      [`pl-intent-${intent}`]: !!intent,
-    })
-
+    const { body, title } = this.props
     return (
-      <div className="pl-popup-container">
-        <div className="pl-popup">
-          <div className={intentClassName} />
-          <div className="pl-popup-content">
-            {!!title && <h3 className="pl-popup-title">{title}</h3>}
-            {!!message && <div className="pl-popup-message">{message}</div>}
-            <div className="flex ff-rn j-fs a-c with-horizontal-child-margin">
-              <Button onClick={hide}>Close</Button>
-              {!!actions && <div className="pl-popup-actions">{actions}</div>}
-            </div>
-          </div>
-        </div>
-      </div>
+      <PopupPositioner>
+        <PopupContainer>
+          {!!title && <PopupTitle>{title}</PopupTitle>}
+          {!!body && <PopupBody>{body}</PopupBody>}
+        </PopupContainer>
+      </PopupPositioner>
     )
   }
 }
+
+Popup.propTypes = {
+  body: PropTypes.node,
+  intent: PropTypes.oneOf(Object.values(intentTypes)),
+  shouldAutohide: PropTypes.bool.isRequired,
+  title: PropTypes.node,
+  unrenderPopup: PropTypes.func.isRequired,
+  visibleDuration: PropTypes.number.isRequired,
+}
+
+Popup.defaultProps = {
+  shouldAutohide: true,
+  visibleDuration: 5000,
+}
+
+export default props => (
+  <PopupContext.Consumer>
+    {pCtx => <Popup {...props} unrenderPopup={pCtx.unrenderPopup} />}
+  </PopupContext.Consumer>
+)

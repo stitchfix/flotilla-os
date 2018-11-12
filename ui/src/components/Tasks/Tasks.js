@@ -6,6 +6,7 @@ import Helmet from "react-helmet"
 import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
+import ButtonLink from "../styled/ButtonLink"
 import View from "../styled/View"
 import ViewHeader from "../styled/ViewHeader"
 import api from "../../api"
@@ -18,11 +19,7 @@ const Tasks = props => (
     </Helmet>
     <ViewHeader
       title="Tasks"
-      actions={
-        <Link className="pl-button pl-intent-primary" to="/tasks/create">
-          Create New Task
-        </Link>
-      }
+      actions={<ButtonLink to="/tasks/create">Create New Task</ButtonLink>}
     />
     <AsyncDataTable
       requestFn={api.getTasks}
@@ -31,9 +28,7 @@ const Tasks = props => (
           allowSort: false,
           displayName: "Run",
           render: item => (
-            <Link className="pl-button" to={`/tasks/${item.definition_id}/run`}>
-              Run
-            </Link>
+            <ButtonLink to={`/tasks/${item.definition_id}/run`}>Run</ButtonLink>
           ),
           width: 0.4,
         },
@@ -91,9 +86,7 @@ const Tasks = props => (
       }}
       emptyTableTitle="No tasks were found. Create one?"
       emptyTableBody={
-        <Link className="pl-button pl-intent-primary" to="/tasks/create">
-          Create New Task
-        </Link>
+        <ButtonLink to="/tasks/create">Create New Task</ButtonLink>
       }
     />
   </View>

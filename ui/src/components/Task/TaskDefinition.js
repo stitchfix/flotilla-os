@@ -1,6 +1,4 @@
-import React, { Fragment } from "react"
-import { Link } from "react-router-dom"
-import JSONView from "react-json-view"
+import React from "react"
 import { get, omit } from "lodash"
 import TaskContext from "./TaskContext"
 import * as requestStateTypes from "../../constants/requestStateTypes"
@@ -9,101 +7,13 @@ import ViewHeader from "../styled/ViewHeader"
 import Loader from "../styled/Loader"
 import TaskHistoryTable from "./TaskHistoryTable"
 import Button from "../styled/Button"
+import ButtonLink from "../styled/ButtonLink"
 import intentTypes from "../../constants/intentTypes"
 import DeleteTaskModal from "../Modal/DeleteTaskModal"
 import ButtonGroup from "../styled/ButtonGroup"
-import KeyValueContainer from "../styled/KeyValueContainer"
-import FormGroup from "../styled/FormGroup"
-import Tag from "../styled/Tag"
-import reactJsonViewProps from "../../constants/reactJsonViewProps"
 import ModalContext from "../Modal/ModalContext"
-
-const TaskDefinitionSidebar = ({ data }) => {
-  return (
-    <Fragment>
-      <KeyValueContainer header="Task Info">
-        {({ json, collapsed }) => {
-          if (json) {
-            return <JSONView {...reactJsonViewProps} src={data} />
-          }
-
-          return (
-            <div className="flot-detail-view-sidebar-card-content">
-              <FormGroup isStatic label="Alias">
-                {get(data, "alias", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Definition ID">
-                {get(data, "definition_id", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Container Name">
-                {get(data, "container_name", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Group Name">
-                {get(data, "group_name", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Image">
-                {get(data, "image", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Command">
-                <pre style={{ fontSize: "0.9rem" }}>
-                  {get(data, "command", "...")}
-                </pre>
-              </FormGroup>
-              <FormGroup isStatic label="Memory">
-                {get(data, "memory", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Arn">
-                {get(data, "arn", "...")}
-              </FormGroup>
-              <FormGroup isStatic label="Tags">
-                <div className="flex ff-rw j-fs a-fs with-horizontal-child-margin">
-                  {get(data, "tags", [])
-                    .filter(tag => tag !== "")
-                    .map(tag => <Tag key={tag}>{tag}</Tag>)}
-                </div>
-              </FormGroup>
-            </div>
-          )
-        }}
-      </KeyValueContainer>
-      <KeyValueContainer header="Environment Variables">
-        {({ json, collapsed }) => {
-          if (json) {
-            return (
-              <JSONView
-                {...reactJsonViewProps}
-                src={get(data, "env", []).reduce((acc, val) => {
-                  acc[val.name] = val.value
-                  return acc
-                }, {})}
-              />
-            )
-          }
-
-          return (
-            <div className="flot-detail-view-sidebar-card-content code">
-              {get(data, "env", []).map((env, i) => (
-                <FormGroup
-                  isStatic
-                  label={
-                    <span className="code" style={{ color: "white" }}>
-                      {env.name}
-                    </span>
-                  }
-                  key={`env-${i}`}
-                >
-                  <span className="code" style={{ wordBreak: "break-all" }}>
-                    {env.value}
-                  </span>
-                </FormGroup>
-              ))}
-            </div>
-          )
-        }}
-      </KeyValueContainer>
-    </Fragment>
-  )
-}
+import { TaskDefinitionView } from "../styled/TaskDefinition"
+import TaskDefinitionSidebar from "./TaskDefinitionSidebar"
 
 const TaskDefinition = props => {
   return (
@@ -128,24 +38,15 @@ const TaskDefinition = props => {
                 >
                   Delete
                 </Button>
-                <Link
-                  to={`/tasks/${ctx.definitionID}/copy`}
-                  className="pl-button"
-                >
+                <ButtonLink to={`/tasks/${ctx.definitionID}/copy`}>
                   Copy
-                </Link>
-                <Link
-                  to={`/tasks/${ctx.definitionID}/edit`}
-                  className="pl-button"
-                >
+                </ButtonLink>
+                <ButtonLink to={`/tasks/${ctx.definitionID}/edit`}>
                   Edit
-                </Link>
-                <Link
-                  to={`/tasks/${ctx.definitionID}/run`}
-                  className="pl-button pl-intent-primary"
-                >
+                </ButtonLink>
+                <ButtonLink to={`/tasks/${ctx.definitionID}/run`}>
                   Run
-                </Link>
+                </ButtonLink>
               </ButtonGroup>
             )
             sidebar = <TaskDefinitionSidebar data={ctx.data} />
@@ -164,10 +65,10 @@ const TaskDefinition = props => {
         return (
           <View>
             <ViewHeader title={title} actions={actions} />
-            <div>
-              <div className="flot-detail-view-sidebar">{sidebar}</div>
+            <TaskDefinitionView>
+              <div>{sidebar}</div>
               <TaskHistoryTable definitionID={ctx.definitionID} />
-            </div>
+            </TaskDefinitionView>
           </View>
         )
       }}

@@ -1,13 +1,11 @@
 import React from "react"
-import PropTypes from "prop-types"
+import styled from "styled-components"
+import { Z_INDICES } from "../../constants/styles"
 
-const Modal = ({ children }) => {
-  return <div className="pl-modal">{children}</div>
-}
-
-Modal.displayName = "Modal"
-Modal.propTypes = {
-  children: PropTypes.node,
-}
+const Modal = styled.div`
+  z-index: ${Z_INDICES.MODAL};
+  width: 400px;
+  margin-top: 24px;
+`
 
 export default Modal

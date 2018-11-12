@@ -14,6 +14,7 @@ import Button from "../styled/Button"
 import View from "../styled/View"
 import ViewHeader from "../styled/ViewHeader"
 import SecondaryText from "../styled/SecondaryText"
+import ButtonLink from "../styled/ButtonLink"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 import { stringToSelectOpt } from "../../utils/reactSelectHelpers"
@@ -36,11 +37,7 @@ class ActiveRuns extends Component {
         </Helmet>
         <ViewHeader
           title="Active Runs"
-          actions={
-            <Link className="pl-button pl-intent-primary" to="/generic">
-              Run Generic Task
-            </Link>
-          }
+          actions={<ButtonLink to="/generic">Run Generic Task</ButtonLink>}
         />
         <AsyncDataTable
           shouldContinuouslyFetch

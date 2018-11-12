@@ -223,17 +223,7 @@ class AsyncDataTable extends Component {
                   ))}
                 </Table>
               )}
-              <div
-                className="table-footer"
-                style={{
-                  display: "flex",
-                  flexFlow: "row nowrap",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <AsyncDataTablePagination total={total} limit={limit} />
-              </div>
+              <AsyncDataTablePagination total={total} limit={limit} />
             </AsyncDataTableContent>
           </AsyncDataTableContainer>
         )

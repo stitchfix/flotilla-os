@@ -1,12 +1,10 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import Button from "../styled/Button"
-import ButtonGroup from "../styled/ButtonGroup"
 import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import Popup from "../Popup/Popup"
 import * as intentTypes from "../../constants/intentTypes"
 
 class ConfirmModal extends Component {
@@ -30,29 +28,23 @@ class ConfirmModal extends Component {
 
     requestFn(getRequestArgs())
       .then(res => {
-        renderPopup(
-          <Popup
-            title="Success!"
-            message="Action was completed successfully."
-            intent={intentTypes.success}
-            hide={unrenderPopup}
-          />
-        )
+        renderPopup({
+          body: "Action was completed successfully.",
+          title: "Success!",
+          intent: intentTypes.success,
+        })
         unrenderModal()
         onSuccess(res)
       })
       .catch(error => {
         this.setState({ inFlight: false, error })
 
-        renderPopup(
-          <Popup
-            title="Error!"
-            message="An error occurred."
-            intent={intentTypes.error}
-            autohide={false}
-            hide={unrenderPopup}
-          />
-        )
+        renderPopup({
+          body: "TODO: put error text here",
+          title: "Error!",
+          intent: intentTypes.error,
+          shouldAutohide: false,
+        })
 
         onFailure()
       })

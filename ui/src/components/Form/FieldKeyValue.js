@@ -6,7 +6,8 @@ import { isEmpty } from "lodash"
 import styled from "styled-components"
 import FieldText from "./FieldText"
 import Button from "../styled/Button"
-import Field, { FieldDescription } from "../styled/Field"
+import Field from "../styled/Field"
+import { Input } from "../styled/Inputs"
 import intentTypes from "../../constants/intentTypes"
 
 const NestedKV = styled.div`
@@ -145,9 +146,8 @@ class FieldKeyValue extends Component {
             isRequired
             description="Press enter to add."
           >
-            <input
+            <Input
               type="text"
-              className="pl-input"
               value={this.state.keyValue}
               onChange={evt => {
                 this.setState({ keyValue: evt.target.value })
@@ -160,9 +160,8 @@ class FieldKeyValue extends Component {
             />
           </Field>
           <Field field={keyField} label="Value" isRequired>
-            <input
+            <Input
               type="text"
-              className="pl-input"
               value={this.state.valueValue}
               onChange={evt => {
                 this.setState({ valueValue: evt.target.value })

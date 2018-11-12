@@ -1,10 +1,11 @@
-import React from "react"
+import React, { Fragment } from "react"
 import { render } from "react-dom"
 import { Provider } from "react-redux"
-import "./styles/index.scss"
+
 import Store from "./store"
 import App from "./components/App/App"
 import fetchSelectOpts from "./actions/fetchSelectOpts"
+import GlobalStyle from "./components/styled/GlobalStyle"
 
 const store = Store()
 
@@ -12,8 +13,11 @@ const store = Store()
 store.dispatch(fetchSelectOpts())
 
 render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
+  <Fragment>
+    <GlobalStyle />
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </Fragment>,
   document.getElementById("root")
 )

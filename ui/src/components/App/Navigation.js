@@ -98,12 +98,19 @@ const NavigationLink = styled(Link)`
   }
 `
 
+const NavigationLogo = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  margin-right: 8px;
+`
+
 const Navigation = () => (
   <NavigationContainer>
     <NavigationInner>
       <NavigationSection>
         <NavigationTitle>
-          <img src={Favicon} alt="stitchfix-logo" className="topbar-logo" />
+          <NavigationLogo src={Favicon} alt="stitchfix-logo" />
           <div>Flotilla</div>
         </NavigationTitle>
         <NavigationLinkGroup>

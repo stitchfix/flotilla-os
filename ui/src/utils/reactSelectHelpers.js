@@ -38,7 +38,7 @@ export const selectTheme = theme => ({
     dangerLight: colors.red[4],
     neutral0: colors.black[1],
     neutral5: colors.black[1],
-    neutral10: colors.black[1],
+    neutral10: colors.black[4],
     neutral20: colors.black[4],
     neutral30: colors.black[4],
     neutral40: colors.gray[0],

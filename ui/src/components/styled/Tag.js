@@ -1,23 +1,13 @@
-import React from "react"
-import PropTypes from "prop-types"
-import cn from "classnames"
-import intentTypes from "../../constants/intentTypes"
+import styled from "styled-components"
+import SecondaryText from "./SecondaryText"
+import colors from "../../constants/colors"
+import { MONOSPACE_FONT_FAMILY } from "../../constants/styles"
 
-const Tag = props => (
-  <div
-    className={cn({
-      "pl-tag": true,
-      [`pl-${props.intent}`]: !!props.intent,
-    })}
-  >
-    {props.children}
-  </div>
-)
-
-Tag.displayName = "Tag"
-Tag.propTypes = {
-  children: PropTypes.node,
-  intent: PropTypes.oneOf(Object.values(intentTypes)),
-}
+const Tag = styled(SecondaryText)`
+  background: ${colors.black[4]};
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: ${MONOSPACE_FONT_FAMILY};
+`
 
 export default Tag

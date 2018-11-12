@@ -1,6 +1,37 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
+import styled from "styled-components"
+import { Z_INDICES } from "../../constants/styles"
+import colors from "../../constants/colors"
 import ModalContext from "./ModalContext"
+
+const StyledModalContainer = styled.div`
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: scroll;
+  z-index: ${Z_INDICES.MODAL_CONTAINER};
+`
+
+const ModalOverlay = styled.div`
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: ${colors.black[0]};
+  z-index: ${Z_INDICES.MODAL_OVERLAY};
+`
 
 class ModalContainer extends Component {
   state = {
@@ -29,10 +60,10 @@ class ModalContainer extends Component {
     return (
       <ModalContext.Provider value={this.getCtx()}>
         {!!isVisible && (
-          <div className="pl-modal-container">
-            <div className="pl-modal-overlay" />
+          <StyledModalContainer>
+            <ModalOverlay />
             {modal}
-          </div>
+          </StyledModalContainer>
         )}
         {this.props.children}
       </ModalContext.Provider>

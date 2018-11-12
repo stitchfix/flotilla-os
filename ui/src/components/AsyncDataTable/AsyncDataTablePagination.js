@@ -2,6 +2,8 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
 import { get } from "lodash"
+import Button from "../styled/Button"
+import ButtonGroup from "../styled/ButtonGroup"
 
 class AsyncDataTablePagination extends Component {
   constructor(props) {
@@ -53,40 +55,30 @@ class AsyncDataTablePagination extends Component {
   render() {
     const isFirstPage = this.isFirstPage()
     const isLastPage = this.isLastPage()
-    return [
-      <button
-        className="pl-button"
-        key="first"
-        disabled={isFirstPage}
-        onClick={this.handleFirstClick}
-      >
-        First
-      </button>,
-      <button
-        className="pl-button"
-        key="prev"
-        disabled={isFirstPage}
-        onClick={this.handlePrevClick}
-      >
-        Prev
-      </button>,
-      <button
-        className="pl-button"
-        key="next"
-        disabled={isLastPage}
-        onClick={this.handleNextClick}
-      >
-        Next
-      </button>,
-      <button
-        className="pl-button"
-        key="last"
-        disabled={isLastPage}
-        onClick={this.handleLastClick}
-      >
-        Last
-      </button>,
-    ]
+    return (
+      <ButtonGroup>
+        <Button
+          key="first"
+          disabled={isFirstPage}
+          onClick={this.handleFirstClick}
+        >
+          First
+        </Button>
+        <Button
+          key="prev"
+          disabled={isFirstPage}
+          onClick={this.handlePrevClick}
+        >
+          Prev
+        </Button>
+        <Button key="next" disabled={isLastPage} onClick={this.handleNextClick}>
+          Next
+        </Button>
+        <Button key="last" disabled={isLastPage} onClick={this.handleLastClick}>
+          Last
+        </Button>
+      </ButtonGroup>
+    )
   }
 }
 

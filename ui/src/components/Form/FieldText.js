@@ -4,6 +4,7 @@ import { Field as RFField } from "react-form"
 import DebounceInput from "react-debounce-input"
 import { get } from "lodash"
 import Field from "../styled/Field"
+import { Input, Textarea } from "../styled/Inputs"
 
 const FieldText = props => {
   return (
@@ -23,12 +24,12 @@ const FieldText = props => {
         let input
 
         if (props.isTextArea) {
-          input = <textarea className="pl-textarea" {...sharedProps} />
+          input = <Textarea {...sharedProps} />
         } else if (props.shouldDebounce) {
           input = (
             <DebounceInput
               {...sharedProps}
-              className="pl-input"
+              element={Input}
               debounceTimeout={250}
               minLength={1}
               type={props.isNumber ? "number" : "text"}
@@ -36,11 +37,7 @@ const FieldText = props => {
           )
         } else {
           input = (
-            <input
-              type={props.isNumber ? "number" : "text"}
-              className="pl-input"
-              {...sharedProps}
-            />
+            <Input type={props.isNumber ? "number" : "text"} {...sharedProps} />
           )
         }
 

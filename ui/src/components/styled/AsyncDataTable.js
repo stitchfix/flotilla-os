@@ -29,4 +29,5 @@ export const AsyncDataTableContent = styled.div`
   overflow-y: scroll;
   height: calc(100vh - ${TOPBAR_HEIGHT_PX}px - ${VIEW_HEADER_HEIGHT_PX}px);
   min-width: 800px;
+  position: relative;
 `

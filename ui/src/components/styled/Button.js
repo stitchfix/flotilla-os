@@ -1,11 +1,11 @@
 import React from "react"
 import PropTypes from "prop-types"
-import styled from "styled-components"
+import styled, { css } from "styled-components"
 import colors from "../../constants/colors"
 import intentTypes from "../../constants/intentTypes"
 import Loader from "./Loader"
 
-const StyledButton = styled.button`
+export const buttonStyles = css`
   background: ${colors.black[3]};
   border-radius: 2px;
   border: 1px solid ${colors.black[3]};
@@ -20,6 +20,10 @@ const StyledButton = styled.button`
   text-transform: uppercase;
   transition-duration: 200ms;
   white-space: nowrap;
+`
+
+const StyledButton = styled.button`
+  ${buttonStyles};
 `
 
 const Button = ({ isLoading, intent, isDisabled, type, onClick, children }) => {
