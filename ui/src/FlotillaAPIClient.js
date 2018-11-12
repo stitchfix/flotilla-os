@@ -123,7 +123,10 @@ class FlotillaAPIClient {
       path: `/v1/groups`,
       query: { limit: 2000 },
       payload: null,
-      preprocess: res => get(res, "groups", []).map(stringToSelectOpt),
+      preprocess: res =>
+        get(res, "groups", [])
+          .filter(v => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
@@ -133,7 +136,10 @@ class FlotillaAPIClient {
       path: `/v1/clusters`,
       query: null,
       payload: null,
-      preprocess: res => get(res, "clusters", []).map(stringToSelectOpt),
+      preprocess: res =>
+        get(res, "clusters", [])
+          .filter(v => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
@@ -143,7 +149,10 @@ class FlotillaAPIClient {
       path: `/v1/tags`,
       query: { limit: 5000 },
       payload: null,
-      preprocess: res => get(res, "tags", []).map(stringToSelectOpt),
+      preprocess: res =>
+        get(res, "tags", [])
+          .filter(v => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
