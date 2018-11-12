@@ -176,7 +176,6 @@ class AsyncDataTable extends Component {
               <ReactForm
                 onChange={this.handleFiltersChange}
                 defaultValues={queryParams}
-                pure={false}
               >
                 {formAPI => {
                   return (

@@ -1,7 +1,6 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
-import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { get } from "lodash"
 import moment from "moment"
@@ -137,8 +136,9 @@ class ActiveRuns extends Component {
             cluster_name: {
               displayName: "Cluster Name",
               type: asyncDataTableFilterTypes.SELECT,
-              options: this.props.clusterOptions,
               description: "Search runs running on a specific cluster.",
+              shouldRequestOptions: true,
+              requestOptionsFn: api.getClusters,
             },
           }}
           initialQuery={{
@@ -159,22 +159,14 @@ class ActiveRuns extends Component {
 }
 
 ActiveRuns.propTypes = {
-  clusterOptions: PropTypes.arrayOf(
-    PropTypes.shape({ label: PropTypes.string, value: PropTypes.string })
-  ),
   renderModal: PropTypes.func.isRequired,
 }
 
 ActiveRuns.defaultProps = {
-  clusterOptions: [],
   renderModal: () => {},
 }
 
-const mapStateToProps = state => ({
-  clusterOptions: get(state, "selectOpts.cluster", []),
-})
-
-export default connect(mapStateToProps)(props => (
+export default props => (
   <ModalContext.Consumer>
     {ctx => (
       <ActiveRuns
@@ -184,4 +176,4 @@ export default connect(mapStateToProps)(props => (
       />
     )}
   </ModalContext.Consumer>
-))
+)

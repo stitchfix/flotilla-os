@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import { connect } from "react-redux"
 import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
 import { get, isEmpty, omit } from "lodash"
@@ -55,12 +54,9 @@ class RunForm extends Component {
   }
 
   render() {
-    const { clusterOptions, requestState } = this.props
+    const { requestState } = this.props
 
-    if (
-      isEmpty(clusterOptions) ||
-      requestState === requestStateTypes.NOT_READY
-    ) {
+    if (requestState === requestStateTypes.NOT_READY) {
       return <Loader />
     }
 
@@ -85,7 +81,8 @@ class RunForm extends Component {
                   <FieldSelect
                     label="Cluster"
                     field="cluster"
-                    options={clusterOptions}
+                    requestOptionsFn={api.getClusters}
+                    shouldRequestOptions
                   />
                   <FieldKeyValue
                     label="Run Tags"
@@ -111,25 +108,12 @@ class RunForm extends Component {
   }
 }
 
-RunForm.propTypes = {
-  clusterOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string,
-      value: PropTypes.string,
-    })
-  ),
-}
-
-const mapStateToProps = state => ({
-  clusterOptions: get(state, ["selectOpts", "cluster"], []),
-})
-
-const ReduxConnectedRunForm = connect(mapStateToProps)(RunForm)
+RunForm.propTypes = {}
 
 export default withRouter(props => (
   <TaskContext.Consumer>
     {ctx => (
-      <ReduxConnectedRunForm
+      <RunForm
         push={props.history.push}
         {...omit(props, ["history", "location", "match", "staticContext"])}
         {...ctx}

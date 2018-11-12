@@ -10,7 +10,7 @@ export const asyncDataTableFilterTypes = {
 }
 
 const AsyncDataTableFilter = props => {
-  const { field, type, displayName, options, description } = props
+  const { field, type, displayName, description } = props
   const sharedProps = {
     label: displayName,
     field,
@@ -19,14 +19,7 @@ const AsyncDataTableFilter = props => {
 
   switch (type) {
     case asyncDataTableFilterTypes.SELECT:
-      return (
-        <FieldSelect
-          {...sharedProps}
-          options={options}
-          isMulti={props.isMulti}
-          isCreatable={props.isCreatable}
-        />
-      )
+      return <FieldSelect {...sharedProps} {...props} />
     case asyncDataTableFilterTypes.INPUT:
     default:
       return <FieldText {...sharedProps} shouldDebounce />

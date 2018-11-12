@@ -1,7 +1,6 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
-import { connect } from "react-redux"
 import Helmet from "react-helmet"
 import { get } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
@@ -70,8 +69,9 @@ const Tasks = props => (
         group_name: {
           displayName: "Group Name",
           type: asyncDataTableFilterTypes.SELECT,
-          options: props.groupOptions,
           description: "Search tasks by existing group names.",
+          shouldRequestOptions: true,
+          requestOptionsFn: api.getGroups,
         },
         image: {
           displayName: "Image",
@@ -92,18 +92,8 @@ const Tasks = props => (
   </View>
 )
 
-Tasks.propTypes = {
-  groupOptions: PropTypes.arrayOf(
-    PropTypes.shape({ label: PropTypes.string, value: PropTypes.string })
-  ),
-}
+Tasks.propTypes = {}
 
-Tasks.defaultProps = {
-  groupOptions: [],
-}
+Tasks.defaultProps = {}
 
-const mapStateToProps = state => ({
-  groupOptions: get(state, "selectOpts.group", []),
-})
-
-export default connect(mapStateToProps)(Tasks)
+export default Tasks

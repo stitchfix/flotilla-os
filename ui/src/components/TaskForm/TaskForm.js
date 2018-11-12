@@ -1,17 +1,14 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
-import { connect } from "react-redux"
 import { Form as ReactForm } from "react-form"
 import { get, isEmpty, omit } from "lodash"
-
 import Button from "../styled/Button"
 import ButtonGroup from "../styled/ButtonGroup"
 import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
 import View from "../styled/View"
 import ViewHeader from "../styled/ViewHeader"
-
 import Form from "../Form/Form"
 import FieldText from "../Form/FieldText"
 import FieldSelect from "../Form/FieldSelect"
@@ -88,11 +85,7 @@ class TaskForm extends Component {
   }
 
   shouldNotRenderForm() {
-    const { type, groupOptions, tagOptions, requestState } = this.props
-
-    if (isEmpty(groupOptions) || isEmpty(tagOptions)) {
-      return true
-    }
+    const { type, requestState } = this.props
 
     if (
       type !== taskFormTypes.CREATE &&
@@ -129,7 +122,7 @@ class TaskForm extends Component {
   }
 
   render() {
-    const { type, groupOptions, tagOptions, goBack } = this.props
+    const { type, goBack } = this.props
 
     if (this.shouldNotRenderForm()) {
       return <Loader />
@@ -141,7 +134,6 @@ class TaskForm extends Component {
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
-          console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
@@ -169,7 +161,8 @@ class TaskForm extends Component {
                   <FieldSelect
                     label="Group Name"
                     field="group_name"
-                    options={groupOptions}
+                    requestOptionsFn={api.getGroups}
+                    shouldRequestOptions
                     isCreatable
                     description="Create a new group name or select an existing one to help searching for this task in the future."
                   />
@@ -195,7 +188,8 @@ class TaskForm extends Component {
                     isMulti
                     label="Tags"
                     field="tags"
-                    options={tagOptions}
+                    requestOptionsFn={api.getTags}
+                    shouldRequestOptions
                   />
                   <FieldKeyValue
                     label="Environment Variables"
@@ -218,34 +212,16 @@ class TaskForm extends Component {
 TaskForm.propTypes = {
   data: PropTypes.object,
   goBack: PropTypes.func.isRequired,
-  groupOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string,
-      value: PropTypes.string,
-    })
-  ),
   push: PropTypes.func.isRequired,
   renderPopup: PropTypes.func.isRequired,
   requestState: PropTypes.oneOf(Object.values(requestStateTypes)),
-  tagOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string,
-      value: PropTypes.string,
-    })
-  ),
   type: PropTypes.oneOf(Object.values(taskFormTypes)).isRequired,
 }
 
-const mapStateToProps = state => ({
-  groupOptions: get(state, ["selectOpts", "group"], []),
-  tagOptions: get(state, ["selectOpts", "tag"], []),
-})
-
-const ReduxConnectedTaskForm = connect(mapStateToProps)(TaskForm)
 const ConnectedTaskForm = withRouter(props => (
   <PopupContext.Consumer>
     {ctx => (
-      <ReduxConnectedTaskForm
+      <TaskForm
         {...omit(props, ["history", "location", "match", "staticContext"])}
         push={props.history.push}
         goBack={props.history.goBack}
