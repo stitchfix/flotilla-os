@@ -47,7 +47,10 @@ class RunForm extends Component {
 
     return {
       cluster: get(config, "DEFAULT_CLUSTER", ""),
-      run_tags: [{ name: "owner_id", value: "" }],
+      run_tags: get(config, "REQUIRED_RUN_TAGS", []).map(name => ({
+        name,
+        value: "",
+      })),
       env: get(data, ["env"], []),
     }
   }

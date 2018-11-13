@@ -46,6 +46,7 @@
     "babel-eslint": "9.0.0",
     "babel-jest": "17.0.2",
     "babel-loader": "8.0.4",
+    "dotenv-webpack": "^1.5.7",
     "enzyme": "3.2.0",
     "enzyme-adapter-react-16": "1.1.0",
     "eslint": "5.5.0",
@@ -68,8 +69,10 @@
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack":
+      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev":
+      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
@@ -77,12 +80,10 @@
     "test:watch": "npm test -- --watch"
   },
   "jest": {
-    "setupFiles": [
-      "raf/polyfill"
-    ],
+    "setupFiles": ["raf/polyfill"],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
-      "\\.(css|scss|png)$": "<rootDir>/src/__testutils__/styleMock.js"
+      "\\.png$": "<rootDir>/src/__testutils__/styleMock.js"
     },
     "coveragePathIgnorePatterns": [
       "/node_modules/",

@@ -1,5 +1,6 @@
 const path = require("path")
 const webpack = require("webpack")
+const Dotenv = require("dotenv-webpack")
 
 module.exports = opts => {
   const { ROOT, VENDOR } = opts
@@ -34,13 +35,7 @@ module.exports = opts => {
         },
       ],
     },
-    plugins: [
-      new webpack.EnvironmentPlugin([
-        "FLOTILLA_API",
-        "DEFAULT_CLUSTER",
-        "IMAGE_PREFIX",
-      ]),
-    ],
+    plugins: [new Dotenv()],
     resolve: {
       extensions: [".js", ".jsx"],
       modules: [path.resolve(ROOT, "src"), "node_modules"],
