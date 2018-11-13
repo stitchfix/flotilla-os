@@ -1,6 +1,7 @@
 import { createGlobalStyle } from "styled-components"
 import colors from "../../constants/colors"
 import { DEFAULT_FONT_COLOR } from "../../constants/styles"
+import { monospaceStyles } from "./Monospace"
 
 const GlobalStyle = createGlobalStyle`
   ::selection {
@@ -68,6 +69,11 @@ const GlobalStyle = createGlobalStyle`
   
   h6 {
     font-size: 0.75rem;
+  }
+
+  pre,
+  code {
+    ${monospaceStyles}
   }
 `
 
