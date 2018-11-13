@@ -11,13 +11,7 @@ const KeyValues = props => (
 )
 
 KeyValues.propTypes = {
-  items: PropTypes.objectOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      value: PropTypes.node,
-      renderValue: PropTypes.func,
-    })
-  ),
+  items: PropTypes.objectOf(PropTypes.node),
 }
 
 KeyValues.defaultProps = {

@@ -32,6 +32,7 @@
     "react-router-dom": "4.2.2",
     "react-router-query-params": "1.0.2",
     "react-select": "2.1.1",
+    "react-window": "^1.2.4",
     "styled-components": "4.0.3",
     "url-join": "4.0.0"
   },
@@ -67,10 +68,8 @@
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack":
-      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev":
-      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
@@ -78,7 +77,9 @@
     "test:watch": "npm test -- --watch"
   },
   "jest": {
-    "setupFiles": ["raf/polyfill"],
+    "setupFiles": [
+      "raf/polyfill"
+    ],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
       "\\.(css|scss|png)$": "<rootDir>/src/__testutils__/styleMock.js"

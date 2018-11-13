@@ -103,7 +103,7 @@ class FlotillaAPIClient {
   }
 
   getRunLogs = ({ runID, lastSeen }) => {
-    let q
+    let q = {}
 
     if (!!lastSeen) {
       q.last_seen = lastSeen

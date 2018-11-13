@@ -2,7 +2,7 @@ import React from "react"
 import { get } from "lodash"
 import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
-import RunLogs from "./RunLogs"
+import LogRequester from "./LogRequester"
 import View from "../styled/View"
 
 const RunView = props => {
@@ -12,8 +12,8 @@ const RunView = props => {
         return (
           <View>
             <div className="flot-detail-view flot-run-view">
-              <RunSidebar />
-              <RunLogs
+              {/* <RunSidebar /> */}
+              <LogRequester
                 runID={ctx.runID}
                 status={get(ctx, ["data", "status"])}
               />
