@@ -10,40 +10,31 @@ const TaskDefinitionSidebar = ({ data }) => {
   return (
     <div style={{ padding: 24 }}>
       <KeyValues
-        items={[
-          { key: "Alias", value: get(data, "alias", "-") },
-          { key: "Definition ID", value: get(data, "definition_id", "-") },
-          { key: "Container Name", value: get(data, "container_name", "-") },
-          { key: "Group Name", value: get(data, "group_name", "-") },
-          { key: "Image", value: get(data, "image", "-") },
-          {
-            key: "Command",
-            value: <Pre>{get(data, "command", "...")}</Pre>,
-          },
-          { key: "Memory", value: get(data, "memory", "-") },
-          { key: "ARN", value: get(data, "arn", "-") },
-          {
-            key: "Tags",
-            value: (
-              <TagGroup>
-                {get(data, "tags", [])
-                  .filter(tag => tag !== "")
-                  .map(tag => <Tag key={tag}>{tag}</Tag>)}
-              </TagGroup>
-            ),
-          },
-          {
-            key: "Environment Vars",
-            value: (
-              <KeyValues
-                items={get(data, "env", []).map((e, i) => ({
-                  key: e.name,
-                  value: <Pre>{e.value}</Pre>,
-                }))}
-              />
-            ),
-          },
-        ]}
+        items={{
+          Alias: get(data, "alias", "-"),
+          "Definition ID": get(data, "definition_id", "-"),
+          "Container Name": get(data, "container_name", "-"),
+          "Group Name": get(data, "group_name", "-"),
+          Image: get(data, "image", "-"),
+          Command: <Pre>{get(data, "command", "...")}</Pre>,
+          Memory: get(data, "memory", "-"),
+          ARN: get(data, "arn", "-"),
+          Tags: (
+            <TagGroup>
+              {get(data, "tags", [])
+                .filter(tag => tag !== "")
+                .map(tag => <Tag key={tag}>{tag}</Tag>)}
+            </TagGroup>
+          ),
+          "Environment Vars": (
+            <KeyValues
+              items={get(data, "env", []).reduce((acc, env) => {
+                acc[env.name] = <Pre>{env.value}</Pre>
+                return acc
+              }, {})}
+            />
+          ),
+        }}
       />
     </div>
   )

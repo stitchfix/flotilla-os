@@ -4,7 +4,7 @@ import { MONOSPACE_FONT_FAMILY } from "../../constants/styles"
 const Pre = styled.pre`
   font-family: ${MONOSPACE_FONT_FAMILY};
   font-size: 0.9rem;
-  white-space: pre-wrap;
+  white-space: pre-line;
   word-break: break-all;
 `
 
