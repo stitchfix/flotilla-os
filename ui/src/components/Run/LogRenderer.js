@@ -1,31 +1,55 @@
-import React, { Component } from "react"
+import React, { Component, createRef } from "react"
 import PropTypes from "prop-types"
 import { FixedSizeList as List } from "react-window"
 import ReactResizeDetector from "react-resize-detector"
-import { isEmpty, round } from "lodash"
+import { has, isEmpty, round } from "lodash"
 import LogRow from "./LogRow"
-import { TOPBAR_HEIGHT_PX } from "../../constants/styles"
+
+const LIST_REF = createRef()
 
 class LogRenderer extends Component {
+  componentDidUpdate(prevProps) {
+    if (prevProps.len !== this.props.len) {
+      LIST_REF.current.scrollToItem(this.props.len)
+    }
+  }
+
+  render() {
+    const { width, height, logs, len } = this.props
+    return (
+      <List
+        ref={LIST_REF}
+        height={height}
+        itemCount={len}
+        itemData={logs}
+        itemSize={20}
+        width={width}
+      >
+        {LogRow}
+      </List>
+    )
+  }
+}
+
+LogRenderer.propTypes = {
+  height: PropTypes.number,
+  len: PropTypes.number.isRequired,
+  logs: PropTypes.arrayOf(PropTypes.string).isRequired,
+  width: PropTypes.number,
+}
+
+LogRenderer.defaultProps = {
+  height: 0,
+  len: 0,
+  logs: [],
+  width: 0,
+}
+
+class LogProcessor extends Component {
   static HACKY_CHAR_TO_PIXEL_RATIO = 37 / 300
 
   getMaxLineLength = () =>
-    round(this.props.width * LogRenderer.HACKY_CHAR_TO_PIXEL_RATIO)
-
-  areDimensionsValid = () => {
-    const { width, height } = this.props
-
-    if (
-      width === 0 ||
-      width === undefined ||
-      height === 0 ||
-      height === undefined
-    ) {
-      return false
-    }
-
-    return true
-  }
+    round(this.props.width * LogProcessor.HACKY_CHAR_TO_PIXEL_RATIO)
 
   processLogs = () => {
     const { logs } = this.props
@@ -58,38 +82,39 @@ class LogRenderer extends Component {
     }, [])
   }
 
-  render() {
-    console.log(window.innerWidth, this.props.width)
-    console.log(window.innerHeight, this.props.height)
-    if (this.areDimensionsValid()) {
-      const { width, height } = this.props
-      const logs = this.processLogs()
-      const len = logs.length
+  areDimensionsValid = () => {
+    const { width, height } = this.props
 
-      return (
-        <List
-          height={height}
-          itemCount={len}
-          itemData={logs}
-          itemSize={20}
-          width={width}
-        >
-          {LogRow}
-        </List>
-      )
+    if (
+      width === 0 ||
+      width === undefined ||
+      height === 0 ||
+      height === undefined
+    ) {
+      return false
+    }
+
+    return true
+  }
+
+  render() {
+    const logs = this.processLogs()
+
+    if (this.areDimensionsValid()) {
+      return <LogRenderer {...this.props} logs={logs} len={logs.length} />
     }
 
     return <span />
   }
 }
 
-LogRenderer.propTypes = {
+LogProcessor.propTypes = {
   height: PropTypes.number,
   logs: PropTypes.arrayOf(PropTypes.any).isRequired,
   width: PropTypes.number,
 }
 
-LogRenderer.defaultProps = {
+LogProcessor.defaultProps = {
   height: 0,
   logs: [],
   width: 0,
@@ -102,6 +127,6 @@ export default props => (
     refreshMode="throttle"
     refreshRate={500}
   >
-    {(w, h) => <LogRenderer {...props} width={w} height={h} />}
+    {(w, h) => <LogProcessor {...props} width={w} height={h} />}
   </ReactResizeDetector>
 )
