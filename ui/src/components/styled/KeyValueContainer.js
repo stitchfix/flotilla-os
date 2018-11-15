@@ -5,7 +5,9 @@ import Field from "./Field"
 const KeyValues = props => (
   <div>
     {Object.keys(props.items).map(key => (
-      <Field label={key}>{props.items[key]}</Field>
+      <Field label={key} key={key}>
+        {props.items[key]}
+      </Field>
     ))}
   </div>
 )

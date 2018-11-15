@@ -1,4 +1,5 @@
 import React from "react"
+import styled from "styled-components"
 import { get } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import RunContext from "./RunContext"
@@ -6,6 +7,14 @@ import RunSidebar from "./RunSidebar"
 import LogRequester from "./LogRequester"
 import View from "../styled/View"
 import intentTypes from "../../constants/intentTypes"
+
+const RunViewContainer = styled.div`
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: stretch;
+  width: 100%;
+`
 
 const RunView = props => {
   return (
@@ -23,6 +32,7 @@ const RunView = props => {
             intent: intentTypes.error,
           },
         ]
+
         const breadcrumbs = [
           {
             text: get(ctx, ["data", "alias"], ""),
@@ -33,13 +43,19 @@ const RunView = props => {
             href: `/runs/${ctx.runID}`,
           },
         ]
+
         return (
           <View>
             <Navigation actions={actions} breadcrumbs={breadcrumbs} />
-            <LogRequester
-              runID={ctx.runID}
-              status={get(ctx, ["data", "status"])}
-            />
+            <RunViewContainer>
+              <RunSidebar />
+              <div style={{ flex: 1 }}>
+                <LogRequester
+                  runID={ctx.runID}
+                  status={get(ctx, ["data", "status"])}
+                />
+              </div>
+            </RunViewContainer>
           </View>
         )
       }}

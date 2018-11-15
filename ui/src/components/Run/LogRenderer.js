@@ -1,22 +1,31 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { FixedSizeList as List } from "react-window"
+import ReactResizeDetector from "react-resize-detector"
 import { isEmpty, round } from "lodash"
-import LogChunk from "./LogChunk"
 import LogRow from "./LogRow"
+import { TOPBAR_HEIGHT_PX } from "../../constants/styles"
 
 class LogRenderer extends Component {
   static HACKY_CHAR_TO_PIXEL_RATIO = 37 / 300
 
-  state = {
-    width: 1000,
-    height: 500,
-  }
-
-  componentDidMount() {}
-
   getMaxLineLength = () =>
-    round(this.state.width * LogRenderer.HACKY_CHAR_TO_PIXEL_RATIO)
+    round(this.props.width * LogRenderer.HACKY_CHAR_TO_PIXEL_RATIO)
+
+  areDimensionsValid = () => {
+    const { width, height } = this.props
+
+    if (
+      width === 0 ||
+      width === undefined ||
+      height === 0 ||
+      height === undefined
+    ) {
+      return false
+    }
+
+    return true
+  }
 
   processLogs = () => {
     const { logs } = this.props
@@ -50,32 +59,49 @@ class LogRenderer extends Component {
   }
 
   render() {
-    const { width, height } = this.state
-    const logs = this.processLogs()
-    const len = logs.length
+    console.log(window.innerWidth, this.props.width)
+    console.log(window.innerHeight, this.props.height)
+    if (this.areDimensionsValid()) {
+      const { width, height } = this.props
+      const logs = this.processLogs()
+      const len = logs.length
 
-    return (
-      <div style={{ marginLeft: 50 }}>
+      return (
         <List
           height={height}
           itemCount={len}
+          itemData={logs}
           itemSize={20}
           width={width}
-          itemData={logs}
         >
           {LogRow}
         </List>
-      </div>
-    )
+      )
+    }
+
+    return <span />
   }
 }
 
 LogRenderer.propTypes = {
+  height: PropTypes.number,
   logs: PropTypes.arrayOf(PropTypes.any).isRequired,
+  width: PropTypes.number,
 }
 
 LogRenderer.defaultProps = {
+  height: 0,
   logs: [],
+  width: 0,
 }
 
-export default LogRenderer
+export default props => (
+  <ReactResizeDetector
+    handleHeight
+    handleWidth
+    refreshMode="throttle"
+    refreshRate={500}
+  >
+    {(w, h) => <LogRenderer {...props} width={w} height={h} />}
+  </ReactResizeDetector>
+)

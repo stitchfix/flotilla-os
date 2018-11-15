@@ -1,4 +1,4 @@
-import React from "react"
+import React, { Fragment } from "react"
 import { Link } from "react-router-dom"
 import { has, get } from "lodash"
 import moment from "moment"
@@ -19,18 +19,18 @@ const RunSidebar = props => {
                 Cluster: get(data, "cluster", "-"),
                 "Exit Code": get(data, "exit_code", "-"),
                 "Started At": has(data, "started_at") ? (
-                  <div className="flex ff-rn j-fs a-bl with-horizontal-child-margin">
+                  <Fragment>
                     <div>{moment(data.started_at).fromNow()}</div>
                     <div className="text-small">{data.started_at}</div>
-                  </div>
+                  </Fragment>
                 ) : (
                   "-"
                 ),
                 "Finished At": has(data, "finished_at") ? (
-                  <div className="flex ff-rn j-fs a-bl with-horizontal-child-margin">
+                  <Fragment>
                     <div>{moment(data.finished_at).fromNow()}</div>
                     <div className="text-small">{data.finished_at}</div>
-                  </div>
+                  </Fragment>
                 ) : (
                   "-"
                 ),
