@@ -5,8 +5,7 @@ import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 import LogChunk from "./LogChunk"
 import LogRenderer from "./LogRenderer"
-
-const POLLING_INTERVAL = 5000
+import config from "../../config"
 
 class LogRequester extends Component {
   state = {
@@ -38,7 +37,7 @@ class LogRequester extends Component {
   setRequestInterval = () => {
     this.requestInterval = window.setInterval(
       this.requestLogs,
-      POLLING_INTERVAL
+      config.RUN_LOGS_REQUEST_INTERVAL_MS
     )
   }
 
