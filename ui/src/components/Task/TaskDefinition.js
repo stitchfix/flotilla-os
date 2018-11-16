@@ -9,7 +9,11 @@ import intentTypes from "../../constants/intentTypes"
 import Navigation from "../Navigation/Navigation"
 import DeleteTaskModal from "../Modal/DeleteTaskModal"
 import ModalContext from "../Modal/ModalContext"
-import { TaskDefinitionView } from "../styled/TaskDefinition"
+import {
+  DetailViewContainer,
+  DetailViewContent,
+  DetailViewSidebar,
+} from "../styled/DetailView"
 import TaskDefinitionSidebar from "./TaskDefinitionSidebar"
 
 const TaskDefinition = props => {
@@ -71,10 +75,12 @@ const TaskDefinition = props => {
         return (
           <View>
             <Navigation breadcrumbs={breadcrumbs} actions={actions} />
-            <TaskDefinitionView>
-              <TaskHistoryTable definitionID={ctx.definitionID} />
-              <div>{sidebar}</div>
-            </TaskDefinitionView>
+            <DetailViewContainer>
+              <DetailViewContent>
+                <TaskHistoryTable definitionID={ctx.definitionID} />
+              </DetailViewContent>
+              <DetailViewSidebar>{sidebar}</DetailViewSidebar>
+            </DetailViewContainer>
           </View>
         )
       }}

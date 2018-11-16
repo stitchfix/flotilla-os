@@ -1,20 +1,16 @@
 import React from "react"
-import styled from "styled-components"
 import { get } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
 import LogRequester from "./LogRequester"
 import View from "../styled/View"
+import {
+  DetailViewContainer,
+  DetailViewContent,
+  DetailViewSidebar,
+} from "../styled/DetailView"
 import intentTypes from "../../constants/intentTypes"
-
-const RunViewContainer = styled.div`
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: space-between;
-  align-items: stretch;
-  width: 100%;
-`
 
 const RunView = props => {
   return (
@@ -47,15 +43,17 @@ const RunView = props => {
         return (
           <View>
             <Navigation actions={actions} breadcrumbs={breadcrumbs} />
-            <RunViewContainer>
-              <RunSidebar />
-              <div style={{ flex: 1 }}>
+            <DetailViewContainer>
+              <DetailViewContent>
                 <LogRequester
                   runID={ctx.runID}
                   status={get(ctx, ["data", "status"])}
                 />
-              </div>
-            </RunViewContainer>
+              </DetailViewContent>
+              <DetailViewSidebar>
+                <RunSidebar />
+              </DetailViewSidebar>
+            </DetailViewContainer>
           </View>
         )
       }}
