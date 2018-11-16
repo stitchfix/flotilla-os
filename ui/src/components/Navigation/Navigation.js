@@ -1,6 +1,6 @@
 import React, { Fragment } from "react"
 import PropTypes from "prop-types"
-import { Link } from "react-router-dom"
+import { NavLink } from "react-router-dom"
 import { ChevronRight } from "react-feather"
 import { get, isEmpty } from "lodash"
 import styled from "styled-components"
@@ -10,7 +10,7 @@ import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
 import ButtonGroup from "../styled/ButtonGroup"
 import {
-  TOPBAR_HEIGHT_PX,
+  NAVIGATION_HEIGHT_PX,
   SPACING_PX,
   Z_INDICES,
   DEFAULT_BORDER,
@@ -27,7 +27,7 @@ const NavigationContainer = styled.div`
   align-items: center;
   width: 100vw;
   background: ${colors.black[0]};
-  height: ${TOPBAR_HEIGHT_PX}px;
+  height: ${NAVIGATION_HEIGHT_PX}px;
   position: fixed;
   top: 0;
   left: 0;
@@ -65,7 +65,7 @@ const NavigationSection = styled.div`
   }
 `
 
-const NavigationLink = styled(Link)`
+const NavigationLink = styled(NavLink)`
   color: ${DEFAULT_FONT_COLOR};
 
   &.active,
@@ -83,7 +83,7 @@ const NavigationBreadcrumbs = styled.div`
   align-items: center;
   padding-left: ${SPACING_PX}px;
 `
-const NavigationBreadcrumb = styled(Link)``
+const NavigationBreadcrumb = styled(NavLink)``
 const NavigationBreadcrumbArrow = styled(ChevronRight)`
   margin: 0 6px;
 `
@@ -91,15 +91,15 @@ const NavigationBreadcrumbArrow = styled(ChevronRight)`
 const NavigationLogo = styled.img`
   width: 32px;
   height: 32px;
-  margin-right: 8px;
 `
 
 const Navigation = ({ breadcrumbs, actions }) => (
   <NavigationContainer>
     <NavigationInner>
       <NavigationSection position="left">
-        <NavigationLogo src={Favicon} alt="stitchfix-logo" />
-        <NavigationLink to="/">Flotilla</NavigationLink>
+        <NavigationLink to="/">
+          <NavigationLogo src={Favicon} alt="stitchfix-logo" />
+        </NavigationLink>
         <NavigationLink to="/tasks">Tasks</NavigationLink>
         <NavigationLink to="/runs">Runs</NavigationLink>
         <NavigationBreadcrumbs>
