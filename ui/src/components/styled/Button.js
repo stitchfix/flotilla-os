@@ -6,11 +6,24 @@ import intentTypes from "../../constants/intentTypes"
 import Loader from "./Loader"
 
 export const buttonStyles = css`
-  background: ${colors.black[3]};
+  background: ${({ intent }) => {
+    switch (intent) {
+      case intentTypes.primary:
+        return colors.blue[0]
+      case intentTypes.error:
+        return colors.red[0]
+      case intentTypes.warning:
+        return colors.yellow[0]
+      case intentTypes.success:
+        return colors.green[0]
+      default:
+        return colors.black[3]
+    }
+  }};
   border-radius: 2px;
   border: 1px solid ${colors.black[3]};
   box-shadow: none;
-  color: ${colors.gray[4]};
+  color: ${colors.light_gray[2]};
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;

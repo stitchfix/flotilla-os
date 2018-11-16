@@ -21,7 +21,9 @@ const Tasks = props => (
           isLink: true,
           href: "/tasks/create",
           text: "Create New Task",
-          intent: intentTypes.primary,
+          buttonProps: {
+            intent: intentTypes.primary,
+          },
         },
       ]}
     />
