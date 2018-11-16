@@ -2,8 +2,7 @@ import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
 import {
-  TOPBAR_HEIGHT_PX,
-  SPACING_PX,
+  NAVIGATION_HEIGHT_PX,
   VIEW_HEADER_HEIGHT_PX,
 } from "../../constants/styles"
 
@@ -12,8 +11,8 @@ const ViewContainer = styled.div`
   flex-flow: row nowrap;
   justify-content: center;
   align-items: center;
-  width: 100vw;
-  margin-top: ${TOPBAR_HEIGHT_PX}px;
+  width: 100%;
+  margin-top: ${NAVIGATION_HEIGHT_PX}px;
 `
 
 const ViewInner = styled.div`

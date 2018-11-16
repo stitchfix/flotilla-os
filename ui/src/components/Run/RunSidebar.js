@@ -2,9 +2,10 @@ import React, { Fragment } from "react"
 import { Link } from "react-router-dom"
 import { has, get } from "lodash"
 import moment from "moment"
-import KeyValues from "../styled/KeyValueContainer"
+import KeyValues from "../styled/KeyValues"
 import colors from "../../constants/colors"
 import Pre from "../styled/Pre"
+import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
 import * as requestStateTypes from "../../constants/requestStateTypes"
 
@@ -21,7 +22,7 @@ const RunSidebar = props => {
                 "Started At": has(data, "started_at") ? (
                   <Fragment>
                     <div>{moment(data.started_at).fromNow()}</div>
-                    <div className="text-small">{data.started_at}</div>
+                    <SecondaryText>{data.started_at}</SecondaryText>
                   </Fragment>
                 ) : (
                   "-"
@@ -29,32 +30,18 @@ const RunSidebar = props => {
                 "Finished At": has(data, "finished_at") ? (
                   <Fragment>
                     <div>{moment(data.finished_at).fromNow()}</div>
-                    <div className="text-small">{data.finished_at}</div>
+                    <SecondaryText>{data.finished_at}</SecondaryText>
                   </Fragment>
                 ) : (
                   "-"
                 ),
                 "Run ID": has(data, "run_id") ? (
-                  <Link
-                    to={`/runs/${data.run_id}`}
-                    style={{
-                      textDecoration: "underline",
-                      color: colors.gray[3],
-                    }}
-                  >
-                    {data.run_id}
-                  </Link>
+                  <Link to={`/runs/${data.run_id}`}>{data.run_id}</Link>
                 ) : (
                   "-"
                 ),
                 "Task Definition ID": has(data, "definition_id") ? (
-                  <Link
-                    to={`/tasks/${data.definition_id}`}
-                    style={{
-                      textDecoration: "underline",
-                      color: colors.gray[3],
-                    }}
-                  >
+                  <Link to={`/tasks/${data.definition_id}`}>
                     {data.definition_id}
                   </Link>
                 ) : (

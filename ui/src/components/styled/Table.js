@@ -19,6 +19,10 @@ export const TableRow = styled.div`
   justify-content: flex-start;
   max-width: 100%;
   width: 100%;
+
+  &:hover {
+    background: ${colors.black[2]};
+  }
 `
 
 const cellStyles = css`

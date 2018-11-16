@@ -3,7 +3,7 @@ import PropTypes from "prop-types"
 import styled from "styled-components"
 import colors from "../../constants/colors"
 import {
-  TOPBAR_HEIGHT_PX,
+  NAVIGATION_HEIGHT_PX,
   SPACING_PX,
   VIEW_HEADER_HEIGHT_PX,
   DEFAULT_FONT_COLOR,
@@ -18,7 +18,7 @@ const ViewHeaderContainer = styled.div`
   align-items: center;
   width: 100vw;
   position: fixed;
-  top: ${TOPBAR_HEIGHT_PX}px;
+  top: ${NAVIGATION_HEIGHT_PX}px;
   left: 0;
   right: 0;
   height: ${VIEW_HEADER_HEIGHT_PX}px;

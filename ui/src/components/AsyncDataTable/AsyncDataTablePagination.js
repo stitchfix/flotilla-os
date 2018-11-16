@@ -1,53 +1,55 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import withQueryParams from "react-router-query-params"
+import styled from "styled-components"
 import { get } from "lodash"
 import Button from "../styled/Button"
-import ButtonGroup from "../styled/ButtonGroup"
+import { SPACING_PX } from "../../constants/styles"
+
+const PaginationButtonGroup = styled.div`
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: center;
+  padding: ${SPACING_PX * 2}px 0;
+  width: 100%;
+
+  & > * {
+    margin: 0 ${SPACING_PX}px;
+  }
+`
 
 class AsyncDataTablePagination extends Component {
-  constructor(props) {
-    super(props)
-    this.handlePrevClick = this.handlePrevClick.bind(this)
-    this.handleNextClick = this.handleNextClick.bind(this)
-    this.handleFirstClick = this.handleFirstClick.bind(this)
-    this.handleLastClick = this.handleLastClick.bind(this)
-    this.getCurrPage = this.getCurrPage.bind(this)
-    this.updateQuery = this.updateQuery.bind(this)
-    this.isFirstPage = this.isFirstPage.bind(this)
-    this.isLastPage = this.isLastPage.bind(this)
-  }
-
-  handlePrevClick() {
+  handlePrevClick = () => {
     this.updateQuery(this.getCurrPage() - 1)
   }
 
-  handleNextClick() {
+  handleNextClick = () => {
     this.updateQuery(this.getCurrPage() + 1)
   }
 
-  handleFirstClick() {
+  handleFirstClick = () => {
     this.updateQuery(1)
   }
 
-  handleLastClick() {
+  handleLastClick = () => {
     const { total, limit } = this.props
     this.updateQuery((total - total % limit) / limit)
   }
 
-  getCurrPage() {
+  getCurrPage = () => {
     return +get(this.props.queryParams, "page", 1)
   }
 
-  updateQuery(page) {
+  updateQuery = page => {
     this.props.setQueryParams({ page })
   }
 
-  isFirstPage() {
+  isFirstPage = () => {
     return this.getCurrPage() === 1
   }
 
-  isLastPage() {
+  isLastPage = () => {
     const { limit, total } = this.props
     return this.getCurrPage() * limit + limit > total
   }
@@ -56,7 +58,7 @@ class AsyncDataTablePagination extends Component {
     const isFirstPage = this.isFirstPage()
     const isLastPage = this.isLastPage()
     return (
-      <ButtonGroup>
+      <PaginationButtonGroup>
         <Button
           key="first"
           disabled={isFirstPage}
@@ -77,7 +79,7 @@ class AsyncDataTablePagination extends Component {
         <Button key="last" disabled={isLastPage} onClick={this.handleLastClick}>
           Last
         </Button>
-      </ButtonGroup>
+      </PaginationButtonGroup>
     )
   }
 }

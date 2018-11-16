@@ -23,11 +23,11 @@ export const FieldLabel = styled.div`
   text-transform: uppercase;
   font-weight: 500;
   margin-bottom: 4px;
-  margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px;
+  /* margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px; */
 `
 
 export const FieldDescription = styled(SecondaryText)`
-  margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px;
+  /* margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px; */
   margin-top: 8px;
 `
 

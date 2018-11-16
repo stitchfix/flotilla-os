@@ -5,34 +5,42 @@ import colors from "../../constants/colors"
 import intentTypes from "../../constants/intentTypes"
 import Loader from "./Loader"
 
+const switchColorByIntent = intent => {
+  switch (intent) {
+    case intentTypes.primary:
+      return colors.blue[0]
+    case intentTypes.error:
+      return colors.red[0]
+    case intentTypes.warning:
+      return colors.yellow[0]
+    case intentTypes.success:
+      return colors.green[0]
+    default:
+      return colors.black[4]
+  }
+}
+
 export const buttonStyles = css`
-  background: ${({ intent }) => {
-    switch (intent) {
-      case intentTypes.primary:
-        return colors.blue[0]
-      case intentTypes.error:
-        return colors.red[0]
-      case intentTypes.warning:
-        return colors.yellow[0]
-      case intentTypes.success:
-        return colors.green[0]
-      default:
-        return colors.black[3]
-    }
-  }};
+  background: ${({ intent }) => switchColorByIntent(intent)};
   border-radius: 2px;
-  border: 1px solid ${colors.black[3]};
+  border: 1px solid ${({ intent }) => switchColorByIntent(intent)};
   box-shadow: none;
-  color: ${colors.light_gray[2]};
+  color: ${colors.light_gray[3]};
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  height: 34px;
-  letter-spacing: 0.02rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  height: 30px;
+  letter-spacing: 0.04rem;
   padding: 0 12px;
   text-transform: uppercase;
-  transition-duration: 200ms;
+  transition-duration: 100ms;
   white-space: nowrap;
+
+  &:hover {
+    background: ${colors.light_gray[3]};
+    border-color: ${colors.light_gray[3]};
+    color: ${({ intent }) => switchColorByIntent(intent)};
+  }
 `
 
 const StyledButton = styled.button`
