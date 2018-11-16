@@ -4,6 +4,7 @@ import { FixedSizeList as List } from "react-window"
 import ReactResizeDetector from "react-resize-detector"
 import { has, isEmpty, round } from "lodash"
 import LogRow from "./LogRow"
+import { NAVIGATION_HEIGHT_PX } from "../../constants/styles"
 
 const LIST_REF = createRef()
 
@@ -98,9 +99,8 @@ class LogProcessor extends Component {
   }
 
   render() {
-    const logs = this.processLogs()
-
     if (this.areDimensionsValid()) {
+      const logs = this.processLogs()
       return <LogRenderer {...this.props} logs={logs} len={logs.length} />
     }
 
@@ -115,7 +115,7 @@ LogProcessor.propTypes = {
 }
 
 LogProcessor.defaultProps = {
-  height: 0,
+  height: window.innerHeight - NAVIGATION_HEIGHT_PX,
   logs: [],
   width: 0,
 }
