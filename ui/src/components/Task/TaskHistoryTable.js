@@ -44,22 +44,22 @@ class TaskHistoryTable extends Component {
           prevProps.definitionID !== currProps.definitionID
         }
         columns={{
-          // stop: {
-          //   allowSort: false,
-          //   displayName: "Stop",
-          //   render: item => {
-          //     if (TaskHistoryTable.isTaskActive(item.status)) {
-          //       return (
-          //         <Button onClick={this.handleStopButtonClick.bind(this, item)}>
-          //           Stop
-          //         </Button>
-          //       )
-          //     }
+          stop: {
+            allowSort: false,
+            displayName: "Stop",
+            render: item => {
+              if (TaskHistoryTable.isTaskActive(item.status)) {
+                return (
+                  <Button onClick={this.handleStopButtonClick.bind(this, item)}>
+                    Stop
+                  </Button>
+                )
+              }
 
-          //     return null
-          //   },
-          //   width: 0.6,
-          // },
+              return null
+            },
+            width: 0.6,
+          },
           status: {
             allowSort: true,
             displayName: "Status",
@@ -103,12 +103,12 @@ class TaskHistoryTable extends Component {
             ),
             width: 1,
           },
-          // cluster: {
-          //   allowSort: false,
-          //   displayName: "Cluster",
-          //   render: item => item.cluster,
-          //   width: 1,
-          // },
+          cluster: {
+            allowSort: false,
+            displayName: "Cluster",
+            render: item => item.cluster,
+            width: 1,
+          },
         }}
         getItems={data => data.history}
         getTotal={data => data.total}
@@ -130,6 +130,7 @@ class TaskHistoryTable extends Component {
         emptyTableBody={
           <ButtonLink to={`/tasks/${definitionID}/run`}>Run Task</ButtonLink>
         }
+        isView={false}
       />
     )
   }
