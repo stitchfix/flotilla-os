@@ -70,6 +70,9 @@ class AsyncDataTable extends Component {
 
     if (shouldContinuouslyFetch) {
       this.requestInterval = window.setInterval(() => {
+        // Return if the browser tab isn't focused.
+        if (!this.props.isTabFocused) return
+
         this.requestData()
       }, config.RUN_REQUEST_INTERVAL_MS)
     }
@@ -100,14 +103,17 @@ class AsyncDataTable extends Component {
    * @returns {boolean}
    */
   areQueriesEqual(a = {}, b = {}) {
+    // Return false if the arguments are not objects.
     if (!isObject(a) || !isObject(b)) {
       return false
     }
 
+    // Return false if the size differs.
     if (size(a) !== size(b)) {
       return false
     }
 
+    // Perform shallow comparison.
     for (let key in a) {
       if (!has(b, key)) {
         return false
@@ -159,6 +165,7 @@ class AsyncDataTable extends Component {
       emptyTableTitle,
       queryParams,
       getItemKey,
+      isView,
     } = this.props
     const { requestState, data, error } = this.state
 
@@ -179,7 +186,7 @@ class AsyncDataTable extends Component {
               >
                 {formAPI => {
                   return (
-                    <AsyncDataTableFilters>
+                    <AsyncDataTableFilters isView={isView}>
                       {Object.keys(filters).map(key => (
                         <AsyncDataTableFilter
                           {...filters[key]}
@@ -265,6 +272,8 @@ AsyncDataTable.propTypes = {
   getRequestArgs: PropTypes.func.isRequired,
   getTotal: PropTypes.func.isRequired,
   initialQuery: PropTypes.object,
+  isTabFocused: PropTypes.bool.isRequired,
+  isView: PropTypes.bool.isRequired,
   limit: PropTypes.number.isRequired,
   queryParams: PropTypes.object.isRequired,
   requestFn: PropTypes.func.isRequired,
@@ -283,6 +292,7 @@ AsyncDataTable.defaultProps = {
   getItems: data => [],
   getRequestArgs: query => query,
   initialQuery: {},
+  isView: true,
   limit: 50,
   requestFn: () => {},
   shouldContinuouslyFetch: false,
@@ -291,6 +301,6 @@ AsyncDataTable.defaultProps = {
 
 export default withQueryParams()(props => (
   <PageVisibility>
-    {isVisible => <AsyncDataTable {...props} isVisible={isVisible} />}
+    {isTabFocused => <AsyncDataTable {...props} isTabFocused={isTabFocused} />}
   </PageVisibility>
 ))
