@@ -4,6 +4,7 @@ import {
   DEFAULT_FONT_COLOR,
   SECONDARY_FONT_COLOR,
 } from "../../constants/styles"
+import { monospaceStyles } from "./Monospace"
 
 const sharedInputStyles = css`
   border-color: ${colors.blue[0]};
@@ -27,5 +28,5 @@ export const Input = styled.input`
   ${sharedInputStyles};
 `
 export const Textarea = styled.textarea`
-  ${sharedInputStyles} height: 120px;
+  ${sharedInputStyles} ${monospaceStyles} height: 240px;
 `

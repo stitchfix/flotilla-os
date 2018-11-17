@@ -14,52 +14,58 @@ const RunSidebar = props => {
       {({ data, requestState }) => {
         if (requestState === requestStateTypes.READY) {
           return (
-            <KeyValues
-              items={{
-                Cluster: get(data, "cluster", "-"),
-                "Exit Code": get(data, "exit_code", "-"),
-                "Started At": has(data, "started_at") ? (
-                  <Fragment>
-                    <div>{moment(data.started_at).fromNow()}</div>
-                    <SecondaryText>{data.started_at}</SecondaryText>
-                  </Fragment>
-                ) : (
-                  "-"
-                ),
-                "Finished At": has(data, "finished_at") ? (
-                  <Fragment>
-                    <div>{moment(data.finished_at).fromNow()}</div>
-                    <SecondaryText>{data.finished_at}</SecondaryText>
-                  </Fragment>
-                ) : (
-                  "-"
-                ),
-                "Run ID": has(data, "run_id") ? (
-                  <Link to={`/runs/${data.run_id}`}>{data.run_id}</Link>
-                ) : (
-                  "-"
-                ),
-                "Task Definition ID": has(data, "definition_id") ? (
-                  <Link to={`/tasks/${data.definition_id}`}>
-                    {data.definition_id}
-                  </Link>
-                ) : (
-                  "-"
-                ),
-                Image: get(data, "image", "-"),
-                "Task Arn": get(data, "task_arn", "-"),
-                "Instance ID": get(data, "instance.instance_id", "-"),
-                "Instance DNS Name": get(data, "instance.dns_name", "-"),
-                "Environment Vars": (
-                  <KeyValues
-                    items={get(data, "env", []).reduce((acc, env) => {
-                      acc[env.name] = <Pre>{env.value}</Pre>
-                      return acc
-                    }, {})}
-                  />
-                ),
-              }}
-            />
+            <Fragment>
+              <KeyValues
+                label="Run Info"
+                items={{
+                  Cluster: get(data, "cluster", "-"),
+                  "Exit Code": get(data, "exit_code", "-"),
+                  "Started At": has(data, "started_at") ? (
+                    <Fragment>
+                      <div style={{ marginBottom: 4 }}>
+                        {moment(data.started_at).fromNow()}
+                      </div>
+                      <SecondaryText>{data.started_at}</SecondaryText>
+                    </Fragment>
+                  ) : (
+                    "-"
+                  ),
+                  "Finished At": has(data, "finished_at") ? (
+                    <Fragment>
+                      <div style={{ marginBottom: 4 }}>
+                        {moment(data.finished_at).fromNow()}
+                      </div>
+                      <SecondaryText>{data.finished_at}</SecondaryText>
+                    </Fragment>
+                  ) : (
+                    "-"
+                  ),
+                  "Run ID": has(data, "run_id") ? (
+                    <Link to={`/runs/${data.run_id}`}>{data.run_id}</Link>
+                  ) : (
+                    "-"
+                  ),
+                  "Task Definition ID": has(data, "definition_id") ? (
+                    <Link to={`/tasks/${data.definition_id}`}>
+                      {data.definition_id}
+                    </Link>
+                  ) : (
+                    "-"
+                  ),
+                  Image: get(data, "image", "-"),
+                  "Task Arn": get(data, "task_arn", "-"),
+                  "Instance ID": get(data, "instance.instance_id", "-"),
+                  "Instance DNS Name": get(data, "instance.dns_name", "-"),
+                }}
+              />
+              <KeyValues
+                label="Environment Variables"
+                items={get(data, "env", []).reduce((acc, env) => {
+                  acc[env.name] = <Pre>{env.value}</Pre>
+                  return acc
+                }, {})}
+              />
+            </Fragment>
           )
         }
       }}

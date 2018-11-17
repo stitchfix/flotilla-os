@@ -2,7 +2,6 @@ import React, { Component } from "react"
 import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
 import { get, omit } from "lodash"
-import Button from "../styled/Button"
 import Loader from "../styled/Loader"
 import View from "../styled/View"
 import Navigation from "../Navigation/Navigation"
@@ -11,10 +10,10 @@ import FieldSelect from "../Form/FieldSelect"
 import FieldKeyValue from "../Form/FieldKeyValue"
 import api from "../../api"
 import config from "../../config"
-
 import * as requestStateTypes from "../../constants/requestStateTypes"
-
 import TaskContext from "../Task/TaskContext"
+import filterInvalidRunEnv from "../../utils/filterInvalidRunEnv"
+import intentTypes from "../../constants/intentTypes"
 
 class RunForm extends Component {
   static transformRunTags = arr =>
@@ -43,20 +42,29 @@ class RunForm extends Component {
   }
 
   getDefaultValues = () => {
-    const { data } = this.props
+    const { data, previousRunState } = this.props
+
+    const cluster = get(
+      previousRunState,
+      "cluster",
+      get(config, "DEFAULT_CLUSTER", "")
+    )
+    const env = filterInvalidRunEnv(
+      get(previousRunState, "env", get(data, ["env"], []))
+    )
 
     return {
-      cluster: get(config, "DEFAULT_CLUSTER", ""),
+      cluster,
+      env,
       run_tags: get(config, "REQUIRED_RUN_TAGS", []).map(name => ({
         name,
         value: "",
       })),
-      env: get(data, ["env"], []),
     }
   }
 
   render() {
-    const { requestState, definitionID, data } = this.props
+    const { requestState, definitionID, data, goBack } = this.props
 
     if (requestState === requestStateTypes.NOT_READY) {
       return <Loader />
@@ -74,9 +82,17 @@ class RunForm extends Component {
     const actions = [
       {
         isLink: false,
+        text: "Cancel",
+        buttonProps: {
+          onClick: goBack,
+        },
+      },
+      {
+        isLink: false,
         text: "Run",
         buttonProps: {
           type: "submit",
+          intent: intentTypes.primary,
         },
       },
     ]
@@ -124,14 +140,18 @@ class RunForm extends Component {
 
 RunForm.propTypes = {}
 
-export default withRouter(props => (
-  <TaskContext.Consumer>
-    {ctx => (
-      <RunForm
-        push={props.history.push}
-        {...omit(props, ["history", "location", "match", "staticContext"])}
-        {...ctx}
-      />
-    )}
-  </TaskContext.Consumer>
-))
+export default withRouter(props => {
+  return (
+    <TaskContext.Consumer>
+      {ctx => (
+        <RunForm
+          push={props.history.push}
+          previousRunState={get(props, ["location", "state"], {})}
+          goBack={props.history.goBack}
+          {...omit(props, ["history", "location", "match", "staticContext"])}
+          {...ctx}
+        />
+      )}
+    </TaskContext.Consumer>
+  )
+})

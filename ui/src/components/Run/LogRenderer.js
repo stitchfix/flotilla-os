@@ -25,6 +25,7 @@ class LogRenderer extends Component {
         itemData={logs}
         itemSize={20}
         width={width}
+        overscanCount={100}
       >
         {LogRow}
       </List>

@@ -1,5 +1,5 @@
 import React from "react"
-import { get } from "lodash"
+import { get, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
@@ -11,32 +11,45 @@ import {
   DetailViewSidebar,
 } from "../styled/DetailView"
 import intentTypes from "../../constants/intentTypes"
+import runStatusTypes from "../../constants/runStatusTypes"
 
 const RunView = props => {
   return (
     <RunContext.Consumer>
-      {ctx => {
-        const actions = [
+      {({ data, runID }) => {
+        let actions = [
           {
             isLink: true,
-            href: "/",
+            href: {
+              pathname: `/tasks/${get(data, "definition_id", "")}/run`,
+              state: {
+                env: get(data, "env"),
+                cluster: get(data, "cluster"),
+              },
+            },
             text: "Retry",
-          },
-          {
-            isLink: false,
-            text: "Stop Run",
-            intent: intentTypes.error,
           },
         ]
 
+        if (
+          has(data, "status") &&
+          get(data, "status") !== runStatusTypes.stopped
+        ) {
+          actions.push({
+            isLink: false,
+            text: "Stop Run",
+            intent: intentTypes.error,
+          })
+        }
+
         const breadcrumbs = [
           {
-            text: get(ctx, ["data", "alias"], ""),
-            href: `/tasks/${get(ctx, ["data", "definition_id"])}`,
+            text: get(data, "alias", ""),
+            href: `/tasks/${get(data, "definition_id", "")}`,
           },
           {
-            text: ctx.runID,
-            href: `/runs/${ctx.runID}`,
+            text: runID,
+            href: `/runs/${runID}`,
           },
         ]
 
@@ -45,10 +58,7 @@ const RunView = props => {
             <Navigation actions={actions} breadcrumbs={breadcrumbs} />
             <DetailViewContainer>
               <DetailViewContent>
-                <LogRequester
-                  runID={ctx.runID}
-                  status={get(ctx, ["data", "status"])}
-                />
+                <LogRequester runID={runID} status={get(data, "status")} />
               </DetailViewContent>
               <DetailViewSidebar>
                 <RunSidebar />

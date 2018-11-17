@@ -150,7 +150,7 @@ Navigation.propTypes = {
     PropTypes.shape({
       isLink: PropTypes.bool.isRequired,
       text: PropTypes.string.isRequired,
-      href: PropTypes.string,
+      href: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
       buttonProps: PropTypes.object,
     })
   ),
