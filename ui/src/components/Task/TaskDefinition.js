@@ -59,6 +59,9 @@ const TaskDefinition = props => {
                 isLink: true,
                 text: "Run",
                 href: `/tasks/${ctx.definitionID}/run`,
+                buttonProps: {
+                  intent: intentTypes.primary,
+                },
               },
             ]
             sidebar = <TaskDefinitionSidebar data={ctx.data} />
