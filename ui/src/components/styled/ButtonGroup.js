@@ -7,6 +7,14 @@ const ButtonGroup = styled.div`
   align-items: center;
   & > * {
     margin: 0 4px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
   }
 `
 

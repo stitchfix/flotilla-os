@@ -136,7 +136,7 @@ class LogRequester extends Component {
   hasRunFinished = () => this.props.status === runStatusTypes.stopped
 
   render() {
-    return <LogRenderer logs={this.state.logs} />
+    return <LogRenderer logs={this.state.logs} status={this.props.status} />
   }
 }
 

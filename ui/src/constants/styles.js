@@ -14,7 +14,8 @@ export const BREAKPOINTS_PX = {
   S: 800,
 }
 export const DETAIL_VIEW_SIDEBAR_WIDTH_PX = 400
-
+export const RUN_BAR_HEIGHT_PX = 64
+export const LOADER_SIZE_PX = 20
 export const Z_INDICES = {
   VIEW_HEADER: 2000,
   NAVIGATION: 5000,

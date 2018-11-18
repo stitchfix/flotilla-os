@@ -1,16 +1,46 @@
 import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
 import Ansi from "ansi-to-react"
+import { get } from "lodash"
 import Pre from "../styled/Pre"
+import Loader from "../styled/Loader"
+import runStatusTypes from "../../constants/runStatusTypes"
+import RunContext from "./RunContext"
 
 class LogRow extends PureComponent {
   render() {
     const { data, index, style } = this.props
 
     return (
-      <Pre style={style}>
-        <Ansi>{data[index]}</Ansi>
-      </Pre>
+      <RunContext.Consumer>
+        {ctx => {
+          const isStopped =
+            get(ctx, ["data", "status"]) === runStatusTypes.stopped
+
+          if (!isStopped && index === data.length - 1) {
+            return (
+              <span
+                style={{
+                  ...style,
+                  display: "flex",
+                  flexFlow: "row nowrap",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <Loader />
+              </span>
+            )
+          }
+
+          return (
+            <Pre style={style}>
+              <Ansi>{data[index]}</Ansi>
+            </Pre>
+          )
+        }}
+      </RunContext.Consumer>
     )
   }
 }

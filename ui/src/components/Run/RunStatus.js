@@ -32,13 +32,11 @@ const getHumanReadableStatus = ({ status, exitCode }) => {
 const getIconByStatus = status => {
   switch (status) {
     case runStatusTypes.queued:
-      return <Loader mini spinnerStyle={{ borderLeftColor: colors.gray[4] }} />
+      return <Loader spinnerStyle={{ borderLeftColor: colors.gray[4] }} />
     case runStatusTypes.pending:
-      return (
-        <Loader mini spinnerStyle={{ borderLeftColor: colors.yellow[0] }} />
-      )
+      return <Loader spinnerStyle={{ borderLeftColor: colors.yellow[0] }} />
     case runStatusTypes.running:
-      return <Loader mini />
+      return <Loader />
     case runStatusTypes.success:
       return <CheckCircle size={14} color={colors.green[0]} />
     case runStatusTypes.failed:
@@ -59,7 +57,7 @@ const RunStatus = ({ exitCode, onlyRenderIcon, status }) => {
 
   return (
     <RunStatusContainer>
-      <div>{capitalize(readableStatus)}</div>
+      <h3>{capitalize(readableStatus)}</h3>
       <div>{icon}</div>
     </RunStatusContainer>
   )

@@ -1,34 +1,77 @@
-import React, { Component, createRef } from "react"
+import React, { Component, createRef, Fragment } from "react"
 import PropTypes from "prop-types"
 import { FixedSizeList as List } from "react-window"
 import ReactResizeDetector from "react-resize-detector"
-import { has, isEmpty, round } from "lodash"
+import { get, isEmpty, round } from "lodash"
 import LogRow from "./LogRow"
-import { NAVIGATION_HEIGHT_PX } from "../../constants/styles"
+import { RUN_BAR_HEIGHT_PX, NAVIGATION_HEIGHT_PX } from "../../constants/styles"
+import RunBar from "./RunBar"
+import RunContext from "./RunContext"
+import runStatusTypes from "../../constants/runStatusTypes"
 
 const LIST_REF = createRef()
 
 class LogRenderer extends Component {
+  state = {
+    shouldAutoscroll: true,
+  }
+
+  componentDidMount() {
+    LIST_REF.current.scrollToItem(this.props.len)
+  }
+
   componentDidUpdate(prevProps) {
-    if (prevProps.len !== this.props.len) {
+    if (
+      this.state.shouldAutoscroll === true &&
+      prevProps.len !== this.props.len
+    ) {
       LIST_REF.current.scrollToItem(this.props.len)
     }
   }
 
+  toggleShouldAutoscroll = () => {
+    this.setState(prev => ({ shouldAutoscroll: !prev.shouldAutoscroll }))
+  }
+
+  handleScrollToTopClick = () => {
+    LIST_REF.current.scrollToItem(0)
+  }
+  handleScrollToBottomClick = () => {
+    LIST_REF.current.scrollToItem(this.props.len)
+  }
+
   render() {
     const { width, height, logs, len } = this.props
+
     return (
-      <List
-        ref={LIST_REF}
-        height={height}
-        itemCount={len}
-        itemData={logs}
-        itemSize={20}
-        width={width}
-        overscanCount={100}
-      >
-        {LogRow}
-      </List>
+      <RunContext.Consumer>
+        {({ data }) => {
+          const _len =
+            get(data, "status") === runStatusTypes.stopped ? len : len + 1
+          return (
+            <Fragment>
+              <RunBar
+                shouldAutoscroll={this.state.shouldAutoscroll}
+                toggleShouldAutoscroll={this.toggleShouldAutoscroll}
+                onScrollToTopClick={this.handleScrollToTopClick}
+                onScrollToBottomClick={this.handleScrollToBottomClick}
+              />
+              <List
+                ref={LIST_REF}
+                height={height - RUN_BAR_HEIGHT_PX}
+                itemCount={_len}
+                itemData={logs}
+                itemSize={20}
+                width={width}
+                overscanCount={100}
+                style={{ marginTop: RUN_BAR_HEIGHT_PX }}
+              >
+                {LogRow}
+              </List>
+            </Fragment>
+          )
+        }}
+      </RunContext.Consumer>
     )
   }
 }
