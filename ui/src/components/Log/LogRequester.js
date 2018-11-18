@@ -1,10 +1,10 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import { get, has, isEmpty } from "lodash"
+import { has, isEmpty } from "lodash"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 import LogChunk from "./LogChunk"
-import LogRenderer from "./LogRenderer"
+import LogProcessor from "./LogProcessor"
 import config from "../../config"
 
 class LogRequester extends Component {
@@ -57,6 +57,14 @@ class LogRequester extends Component {
       })
   }
 
+  /**
+   * The response handler for the logs endpoint performs the following:
+   * 1. Calls this.shouldAppendLogsToState to determine if a valid log chunk
+   * was received.
+   * 2. Once the logs have been appended, it checks to see if it should
+   * "exhaust" the logs endpoint - meaning that it will continuously hit the
+   * logs endpoint until all remaining logs have been fetched.
+   */
   handleResponse = async response => {
     // Return if there are no logs.
     if (!has(response, "log") || isEmpty(response.log)) {
@@ -136,7 +144,7 @@ class LogRequester extends Component {
   hasRunFinished = () => this.props.status === runStatusTypes.stopped
 
   render() {
-    return <LogRenderer logs={this.state.logs} status={this.props.status} />
+    return <LogProcessor logs={this.state.logs} status={this.props.status} />
   }
 }
 

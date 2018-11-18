@@ -1,3 +1,6 @@
+/**
+ * Stores a chunk of logs and the chunk's lastSeen parameter.
+ */
 class LogChunk {
   constructor({ chunk, lastSeen }) {
     this.chunk = chunk

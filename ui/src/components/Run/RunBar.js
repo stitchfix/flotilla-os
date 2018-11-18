@@ -1,5 +1,4 @@
 import React from "react"
-import PropTypes from "prop-types"
 import { CheckSquare, Square, ChevronsUp, ChevronsDown } from "react-feather"
 import styled from "styled-components"
 import { get } from "lodash"
@@ -14,7 +13,6 @@ import {
   SPACING_PX,
   RUN_BAR_HEIGHT_PX,
 } from "../../constants/styles"
-import colors from "../../constants/colors"
 
 const RunBarContainer = styled.div`
   height: ${RUN_BAR_HEIGHT_PX}px;

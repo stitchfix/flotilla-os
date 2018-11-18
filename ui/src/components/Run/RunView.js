@@ -3,7 +3,7 @@ import { get, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import RunContext from "./RunContext"
 import RunSidebar from "./RunSidebar"
-import LogRequester from "./LogRequester"
+import LogRequester from "../Log/LogRequester"
 import View from "../styled/View"
 import {
   DetailViewContainer,

@@ -5,8 +5,12 @@ import { get } from "lodash"
 import Pre from "../styled/Pre"
 import Loader from "../styled/Loader"
 import runStatusTypes from "../../constants/runStatusTypes"
-import RunContext from "./RunContext"
+import RunContext from "../Run/RunContext"
 
+/**
+ * Renders a line of logs. Will also render a spinner as the last child if
+ * the run is still active.
+ */
 class LogRow extends PureComponent {
   render() {
     const { data, index, style } = this.props
