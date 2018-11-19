@@ -1,4 +1,4 @@
-import React, { Component } from "react"
+import React, { Component, createRef } from "react"
 import PropTypes from "prop-types"
 import { Form as ReactForm } from "react-form"
 import PageVisibility from "react-page-visibility"
@@ -11,7 +11,6 @@ import {
   has,
   toString,
   isNumber,
-  isString,
 } from "lodash"
 import EmptyTable from "../styled/EmptyTable"
 import { Table, TableRow, TableCell } from "../styled/Table"
@@ -30,6 +29,12 @@ import config from "../../config"
 import PopupContext from "../Popup/PopupContext"
 import intentTypes from "../../constants/intentTypes"
 import QueryParams from "../QueryParams/QueryParams"
+import {
+  transformReactFormValuesToQueryParams,
+  transformQueryParamsToReactFormValues,
+} from "../../utils/reactFormQueryParams"
+
+const FORM_REF = createRef()
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -66,7 +71,7 @@ class AsyncDataTable extends Component {
       isEmpty(queryParams) &&
       !this.areQueriesEqual(initialQuery, queryParams)
     ) {
-      setQueryParams(q)
+      setQueryParams(q, true)
     } else {
       this.requestData()
     }
@@ -88,6 +93,15 @@ class AsyncDataTable extends Component {
     const currQ = queryParams
 
     if (!this.areQueriesEqual(prevQ, currQ)) {
+      // @TODO: this is a hack to sync React Form values (i.e. the filters)
+      // with the query string. Moving forward, we should remove React Form
+      // from this component and only rely and query params as the source of
+      // truth.
+      if (has(this.state, ["formAPI", "setAllValues"])) {
+        this.state.formAPI.setAllValues(
+          transformQueryParamsToReactFormValues(currQ)
+        )
+      }
       this.requestData()
     }
   }
@@ -164,46 +178,12 @@ class AsyncDataTable extends Component {
 
   handleFiltersChange = (formState, formAPI) => {
     const { setQueryParams } = this.props
-    const q = this.processFormStateValues(get(formState, "values", {}))
+    const q = transformReactFormValuesToQueryParams(
+      get(formState, "values", {})
+    )
 
     setQueryParams(q)
   }
-
-  // @TODO: this is very dirty and should probably be moved somewhere else.
-  // This is done to set the environment variables filters properly.
-  processFormStateValues = values => {
-    return Object.keys(values).reduce((acc, key) => {
-      if (key === "env") {
-        const env = values[key]
-        acc.env = env.map(e => `${e.name}|${e.value}`)
-      } else {
-        acc[key] = values[key]
-      }
-
-      return acc
-    }, {})
-  }
-
-  queryToForm = q =>
-    Object.keys(q).reduce((acc, key) => {
-      const value = q[key]
-
-      if (key === "env") {
-        if (isString(value)) {
-          const split = value.split("|")
-          acc[key] = [{ name: split[0], value: split[1] }]
-        } else {
-          acc[key] = value.map(e => {
-            const split = e.split("|")
-            return { name: split[0], value: split[1] }
-          })
-        }
-      } else {
-        acc[key] = value
-      }
-
-      return acc
-    }, {})
 
   render() {
     const {
@@ -233,10 +213,14 @@ class AsyncDataTable extends Component {
             {!isEmpty(filters) && (
               <ReactForm
                 onChange={this.handleFiltersChange}
-                defaultValues={this.queryToForm(queryParams)}
+                defaultValues={transformQueryParamsToReactFormValues(
+                  queryParams
+                )}
+                getApi={formAPI => {
+                  this.setState({ formAPI })
+                }}
               >
                 {formAPI => {
-                  console.log(formAPI)
                   return (
                     <AsyncDataTableFilters isView={isView}>
                       {Object.keys(filters).map(key => (
