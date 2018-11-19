@@ -6,6 +6,7 @@ import { CheckCircle, XCircle } from "react-feather"
 import colors from "../../constants/colors"
 import runStatusTypes from "../../constants/runStatusTypes"
 import Loader from "../styled/Loader"
+import intentTypes from "../../constants/intentTypes"
 
 const RunStatusContainer = styled.div`
   display: flex;
@@ -32,11 +33,11 @@ const getHumanReadableStatus = ({ status, exitCode }) => {
 const getIconByStatus = status => {
   switch (status) {
     case runStatusTypes.queued:
-      return <Loader spinnerStyle={{ borderLeftColor: colors.gray[4] }} />
+      return <Loader intent={intentTypes.subtle} />
     case runStatusTypes.pending:
-      return <Loader spinnerStyle={{ borderLeftColor: colors.yellow[0] }} />
+      return <Loader intent={intentTypes.warning} />
     case runStatusTypes.running:
-      return <Loader />
+      return <Loader intent={intentTypes.primary} />
     case runStatusTypes.success:
       return <CheckCircle size={14} color={colors.green[0]} />
     case runStatusTypes.failed:

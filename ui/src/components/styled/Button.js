@@ -4,26 +4,12 @@ import styled, { css } from "styled-components"
 import colors from "../../constants/colors"
 import intentTypes from "../../constants/intentTypes"
 import Loader from "./Loader"
-
-const switchColorByIntent = intent => {
-  switch (intent) {
-    case intentTypes.primary:
-      return colors.blue[0]
-    case intentTypes.error:
-      return colors.red[0]
-    case intentTypes.warning:
-      return colors.yellow[0]
-    case intentTypes.success:
-      return colors.green[0]
-    default:
-      return colors.black[4]
-  }
-}
+import intentToColor from "../../utils/intentToColor"
 
 export const buttonStyles = css`
-  background: ${({ intent }) => switchColorByIntent(intent)};
+  background: ${({ intent }) => intentToColor(intent)};
   border-radius: 2px;
-  border: 1px solid ${({ intent }) => switchColorByIntent(intent)};
+  border: 1px solid ${({ intent }) => intentToColor(intent)};
   box-shadow: none;
   color: ${colors.light_gray[3]};
   cursor: pointer;
@@ -39,7 +25,7 @@ export const buttonStyles = css`
   &:hover {
     background: ${colors.light_gray[3]};
     border-color: ${colors.light_gray[3]};
-    color: ${({ intent }) => switchColorByIntent(intent)};
+    color: ${({ intent }) => intentToColor(intent)};
   }
 `
 
