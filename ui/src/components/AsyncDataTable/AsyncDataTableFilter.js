@@ -4,6 +4,7 @@ import { get, isString, isArray } from "lodash"
 import FieldText from "../Field/FieldText"
 import FieldSelect from "../Field/FieldSelect"
 import FieldKeyValue from "../Field/FieldKeyValue"
+import QueryParams from "../QueryParams/QueryParams"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",
@@ -13,25 +14,18 @@ export const asyncDataTableFilterTypes = {
 }
 
 const AsyncDataTableFilter = props => {
-  const { field, type, displayName, description, formAPI } = props
+  const { field, type, displayName, description, value, onChange } = props
   const sharedProps = {
     label: displayName,
     field,
     description,
+    value,
+    onChange,
   }
 
   switch (type) {
     case asyncDataTableFilterTypes.KV:
-      return (
-        <FieldKeyValue
-          {...sharedProps}
-          {...props}
-          addValue={formAPI.addValue}
-          removeValue={formAPI.removeValue}
-          // @TODO: HACK ALERT.
-          values={get(formAPI, ["values", "env"], [])}
-        />
-      )
+      return null
     case asyncDataTableFilterTypes.SELECT:
       return <FieldSelect {...sharedProps} {...props} />
     case asyncDataTableFilterTypes.INPUT:
@@ -57,4 +51,18 @@ AsyncDataTableFilter.propTypes = {
 
 AsyncDataTableFilter.defaultProps = {}
 
-export default AsyncDataTableFilter
+export default props => (
+  <QueryParams>
+    {({ queryParams, setQueryParams }) => (
+      <AsyncDataTableFilter
+        {...props}
+        value={get(queryParams, props.field, "")}
+        onChange={value => {
+          setQueryParams({
+            [props.field]: value,
+          })
+        }}
+      />
+    )}
+  </QueryParams>
+)

@@ -8,8 +8,8 @@ import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
 import View from "../styled/View"
 import Form from "../styled/Form"
-import FieldText from "../Field/FieldText"
-import FieldSelect from "../Field/FieldSelect"
+import ReactFormFieldText from "../Field/ReactFormFieldText"
+import ReactFormFieldSelect from "../Field/ReactFormFieldSelect"
 import FieldKeyValue from "../Field/FieldKeyValue"
 import TaskContext from "../Task/TaskContext"
 import api from "../../api"
@@ -187,13 +187,13 @@ class TaskForm extends Component {
                 />
                 <Form title={this.renderTitle()}>
                   {type !== taskFormTypes.UPDATE && (
-                    <FieldText
+                    <ReactFormFieldText
                       label="Alias"
                       field="alias"
                       description="Choose a descriptive alias for this task."
                     />
                   )}
-                  <FieldSelect
+                  <ReactFormFieldSelect
                     label="Group Name"
                     field="group_name"
                     requestOptionsFn={api.getGroups}
@@ -201,24 +201,24 @@ class TaskForm extends Component {
                     isCreatable
                     description="Create a new group name or select an existing one to help searching for this task in the future."
                   />
-                  <FieldText
+                  <ReactFormFieldText
                     label="Image"
                     field="image"
                     description="The full URL of the Docker image and tag."
                   />
-                  <FieldText
+                  <ReactFormFieldText
                     isTextArea
                     label="Command"
                     field="command"
                     description="The command for this task to execute."
                   />
-                  <FieldText
+                  <ReactFormFieldText
                     isNumber
                     label="Memory (MB)"
                     field="memory"
                     description="The amount of memory this task needs."
                   />
-                  <FieldSelect
+                  <ReactFormFieldSelect
                     isCreatable
                     isMulti
                     label="Tags"

@@ -1,6 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
+import { isEmpty } from "lodash"
 import qs from "qs"
 
 class QueryParams extends Component {
@@ -18,10 +19,10 @@ class QueryParams extends Component {
     const { replace, push } = this.props
 
     const next = qs.stringify(
-      {
+      this.filterEmptyValues({
         ...this.getQuery(),
         ...query,
-      },
+      }),
       { indices: false }
     )
 
@@ -31,6 +32,15 @@ class QueryParams extends Component {
       push({ search: next })
     }
   }
+
+  filterEmptyValues = values =>
+    Object.keys(values).reduce((acc, key) => {
+      if (!isEmpty(values[key])) {
+        acc[key] = values[key]
+      }
+
+      return acc
+    }, {})
 
   render() {
     return this.props.children({

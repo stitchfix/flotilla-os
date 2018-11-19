@@ -3,7 +3,6 @@ import PropTypes from "prop-types"
 import Select from "react-select"
 import CreatableSelect from "react-select/lib/Creatable"
 import { get, isArray, isString, isEmpty, isFunction } from "lodash"
-import { Field as RFField } from "react-form"
 import Field from "../styled/Field"
 import {
   stringToSelectOpt,
@@ -57,7 +56,7 @@ class FieldSelect extends Component {
       })
   }
 
-  getSharedProps = fieldAPI => {
+  getSharedProps = () => {
     const { isMulti, options, shouldRequestOptions } = this.props
 
     return {
@@ -65,18 +64,17 @@ class FieldSelect extends Component {
       isClearable: true,
       isMulti: isMulti,
       onChange: selected => {
-        this.handleSelectChange(selected, fieldAPI)
+        this.handleSelectChange(selected)
       },
       options: shouldRequestOptions ? this.state.options : options,
       styles: selectStyles,
       theme: selectTheme,
-      value: this.getValue(fieldAPI),
+      value: this.getValue(),
     }
   }
 
-  getValue = fieldAPI => {
-    const { isMulti } = this.props
-    const value = get(fieldAPI, "value")
+  getValue = () => {
+    const { isMulti, value } = this.props
 
     if (isMulti) {
       if (isArray(value)) {
@@ -91,25 +89,25 @@ class FieldSelect extends Component {
     return stringToSelectOpt(value)
   }
 
-  handleSelectChange = (selected, fieldAPI) => {
-    const { isMulti } = this.props
+  handleSelectChange = selected => {
+    const { isMulti, onChange } = this.props
 
     if (selected === null) {
       if (isMulti) {
-        fieldAPI.setValue([])
+        onChange([])
       } else {
-        fieldAPI.setValue("")
+        onChange("")
       }
 
       return
     }
 
     if (isMulti) {
-      fieldAPI.setValue(selected.map(selectOptToString))
+      onChange(selected.map(selectOptToString))
       return
     }
 
-    fieldAPI.setValue(selected.value)
+    onChange(selected.value)
   }
 
   isReady = () => {
@@ -124,45 +122,30 @@ class FieldSelect extends Component {
   }
 
   render() {
-    const {
-      field,
-      isAsync,
-      isCreatable,
-      label,
-      isRequired,
-      description,
-    } = this.props
+    const { error, isCreatable, label, isRequired, description } = this.props
 
     if (!this.isReady()) {
       return <span />
     }
 
+    const sharedProps = this.getSharedProps()
+    let select
+
+    if (isCreatable) {
+      select = <CreatableSelect {...sharedProps} onInputChange={() => {}} />
+    } else {
+      select = <Select {...sharedProps} />
+    }
+
     return (
-      <RFField field={field}>
-        {fieldAPI => {
-          const sharedProps = this.getSharedProps(fieldAPI)
-          let select
-
-          if (isCreatable) {
-            select = (
-              <CreatableSelect {...sharedProps} onInputChange={() => {}} />
-            )
-          } else {
-            select = <Select {...sharedProps} />
-          }
-
-          return (
-            <Field
-              label={label}
-              isRequired={isRequired}
-              description={description}
-              error={fieldAPI.error}
-            >
-              {select}
-            </Field>
-          )
-        }}
-      </RFField>
+      <Field
+        label={label}
+        isRequired={isRequired}
+        description={description}
+        error={error}
+      >
+        {select}
+      </Field>
     )
   }
 }

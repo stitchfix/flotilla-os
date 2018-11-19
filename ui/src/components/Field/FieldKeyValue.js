@@ -10,7 +10,7 @@ import Field from "../styled/Field"
 import { Input } from "../styled/Inputs"
 import intentTypes from "../../constants/intentTypes"
 
-const NestedKV = styled.div`
+const NestedKeyValueRow = styled.div`
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
@@ -124,7 +124,7 @@ class FieldKeyValue extends Component {
         {!!values &&
           values.map((v, i) => (
             <NestedField key={`${field}-${i}`} field={[field, i]}>
-              <NestedKV>
+              <NestedKeyValueRow>
                 <FieldText field={keyField} label={null} isRequired />
                 <FieldText field={valueField} label={null} isRequired />
                 <Button
@@ -135,10 +135,10 @@ class FieldKeyValue extends Component {
                 >
                   <X size={14} />
                 </Button>
-              </NestedKV>
+              </NestedKeyValueRow>
             </NestedField>
           ))}
-        <NestedKV>
+        <NestedKeyValueRow>
           <Field
             field={keyField}
             label="Key"
@@ -169,7 +169,7 @@ class FieldKeyValue extends Component {
               onBlur={this.toggleValueInputFocus}
             />
           </Field>
-        </NestedKV>
+        </NestedKeyValueRow>
       </Field>
     )
   }
