@@ -156,7 +156,7 @@ class FlotillaAPIClient {
     })
   }
 
-  _constructURL({ path, query }) {
+  _constructURL = ({ path, query }) => {
     let q = ""
 
     if (!!query) {
@@ -170,7 +170,7 @@ class FlotillaAPIClient {
     return `${urljoin(this.location, path)}?${q}`
   }
 
-  _request({ method, path, query, payload, preprocess }) {
+  _request = ({ method, path, query, payload, preprocess }) => {
     return new Promise((resolve, reject) => {
       let config = { method, url: this._constructURL({ path, query }) }
 

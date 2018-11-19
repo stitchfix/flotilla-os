@@ -80,12 +80,21 @@ class FieldKeyValue extends Component {
   }
 
   handleKeypress = evt => {
-    if (evt.keyCode === 13) {
-      evt.preventDefault()
-      evt.stopPropagation()
+    const {
+      keyValue,
+      valueValue,
+      isKeyInputFocused,
+      isValueInputFocused,
+    } = this.state
 
-      if (this.shouldAddField()) {
-        this.addField()
+    if (isKeyInputFocused || isValueInputFocused) {
+      if (evt.keyCode === 13) {
+        evt.preventDefault()
+        evt.stopPropagation()
+
+        if (this.shouldAddField()) {
+          this.addField()
+        }
       }
     }
   }

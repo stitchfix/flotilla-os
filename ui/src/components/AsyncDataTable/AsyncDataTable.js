@@ -28,6 +28,8 @@ import {
   AsyncDataTableContent,
 } from "../styled/AsyncDataTable"
 import config from "../../config"
+import PopupContext from "../Popup/PopupContext"
+import intentTypes from "../../constants/intentTypes"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -134,7 +136,13 @@ class AsyncDataTable extends Component {
    * @param {object} query
    */
   requestData() {
-    const { queryParams, getRequestArgs, requestFn, limit } = this.props
+    const {
+      queryParams,
+      getRequestArgs,
+      requestFn,
+      limit,
+      renderPopup,
+    } = this.props
 
     let q = omit(queryParams, "page")
     q.offset = AsyncDataTable.pageToOffset(get(queryParams, "page", 1), limit)
@@ -146,6 +154,11 @@ class AsyncDataTable extends Component {
       })
       .catch(error => {
         this.setState({ error })
+        renderPopup({
+          title: "An error occurred",
+          body: get(error, ["response", "data"], toString(error)),
+          intent: intentTypes.error,
+        })
       })
   }
 
@@ -341,6 +354,16 @@ AsyncDataTable.defaultProps = {
 
 export default withQueryParams()(props => (
   <PageVisibility>
-    {isTabFocused => <AsyncDataTable {...props} isTabFocused={isTabFocused} />}
+    {isTabFocused => (
+      <PopupContext.Consumer>
+        {ctx => (
+          <AsyncDataTable
+            {...props}
+            isTabFocused={isTabFocused}
+            renderPopup={ctx.renderPopup}
+          />
+        )}
+      </PopupContext.Consumer>
+    )}
   </PageVisibility>
 ))
