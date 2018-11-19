@@ -8,9 +8,9 @@ import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
 import View from "../styled/View"
 import Form from "../styled/Form"
-import ReactFormFieldText from "../Field/ReactFormFieldText"
-import ReactFormFieldSelect from "../Field/ReactFormFieldSelect"
-import FieldKeyValue from "../Field/FieldKeyValue"
+import { ReactFormFieldText } from "../Field/FieldText"
+import { ReactFormFieldSelect } from "../Field/FieldSelect"
+import ReactFormKVField from "../Field/ReactFormKVField"
 import TaskContext from "../Task/TaskContext"
 import api from "../../api"
 import config from "../../config"
@@ -226,7 +226,7 @@ class TaskForm extends Component {
                     requestOptionsFn={api.getTags}
                     shouldRequestOptions
                   />
-                  <FieldKeyValue
+                  <ReactFormKVField
                     label="Environment Variables"
                     field="env"
                     addValue={formAPI.addValue}

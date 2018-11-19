@@ -2,6 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import Select from "react-select"
 import CreatableSelect from "react-select/lib/Creatable"
+import { Field as RFField } from "react-form"
 import { get, isArray, isString, isEmpty, isFunction } from "lodash"
 import Field from "../styled/Field"
 import {
@@ -12,6 +13,7 @@ import {
 } from "../../utils/reactSelectHelpers"
 import * as requestStateTypes from "../../constants/requestStateTypes"
 import PopupContext from "../Popup/PopupContext"
+import QueryParams from "../QueryParams/QueryParams"
 
 class FieldSelect extends Component {
   state = {
@@ -151,6 +153,7 @@ class FieldSelect extends Component {
 }
 
 FieldSelect.propTypes = {
+  field: PropTypes.string.isRequired,
   getOptions: PropTypes.func,
   isCreatable: PropTypes.bool.isRequired,
   isMulti: PropTypes.bool.isRequired,
@@ -174,8 +177,39 @@ FieldSelect.defaultProps = {
   shouldRequestOptions: false,
 }
 
-export default props => (
+const FieldSelectWithPopupContext = props => (
   <PopupContext.Consumer>
     {ctx => <FieldSelect {...props} renderPopup={ctx.renderPopup} />}
   </PopupContext.Consumer>
+)
+
+export const QueryParamsFieldSelect = props => (
+  <QueryParams>
+    {({ queryParams, setQueryParams }) => (
+      <FieldSelectWithPopupContext
+        {...props}
+        value={get(queryParams, props.field, "")}
+        onChange={value => {
+          setQueryParams({
+            [props.field]: value,
+          })
+        }}
+      />
+    )}
+  </QueryParams>
+)
+
+export const ReactFormFieldSelect = props => (
+  <RFField field={props.field}>
+    {fieldAPI => (
+      <FieldSelectWithPopupContext
+        {...props}
+        value={get(fieldAPI, "value", "")}
+        onChange={value => {
+          fieldAPI.setValue(value)
+        }}
+        error={get(fieldAPI, "error", null)}
+      />
+    )}
+  </RFField>
 )

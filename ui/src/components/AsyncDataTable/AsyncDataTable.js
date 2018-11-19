@@ -69,14 +69,14 @@ class AsyncDataTable extends Component {
       this.requestData()
     }
 
-    if (shouldContinuouslyFetch) {
-      this.requestInterval = window.setInterval(() => {
-        // Return if the browser tab isn't focused.
-        if (!this.props.isTabFocused) return
+    // if (shouldContinuouslyFetch) {
+    //   this.requestInterval = window.setInterval(() => {
+    //     // Return if the browser tab isn't focused.
+    //     if (!this.props.isTabFocused) return
 
-        this.requestData()
-      }, config.RUN_REQUEST_INTERVAL_MS)
-    }
+    //     this.requestData()
+    //   }, config.RUN_REQUEST_INTERVAL_MS)
+    // }
   }
 
   componentDidUpdate(prevProps) {

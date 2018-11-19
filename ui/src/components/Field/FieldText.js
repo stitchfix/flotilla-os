@@ -1,10 +1,13 @@
 import React from "react"
 import PropTypes from "prop-types"
 import DebounceInput from "react-debounce-input"
+import { Field as RFField } from "react-form"
+import { get } from "lodash"
 import Field from "../styled/Field"
 import { Input, Textarea } from "../styled/Inputs"
+import QueryParams from "../QueryParams/QueryParams"
 
-const FieldText = props => {
+export const FieldText = props => {
   let sharedProps = {
     value: props.value,
     onChange: evt => {
@@ -67,4 +70,31 @@ FieldText.defaultProps = {
   shouldDebounce: false,
 }
 
-export default FieldText
+export const QueryParamsFieldText = props => (
+  <QueryParams>
+    {({ queryParams, setQueryParams }) => (
+      <FieldText
+        {...props}
+        value={get(queryParams, props.field, "")}
+        onChange={value => {
+          setQueryParams({
+            [props.field]: value,
+          })
+        }}
+      />
+    )}
+  </QueryParams>
+)
+
+export const ReactFormFieldText = props => (
+  <RFField field={props.field}>
+    {fieldAPI => (
+      <FieldText
+        {...props}
+        value={get(fieldAPI, "value", "")}
+        onChange={value => fieldAPI.setValue(value)}
+        error={get(fieldAPI, "error", null)}
+      />
+    )}
+  </RFField>
+)

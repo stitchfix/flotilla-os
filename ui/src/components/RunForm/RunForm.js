@@ -6,8 +6,8 @@ import Loader from "../styled/Loader"
 import View from "../styled/View"
 import Navigation from "../Navigation/Navigation"
 import Form from "../styled/Form"
-import FieldSelect from "../Field/FieldSelect"
-import FieldKeyValue from "../Field/FieldKeyValue"
+import { ReactFormFieldSelect } from "../Field/FieldSelect"
+import ReactFormKVField from "../Field/ReactFormKVField"
 import api from "../../api"
 import config from "../../config"
 import * as requestStateTypes from "../../constants/requestStateTypes"
@@ -85,6 +85,7 @@ class RunForm extends Component {
         text: "Cancel",
         buttonProps: {
           onClick: goBack,
+          type: "button",
         },
       },
       {
@@ -108,20 +109,20 @@ class RunForm extends Component {
               <View>
                 <Navigation breadcrumbs={breadcrumbs} actions={actions} />
                 <Form title={`Run ${get(data, "alias", definitionID)}`}>
-                  <FieldSelect
+                  <ReactFormFieldSelect
                     label="Cluster"
                     field="cluster"
                     requestOptionsFn={api.getClusters}
                     shouldRequestOptions
                   />
-                  <FieldKeyValue
+                  <ReactFormKVField
                     label="Run Tags"
                     field="run_tags"
                     addValue={formAPI.addValue}
                     removeValue={formAPI.removeValue}
                     values={get(formAPI, ["values", "run_tags"], [])}
                   />
-                  <FieldKeyValue
+                  <ReactFormKVField
                     label="Environment Variables"
                     field="env"
                     addValue={formAPI.addValue}
