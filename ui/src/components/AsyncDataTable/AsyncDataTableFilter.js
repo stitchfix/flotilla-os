@@ -1,9 +1,9 @@
 import React from "react"
 import PropTypes from "prop-types"
 import { get, isString, isArray } from "lodash"
-import FieldText from "../Form/FieldText"
-import FieldSelect from "../Form/FieldSelect"
-import FieldKeyValue from "../Form/FieldKeyValue"
+import FieldText from "../Field/FieldText"
+import FieldSelect from "../Field/FieldSelect"
+import FieldKeyValue from "../Field/FieldKeyValue"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",

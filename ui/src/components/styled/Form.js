@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import HeaderText from "../styled/HeaderText"
+import HeaderText from "./HeaderText"
 
 const FormContainer = styled.div`
   display: flex;
