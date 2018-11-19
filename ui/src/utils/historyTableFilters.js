@@ -16,7 +16,13 @@ const historyTableFilters = {
     displayName: "Run Status",
     type: asyncDataTableFilterTypes.SELECT,
     options: Object.values(runStatusTypes)
-      .filter(v => v !== runStatusTypes.failed && v !== runStatusTypes.success)
+      .filter(
+        v =>
+          v !== runStatusTypes.failed &&
+          v !== runStatusTypes.success &&
+          v !== runStatusTypes.stopped &&
+          v !== runStatusTypes.needs_retry
+      )
       .map(stringToSelectOpt),
     description: "Search by run status.",
     isMulti: true,
@@ -39,7 +45,7 @@ const historyTableFilters = {
     description: "Filter by runs that started since a certain time (ISO8601)",
   },
   started_at_until: {
-    displayName: "Started At End",
+    displayName: "Started At Until",
     type: asyncDataTableFilterTypes.INPUT,
     description: "Filter by runs that started before a certain time (ISO8601)",
   },
@@ -48,8 +54,8 @@ const historyTableFilters = {
     type: asyncDataTableFilterTypes.INPUT,
     description: "Filter by runs that ended after a certain time (ISO8601)",
   },
-  finished_at_end: {
-    displayName: "Finished At End",
+  finished_at_until: {
+    displayName: "Finished At Until",
     type: asyncDataTableFilterTypes.INPUT,
     description: "Filter by runs that ended before a certain time (ISO8601)",
   },
