@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Link } from "react-router-dom"
 import moment from "moment"
-import { get } from "lodash"
+import { get, omit } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
@@ -14,6 +14,7 @@ import runStatusTypes from "../../constants/runStatusTypes"
 import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
+import historyTableFilters from "../../utils/historyTableFilters"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>
@@ -112,15 +113,7 @@ class TaskHistoryTable extends Component {
         }}
         getItems={data => data.history}
         getTotal={data => data.total}
-        filters={{
-          cluster_name: {
-            displayName: "Cluster Name",
-            type: asyncDataTableFilterTypes.SELECT,
-            description: "Search runs running on a specific cluster.",
-            shouldRequestOptions: true,
-            requestOptionsFn: api.getClusters,
-          },
-        }}
+        filters={omit(historyTableFilters, ["alias"])}
         initialQuery={{
           page: 1,
           sort_by: "started_at",

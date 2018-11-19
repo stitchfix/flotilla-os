@@ -12,6 +12,7 @@ import {
   has,
   toString,
   isNumber,
+  isString,
 } from "lodash"
 import EmptyTable from "../styled/EmptyTable"
 import { Table, TableRow, TableCell } from "../styled/Table"
@@ -150,9 +151,46 @@ class AsyncDataTable extends Component {
 
   handleFiltersChange = (formState, formAPI) => {
     const { setQueryParams } = this.props
+    const q = this.processFormStateValues(get(formState, "values", {}))
 
-    setQueryParams(get(formState, "values", {}))
+    setQueryParams(q)
   }
+
+  // @TODO: this is very dirty and should probably be moved somewhere else.
+  // This is done to set the environment variables filters properly.
+  processFormStateValues = values => {
+    return Object.keys(values).reduce((acc, key) => {
+      if (key === "env") {
+        const env = values[key]
+        acc.env = env.map(e => `${e.name}|${e.value}`)
+      } else {
+        acc[key] = values[key]
+      }
+
+      return acc
+    }, {})
+  }
+
+  queryToForm = q =>
+    Object.keys(q).reduce((acc, key) => {
+      const value = q[key]
+
+      if (key === "env") {
+        if (isString(value)) {
+          const split = value.split("|")
+          acc[key] = [{ name: split[0], value: split[1] }]
+        } else {
+          acc[key] = value.map(e => {
+            const split = e.split("|")
+            return { name: split[0], value: split[1] }
+          })
+        }
+      } else {
+        acc[key] = value
+      }
+
+      return acc
+    }, {})
 
   render() {
     const {
@@ -182,14 +220,16 @@ class AsyncDataTable extends Component {
             {!isEmpty(filters) && (
               <ReactForm
                 onChange={this.handleFiltersChange}
-                defaultValues={queryParams}
+                defaultValues={this.queryToForm(queryParams)}
               >
                 {formAPI => {
+                  console.log(formAPI)
                   return (
                     <AsyncDataTableFilters isView={isView}>
                       {Object.keys(filters).map(key => (
                         <AsyncDataTableFilter
                           {...filters[key]}
+                          formAPI={formAPI}
                           field={key}
                           key={key}
                         />

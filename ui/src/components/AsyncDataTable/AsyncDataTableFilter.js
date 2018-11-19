@@ -1,16 +1,19 @@
 import React from "react"
 import PropTypes from "prop-types"
+import { get, isString, isArray } from "lodash"
 import FieldText from "../Form/FieldText"
 import FieldSelect from "../Form/FieldSelect"
+import FieldKeyValue from "../Form/FieldKeyValue"
 
 export const asyncDataTableFilterTypes = {
   INPUT: "INPUT",
   SELECT: "SELECT",
   CUSTOM: "CUSTOM",
+  KV: "KV",
 }
 
 const AsyncDataTableFilter = props => {
-  const { field, type, displayName, description } = props
+  const { field, type, displayName, description, formAPI } = props
   const sharedProps = {
     label: displayName,
     field,
@@ -18,6 +21,17 @@ const AsyncDataTableFilter = props => {
   }
 
   switch (type) {
+    case asyncDataTableFilterTypes.KV:
+      return (
+        <FieldKeyValue
+          {...sharedProps}
+          {...props}
+          addValue={formAPI.addValue}
+          removeValue={formAPI.removeValue}
+          // @TODO: HACK ALERT.
+          values={get(formAPI, ["values", "env"], [])}
+        />
+      )
     case asyncDataTableFilterTypes.SELECT:
       return <FieldSelect {...sharedProps} {...props} />
     case asyncDataTableFilterTypes.INPUT:

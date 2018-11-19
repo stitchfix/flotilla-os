@@ -22,6 +22,7 @@ export const AsyncDataTableFilters = styled.div`
   top: ${NAVIGATION_HEIGHT_PX}px;
   left: ${({ isView }) => (isView ? 0 : DETAIL_VIEW_SIDEBAR_WIDTH_PX)}px;
   bottom: 0;
+  overflow-y: scroll;
 `
 
 export const AsyncDataTableContainer = styled.div`

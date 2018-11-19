@@ -16,6 +16,7 @@ import SecondaryText from "../styled/SecondaryText"
 import runStatusTypes from "../../constants/runStatusTypes"
 import api from "../../api"
 import { stringToSelectOpt } from "../../utils/reactSelectHelpers"
+import historyTableFilters from "../../utils/historyTableFilters"
 
 class ActiveRuns extends Component {
   handleStopButtonClick = runData => {
@@ -108,35 +109,7 @@ class ActiveRuns extends Component {
           getItemKey={(item, i) => get(item, "run_id", i)}
           getItems={data => data.history}
           getTotal={data => data.total}
-          filters={{
-            alias: {
-              displayName: "Alias",
-              type: asyncDataTableFilterTypes.SELECT,
-              options: [],
-              description: "Search by task alias.",
-              isMulti: true,
-              isCreatable: true,
-            },
-            status: {
-              displayName: "Run Status",
-              type: asyncDataTableFilterTypes.SELECT,
-              options: Object.values(runStatusTypes)
-                .filter(
-                  v =>
-                    v !== runStatusTypes.failed && v !== runStatusTypes.success
-                )
-                .map(stringToSelectOpt),
-              description: "Search by run status.",
-              isMulti: true,
-            },
-            cluster_name: {
-              displayName: "Cluster Name",
-              type: asyncDataTableFilterTypes.SELECT,
-              description: "Search runs running on a specific cluster.",
-              shouldRequestOptions: true,
-              requestOptionsFn: api.getClusters,
-            },
-          }}
+          filters={historyTableFilters}
           initialQuery={{
             page: 1,
             sort_by: "started_at",

@@ -232,7 +232,7 @@ class TaskForm extends Component {
                     addValue={formAPI.addValue}
                     removeValue={formAPI.removeValue}
                     values={get(formAPI, ["values", "env"], [])}
-                    descripion="Environment variables that can be adjusted during runtime."
+                    descripion="Environment variables that can be adjusted during execution."
                   />
                 </Form>
               </View>

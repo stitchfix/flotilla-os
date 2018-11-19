@@ -24,7 +24,7 @@ const NestedKV = styled.div`
     }
 
     &:nth-child(3) {
-      transform: translateY(18px);
+      transform: translateY(8px);
     }
   }
 `
@@ -116,16 +116,8 @@ class FieldKeyValue extends Component {
           values.map((v, i) => (
             <NestedField key={`${field}-${i}`} field={[field, i]}>
               <NestedKV>
-                <FieldText
-                  field={keyField}
-                  label={i === 0 ? "Key" : null}
-                  isRequired
-                />
-                <FieldText
-                  field={valueField}
-                  label={i === 0 ? "Value" : null}
-                  isRequired
-                />
+                <FieldText field={keyField} label={null} isRequired />
+                <FieldText field={valueField} label={null} isRequired />
                 <Button
                   intent={intentTypes.error}
                   onClick={() => {
