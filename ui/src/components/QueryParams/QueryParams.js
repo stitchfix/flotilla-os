@@ -34,8 +34,8 @@ class QueryParams extends Component {
 
   render() {
     return this.props.children({
-      query: this.getQuery(),
-      setQuery: this.setQuery,
+      queryParams: this.getQuery(),
+      setQueryParams: this.setQuery,
     })
   }
 }

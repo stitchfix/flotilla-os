@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
-import withQueryParams from "react-router-query-params"
 import { Form as ReactForm } from "react-form"
 import PageVisibility from "react-page-visibility"
 import {
@@ -30,6 +29,7 @@ import {
 import config from "../../config"
 import PopupContext from "../Popup/PopupContext"
 import intentTypes from "../../constants/intentTypes"
+import QueryParams from "../QueryParams/QueryParams"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -352,18 +352,24 @@ AsyncDataTable.defaultProps = {
   shouldRequest: (prevProps, currProps) => false,
 }
 
-export default withQueryParams()(props => (
+export default props => (
   <PageVisibility>
     {isTabFocused => (
       <PopupContext.Consumer>
         {ctx => (
-          <AsyncDataTable
-            {...props}
-            isTabFocused={isTabFocused}
-            renderPopup={ctx.renderPopup}
-          />
+          <QueryParams>
+            {({ queryParams, setQueryParams }) => (
+              <AsyncDataTable
+                {...props}
+                isTabFocused={isTabFocused}
+                renderPopup={ctx.renderPopup}
+                queryParams={queryParams}
+                setQueryParams={setQueryParams}
+              />
+            )}
+          </QueryParams>
         )}
       </PopupContext.Consumer>
     )}
   </PageVisibility>
-))
+)
