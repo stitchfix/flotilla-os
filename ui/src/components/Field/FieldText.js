@@ -1,48 +1,63 @@
-import React from "react"
+import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
 import DebounceInput from "react-debounce-input"
 import { Field as RFField } from "react-form"
-import { get } from "lodash"
+import { get, has } from "lodash"
 import Field from "../styled/Field"
 import { Input, Textarea } from "../styled/Inputs"
 import QueryParams from "../QueryParams/QueryParams"
 
 export const FieldText = props => {
+  const {
+    description,
+    error,
+    inputRef,
+    isNumber,
+    isRequired,
+    isTextArea,
+    label,
+    onChange,
+    shouldDebounce,
+    value,
+  } = props
+
+  // Common props for all input components
   let sharedProps = {
-    value: props.value,
+    value,
     onChange: evt => {
-      props.onChange(evt.target.value)
+      onChange(evt.target.value)
     },
   }
 
-  if (!!props.inputRef) {
-    sharedProps.ref = props.inputRef
+  if (!!inputRef) {
+    sharedProps.ref = inputRef
   }
 
+  // Assign input element based on various props.
   let input
 
-  if (props.isTextArea) {
+  if (isTextArea) {
     input = <Textarea {...sharedProps} />
-  } else if (props.shouldDebounce) {
+  } else if (shouldDebounce) {
     input = (
       <DebounceInput
         {...sharedProps}
         element={Input}
         debounceTimeout={250}
         minLength={1}
-        type={props.isNumber ? "number" : "text"}
+        type={isNumber ? "number" : "text"}
       />
     )
   } else {
-    input = <Input type={props.isNumber ? "number" : "text"} {...sharedProps} />
+    input = <Input type={isNumber ? "number" : "text"} {...sharedProps} />
   }
 
   return (
     <Field
-      label={props.label}
-      isRequired={props.isRequired}
-      description={props.description}
-      error={props.error}
+      label={label}
+      isRequired={isRequired}
+      description={description}
+      error={error}
     >
       {input}
     </Field>
@@ -70,31 +85,37 @@ FieldText.defaultProps = {
   shouldDebounce: false,
 }
 
-export const QueryParamsFieldText = props => (
-  <QueryParams>
-    {({ queryParams, setQueryParams }) => (
-      <FieldText
-        {...props}
-        value={get(queryParams, props.field, "")}
-        onChange={value => {
-          setQueryParams({
-            [props.field]: value,
-          })
-        }}
-      />
-    )}
-  </QueryParams>
-)
+export const QueryParamsFieldText = ({ field }) => {
+  return (
+    <QueryParams>
+      {({ queryParams, setQueryParams }) => (
+        <FieldText
+          {...this.props}
+          value={get(queryParams, field, "")}
+          onChange={value => {
+            setQueryParams({
+              [field]: value,
+            })
+          }}
+        />
+      )}
+    </QueryParams>
+  )
+}
 
-export const ReactFormFieldText = props => (
-  <RFField field={props.field}>
-    {fieldAPI => (
-      <FieldText
-        {...props}
-        value={get(fieldAPI, "value", "")}
-        onChange={value => fieldAPI.setValue(value)}
-        error={get(fieldAPI, "error", null)}
-      />
-    )}
-  </RFField>
-)
+export const ReactFormFieldText = props => {
+  return (
+    <RFField field={props.field}>
+      {fieldAPI => {
+        return (
+          <FieldText
+            {...props}
+            value={get(fieldAPI, "value", "")}
+            onChange={value => fieldAPI.setValue(value)}
+            error={get(fieldAPI, "error", null)}
+          />
+        )
+      }}
+    </RFField>
+  )
+}

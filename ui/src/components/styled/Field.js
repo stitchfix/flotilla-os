@@ -23,6 +23,18 @@ export const FieldLabel = styled.div`
   text-transform: uppercase;
   font-weight: 500;
   margin-bottom: 4px;
+
+  ${({ isRequired }) => {
+    if (isRequired) {
+      return `
+        &:after {
+          content: "*";
+          color: ${colors.red[0]};
+          margin-left: 2px;
+        }
+      `
+    }
+  }}
   /* margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px; */
 `
 
@@ -41,9 +53,16 @@ const FieldLoaderContainer = styled.div`
   top: calc(21px + (${FIELD_HEIGHT_PX}px - 18px) / 2);
 `
 
-const Field = ({ label, children, description, error, isLoading }) => (
+const Field = ({
+  label,
+  children,
+  description,
+  error,
+  isLoading,
+  isRequired,
+}) => (
   <FieldContainer>
-    {!!label && <FieldLabel>{label}</FieldLabel>}
+    {!!label && <FieldLabel isRequired={isRequired}>{label}</FieldLabel>}
     {children}
     {!!error && <FieldError>{error}</FieldError>}
     {!!description && <FieldDescription>{description}</FieldDescription>}
@@ -62,12 +81,15 @@ Field.propTypes = {
   description: PropTypes.string,
   error: PropTypes.any,
   isLoading: PropTypes.bool.isRequired,
+  isRequired: PropTypes.bool.isRequired,
   label: PropTypes.string,
 }
 
 Field.defaultProps = {
   error: false,
+
   isLoading: false,
+  isRequired: true,
 }
 
 export default Field

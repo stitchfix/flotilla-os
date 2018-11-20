@@ -23,19 +23,34 @@ export class ReactFormKVField extends Component {
   }
 
   render() {
-    const { field, label, values, keyField, addValue, valueField } = this.props
+    const {
+      field,
+      label,
+      values,
+      keyField,
+      addValue,
+      valueField,
+      description,
+      isRequired,
+      isKeyRequired,
+      isValueRequired,
+    } = this.props
 
     return (
-      <Field label={label}>
+      <Field label={label} isRequired={isRequired} description={description}>
         {!!values &&
           values.map((v, i) => (
             <NestedField key={`${field}-${i}`} field={[field, i]}>
               <NestedKeyValueRow>
-                <ReactFormFieldText field={keyField} label={null} isRequired />
+                <ReactFormFieldText
+                  field={keyField}
+                  label={null}
+                  isRequired={isKeyRequired}
+                />
                 <ReactFormFieldText
                   field={valueField}
                   label={null}
-                  isRequired
+                  isRequired={isValueRequired}
                 />
                 <Button
                   intent={intentTypes.error}

@@ -27,6 +27,14 @@ export const buttonStyles = css`
     border-color: ${colors.light_gray[3]};
     color: ${({ intent }) => intentToColor(intent)};
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: ${colors.gray[2]} !important;
+    border-color: ${colors.gray[2]} !important;
+    color: ${colors.black[0]} !important;
+  }
 `
 
 const StyledButton = styled.button`
@@ -36,7 +44,7 @@ const StyledButton = styled.button`
 const Button = ({ isLoading, intent, isDisabled, type, onClick, children }) => {
   return (
     <StyledButton
-      isDisabled={isDisabled}
+      disabled={isDisabled}
       type={type}
       intent={intent}
       onClick={onClick}

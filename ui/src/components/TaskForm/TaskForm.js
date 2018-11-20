@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
-import { get, isEmpty, omit } from "lodash"
+import { get, isEmpty, omit, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
@@ -35,6 +35,19 @@ class TaskForm extends Component {
 
       return acc
     }, {})
+
+  checkIfAliasExists = alias =>
+    new Promise((resolve, reject) => {
+      api
+        .getTaskByAlias({ alias })
+        .then(res => {
+          reject({ error: "Alias already exists." })
+        })
+        .catch(err => {
+          resolve({ success: "Good 2 go" })
+        })
+    })
+
   handleSubmit = values => {
     const { data, type, push, renderPopup } = this.props
 
@@ -143,7 +156,7 @@ class TaskForm extends Component {
     ]
   }
 
-  getActions = () => {
+  getActions = ({ shouldDisableSubmitButton }) => {
     const { goBack } = this.props
 
     return [
@@ -160,9 +173,40 @@ class TaskForm extends Component {
         buttonProps: {
           type: "submit",
           intent: intentTypes.primary,
+          isDisabled: shouldDisableSubmitButton === true,
         },
       },
     ]
+  }
+
+  validateForm = values => {
+    let errors = {}
+
+    if (
+      this.props.type !== taskFormTypes.UPDATE &&
+      (!has(values, "alias") || isEmpty(values.alias))
+    ) {
+      errors.alias = "Alias cannot be blank."
+    }
+
+    if (!has(values, "group_name") || isEmpty(values.group_name)) {
+      errors.group_name = "Group name cannot be blank."
+    }
+
+    if (!has(values, "image") || isEmpty(values.image)) {
+      errors.image = "Image cannot be blank."
+    }
+
+    if (!has(values, "command") || isEmpty(values.command)) {
+      console.log("found blank command")
+      errors.command = "Command cannot be blank."
+    }
+
+    if (!has(values, "memory")) {
+      errors.memory = "Memory cannot be blank."
+    }
+
+    return errors
   }
 
   render() {
@@ -176,14 +220,21 @@ class TaskForm extends Component {
       <ReactForm
         defaultValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
+        validate={this.validateForm}
+        validateOnMount
       >
         {formAPI => {
+          // console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
                 <Navigation
                   breadcrumbs={this.getBreadcrumbs()}
-                  actions={this.getActions()}
+                  actions={this.getActions({
+                    shouldDisableSubmitButton:
+                      formAPI.validationFailures > 0 ||
+                      !isEmpty(formAPI.errors),
+                  })}
                 />
                 <Form title={this.renderTitle()}>
                   {type !== taskFormTypes.UPDATE && (
@@ -191,6 +242,8 @@ class TaskForm extends Component {
                       label="Alias"
                       field="alias"
                       description="Choose a descriptive alias for this task."
+                      shouldDebounce
+                      isRequired
                     />
                   )}
                   <ReactFormFieldSelect
@@ -205,18 +258,21 @@ class TaskForm extends Component {
                     label="Image"
                     field="image"
                     description="The full URL of the Docker image and tag."
+                    isRequired
                   />
                   <ReactFormFieldText
                     isTextArea
                     label="Command"
                     field="command"
                     description="The command for this task to execute."
+                    isRequired
                   />
                   <ReactFormFieldText
                     isNumber
                     label="Memory (MB)"
                     field="memory"
                     description="The amount of memory this task needs."
+                    isRequired
                   />
                   <ReactFormFieldSelect
                     isCreatable
@@ -225,6 +281,7 @@ class TaskForm extends Component {
                     field="tags"
                     requestOptionsFn={api.getTags}
                     shouldRequestOptions
+                    isRequired={false}
                   />
                   <ReactFormKVField
                     label="Environment Variables"
@@ -233,6 +290,7 @@ class TaskForm extends Component {
                     removeValue={formAPI.removeValue}
                     values={get(formAPI, ["values", "env"], [])}
                     descripion="Environment variables that can be adjusted during execution."
+                    isRequired={false}
                   />
                 </Form>
               </View>

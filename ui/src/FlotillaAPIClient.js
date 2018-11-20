@@ -30,6 +30,15 @@ class FlotillaAPIClient {
     })
   }
 
+  getTaskByAlias = ({ alias }) => {
+    return this._request({
+      method: "get",
+      path: `/v1/task/alias/${alias}`,
+      query: null,
+      payload: null,
+    })
+  }
+
   getTaskHistory = ({ definitionID, query }) => {
     return this._request({
       method: "get",

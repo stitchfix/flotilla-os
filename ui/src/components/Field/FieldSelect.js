@@ -1,4 +1,4 @@
-import React, { Component } from "react"
+import React, { PureComponent } from "react"
 import PropTypes from "prop-types"
 import Select from "react-select"
 import CreatableSelect from "react-select/lib/Creatable"
@@ -15,7 +15,7 @@ import * as requestStateTypes from "../../constants/requestStateTypes"
 import PopupContext from "../Popup/PopupContext"
 import QueryParams from "../QueryParams/QueryParams"
 
-class FieldSelect extends Component {
+class FieldSelect extends PureComponent {
   state = {
     requestState: requestStateTypes.NOT_READY,
     inFlight: false,

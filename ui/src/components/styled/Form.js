@@ -2,6 +2,7 @@ import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
 import HeaderText from "./HeaderText"
+import { SPACING_PX } from "../../constants/styles"
 
 const FormContainer = styled.div`
   display: flex;
@@ -18,6 +19,7 @@ const FormInner = styled.div`
   align-items: flex-start;
   width: 600px;
   padding-top: 24px;
+  padding-bottom: ${SPACING_PX * 20}px;
   & > * {
     margin-bottom: 36px;
   }
