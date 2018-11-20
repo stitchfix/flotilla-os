@@ -124,10 +124,10 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 			}
 		}
 
-		if ovrdCmd := rti.Overrides.ContainerOverrides[0].Command; len(ovrdCmd) != 1 {
+		if ovrdCmd := rti.Overrides.ContainerOverrides[0].Command; len(ovrdCmd) != 4 {
 			t.Errorf("Unexpected command override len: [%d]", len(ovrdCmd))
 		} else {
-			if *ovrdCmd[0] != cmd {
+			if *ovrdCmd[0] != "bash" {
 				t.Errorf("Expected command [%s], got [%s]", cmd, *ovrdCmd[0])
 			}
 		}
