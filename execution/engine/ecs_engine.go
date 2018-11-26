@@ -142,30 +142,28 @@ func (ee *ECSExecutionEngine) createOrUpdateEventRule(statusRule string, statusQ
 		return errors.Wrapf(err, "problem listing rules for target [%s]", targetArn)
 	}
 
-	if len(names.RuleNames) > 0 && *names.RuleNames[0] == statusRule {
-		return nil
-	}
-
-	res, err := ee.cwClient.PutTargets(&cloudwatchevents.PutTargetsInput{
-		Rule: &statusRule,
-		Targets: []*cloudwatchevents.Target{
-			{
-				Arn: &targetArn,
-				Id:  &statusQueue,
+	targetExists := len(names.RuleNames) > 0 && *names.RuleNames[0] == statusRule
+	if !targetExists {
+		res, err := ee.cwClient.PutTargets(&cloudwatchevents.PutTargetsInput{
+			Rule: &statusRule,
+			Targets: []*cloudwatchevents.Target{
+				{
+					Arn: &targetArn,
+					Id:  &statusQueue,
+				},
 			},
-		},
-	})
+		})
 
-	if err != nil {
-		return errors.Wrapf(
-			err, "problem adding [%s] as queue target for status rule [%s]", targetArn, statusRule)
+		if err != nil {
+			return errors.Wrapf(
+				err, "problem adding [%s] as queue target for status rule [%s]", targetArn, statusRule)
+		}
+
+		if *res.FailedEntryCount > 0 {
+			failed := res.FailedEntries[0]
+			return errors.Errorf("error adding routing rule for ecs status messages [%s]", *failed.ErrorMessage)
+		}
 	}
-
-	if *res.FailedEntryCount > 0 {
-		failed := res.FailedEntries[0]
-		return errors.Errorf("error adding routing rule for ecs status messages [%s]", *failed.ErrorMessage)
-	}
-
 	// Finally, add permissions to target queue
 	return ee.setTargetPermissions(*createUpdate.RuleArn, targetArn)
 }
@@ -206,6 +204,19 @@ func (ee *ECSExecutionEngine) setTargetPermissions(sourceArn string, targetArn s
 			}
 		}]
 	}`, targetArn, sourceArn)
+
+	// Check first
+	res, err := ee.sqsClient.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+		QueueUrl: &ee.statusQurl,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "problem getting queue attributes for sqs queue [%s]", ee.statusQurl)
+	}
+
+	if policy, ok := res.Attributes["Policy"]; ok && *policy == policyDoc {
+		return nil
+	}
+
 	if _, err := ee.sqsClient.SetQueueAttributes(&sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
 			"Policy": &policyDoc,
