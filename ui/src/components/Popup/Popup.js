@@ -2,33 +2,23 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
 import PopupContext from "./PopupContext"
-import { Z_INDICES } from "../../constants/styles"
+import { Z_INDICES, SPACING_PX, DEFAULT_BORDER } from "../../constants/styles"
 import colors from "../../constants/colors"
 import intentTypes from "../../constants/intentTypes"
+import Card from "../styled/Card"
+import Button from "../styled/Button"
+import ButtonGroup from "../styled/ButtonGroup"
 
 const POPUP_WINDOW_DISTANCE_PX = 48
-const POPUP_WIDTH_PX = 320
+const POPUP_WIDTH_PX = 400
 
 const PopupPositioner = styled.div`
   position: fixed;
   bottom: ${POPUP_WINDOW_DISTANCE_PX}px;
   right: ${POPUP_WINDOW_DISTANCE_PX}px;
   z-index: ${Z_INDICES.POPUP};
-  background: ${colors.black[2]};
   width: ${POPUP_WIDTH_PX}px;
 `
-
-const PopupContainer = styled.div`
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: flex-start;
-  align-items: stretch;
-  width: 100%;
-  height: 100%;
-`
-
-const PopupTitle = styled.div``
-const PopupBody = styled.div``
 
 class Popup extends Component {
   componentDidMount() {
@@ -41,20 +31,32 @@ class Popup extends Component {
     }
   }
 
+  renderActions = () => {
+    const { actions, unrenderPopup } = this.props
+
+    return (
+      <ButtonGroup>
+        <Button onClick={unrenderPopup}>Close</Button>
+        {!!actions && actions}
+      </ButtonGroup>
+    )
+  }
+
   render() {
     const { body, title } = this.props
+
     return (
       <PopupPositioner>
-        <PopupContainer>
-          {!!title && <PopupTitle>{title}</PopupTitle>}
-          {!!body && <PopupBody>{body}</PopupBody>}
-        </PopupContainer>
+        <Card title={title} actions={this.renderActions()}>
+          {body}
+        </Card>
       </PopupPositioner>
     )
   }
 }
 
 Popup.propTypes = {
+  actions: PropTypes.node,
   body: PropTypes.node,
   intent: PropTypes.oneOf(Object.values(intentTypes)),
   shouldAutohide: PropTypes.bool.isRequired,

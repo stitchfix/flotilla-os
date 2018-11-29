@@ -25,6 +25,10 @@ const taskFormTypes = {
 }
 
 class TaskForm extends Component {
+  /**
+   * Transforms user-defined values to an object parseable by the API. Notably,
+   * it coerces the `memory` field to a number.
+   */
   static transformValues = values =>
     Object.keys(values).reduce((acc, k) => {
       if (k === "memory") {
@@ -36,20 +40,11 @@ class TaskForm extends Component {
       return acc
     }, {})
 
-  checkIfAliasExists = alias =>
-    new Promise((resolve, reject) => {
-      api
-        .getTaskByAlias({ alias })
-        .then(res => {
-          reject({ error: "Alias already exists." })
-        })
-        .catch(err => {
-          resolve({ success: "Good 2 go" })
-        })
-    })
-
+  /**
+   * Sends the values to the server.
+   */
   handleSubmit = values => {
-    const { data, type, push, renderPopup } = this.props
+    const { data, type, push } = this.props
 
     switch (type) {
       case taskFormTypes.UPDATE:
@@ -77,6 +72,9 @@ class TaskForm extends Component {
     }
   }
 
+  /**
+   * Renders a popup with the error returned by the server.
+   */
   handleSubmitError = error => {
     const { renderPopup } = this.props
     const e = error.getError()
@@ -89,6 +87,9 @@ class TaskForm extends Component {
     })
   }
 
+  /**
+   * Renders the form's title.
+   */
   renderTitle() {
     switch (this.props.type) {
       case taskFormTypes.CREATE:
@@ -102,6 +103,10 @@ class TaskForm extends Component {
     }
   }
 
+  /**
+   * For the clone and update forms, the task definition is required to fill
+   * out the default values of the form before it can be rendered.
+   */
   shouldNotRenderForm() {
     const { type, requestState } = this.props
 
@@ -115,6 +120,9 @@ class TaskForm extends Component {
     return false
   }
 
+  /**
+   * Returns the default values of the form.
+   */
   getDefaultValues() {
     const { data, type } = this.props
 
@@ -139,6 +147,9 @@ class TaskForm extends Component {
     }
   }
 
+  /**
+   * Returns a breadcrumbs array.
+   */
   getBreadcrumbs = () => {
     const { type, data, definitionID } = this.props
 
@@ -164,6 +175,9 @@ class TaskForm extends Component {
     ]
   }
 
+  /**
+   * Returns an action array for the view to render.
+   */
   getActions = ({ shouldDisableSubmitButton }) => {
     const { goBack } = this.props
 
@@ -187,35 +201,10 @@ class TaskForm extends Component {
     ]
   }
 
-  validateForm = values => {
-    let errors = {}
-
-    if (
-      this.props.type !== taskFormTypes.UPDATE &&
-      (!has(values, "alias") || isEmpty(values.alias))
-    ) {
-      errors.alias = "Alias cannot be blank."
-    }
-
-    if (!has(values, "group_name") || isEmpty(values.group_name)) {
-      errors.group_name = "Group name cannot be blank."
-    }
-
-    if (!has(values, "image") || isEmpty(values.image)) {
-      errors.image = "Image cannot be blank."
-    }
-
-    if (!has(values, "command") || isEmpty(values.command)) {
-      errors.command = "Command cannot be blank."
-    }
-
-    if (!has(values, "memory")) {
-      errors.memory = "Memory cannot be blank."
-    }
-
-    return errors
-  }
-
+  /**
+   * Disable the submit button if there are errors or if certain fields have
+   * not been filled out.
+   */
   shouldDisableSubmitButton = formAPI => {
     if (!isEmpty(formAPI.errors)) {
       return true
