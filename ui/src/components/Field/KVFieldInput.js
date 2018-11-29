@@ -83,9 +83,15 @@ class KVFieldInput extends Component {
   }
 
   render() {
+    const { isKeyRequired, isValueRequired } = this.props
+
     return (
       <NestedKeyValueRow>
-        <Field label="Key" isRequired description="Press enter to add.">
+        <Field
+          label="Key"
+          isRequired={isKeyRequired}
+          description="Press enter to add."
+        >
           <Input
             type="text"
             value={this.state.keyValue}
@@ -99,7 +105,7 @@ class KVFieldInput extends Component {
             onBlur={this.toggleKeyInputFocus}
           />
         </Field>
-        <Field label="Value" isRequired>
+        <Field label="Value" isRequired={isValueRequired}>
           <Input
             type="text"
             value={this.state.valueValue}

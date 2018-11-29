@@ -85,16 +85,16 @@ FieldText.defaultProps = {
   shouldDebounce: false,
 }
 
-export const QueryParamsFieldText = ({ field }) => {
+export const QueryParamsFieldText = props => {
   return (
     <QueryParams>
       {({ queryParams, setQueryParams }) => (
         <FieldText
-          {...this.props}
-          value={get(queryParams, field, "")}
+          {...props}
+          value={get(queryParams, props.field, "")}
           onChange={value => {
             setQueryParams({
-              [field]: value,
+              [props.field]: value,
             })
           }}
         />
@@ -105,7 +105,7 @@ export const QueryParamsFieldText = ({ field }) => {
 
 export const ReactFormFieldText = props => {
   return (
-    <RFField field={props.field}>
+    <RFField field={props.field} validate={props.validate}>
       {fieldAPI => {
         return (
           <FieldText

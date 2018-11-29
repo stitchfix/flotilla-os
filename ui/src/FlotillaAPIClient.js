@@ -3,6 +3,7 @@ import { isEmpty, isString, isObject, isFunction, get } from "lodash"
 import qs from "qs"
 import urljoin from "url-join"
 import { stringToSelectOpt } from "./utils/reactSelectHelpers"
+import FlotillaAPIError from "./FlotillaAPIError"
 
 /**
  * API client to communicate with the Flotilla API
@@ -196,7 +197,7 @@ class FlotillaAPIClient {
           resolve(res.data)
         })
         .catch(error => {
-          reject(error)
+          reject(new FlotillaAPIError(error))
         })
     })
   }

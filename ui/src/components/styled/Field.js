@@ -34,12 +34,10 @@ export const FieldLabel = styled.div`
         }
       `
     }
-  }}
-  /* margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px; */
+  }};
 `
 
 export const FieldDescription = styled(SecondaryText)`
-  /* margin-left: ${FIELD_EL_MARGIN_LEFT_PX}px; */
   margin-top: 8px;
 `
 
@@ -87,9 +85,8 @@ Field.propTypes = {
 
 Field.defaultProps = {
   error: false,
-
   isLoading: false,
-  isRequired: true,
+  isRequired: false,
 }
 
 export default Field

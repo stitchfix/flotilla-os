@@ -61,9 +61,7 @@ class TaskForm extends Component {
           .then(responseData => {
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
-          .catch(error => {
-            console.error(error)
-          })
+          .catch(this.handleSubmitError)
         break
       case taskFormTypes.CREATE:
       case taskFormTypes.CLONE:
@@ -72,13 +70,23 @@ class TaskForm extends Component {
           .then(responseData => {
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
-          .catch(error => {
-            console.error(error)
-          })
+          .catch(this.handleSubmitError)
         break
       default:
         console.warn("TaskForm's `type` prop was not specified, doing nothing.")
     }
+  }
+
+  handleSubmitError = error => {
+    const { renderPopup } = this.props
+    const e = error.getError()
+
+    renderPopup({
+      body: e.data,
+      intent: intentTypes.error,
+      shouldAutohide: false,
+      title: "An error occurred",
+    })
   }
 
   renderTitle() {
@@ -198,7 +206,6 @@ class TaskForm extends Component {
     }
 
     if (!has(values, "command") || isEmpty(values.command)) {
-      console.log("found blank command")
       errors.command = "Command cannot be blank."
     }
 
@@ -209,9 +216,27 @@ class TaskForm extends Component {
     return errors
   }
 
+  shouldDisableSubmitButton = formAPI => {
+    if (!isEmpty(formAPI.errors)) {
+      return true
+    }
+
+    const requiredValues = ["alias", "group_name", "image", "command", "memory"]
+
+    for (let i = 0; i < requiredValues.length; i++) {
+      if (!has(formAPI.values, requiredValues[i])) {
+        return true
+      }
+    }
+
+    return false
+  }
+
   render() {
     const { type } = this.props
 
+    // Don't render the form if, say, the task definition for updating a task
+    // has not been fetched. Wait until the next render call.
     if (this.shouldNotRenderForm()) {
       return <Loader />
     }
@@ -220,20 +245,18 @@ class TaskForm extends Component {
       <ReactForm
         defaultValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
-        validate={this.validateForm}
-        validateOnMount
       >
         {formAPI => {
-          // console.log(formAPI)
+          console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
                 <Navigation
                   breadcrumbs={this.getBreadcrumbs()}
                   actions={this.getActions({
-                    shouldDisableSubmitButton:
-                      formAPI.validationFailures > 0 ||
-                      !isEmpty(formAPI.errors),
+                    shouldDisableSubmitButton: this.shouldDisableSubmitButton(
+                      formAPI
+                    ),
                   })}
                 />
                 <Form title={this.renderTitle()}>
@@ -244,6 +267,9 @@ class TaskForm extends Component {
                       description="Choose a descriptive alias for this task."
                       shouldDebounce
                       isRequired
+                      validate={value =>
+                        !value ? { error: "Value must not be null." } : null
+                      }
                     />
                   )}
                   <ReactFormFieldSelect
@@ -252,13 +278,20 @@ class TaskForm extends Component {
                     requestOptionsFn={api.getGroups}
                     shouldRequestOptions
                     isCreatable
+                    isRequired
                     description="Create a new group name or select an existing one to help searching for this task in the future."
+                    validate={value =>
+                      !value ? { error: "Value must not be null." } : null
+                    }
                   />
                   <ReactFormFieldText
                     label="Image"
                     field="image"
                     description="The full URL of the Docker image and tag."
                     isRequired
+                    validate={value =>
+                      !value ? { error: "Value must not be null." } : null
+                    }
                   />
                   <ReactFormFieldText
                     isTextArea
@@ -266,6 +299,9 @@ class TaskForm extends Component {
                     field="command"
                     description="The command for this task to execute."
                     isRequired
+                    validate={value =>
+                      !value ? { error: "Value must not be null." } : null
+                    }
                   />
                   <ReactFormFieldText
                     isNumber
@@ -273,6 +309,9 @@ class TaskForm extends Component {
                     field="memory"
                     description="The amount of memory this task needs."
                     isRequired
+                    validate={value =>
+                      !value ? { error: "Value must not be null." } : null
+                    }
                   />
                   <ReactFormFieldSelect
                     isCreatable
@@ -291,6 +330,11 @@ class TaskForm extends Component {
                     values={get(formAPI, ["values", "env"], [])}
                     descripion="Environment variables that can be adjusted during execution."
                     isRequired={false}
+                    isValueRequired={false}
+                    validateKey={value =>
+                      !value ? { error: "Key must not be null." } : null
+                    }
+                    validateValue={() => null}
                   />
                 </Form>
               </View>

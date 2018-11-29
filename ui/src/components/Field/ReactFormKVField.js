@@ -34,6 +34,8 @@ export class ReactFormKVField extends Component {
       isRequired,
       isKeyRequired,
       isValueRequired,
+      validateKey,
+      validateValue,
     } = this.props
 
     return (
@@ -46,11 +48,13 @@ export class ReactFormKVField extends Component {
                   field={keyField}
                   label={null}
                   isRequired={isKeyRequired}
+                  validate={validateKey}
                 />
                 <ReactFormFieldText
                   field={valueField}
                   label={null}
                   isRequired={isValueRequired}
+                  validate={validateValue}
                 />
                 <Button
                   intent={intentTypes.error}

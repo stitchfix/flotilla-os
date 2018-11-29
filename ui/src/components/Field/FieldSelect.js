@@ -200,7 +200,7 @@ export const QueryParamsFieldSelect = props => (
 )
 
 export const ReactFormFieldSelect = props => (
-  <RFField field={props.field}>
+  <RFField field={props.field} validate={props.validate}>
     {fieldAPI => (
       <FieldSelectWithPopupContext
         {...props}

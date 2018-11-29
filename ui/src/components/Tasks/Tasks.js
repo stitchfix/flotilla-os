@@ -79,6 +79,7 @@ const Tasks = props => (
           description: "Search tasks by existing group names.",
           shouldRequestOptions: true,
           requestOptionsFn: api.getGroups,
+          isRequired: false,
         },
         image: {
           displayName: "Image",
