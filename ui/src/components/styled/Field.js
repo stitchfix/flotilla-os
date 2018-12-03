@@ -8,7 +8,7 @@ import SecondaryText from "./SecondaryText"
 const FIELD_HEIGHT_PX = 28
 const FIELD_EL_MARGIN_LEFT_PX = 8
 
-const FieldContainer = styled.div`
+export const FieldContainer = styled.div`
   width: 100%;
   display: flex;
   flex-flow: column nowrap;

@@ -53,7 +53,7 @@ class FieldSelect extends PureComponent {
         })
         renderPopup({
           body: error.toString(),
-          title: "An error occurred.",
+          title: "An error occurred while fetching select options",
         })
       })
   }

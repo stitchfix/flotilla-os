@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import { withRouter } from "react-router-dom"
 import { Form as ReactForm } from "react-form"
-import { get, omit } from "lodash"
+import { get, omit, isEmpty, has, intersection } from "lodash"
 import Loader from "../styled/Loader"
 import View from "../styled/View"
 import Navigation from "../Navigation/Navigation"
@@ -63,6 +63,53 @@ class RunForm extends Component {
     }
   }
 
+  shouldDisableSubmitButton = formAPI => {
+    if (!isEmpty(formAPI.errors)) {
+      return true
+    }
+
+    const requiredValues = ["cluster"]
+
+    for (let i = 0; i < requiredValues.length; i++) {
+      if (!has(formAPI.values, requiredValues[i])) {
+        return true
+      }
+    }
+
+    const requiredRunTags = get(config, "REQUIRED_RUN_TAGS", [])
+    const runTagsValues = get(formAPI, ["values", "run_tags"], [])
+
+    if (requiredRunTags.length > 0) {
+      if (
+        intersection(runTagsValues.map(r => r.name), requiredRunTags).length ===
+        0
+      ) {
+        return true
+      }
+
+      for (let i = 0; i < runTagsValues.length; i++) {
+        if (
+          requiredRunTags.includes(runTagsValues[i].name) &&
+          !runTagsValues[i].value
+        ) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  getRunTagsDescription = () => {
+    const requiredRunTags = get(config, "REQUIRED_RUN_TAGS", [])
+
+    if (requiredRunTags.length < 1) {
+      return null
+    }
+
+    return `The following run tags must be filled out in order for this task to run: ${requiredRunTags}.`
+  }
+
   render() {
     const { requestState, definitionID, data, goBack } = this.props
 
@@ -79,31 +126,35 @@ class RunForm extends Component {
       { text: "Run", href: `/tasks/${definitionID}/run` },
     ]
 
-    const actions = [
-      {
-        isLink: false,
-        text: "Cancel",
-        buttonProps: {
-          onClick: goBack,
-          type: "button",
-        },
-      },
-      {
-        isLink: false,
-        text: "Run",
-        buttonProps: {
-          type: "submit",
-          intent: intentTypes.primary,
-        },
-      },
-    ]
-
     return (
       <ReactForm
         defaultValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
+          const shouldDisableSubmitButton = this.shouldDisableSubmitButton(
+            formAPI
+          )
+          const actions = [
+            {
+              isLink: false,
+              text: "Cancel",
+              buttonProps: {
+                onClick: goBack,
+                type: "button",
+              },
+            },
+            {
+              isLink: false,
+              text: "Run",
+              buttonProps: {
+                type: "submit",
+                intent: intentTypes.primary,
+                isDisabled: shouldDisableSubmitButton,
+              },
+            },
+          ]
+
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>
@@ -114,6 +165,11 @@ class RunForm extends Component {
                     field="cluster"
                     requestOptionsFn={api.getClusters}
                     shouldRequestOptions
+                    description="Select a cluster for this task to be executed on."
+                    isRequired
+                    validate={value =>
+                      !value ? { error: "Value must not be null." } : null
+                    }
                   />
                   <ReactFormKVField
                     label="Run Tags"
@@ -121,6 +177,7 @@ class RunForm extends Component {
                     addValue={formAPI.addValue}
                     removeValue={formAPI.removeValue}
                     values={get(formAPI, ["values", "run_tags"], [])}
+                    description={this.getRunTagsDescription()}
                   />
                   <ReactFormKVField
                     label="Environment Variables"

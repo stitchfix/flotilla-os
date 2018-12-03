@@ -13,6 +13,7 @@ import {
   SHARED_KV_FIELD_PROPS,
   SHARED_KV_FIELD_DEFAULT_PROPS,
 } from "../../utils/kvFieldHelpers"
+import KVFieldContainer from "./KVFieldContainer"
 
 export class ReactFormKVField extends Component {
   /** Removes a value specified by index. */
@@ -39,7 +40,7 @@ export class ReactFormKVField extends Component {
     } = this.props
 
     return (
-      <Field label={label} isRequired={isRequired} description={description}>
+      <KVFieldContainer label={label} description={description}>
         {!!values &&
           values.map((v, i) => (
             <NestedField key={`${field}-${i}`} field={[field, i]}>
@@ -75,7 +76,7 @@ export class ReactFormKVField extends Component {
             "valueField",
           ])}
         />
-      </Field>
+      </KVFieldContainer>
     )
   }
 }

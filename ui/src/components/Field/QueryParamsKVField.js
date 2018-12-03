@@ -13,6 +13,7 @@ import {
   SHARED_KV_FIELD_PROPS,
   SHARED_KV_FIELD_DEFAULT_PROPS,
 } from "../../utils/kvFieldHelpers"
+import KVFieldContainer from "./KVFieldContainer"
 
 class UnwrappedQueryParamsKVField extends Component {
   /** Handles input events for key fields. */
@@ -108,10 +109,11 @@ class UnwrappedQueryParamsKVField extends Component {
       isKeyRequired,
       isValueRequired,
       valueField,
+      description,
     } = this.props
 
     return (
-      <Field label={label}>
+      <KVFieldContainer label={label} description={description}>
         {this.getValues().map((v, i) => {
           return (
             <NestedKeyValueRow>
@@ -152,7 +154,7 @@ class UnwrappedQueryParamsKVField extends Component {
             "valueField",
           ])}
         />
-      </Field>
+      </KVFieldContainer>
     )
   }
 }

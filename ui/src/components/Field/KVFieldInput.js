@@ -1,9 +1,12 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { isEmpty } from "lodash"
+import { Plus } from "react-feather"
 import Field from "../styled/Field"
 import { Input } from "../styled/Inputs"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
+import Button from "../styled/Button"
+import intentTypes from "../../constants/intentTypes"
 
 class KVFieldInput extends Component {
   state = {
@@ -116,6 +119,11 @@ class KVFieldInput extends Component {
             onBlur={this.toggleValueInputFocus}
           />
         </Field>
+        <div style={{ transform: "translateY(24px)" }}>
+          <Button onClick={this.addField}>
+            <Plus size={14} />
+          </Button>
+        </div>
       </NestedKeyValueRow>
     )
   }
