@@ -8,6 +8,8 @@ import config from "../../config"
 import RunContext from "./RunContext"
 import RunView from "./RunView"
 import runStatusTypes from "../../constants/runStatusTypes"
+import PopupContext from "../Popup/PopupContext"
+import intentTypes from "../../constants/intentTypes"
 
 class Run extends Component {
   state = {
@@ -47,6 +49,11 @@ class Run extends Component {
   }
 
   requestData = () => {
+    // If the previous request is still in flight, return.
+    if (this.state.inFlight === true) {
+      return
+    }
+
     this.setState({ inFlight: false, error: false })
 
     api
@@ -60,6 +67,16 @@ class Run extends Component {
         })
       })
       .catch(error => {
+        this.clearInterval()
+        const e = error.getError()
+
+        this.props.renderPopup({
+          body: e.data,
+          intent: intentTypes.error,
+          shouldAutohide: false,
+          title: `Error (${e.status})`,
+        })
+
         this.setState({
           inFlight: false,
           error,
@@ -90,14 +107,20 @@ class Run extends Component {
 }
 
 Run.propTypes = {
+  renderPopup: PropTypes.func.isRequired,
   rootPath: PropTypes.string.isRequired,
   runID: PropTypes.string.isRequired,
 }
 
 export default props => (
-  <Run
-    {...omit(props, ["history", "location", "match", "staticContext"])}
-    runID={get(props, ["match", "params", "runID"], "")}
-    rootPath={get(props, ["match", "url"], "")}
-  />
+  <PopupContext.Consumer>
+    {ctx => (
+      <Run
+        {...omit(props, ["history", "location", "match", "staticContext"])}
+        runID={get(props, ["match", "params", "runID"], "")}
+        rootPath={get(props, ["match", "url"], "")}
+        renderPopup={ctx.renderPopup}
+      />
+    )}
+  </PopupContext.Consumer>
 )

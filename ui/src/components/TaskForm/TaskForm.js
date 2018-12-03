@@ -236,7 +236,6 @@ class TaskForm extends Component {
         onSubmit={this.handleSubmit}
       >
         {formAPI => {
-          console.log(formAPI)
           return (
             <form onSubmit={formAPI.submitForm}>
               <View>

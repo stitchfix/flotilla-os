@@ -134,6 +134,10 @@ class AsyncDataTable extends Component {
    * @param {object} query
    */
   requestData() {
+    if (this.state.inFlight === true) return
+
+    this.setState({ inFlight: true, error: false })
+
     const {
       queryParams,
       getRequestArgs,
@@ -148,16 +152,29 @@ class AsyncDataTable extends Component {
 
     requestFn(getRequestArgs(q))
       .then(data => {
-        this.setState({ data, requestState: requestStateTypes.READY })
-      })
-      .catch(error => {
-        this.setState({ error })
-        renderPopup({
-          title: "An error occurred",
-          body: get(error, ["response", "data"], toString(error)),
-          intent: intentTypes.error,
+        this.setState({
+          data,
+          requestState: requestStateTypes.READY,
+          inFlight: false,
         })
       })
+      .catch(error => {
+        this.clearInterval()
+        const e = error.getError()
+
+        this.props.renderPopup({
+          body: e.data,
+          intent: intentTypes.error,
+          shouldAutohide: false,
+          title: `Error (${e.status})`,
+        })
+
+        this.setState({ error, inFlight: false })
+      })
+  }
+
+  clearInterval = () => {
+    window.clearInterval(this.requestInterval)
   }
 
   render() {

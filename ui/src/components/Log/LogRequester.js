@@ -11,6 +11,8 @@ class LogRequester extends Component {
   state = {
     logs: [],
     lastSeen: null,
+    inFlight: false,
+    error: false,
   }
 
   componentDidMount() {
@@ -49,11 +51,13 @@ class LogRequester extends Component {
     const { runID } = this.props
     const { lastSeen } = this.state
 
+    this.setState({ inFlight: true })
+
     api
       .getRunLogs({ runID, lastSeen })
       .then(this.handleResponse)
       .catch(error => {
-        console.log(error)
+        this.clearRequestInterval()
       })
   }
 
@@ -66,6 +70,7 @@ class LogRequester extends Component {
    * logs endpoint until all remaining logs have been fetched.
    */
   handleResponse = async response => {
+    this.setState({ inFlight: false, error: false })
     // Return if there are no logs.
     if (!has(response, "log") || isEmpty(response.log)) {
       return
