@@ -78,7 +78,7 @@ Button.propTypes = {
 Button.defaultProps = {
   isDisabled: false,
   isLoading: false,
-  type: "type",
+  type: "button",
 }
 
 export default Button

@@ -120,7 +120,7 @@ class KVFieldInput extends Component {
           />
         </Field>
         <div style={{ transform: "translateY(24px)" }}>
-          <Button onClick={this.addField}>
+          <Button onClick={this.addField} type="button">
             <Plus size={14} />
           </Button>
         </div>

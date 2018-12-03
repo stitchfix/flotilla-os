@@ -138,6 +138,7 @@ class UnwrappedQueryParamsKVField extends Component {
               <Button
                 intent={intentTypes.error}
                 onClick={this.handleRemoveClick.bind(this, i)}
+                type="button"
               >
                 <X size={14} />
               </Button>

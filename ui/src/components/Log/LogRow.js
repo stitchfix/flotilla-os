@@ -6,6 +6,7 @@ import Pre from "../styled/Pre"
 import Loader from "../styled/Loader"
 import runStatusTypes from "../../constants/runStatusTypes"
 import RunContext from "../Run/RunContext"
+import intentTypes from "../../constants/intentTypes"
 
 /**
  * Renders a line of logs. Will also render a spinner as the last child if
@@ -33,7 +34,7 @@ class LogRow extends PureComponent {
                   width: "100%",
                 }}
               >
-                <Loader />
+                <Loader intent={intentTypes.primary} />
               </span>
             )
           }
