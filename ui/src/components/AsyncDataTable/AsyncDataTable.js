@@ -23,11 +23,13 @@ import {
   AsyncDataTableContainer,
   AsyncDataTableFilters,
   AsyncDataTableContent,
+  AsyncDataTableLoadingMask,
 } from "../styled/AsyncDataTable"
 import config from "../../config"
 import PopupContext from "../Popup/PopupContext"
 import intentTypes from "../../constants/intentTypes"
 import QueryParams from "../QueryParams/QueryParams"
+import Loader from "../styled/Loader"
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -190,7 +192,8 @@ class AsyncDataTable extends Component {
       getItemKey,
       isView,
     } = this.props
-    const { requestState, data, error } = this.state
+
+    const { requestState, data, error, inFlight } = this.state
 
     switch (requestState) {
       case requestStateTypes.ERROR:
@@ -202,6 +205,11 @@ class AsyncDataTable extends Component {
 
         return (
           <AsyncDataTableContainer>
+            {!!inFlight && (
+              <AsyncDataTableLoadingMask>
+                <Loader intent={intentTypes.primary} />
+              </AsyncDataTableLoadingMask>
+            )}
             {!isEmpty(filters) && (
               <AsyncDataTableFilters isView={isView}>
                 {Object.keys(filters).map(key => (

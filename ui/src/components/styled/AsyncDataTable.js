@@ -1,9 +1,8 @@
-import React from "react"
 import styled from "styled-components"
+import colors from "../../constants/colors"
 import {
   SPACING_PX,
   NAVIGATION_HEIGHT_PX,
-  BREAKPOINTS_PX,
   DETAIL_VIEW_SIDEBAR_WIDTH_PX,
 } from "../../constants/styles"
 
@@ -28,4 +27,19 @@ export const AsyncDataTableFilters = styled.div`
 export const AsyncDataTableContainer = styled.div`
   width: 100%;
   position: relative;
+`
+
+export const AsyncDataTableLoadingMask = styled.div`
+  width: calc(100% - ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px);
+  height: 100%;
+  position: absolute;
+  left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: center;
+  background: ${colors.black[0]}99;
 `

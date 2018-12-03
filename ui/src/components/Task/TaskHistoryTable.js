@@ -15,6 +15,7 @@ import getRunDuration from "../../utils/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
 import historyTableFilters from "../../utils/historyTableFilters"
+import intentTypes from "../../constants/intentTypes"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>
@@ -119,9 +120,14 @@ class TaskHistoryTable extends Component {
           sort_by: "started_at",
           order: "desc",
         }}
-        emptyTableTitle="This task hasn't been run yet."
+        emptyTableTitle="No items were found."
         emptyTableBody={
-          <ButtonLink to={`/tasks/${definitionID}/run`}>Run Task</ButtonLink>
+          <ButtonLink
+            intent={intentTypes.primary}
+            to={`/tasks/${definitionID}/run`}
+          >
+            Run Task
+          </ButtonLink>
         }
         isView={false}
       />

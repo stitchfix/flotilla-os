@@ -3,6 +3,7 @@ import PropTypes from "prop-types"
 import styled from "styled-components"
 import colors from "../../constants/colors"
 import Loader from "./Loader"
+import { SECONDARY_FONT_COLOR } from "../../constants/styles"
 import SecondaryText from "./SecondaryText"
 
 const FIELD_HEIGHT_PX = 28
@@ -51,6 +52,11 @@ const FieldLoaderContainer = styled.div`
   top: calc(21px + (${FIELD_HEIGHT_PX}px - 18px) / 2);
 `
 
+const FieldChildren = styled.div`
+  color: ${colors.gray[3]};
+  width: 100%;
+`
+
 const Field = ({
   label,
   children,
@@ -61,7 +67,7 @@ const Field = ({
 }) => (
   <FieldContainer>
     {!!label && <FieldLabel isRequired={isRequired}>{label}</FieldLabel>}
-    {children}
+    <FieldChildren>{children}</FieldChildren>
     {!!error && <FieldError>{error}</FieldError>}
     {!!description && <FieldDescription>{description}</FieldDescription>}
     {!!isLoading && (
