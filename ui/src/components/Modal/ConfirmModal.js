@@ -1,6 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import Button from "../styled/Button"
+import ButtonGroup from "../styled/ButtonGroup"
 import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
@@ -57,16 +58,18 @@ class ConfirmModal extends Component {
       <Modal>
         <Card
           title={title}
-          footerActions={[
-            <Button onClick={unrenderModal}>Cancel</Button>,
-            <Button
-              intent={intentTypes.error}
-              onClick={this.handleConfirm}
-              isLoading={inFlight}
-            >
-              Delete Task
-            </Button>,
-          ]}
+          footerActions={
+            <ButtonGroup>
+              <Button onClick={unrenderModal}>Cancel</Button>
+              <Button
+                intent={intentTypes.error}
+                onClick={this.handleConfirm}
+                isLoading={inFlight}
+              >
+                Delete Task
+              </Button>
+            </ButtonGroup>
+          }
         >
           {!!error && error}
           {body}

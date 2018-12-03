@@ -210,7 +210,11 @@ class TaskForm extends Component {
       return true
     }
 
-    const requiredValues = ["alias", "group_name", "image", "command", "memory"]
+    let requiredValues = ["group_name", "image", "command", "memory"]
+
+    if (this.props.type !== taskFormTypes.UPDATE) {
+      requiredValues.push("alias")
+    }
 
     for (let i = 0; i < requiredValues.length; i++) {
       if (!has(formAPI.values, requiredValues[i])) {
