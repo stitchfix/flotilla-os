@@ -30,4 +30,8 @@ KVFieldContainer.propTypes = {
   label: PropTypes.string,
 }
 
+KVFieldContainer.defaultProps = {
+  isRequired: false,
+}
+
 export default KVFieldContainer

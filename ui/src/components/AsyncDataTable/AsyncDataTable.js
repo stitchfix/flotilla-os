@@ -1,4 +1,4 @@
-import React, { Component, createRef } from "react"
+import React, { Component, Fragment } from "react"
 import PropTypes from "prop-types"
 import PageVisibility from "react-page-visibility"
 import {
@@ -217,33 +217,35 @@ class AsyncDataTable extends Component {
               {isEmpty(items) ? (
                 <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
               ) : (
-                <Table>
-                  <TableRow>
-                    {Object.keys(columns).map(key => (
-                      <AsyncDataTableSortHeader
-                        allowSort={columns[key].allowSort}
-                        displayName={columns[key].displayName}
-                        sortKey={key}
-                        key={key}
-                        width={columns[key].width}
-                      />
-                    ))}
-                  </TableRow>
-                  {items.map((item, i) => (
-                    <TableRow key={getItemKey(item, i)}>
+                <Fragment>
+                  <Table>
+                    <TableRow>
                       {Object.keys(columns).map(key => (
-                        <TableCell
-                          key={`${i}-${key}`}
+                        <AsyncDataTableSortHeader
+                          allowSort={columns[key].allowSort}
+                          displayName={columns[key].displayName}
+                          sortKey={key}
+                          key={key}
                           width={columns[key].width}
-                        >
-                          {columns[key].render(item)}
-                        </TableCell>
+                        />
                       ))}
                     </TableRow>
-                  ))}
-                </Table>
+                    {items.map((item, i) => (
+                      <TableRow key={getItemKey(item, i)}>
+                        {Object.keys(columns).map(key => (
+                          <TableCell
+                            key={`${i}-${key}`}
+                            width={columns[key].width}
+                          >
+                            {columns[key].render(item)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </Table>
+                  <AsyncDataTablePagination total={total} limit={limit} />
+                </Fragment>
               )}
-              <AsyncDataTablePagination total={total} limit={limit} />
             </AsyncDataTableContent>
           </AsyncDataTableContainer>
         )
