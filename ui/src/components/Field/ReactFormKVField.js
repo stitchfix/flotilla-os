@@ -32,7 +32,6 @@ export class ReactFormKVField extends Component {
       addValue,
       valueField,
       description,
-      isRequired,
       isKeyRequired,
       isValueRequired,
       validateKey,
