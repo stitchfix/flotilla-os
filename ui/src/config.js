@@ -9,10 +9,11 @@ export default {
   IMAGE_PREFIX: process.env.IMAGE_PREFIX || "",
 
   /** The rate at which run data will be requested in the RunView component. */
-  RUN_REQUEST_INTERVAL_MS: 5000,
+  RUN_REQUEST_INTERVAL_MS: process.env.RUN_REQUEST_INTERVAL_MS || 5000,
 
   /** The rate at which run logs will be requested in the RunLogs component. */
-  RUN_LOGS_REQUEST_INTERVAL_MS: 5000,
+  RUN_LOGS_REQUEST_INTERVAL_MS:
+    process.env.RUN_LOGS_REQUEST_INTERVAL_MS || 5000,
 
   /** List of environment variables that can NOT be set at execution time. */
   INVALID_RUN_ENV: (process.env.INVALID_RUN_ENV || "").split(",") || "",
