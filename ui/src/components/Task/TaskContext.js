@@ -7,6 +7,7 @@ const TaskContext = createContext({
   error: false,
   requestState: requestStateTypes.NOT_READY,
   definitionID: null,
+  requestData: () => {},
 })
 
 export default TaskContext

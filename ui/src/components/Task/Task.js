@@ -50,6 +50,7 @@ class Task extends Component {
     return {
       ...this.state,
       definitionID,
+      requestData: this.requestData.bind(this),
     }
   }
 

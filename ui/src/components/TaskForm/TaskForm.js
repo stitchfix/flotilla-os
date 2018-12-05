@@ -44,7 +44,7 @@ class TaskForm extends Component {
    * Sends the values to the server.
    */
   handleSubmit = values => {
-    const { data, type, push } = this.props
+    const { data, type, push, requestData } = this.props
 
     switch (type) {
       case taskFormTypes.UPDATE:
@@ -54,9 +54,12 @@ class TaskForm extends Component {
             values: TaskForm.transformValues(values),
           })
           .then(responseData => {
+            requestData()
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
-          .catch(this.handleSubmitError)
+          .catch(error => {
+            this.handleSubmitError(error)
+          })
         break
       case taskFormTypes.CREATE:
       case taskFormTypes.CLONE:
@@ -65,7 +68,9 @@ class TaskForm extends Component {
           .then(responseData => {
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
-          .catch(this.handleSubmitError)
+          .catch(error => {
+            this.handleSubmitError(error)
+          })
         break
       default:
         console.warn("TaskForm's `type` prop was not specified, doing nothing.")
@@ -343,6 +348,7 @@ TaskForm.propTypes = {
   goBack: PropTypes.func.isRequired,
   push: PropTypes.func.isRequired,
   renderPopup: PropTypes.func.isRequired,
+  requestData: PropTypes.func,
   requestState: PropTypes.oneOf(Object.values(requestStateTypes)),
   type: PropTypes.oneOf(Object.values(taskFormTypes)).isRequired,
 }
