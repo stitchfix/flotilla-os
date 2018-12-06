@@ -40,11 +40,17 @@ class TaskForm extends Component {
       return acc
     }, {})
 
+  state = {
+    inFlight: false,
+  }
+
   /**
    * Sends the values to the server.
    */
   handleSubmit = values => {
     const { data, type, push, requestData } = this.props
+
+    this.setState({ inFlight: true })
 
     switch (type) {
       case taskFormTypes.UPDATE:
@@ -54,6 +60,7 @@ class TaskForm extends Component {
             values: TaskForm.transformValues(values),
           })
           .then(responseData => {
+            this.setState({ inFlight: false })
             requestData()
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
@@ -66,6 +73,7 @@ class TaskForm extends Component {
         api
           .createTask({ values })
           .then(responseData => {
+            this.setState({ inFlight: false })
             push(`/tasks/${get(responseData, "definition_id", "")}`)
           })
           .catch(error => {
@@ -81,6 +89,7 @@ class TaskForm extends Component {
    * Renders a popup with the error returned by the server.
    */
   handleSubmitError = error => {
+    this.setState({ inFlight: false })
     const { renderPopup } = this.props
     const e = error.getError()
 
@@ -184,6 +193,7 @@ class TaskForm extends Component {
    * Returns an action array for the view to render.
    */
   getActions = ({ shouldDisableSubmitButton }) => {
+    const { inFlight } = this.state
     const { goBack } = this.props
 
     return [
@@ -201,6 +211,7 @@ class TaskForm extends Component {
           type: "submit",
           intent: intentTypes.primary,
           isDisabled: shouldDisableSubmitButton === true,
+          isLoading: !!inFlight,
         },
       },
     ]
