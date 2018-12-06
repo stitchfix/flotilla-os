@@ -1,7 +1,7 @@
 import styled from "styled-components"
 import SecondaryText from "./SecondaryText"
-import colors from "../../constants/colors"
-import { MONOSPACE_FONT_FAMILY } from "../../constants/styles"
+import colors from "../../helpers/colors"
+import { MONOSPACE_FONT_FAMILY } from "../../helpers/styles"
 
 const Tag = styled(SecondaryText)`
   background: ${colors.black[4]};

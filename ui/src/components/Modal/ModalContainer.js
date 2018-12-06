@@ -1,8 +1,8 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import { Z_INDICES } from "../../constants/styles"
-import colors from "../../constants/colors"
+import { Z_INDICES } from "../../helpers/styles"
+import colors from "../../helpers/colors"
 import ModalContext from "./ModalContext"
 
 const StyledModalContainer = styled.div`

@@ -6,13 +6,13 @@ import { FieldText } from "./FieldText"
 import Button from "../styled/Button"
 import Field from "../styled/Field"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 import KVFieldInput from "./KVFieldInput"
 import QueryParams from "../QueryParams/QueryParams"
 import {
   SHARED_KV_FIELD_PROPS,
   SHARED_KV_FIELD_DEFAULT_PROPS,
-} from "../../utils/kvFieldHelpers"
+} from "../../helpers/kvFieldHelpers"
 import KVFieldContainer from "./KVFieldContainer"
 
 class UnwrappedQueryParamsKVField extends Component {

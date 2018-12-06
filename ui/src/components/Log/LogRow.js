@@ -4,9 +4,9 @@ import Ansi from "ansi-to-react"
 import { get } from "lodash"
 import Pre from "../styled/Pre"
 import Loader from "../styled/Loader"
-import runStatusTypes from "../../constants/runStatusTypes"
+import runStatusTypes from "../../helpers/runStatusTypes"
 import RunContext from "../Run/RunContext"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 /**
  * Renders a line of logs. Will also render a spinner as the last child if

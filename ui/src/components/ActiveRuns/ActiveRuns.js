@@ -7,14 +7,14 @@ import moment from "moment"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
 import ModalContext from "../Modal/ModalContext"
 import StopRunModal from "../Modal/StopRunModal"
-import RunStatus from "../Run/RunStatus"
 import Navigation from "../Navigation/Navigation"
+import RunStatus from "../Run/RunStatus"
 import Button from "../styled/Button"
 import View from "../styled/View"
 import SecondaryText from "../styled/SecondaryText"
-import runStatusTypes from "../../constants/runStatusTypes"
+import historyTableFilters from "../../helpers/historyTableFilters"
+import runStatusTypes from "../../helpers/runStatusTypes"
 import api from "../../api"
-import historyTableFilters from "../../utils/historyTableFilters"
 
 class ActiveRuns extends Component {
   handleStopButtonClick = runData => {

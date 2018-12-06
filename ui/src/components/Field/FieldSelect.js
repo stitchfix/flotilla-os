@@ -10,8 +10,8 @@ import {
   selectOptToString,
   selectTheme,
   selectStyles,
-} from "../../utils/reactSelectHelpers"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+} from "../../helpers/reactSelectHelpers"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 import PopupContext from "../Popup/PopupContext"
 import QueryParams from "../QueryParams/QueryParams"
 

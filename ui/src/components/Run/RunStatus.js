@@ -3,10 +3,10 @@ import PropTypes from "prop-types"
 import styled from "styled-components"
 import { capitalize } from "lodash"
 import { CheckCircle, XCircle } from "react-feather"
-import colors from "../../constants/colors"
-import runStatusTypes from "../../constants/runStatusTypes"
+import colors from "../../helpers/colors"
+import runStatusTypes from "../../helpers/runStatusTypes"
 import Loader from "../styled/Loader"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 const RunStatusContainer = styled.div`
   display: flex;

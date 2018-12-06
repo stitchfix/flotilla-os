@@ -1,5 +1,5 @@
 import styled, { css } from "styled-components"
-import { MONOSPACE_FONT_FAMILY } from "../../constants/styles"
+import { MONOSPACE_FONT_FAMILY } from "../../helpers/styles"
 
 export const monospaceStyles = css`
   font-family: ${MONOSPACE_FONT_FAMILY};

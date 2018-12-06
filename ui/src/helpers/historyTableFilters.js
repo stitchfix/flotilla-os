@@ -1,5 +1,5 @@
 import { asyncDataTableFilterTypes } from "../components/AsyncDataTable/AsyncDataTableFilter"
-import runStatusTypes from "../constants/runStatusTypes"
+import runStatusTypes from "./runStatusTypes"
 import api from "../api"
 import { stringToSelectOpt } from "./reactSelectHelpers"
 

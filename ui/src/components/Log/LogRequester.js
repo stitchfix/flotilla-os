@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { has, isEmpty } from "lodash"
-import runStatusTypes from "../../constants/runStatusTypes"
+import runStatusTypes from "../../helpers/runStatusTypes"
 import api from "../../api"
 import LogChunk from "./LogChunk"
 import LogProcessor from "./LogProcessor"

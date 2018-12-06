@@ -12,7 +12,7 @@ import {
   DETAIL_VIEW_SIDEBAR_WIDTH_PX,
   SPACING_PX,
   RUN_BAR_HEIGHT_PX,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 
 const RunBarContainer = styled.div`
   height: ${RUN_BAR_HEIGHT_PX}px;

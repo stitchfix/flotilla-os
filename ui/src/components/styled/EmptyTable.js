@@ -3,7 +3,7 @@ import PropTypes from "prop-types"
 import styled from "styled-components"
 import { has } from "lodash"
 import Loader from "./Loader"
-import { SPACING_PX } from "../../constants/styles"
+import { SPACING_PX } from "../../helpers/styles"
 
 const EmptyTableContainer = styled.div`
   display: flex;

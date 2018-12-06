@@ -6,7 +6,7 @@ import Field from "../styled/Field"
 import { Input } from "../styled/Inputs"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import Button from "../styled/Button"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 class KVFieldInput extends Component {
   state = {

@@ -2,14 +2,14 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import { Switch, Route } from "react-router-dom"
 import { get, omit, isEqual } from "lodash"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 import api from "../../api"
 import config from "../../config"
 import RunContext from "./RunContext"
 import RunView from "./RunView"
-import runStatusTypes from "../../constants/runStatusTypes"
+import runStatusTypes from "../../helpers/runStatusTypes"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 class Run extends Component {
   state = {

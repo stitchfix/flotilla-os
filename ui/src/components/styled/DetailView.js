@@ -3,8 +3,8 @@ import {
   DEFAULT_BORDER,
   DETAIL_VIEW_SIDEBAR_WIDTH_PX,
   NAVIGATION_HEIGHT_PX,
-} from "../../constants/styles"
-import colors from "../../constants/colors"
+} from "../../helpers/styles"
+import colors from "../../helpers/colors"
 
 export const DetailViewContainer = s.div`
   display: flex;

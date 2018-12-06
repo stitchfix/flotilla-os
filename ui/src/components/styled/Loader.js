@@ -1,10 +1,10 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled, { keyframes } from "styled-components"
-import colors from "../../constants/colors"
-import { LOADER_SIZE_PX } from "../../constants/styles"
-import intentTypes from "../../constants/intentTypes"
-import intentToColor from "../../utils/intentToColor"
+import colors from "../../helpers/colors"
+import { LOADER_SIZE_PX } from "../../helpers/styles"
+import intentTypes from "../../helpers/intentTypes"
+import intentToColor from "../../helpers/intentToColor"
 
 const LOADER_BORDER_WIDTH_PX = LOADER_SIZE_PX / 6
 const LOADER_BORDER = `${LOADER_BORDER_WIDTH_PX}px solid ${colors.black[3]}`

@@ -2,7 +2,7 @@ import axios from "axios"
 import { isEmpty, isString, isObject, isFunction, get } from "lodash"
 import qs from "qs"
 import urljoin from "url-join"
-import { stringToSelectOpt } from "./utils/reactSelectHelpers"
+import { stringToSelectOpt } from "./reactSelectHelpers"
 import FlotillaAPIError from "./FlotillaAPIError"
 
 /**

@@ -1,5 +1,5 @@
 import { createContext } from "react"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 
 const RunContext = createContext({
   data: {},

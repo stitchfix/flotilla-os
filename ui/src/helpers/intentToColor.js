@@ -1,5 +1,5 @@
-import colors from "../constants/colors"
-import intentTypes from "../constants/intentTypes"
+import colors from "./colors"
+import intentTypes from "./intentTypes"
 
 const intentToColor = intent => {
   switch (intent) {

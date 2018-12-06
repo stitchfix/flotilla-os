@@ -1,10 +1,10 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled, { css } from "styled-components"
-import colors from "../../constants/colors"
-import intentTypes from "../../constants/intentTypes"
+import colors from "../../helpers/colors"
+import intentTypes from "../../helpers/intentTypes"
 import Loader from "./Loader"
-import intentToColor from "../../utils/intentToColor"
+import intentToColor from "../../helpers/intentToColor"
 
 export const buttonStyles = css`
   background: ${({ intent }) => intentToColor(intent)};

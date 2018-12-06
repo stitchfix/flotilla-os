@@ -6,7 +6,7 @@ import KeyValues from "../styled/KeyValues"
 import Pre from "../styled/Pre"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 
 const RunSidebar = props => {
   return (

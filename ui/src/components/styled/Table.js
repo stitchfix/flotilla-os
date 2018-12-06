@@ -1,6 +1,6 @@
 import styled, { css } from "styled-components"
-import colors from "../../constants/colors"
-import { DEFAULT_BORDER } from "../../constants/styles"
+import colors from "../../helpers/colors"
+import { DEFAULT_BORDER } from "../../helpers/styles"
 
 export const Table = styled.div`
   background: ${colors.black[0]};

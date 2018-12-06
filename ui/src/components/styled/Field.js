@@ -1,9 +1,9 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 import Loader from "./Loader"
-import { SECONDARY_FONT_COLOR } from "../../constants/styles"
+import { SECONDARY_FONT_COLOR } from "../../helpers/styles"
 import SecondaryText from "./SecondaryText"
 
 const FIELD_HEIGHT_PX = 28

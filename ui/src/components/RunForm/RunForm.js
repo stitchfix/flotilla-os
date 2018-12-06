@@ -10,10 +10,10 @@ import { ReactFormFieldSelect } from "../Field/FieldSelect"
 import ReactFormKVField from "../Field/ReactFormKVField"
 import api from "../../api"
 import config from "../../config"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 import TaskContext from "../Task/TaskContext"
-import filterInvalidRunEnv from "../../utils/filterInvalidRunEnv"
-import intentTypes from "../../constants/intentTypes"
+import filterInvalidRunEnv from "../../helpers/filterInvalidRunEnv"
+import intentTypes from "../../helpers/intentTypes"
 
 class RunForm extends Component {
   static transformRunTags = arr =>

@@ -5,7 +5,7 @@ import { ChevronRight } from "react-feather"
 import { get, isEmpty } from "lodash"
 import styled from "styled-components"
 import Favicon from "../../assets/favicon.png"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
 import ButtonGroup from "../styled/ButtonGroup"
@@ -15,7 +15,7 @@ import {
   Z_INDICES,
   DEFAULT_BORDER,
   DEFAULT_FONT_COLOR,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 
 const NAVIGATION_BORDER = `1px solid ${colors.black[4]}`
 const NAVIGATION_EL_SPACING_PX = SPACING_PX * 2

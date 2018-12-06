@@ -1,5 +1,5 @@
 import styled from "styled-components"
-import { SECONDARY_FONT_COLOR } from "../../constants/styles"
+import { SECONDARY_FONT_COLOR } from "../../helpers/styles"
 
 const HeaderText = styled.h3`
   font-weight: 400;

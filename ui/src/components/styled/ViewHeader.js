@@ -1,7 +1,7 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 import {
   NAVIGATION_HEIGHT_PX,
   SPACING_PX,
@@ -9,7 +9,7 @@ import {
   DEFAULT_FONT_COLOR,
   Z_INDICES,
   DEFAULT_BORDER,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 
 const ViewHeaderContainer = styled.div`
   display: flex;

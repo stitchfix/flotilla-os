@@ -8,7 +8,7 @@ import ButtonLink from "../styled/ButtonLink"
 import View from "../styled/View"
 import api from "../../api"
 import config from "../../config"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 const Tasks = props => (
   <View>

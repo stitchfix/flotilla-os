@@ -6,7 +6,7 @@ import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 class ConfirmModal extends Component {
   state = {

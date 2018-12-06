@@ -18,7 +18,7 @@ import AsyncDataTableFilter, {
 } from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
 import AsyncDataTablePagination from "./AsyncDataTablePagination"
-import * as requestStateTypes from "../../constants/requestStateTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
 import {
   AsyncDataTableContainer,
   AsyncDataTableFilters,
@@ -27,7 +27,7 @@ import {
 } from "../styled/AsyncDataTable"
 import config from "../../config"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../constants/intentTypes"
+import intentTypes from "../../helpers/intentTypes"
 import QueryParams from "../QueryParams/QueryParams"
 import Loader from "../styled/Loader"
 

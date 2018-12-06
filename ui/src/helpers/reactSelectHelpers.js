@@ -1,5 +1,5 @@
 import { isString, get } from "lodash"
-import colors from "../constants/colors"
+import colors from "./colors"
 
 export const stringToSelectOpt = (str = "") => {
   let ret = isString(str) ? str : ""

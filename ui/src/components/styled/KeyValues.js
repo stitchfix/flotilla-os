@@ -2,7 +2,7 @@ import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
 import Field from "./Field"
-import { SPACING_PX } from "../../constants/styles"
+import { SPACING_PX } from "../../helpers/styles"
 
 const KeyValuesContainer = styled.div`
   padding: ${({ depth }) => {

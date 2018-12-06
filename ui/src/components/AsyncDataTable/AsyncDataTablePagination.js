@@ -4,7 +4,7 @@ import withQueryParams from "react-router-query-params"
 import styled from "styled-components"
 import { get } from "lodash"
 import Button from "../styled/Button"
-import { SPACING_PX } from "../../constants/styles"
+import { SPACING_PX } from "../../helpers/styles"
 
 const PaginationButtonGroup = styled.div`
   display: flex;

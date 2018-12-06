@@ -10,12 +10,12 @@ import RunStatus from "../Run/RunStatus"
 import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
 import SecondaryText from "../styled/SecondaryText"
-import runStatusTypes from "../../constants/runStatusTypes"
-import getRunDuration from "../../utils/getRunDuration"
+import runStatusTypes from "../../helpers/runStatusTypes"
+import getRunDuration from "../../helpers/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
-import historyTableFilters from "../../utils/historyTableFilters"
-import intentTypes from "../../constants/intentTypes"
+import historyTableFilters from "../../helpers/historyTableFilters"
+import intentTypes from "../../helpers/intentTypes"
 
 class TaskHistoryTable extends Component {
   static isTaskActive = status =>

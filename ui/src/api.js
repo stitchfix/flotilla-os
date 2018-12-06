@@ -1,5 +1,5 @@
 import config from "./config"
-import FlotillaAPIClient from "./FlotillaAPIClient"
+import FlotillaAPIClient from "./helpers/FlotillaAPIClient"
 
 const api = new FlotillaAPIClient({ location: config.FLOTILLA_API })
 

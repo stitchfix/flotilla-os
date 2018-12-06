@@ -1,6 +1,6 @@
 import { createGlobalStyle } from "styled-components"
-import colors from "../../constants/colors"
-import { DEFAULT_FONT_COLOR } from "../../constants/styles"
+import colors from "../../helpers/colors"
+import { DEFAULT_FONT_COLOR } from "../../helpers/styles"
 import { monospaceStyles } from "./Monospace"
 
 const GlobalStyle = createGlobalStyle`

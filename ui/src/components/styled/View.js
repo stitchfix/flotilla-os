@@ -4,7 +4,7 @@ import styled from "styled-components"
 import {
   NAVIGATION_HEIGHT_PX,
   VIEW_HEADER_HEIGHT_PX,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 
 const ViewContainer = styled.div`
   display: flex;

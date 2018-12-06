@@ -10,8 +10,8 @@ import {
   DetailViewContent,
   DetailViewSidebar,
 } from "../styled/DetailView"
-import intentTypes from "../../constants/intentTypes"
-import runStatusTypes from "../../constants/runStatusTypes"
+import intentTypes from "../../helpers/intentTypes"
+import runStatusTypes from "../../helpers/runStatusTypes"
 
 const RunView = props => {
   return (

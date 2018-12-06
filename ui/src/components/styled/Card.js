@@ -1,8 +1,8 @@
 import React from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
-import colors from "../../constants/colors"
-import { DEFAULT_BORDER, SPACING_PX } from "../../constants/styles"
+import colors from "../../helpers/colors"
+import { DEFAULT_BORDER, SPACING_PX } from "../../helpers/styles"
 import ButtonGroup from "./ButtonGroup"
 
 const CARD_HEADER_FOOTER_HEIGHT_PX = 48

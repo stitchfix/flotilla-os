@@ -1,10 +1,10 @@
 import styled from "styled-components"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 import {
   SPACING_PX,
   NAVIGATION_HEIGHT_PX,
   DETAIL_VIEW_SIDEBAR_WIDTH_PX,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 
 const ASYNC_DATA_TABLE_FILTERS_WIDTH_PX = 280
 

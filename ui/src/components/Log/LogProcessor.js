@@ -2,7 +2,7 @@ import React, { Component } from "react"
 import PropTypes from "prop-types"
 import ReactResizeDetector from "react-resize-detector"
 import { isEmpty, round } from "lodash"
-import { NAVIGATION_HEIGHT_PX } from "../../constants/styles"
+import { NAVIGATION_HEIGHT_PX } from "../../helpers/styles"
 import LogRenderer from "./LogRenderer"
 
 /**

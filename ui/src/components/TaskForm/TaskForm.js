@@ -15,8 +15,8 @@ import TaskContext from "../Task/TaskContext"
 import api from "../../api"
 import config from "../../config"
 
-import * as requestStateTypes from "../../constants/requestStateTypes"
-import intentTypes from "../../constants/intentTypes"
+import * as requestStateTypes from "../../helpers/requestStateTypes"
+import intentTypes from "../../helpers/intentTypes"
 
 const taskFormTypes = {
   CREATE: "CREATE",

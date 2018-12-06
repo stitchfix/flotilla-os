@@ -3,10 +3,10 @@ import PropTypes from "prop-types"
 import { FixedSizeList as List } from "react-window"
 import { get } from "lodash"
 import LogRow from "./LogRow"
-import { RUN_BAR_HEIGHT_PX } from "../../constants/styles"
+import { RUN_BAR_HEIGHT_PX } from "../../helpers/styles"
 import RunBar from "../Run/RunBar"
 import RunContext from "../Run/RunContext"
-import runStatusTypes from "../../constants/runStatusTypes"
+import runStatusTypes from "../../helpers/runStatusTypes"
 
 // Create a ref for the FixedSizeList component.
 const LIST_REF = createRef()

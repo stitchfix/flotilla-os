@@ -1,5 +1,5 @@
 import styled, { css } from "styled-components"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 
 export const secondaryTextStyles = css`
   font-size: 0.9rem;

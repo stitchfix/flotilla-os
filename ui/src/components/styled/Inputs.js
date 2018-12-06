@@ -1,9 +1,9 @@
 import styled, { css } from "styled-components"
-import colors from "../../constants/colors"
+import colors from "../../helpers/colors"
 import {
   DEFAULT_FONT_COLOR,
   SECONDARY_FONT_COLOR,
-} from "../../constants/styles"
+} from "../../helpers/styles"
 import { monospaceStyles } from "./Monospace"
 
 const sharedInputStyles = css`

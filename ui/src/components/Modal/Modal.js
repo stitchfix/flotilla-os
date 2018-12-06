@@ -1,6 +1,6 @@
 import React from "react"
 import styled from "styled-components"
-import { Z_INDICES } from "../../constants/styles"
+import { Z_INDICES } from "../../helpers/styles"
 
 const Modal = styled.div`
   z-index: ${Z_INDICES.MODAL};
