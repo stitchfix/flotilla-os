@@ -80,6 +80,7 @@ const Tasks = props => (
           shouldRequestOptions: true,
           requestOptionsFn: api.getGroups,
           isRequired: false,
+          isMulti: true,
         },
         image: {
           displayName: "Image",
