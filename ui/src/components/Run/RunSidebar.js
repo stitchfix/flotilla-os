@@ -1,6 +1,6 @@
 import React, { Fragment } from "react"
 import { Link } from "react-router-dom"
-import { has, get } from "lodash"
+import { has, get, omit } from "lodash"
 import moment from "moment"
 import KeyValues from "../styled/KeyValues"
 import Pre from "../styled/Pre"
@@ -16,6 +16,7 @@ const RunSidebar = props => {
           return (
             <Fragment>
               <KeyValues
+                raw={omit(data, ["env"])}
                 label="Run Info"
                 items={{
                   Cluster: get(data, "cluster", "-"),
@@ -59,6 +60,7 @@ const RunSidebar = props => {
                 }}
               />
               <KeyValues
+                raw={get(data, "env", [])}
                 label="Environment Variables"
                 items={get(data, "env", []).reduce((acc, env) => {
                   acc[env.name] = <Pre>{env.value}</Pre>
