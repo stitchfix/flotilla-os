@@ -1,6 +1,6 @@
 import React, { Fragment } from "react"
 import PropTypes from "prop-types"
-import { get } from "lodash"
+import { get, omit } from "lodash"
 import KeyValues from "../styled/KeyValues"
 import Tag from "../styled/Tag"
 import Pre from "../styled/Pre"
@@ -10,6 +10,7 @@ const TaskDefinitionSidebar = ({ data }) => {
   return (
     <Fragment>
       <KeyValues
+        raw={omit(data, "env")}
         label="Task Definition"
         items={{
           Alias: get(data, "alias", "-"),
@@ -30,6 +31,7 @@ const TaskDefinitionSidebar = ({ data }) => {
         }}
       />
       <KeyValues
+        raw={get(data, "env")}
         label="Environment Variables"
         items={get(data, "env", []).reduce((acc, env) => {
           acc[env.name] = <Pre>{env.value}</Pre>
