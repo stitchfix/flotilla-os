@@ -4,13 +4,11 @@ const OPTIONS = {
   VENDOR: [
     "ansi-to-react",
     "axios",
-    "immutability-helper",
     "lodash",
     "moment",
     "prop-types",
     "qs",
     "react",
-    "react-addons-css-transition-group",
     "react-debounce-input",
     "react-dom",
     "react-feather",

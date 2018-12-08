@@ -19,6 +19,7 @@ export const FieldText = props => {
     onChange,
     shouldDebounce,
     value,
+    field,
   } = props
 
   // Common props for all input components

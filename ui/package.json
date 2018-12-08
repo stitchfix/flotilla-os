@@ -15,13 +15,11 @@
   "dependencies": {
     "ansi-to-react": "1.6.0",
     "axios": "0.17.1",
-    "immutability-helper": "2.6.1",
     "lodash": "4.17.4",
     "moment": "2.19.2",
     "prop-types": "15.6.0",
     "qs": "6.5.2",
     "react": "16.6.1",
-    "react-addons-css-transition-group": "15.6.2",
     "react-debounce-input": "3.1.0",
     "react-dom": "16.6.1",
     "react-feather": "1.0.7",
@@ -70,8 +68,10 @@
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack":
+      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev":
+      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
@@ -79,9 +79,7 @@
     "test:watch": "npm test -- --watch"
   },
   "jest": {
-    "setupFiles": [
-      "raf/polyfill"
-    ],
+    "setupFiles": ["raf/polyfill"],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
       "\\.png$": "<rootDir>/src/__testutils__/styleMock.js"
