@@ -1,3 +1,5 @@
+import { ReactNode } from "react"
+
 export interface IFlotillaUIConfig {
   DEFAULT_CLUSTER: string
   FLOTILLA_API: string
@@ -76,4 +78,19 @@ export enum taskFormTypes {
   CREATE = "CREATE",
   EDIT = "EDIT",
   COPY = "COPY",
+}
+
+export interface IPopupProps {
+  actions?: ReactNode
+  body?: ReactNode
+  intent?: intents
+  shouldAutohide: boolean
+  title?: ReactNode
+  unrenderPopup: () => void
+  visibleDuration: number
+}
+
+export interface IPopupContext {
+  renderPopup: (props: IPopupProps) => void
+  unrenderPopup: () => void
 }

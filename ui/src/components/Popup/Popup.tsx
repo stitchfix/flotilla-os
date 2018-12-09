@@ -1,13 +1,11 @@
 import React, { Component } from "react"
-import PropTypes from "prop-types"
 import styled from "styled-components"
 import PopupContext from "./PopupContext"
-import { Z_INDICES, SPACING_PX, DEFAULT_BORDER } from "../../helpers/styles"
-import colors from "../../helpers/colors"
-import intentTypes from "../../helpers/intentTypes"
+import { Z_INDICES } from "../../helpers/styles"
 import Card from "../styled/Card"
 import Button from "../styled/Button"
 import ButtonGroup from "../styled/ButtonGroup"
+import { IPopupProps, IPopupContext } from "../../.."
 
 const POPUP_WINDOW_DISTANCE_PX = 48
 const POPUP_WIDTH_PX = 400
@@ -20,7 +18,12 @@ const PopupPositioner = styled.div`
   width: ${POPUP_WIDTH_PX}px;
 `
 
-class Popup extends Component {
+class Popup extends Component<IPopupProps> {
+  static defaultProps = {
+    shouldAutohide: true,
+    visibleDuration: 5000,
+  }
+
   componentDidMount() {
     const { shouldAutohide, unrenderPopup, visibleDuration } = this.props
 
@@ -55,23 +58,10 @@ class Popup extends Component {
   }
 }
 
-Popup.propTypes = {
-  actions: PropTypes.node,
-  body: PropTypes.node,
-  intent: PropTypes.oneOf(Object.values(intentTypes)),
-  shouldAutohide: PropTypes.bool.isRequired,
-  title: PropTypes.node,
-  unrenderPopup: PropTypes.func.isRequired,
-  visibleDuration: PropTypes.number.isRequired,
-}
-
-Popup.defaultProps = {
-  shouldAutohide: true,
-  visibleDuration: 5000,
-}
-
-export default props => (
+export default (props: IPopupProps) => (
   <PopupContext.Consumer>
-    {pCtx => <Popup {...props} unrenderPopup={pCtx.unrenderPopup} />}
+    {(pCtx: IPopupContext) => (
+      <Popup {...props} unrenderPopup={pCtx.unrenderPopup} />
+    )}
   </PopupContext.Consumer>
 )

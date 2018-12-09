@@ -1,20 +1,26 @@
-import React, { createContext, Component } from "react"
+import React, { Component } from "react"
 import PropTypes from "prop-types"
 import PopupContext from "./PopupContext"
 import Popup from "./Popup"
+import { IPopupProps } from "../../.."
 
-class PopupContainer extends Component {
+interface IPopupContainerState {
+  isVisible: boolean
+  popupProps: IPopupProps | undefined
+}
+
+class PopupContainer extends Component<{}, IPopupContainerState> {
   state = {
     isVisible: false,
-    popupProps: null,
+    popupProps: undefined,
   }
 
-  renderPopup = popupProps => {
+  renderPopup = (popupProps: IPopupProps) => {
     this.setState({ isVisible: true, popupProps })
   }
 
   unrenderPopup = () => {
-    this.setState({ isVisible: false, popupProps: null })
+    this.setState({ isVisible: false, popupProps: undefined })
   }
 
   getCtx() {
@@ -29,17 +35,11 @@ class PopupContainer extends Component {
 
     return (
       <PopupContext.Provider value={this.getCtx()}>
-        {!!isVisible && <Popup {...popupProps} />}
+        {!!isVisible && popupProps !== undefined && <Popup {...popupProps} />}
         {this.props.children}
       </PopupContext.Provider>
     )
   }
-}
-
-PopupContainer.displayName = "PopupContainer"
-
-PopupContainer.propTypes = {
-  children: PropTypes.node,
 }
 
 export default PopupContainer
