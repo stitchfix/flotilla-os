@@ -1,5 +1,4 @@
 const path = require("path")
-const webpack = require("webpack")
 const Dotenv = require("dotenv-webpack")
 
 module.exports = opts => {
@@ -7,7 +6,7 @@ module.exports = opts => {
   return {
     context: ROOT,
     entry: {
-      main: path.resolve(ROOT, "src/index.js"),
+      main: path.resolve(ROOT, "src/index.tsx"),
       vendor: VENDOR,
     },
     output: {
@@ -20,11 +19,8 @@ module.exports = opts => {
     },
     module: {
       rules: [
-        {
-          test: /\.js$/,
-          exclude: /node_modules/,
-          loaders: ["babel-loader"],
-        },
+        { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
+        { enforce: "pre", test: /\.js$/, loader: "source-map-loader" },
         {
           test: /\.jpe?g$|\.gif$|\.png$|\.ttf$|\.eot$|\.svg$/,
           use: "file-loader?name=[name].[ext]?[hash]",
@@ -37,7 +33,7 @@ module.exports = opts => {
     },
     plugins: [new Dotenv()],
     resolve: {
-      extensions: [".js", ".jsx"],
+      extensions: [".ts", ".tsx", ".js", ".json"],
       modules: [path.resolve(ROOT, "src"), "node_modules"],
     },
   }
