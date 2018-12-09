@@ -1,5 +1,4 @@
-import React from "react"
-import PropTypes from "prop-types"
+import React, { ReactNode, PureComponent } from "react"
 import styled from "styled-components"
 import HeaderText from "./HeaderText"
 import { SPACING_PX } from "../../helpers/styles"
@@ -24,25 +23,23 @@ const FormInner = styled.div`
     margin-bottom: 36px;
   }
 `
-
-const Form = ({ children, title }) => (
-  <FormContainer>
-    <FormInner>
-      {!!title && <HeaderText>{title}</HeaderText>}
-      {children}
-    </FormInner>
-  </FormContainer>
-)
-
-Form.displayName = "Form"
-
-Form.propTypes = {
-  children: PropTypes.node,
-  title: PropTypes.string,
+interface IFormProps {
+  title?: ReactNode
 }
 
-Form.defaultProps = {
-  title: "",
+class Form extends PureComponent<IFormProps> {
+  render() {
+    const { children, title } = this.props
+
+    return (
+      <FormContainer>
+        <FormInner>
+          {!!title && <HeaderText>{title}</HeaderText>}
+          {children}
+        </FormInner>
+      </FormContainer>
+    )
+  }
 }
 
 export default Form

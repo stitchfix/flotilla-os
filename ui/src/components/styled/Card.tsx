@@ -1,5 +1,4 @@
-import React from "react"
-import PropTypes from "prop-types"
+import React, { ReactNode, PureComponent } from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import { DEFAULT_BORDER, SPACING_PX } from "../../helpers/styles"
@@ -44,34 +43,36 @@ const CardFooter = styled.div`
   padding: ${SPACING_PX}px;
 `
 
-const Card = ({ title, actions, footerActions, children }) => {
-  const shouldRenderHeader = !!title || !!actions
-  const shouldRenderFooter = !!footerActions
-
-  return (
-    <CardContainer>
-      {shouldRenderHeader && (
-        <CardHeader>
-          <div>{title}</div>
-          <ButtonGroup>{actions}</ButtonGroup>
-        </CardHeader>
-      )}
-      <CardContent>{children}</CardContent>
-      {shouldRenderFooter && (
-        <CardFooter>
-          <ButtonGroup>{footerActions}</ButtonGroup>
-        </CardFooter>
-      )}
-    </CardContainer>
-  )
+interface ICardProps {
+  actions?: ReactNode
+  footerActions?: ReactNode
+  title?: ReactNode
 }
 
-Card.displayName = "Card"
-Card.propTypes = {
-  actions: PropTypes.node,
-  children: PropTypes.node,
-  footerActions: PropTypes.node,
-  title: PropTypes.node,
+class Card extends PureComponent<ICardProps> {
+  static displayName = "Card"
+  render() {
+    const { title, actions, footerActions, children } = this.props
+    const shouldRenderHeader = !!title || !!actions
+    const shouldRenderFooter = !!footerActions
+
+    return (
+      <CardContainer>
+        {shouldRenderHeader && (
+          <CardHeader>
+            <div>{title}</div>
+            <ButtonGroup>{actions}</ButtonGroup>
+          </CardHeader>
+        )}
+        <CardContent>{children}</CardContent>
+        {shouldRenderFooter && (
+          <CardFooter>
+            <ButtonGroup>{footerActions}</ButtonGroup>
+          </CardFooter>
+        )}
+      </CardContainer>
+    )
+  }
 }
 
 export default Card

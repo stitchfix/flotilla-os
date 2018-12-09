@@ -1,10 +1,6 @@
-import React from "react"
-import PropTypes from "prop-types"
+import React, { SFC } from "react"
 import styled from "styled-components"
-import {
-  NAVIGATION_HEIGHT_PX,
-  VIEW_HEADER_HEIGHT_PX,
-} from "../../helpers/styles"
+import { NAVIGATION_HEIGHT_PX } from "../../helpers/styles"
 
 const ViewContainer = styled.div`
   display: flex;
@@ -21,19 +17,14 @@ const ViewInner = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  /* margin-top: ${VIEW_HEADER_HEIGHT_PX}px; */
 `
 
-const View = ({ children }) => (
+const View: SFC<{}> = ({ children }) => (
   <ViewContainer>
     <ViewInner>{children}</ViewInner>
   </ViewContainer>
 )
 
 View.displayName = "View"
-
-View.propTypes = {
-  children: PropTypes.node,
-}
 
 export default View

@@ -14,32 +14,33 @@ export const AsyncDataTableContent = styled.div`
 `
 
 export const AsyncDataTableFilters = styled.div`
-  padding: ${SPACING_PX}px;
-  min-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  bottom: 0;
+  left: ${({ isView }: { isView?: boolean }) =>
+    isView ? 0 : DETAIL_VIEW_SIDEBAR_WIDTH_PX}px;
   max-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  min-width: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  overflow-y: scroll;
+  padding: ${SPACING_PX}px;
   position: fixed;
   top: ${NAVIGATION_HEIGHT_PX}px;
-  left: ${({ isView }) => (isView ? 0 : DETAIL_VIEW_SIDEBAR_WIDTH_PX)}px;
-  bottom: 0;
-  overflow-y: scroll;
 `
 
 export const AsyncDataTableContainer = styled.div`
-  width: 100%;
   position: relative;
+  width: 100%;
 `
 
 export const AsyncDataTableLoadingMask = styled.div`
-  width: calc(100% - ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px);
-  height: 100%;
-  position: absolute;
-  left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
-  top: 0;
-  right: 0;
+  align-items: center;
+  background: ${colors.black[0]}99;
   bottom: 0;
   display: flex;
   flex-flow: row nowrap;
+  height: 100%;
   justify-content: center;
-  align-items: center;
-  background: ${colors.black[0]}99;
+  left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: calc(100% - ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px);
 `

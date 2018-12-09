@@ -1,7 +1,7 @@
 import colors from "./colors"
 import { intents } from "../.."
 
-const intentToColor = (intent: intents): string => {
+const intentToColor = (intent?: intents): string => {
   switch (intent) {
     case intents.PRIMARY:
       return colors.blue[0]

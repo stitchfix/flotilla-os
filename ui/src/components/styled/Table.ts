@@ -41,7 +41,7 @@ const cellStyles = css`
 
 export const TableCell = styled.div`
   ${cellStyles};
-  flex: ${p => (!!p.width ? p.width : 1)};
+  flex: ${({ width }: { width?: number }) => (!!width ? width : 1)};
 `
 
 export const TableHeaderSortIcon = styled.div`
@@ -55,17 +55,18 @@ export const TableHeaderCell = styled.div`
   text-transform: uppercase;
   font-weight: 500;
   border-top: none;
-  flex: ${p => (!!p.width ? p.width : 1)};
+  flex: ${({ width }: { width?: number }) => (!!width ? width : 1)};
 `
 
 export const TableHeaderCellSortable = styled(TableHeaderCell)`
   cursor: pointer;
-  color: ${({ isActive }) => (isActive ? colors.blue[0] : colors.gray[4])};
-  background: ${({ isActive }) =>
+  color: ${({ isActive }: { isActive?: boolean }) =>
+    isActive ? colors.blue[0] : colors.gray[4]};
+  background: ${({ isActive }: { isActive?: boolean }) =>
     isActive ? colors.black[1] : colors.black[0]};
 
   &:hover {
     color: ${colors.blue[0]};
-    background: ${({ allowSort }) => colors.black[1]};
+    background: ${colors.black[1]};
   }
 `

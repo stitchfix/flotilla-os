@@ -1,21 +1,13 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import React, { Component, ReactNode, SyntheticEvent } from "react"
 import styled from "styled-components"
 import JSONView from "react-json-view"
 import Field from "./Field"
-import { SPACING_PX } from "../../helpers/styles"
-import jsonViewProps from "../../helpers/reactJsonViewProps"
+import { SPACING_PX, MONOSPACE_FONT_FAMILY } from "../../helpers/styles"
 import Button from "./Button"
 import ButtonGroup from "./ButtonGroup"
 
 const KeyValuesContainer = styled.div`
-  padding: ${({ depth }) => {
-    if (depth === 0) {
-      return `${SPACING_PX * 2}px`
-    }
-
-    return `${SPACING_PX * 2}px 0`
-  }};
+  padding: ${SPACING_PX * 2}px 0;
 `
 
 const KeyValuesHeader = styled.div`
@@ -28,23 +20,57 @@ const KeyValuesHeader = styled.div`
   margin-bottom: ${SPACING_PX * 1.5}px;
 `
 
-class KeyValues extends Component {
+interface IKeyValuesProps {
+  actions?: ReactNode
+  items: { [key: string]: ReactNode }
+  label?: ReactNode
+  raw: any
+}
+
+interface IKeyValuesState {
+  displayRawData: boolean
+}
+
+class KeyValues extends Component<IKeyValuesProps, IKeyValuesState> {
+  static defaultProps: IKeyValuesProps = {
+    items: {},
+    raw: {},
+  }
+
   state = {
     displayRawData: false,
   }
 
-  onDisplayRawDataButtonClick = () => {
+  onDisplayRawDataButtonClick = (evt: SyntheticEvent) => {
     this.setState(prevState => ({ displayRawData: !prevState.displayRawData }))
   }
 
   render() {
-    const { actions, depth, items, label, raw } = this.props
+    const { actions, items, label, raw } = this.props
     const { displayRawData } = this.state
 
     let content
 
     if (!!displayRawData && !!raw) {
-      content = <JSONView {...jsonViewProps} src={raw} />
+      content = (
+        <JSONView
+          src={raw}
+          indentWidth={2}
+          displayObjectSize={false}
+          displayDataTypes={false}
+          collapsed={1}
+          theme={"ocean"}
+          name={""}
+          style={{
+            fontSize: "0.9rem",
+            fontWeight: 400,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-all",
+            width: "100%",
+            fontFamily: MONOSPACE_FONT_FAMILY,
+          }}
+        />
+      )
     } else {
       content = Object.keys(items).map(key => (
         <Field label={key} key={key}>
@@ -54,7 +80,7 @@ class KeyValues extends Component {
     }
 
     return (
-      <KeyValuesContainer depth={depth}>
+      <KeyValuesContainer>
         <KeyValuesHeader>
           <h3>{label}</h3>
           <ButtonGroup>
@@ -66,19 +92,6 @@ class KeyValues extends Component {
       </KeyValuesContainer>
     )
   }
-}
-
-KeyValues.propTypes = {
-  actions: PropTypes.node,
-  depth: PropTypes.number.isRequired,
-  items: PropTypes.objectOf(PropTypes.node),
-  label: PropTypes.node,
-  raw: PropTypes.any,
-}
-
-KeyValues.defaultProps = {
-  depth: 0,
-  items: {},
 }
 
 export default KeyValues

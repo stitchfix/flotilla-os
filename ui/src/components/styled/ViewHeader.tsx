@@ -1,5 +1,4 @@
-import React from "react"
-import PropTypes from "prop-types"
+import React, { ReactNode, SFC } from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import {
@@ -38,7 +37,12 @@ const ViewHeaderInner = styled.div`
   padding: 0 ${SPACING_PX}px;
 `
 
-const ViewHeader = ({ children, title, actions }) => (
+interface IViewHeaderProps {
+  actions?: ReactNode
+  title?: ReactNode
+}
+
+const ViewHeader: SFC<IViewHeaderProps> = ({ children, title, actions }) => (
   <ViewHeaderContainer>
     <ViewHeaderInner>
       {!!title && <h3>{title}</h3>}
@@ -48,10 +52,5 @@ const ViewHeader = ({ children, title, actions }) => (
 )
 
 ViewHeader.displayName = "ViewHeader"
-ViewHeader.propTypes = {
-  actions: PropTypes.node,
-  children: PropTypes.node,
-  title: PropTypes.node,
-}
 
 export default ViewHeader

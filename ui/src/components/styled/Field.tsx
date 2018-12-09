@@ -1,9 +1,7 @@
-import React from "react"
-import PropTypes from "prop-types"
+import React, { PureComponent } from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
-import { SECONDARY_FONT_COLOR } from "../../helpers/styles"
 import SecondaryText from "./SecondaryText"
 
 const FIELD_HEIGHT_PX = 28
@@ -25,7 +23,7 @@ export const FieldLabel = styled.div`
   font-weight: 500;
   margin-bottom: 4px;
 
-  ${({ isRequired }) => {
+  ${({ isRequired }: { isRequired: boolean }) => {
     if (isRequired) {
       return `
         &:after {
@@ -57,42 +55,44 @@ const FieldChildren = styled.div`
   width: 100%;
 `
 
-const Field = ({
-  label,
-  children,
-  description,
-  error,
-  isLoading,
-  isRequired,
-}) => (
-  <FieldContainer>
-    {!!label && <FieldLabel isRequired={isRequired}>{label}</FieldLabel>}
-    <FieldChildren>{children}</FieldChildren>
-    {!!error && <FieldError>{error}</FieldError>}
-    {!!description && <FieldDescription>{description}</FieldDescription>}
-    {!!isLoading && (
-      <FieldLoaderContainer>
-        <Loader mini />
-      </FieldLoaderContainer>
-    )}
-  </FieldContainer>
-)
-
-Field.displayName = "Field"
-
-Field.propTypes = {
-  children: PropTypes.node.isRequired,
-  description: PropTypes.string,
-  error: PropTypes.any,
-  isLoading: PropTypes.bool.isRequired,
-  isRequired: PropTypes.bool.isRequired,
-  label: PropTypes.string,
+interface IFieldProps {
+  description?: string
+  error?: any
+  isLoading: boolean
+  isRequired: boolean
+  label?: string
 }
 
-Field.defaultProps = {
-  error: false,
-  isLoading: false,
-  isRequired: false,
+class Field extends PureComponent<IFieldProps> {
+  static defaultProps: Partial<IFieldProps> = {
+    isLoading: false,
+    isRequired: false,
+  }
+
+  render() {
+    const {
+      label,
+      children,
+      description,
+      error,
+      isLoading,
+      isRequired,
+    } = this.props
+
+    return (
+      <FieldContainer>
+        {!!label && <FieldLabel isRequired={isRequired}>{label}</FieldLabel>}
+        <FieldChildren>{children}</FieldChildren>
+        {!!error && <FieldError>{error}</FieldError>}
+        {!!description && <FieldDescription>{description}</FieldDescription>}
+        {!!isLoading && (
+          <FieldLoaderContainer>
+            <Loader />
+          </FieldLoaderContainer>
+        )}
+      </FieldContainer>
+    )
+  }
 }
 
 export default Field
