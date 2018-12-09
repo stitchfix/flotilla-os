@@ -1,17 +1,17 @@
 import colors from "./colors"
-import intentTypes from "./intentTypes"
+import { intents } from "../.."
 
-const intentToColor = intent => {
+const intentToColor = (intent: intents): string => {
   switch (intent) {
-    case intentTypes.primary:
+    case intents.PRIMARY:
       return colors.blue[0]
-    case intentTypes.error:
+    case intents.ERROR:
       return colors.red[0]
-    case intentTypes.warning:
+    case intents.WARNING:
       return colors.yellow[0]
-    case intentTypes.success:
+    case intents.SUCCESS:
       return colors.green[0]
-    case intentTypes.subtle:
+    case intents.SUBTLE:
       return colors.light_gray[2]
     default:
       return colors.black[4]

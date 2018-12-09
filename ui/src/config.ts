@@ -1,4 +1,6 @@
-export default {
+import { IFlotillaUIConfig } from ".."
+
+const config: IFlotillaUIConfig = {
   /** The default ECS cluster tasks will be executed on. */
   DEFAULT_CLUSTER: process.env.DEFAULT_CLUSTER || "default",
 
@@ -16,8 +18,10 @@ export default {
     process.env.RUN_LOGS_REQUEST_INTERVAL_MS || 5000,
 
   /** List of environment variables that can NOT be set at execution time. */
-  INVALID_RUN_ENV: (process.env.INVALID_RUN_ENV || "").split(",") || "",
+  INVALID_RUN_ENV: (process.env.INVALID_RUN_ENV || "").split(","),
 
   /** Run tags that must be filled out. */
-  REQUIRED_RUN_TAGS: (process.env.REQUIRED_RUN_TAGS || "").split(",") || "",
+  REQUIRED_RUN_TAGS: (process.env.REQUIRED_RUN_TAGS || "").split(","),
 }
+
+export default config

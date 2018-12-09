@@ -1,32 +1,38 @@
-import { isString, get } from "lodash"
+import { get } from "lodash"
+import { IReactSelectOption } from "../.."
 import colors from "./colors"
+import { Theme } from "react-select/lib/types"
 
-export const stringToSelectOpt = (str = "") => {
-  let ret = isString(str) ? str : ""
-  return { label: ret, value: ret }
-}
-export const selectOptToString = opt => get(opt, "value", "")
+export const stringToSelectOpt = (str: string): IReactSelectOption => ({
+  label: str,
+  value: str,
+})
+
+export const selectOptToString = (opt: IReactSelectOption): string =>
+  get(opt, "value", "")
+
 export const selectStyles = {
-  container: provided => ({
+  container: (provided: any) => ({
     ...provided,
     width: "100%",
   }),
-  control: provided => ({
+  control: (provided: any) => ({
     ...provided,
     borderWidth: 2,
   }),
-  menu: provided => ({
+  menu: (provided: any) => ({
     ...provided,
     color: colors.light_gray[1],
   }),
-  option: provided => ({
+  option: (provided: any) => ({
     ...provided,
     color: colors.gray[3],
     paddingTop: 12,
     paddingBottom: 12,
   }),
 }
-export const selectTheme = theme => ({
+
+export const selectTheme = (theme: Theme): Theme => ({
   ...theme,
   colors: {
     ...theme.colors,
