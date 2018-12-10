@@ -64,11 +64,10 @@ export class UnwrappedConfirmModal extends React.Component<
           intent: intents.SUCCESS,
         })
         unrenderModal()
-
         if (onSuccess) onSuccess(res)
       })
       .catch(error => {
-        this.setState({ inFlight: false, error })
+        this.setState({ inFlight: false, error: error.data })
 
         renderPopup({
           body: "TODO: put error text here",
@@ -100,7 +99,7 @@ export class UnwrappedConfirmModal extends React.Component<
                 onClick={this.handleConfirm}
                 isLoading={inFlight}
               >
-                Delete Task
+                Confirm
               </Button>
             </ButtonGroup>
           }

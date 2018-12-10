@@ -12,15 +12,10 @@ const StopRunModal: React.SFC<IStopRunModalProps> = props => (
   <ConfirmModal
     body="Are you sure you want to stop this run?"
     requestFn={api.stopRun}
-    getRequestArgs={() => {
-      return {
-        definitionID: props.definitionID,
-        runID: props.runID,
-      }
-    }}
-    onSuccess={() => {
-      props.history.push("/tasks")
-    }}
+    getRequestArgs={() => ({
+      definitionID: props.definitionID,
+      runID: props.runID,
+    })}
   />
 )
 

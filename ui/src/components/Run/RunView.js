@@ -12,6 +12,8 @@ import {
 } from "../styled/DetailView"
 import intentTypes from "../../helpers/intentTypes"
 import runStatusTypes from "../../helpers/runStatusTypes"
+import StopRunModal from "../Modal/StopRunModal"
+import ModalContext from "../Modal/ModalContext"
 
 const RunView = props => {
   return (
@@ -38,7 +40,17 @@ const RunView = props => {
           actions.push({
             isLink: false,
             text: "Stop Run",
-            intent: intentTypes.error,
+            buttonProps: {
+              intent: intentTypes.error,
+              onClick: () => {
+                props.renderModal(
+                  <StopRunModal
+                    defintionID={get(data, "defintionID", "")}
+                    runID={runID}
+                  />
+                )
+              },
+            },
           })
         }
 
@@ -71,4 +83,8 @@ const RunView = props => {
   )
 }
 
-export default RunView
+export default props => (
+  <ModalContext.Consumer>
+    {ctx => <RunView {...props} renderModal={ctx.renderModal} />}
+  </ModalContext.Consumer>
+)
