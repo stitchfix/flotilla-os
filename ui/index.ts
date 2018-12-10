@@ -45,6 +45,11 @@ export interface IFlotillaRun {
   started_at?: string
 }
 
+export interface IFlotillaLogChunk {
+  chunk: string
+  lastSeen: string
+}
+
 export interface IReactSelectOption {
   label: string
   value: any
