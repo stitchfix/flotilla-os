@@ -1,4 +1,4 @@
-import React, { PureComponent } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
@@ -63,7 +63,7 @@ interface IFieldProps {
   label?: string
 }
 
-class Field extends PureComponent<IFieldProps> {
+class Field extends React.PureComponent<IFieldProps> {
   static defaultProps: Partial<IFieldProps> = {
     isLoading: false,
     isRequired: false,

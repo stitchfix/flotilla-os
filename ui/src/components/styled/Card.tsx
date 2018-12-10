@@ -1,4 +1,4 @@
-import React, { ReactNode, PureComponent } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import { DEFAULT_BORDER, SPACING_PX } from "../../helpers/styles"
@@ -44,12 +44,12 @@ const CardFooter = styled.div`
 `
 
 interface ICardProps {
-  actions?: ReactNode
-  footerActions?: ReactNode
-  title?: ReactNode
+  actions?: React.ReactNode
+  footerActions?: React.ReactNode
+  title?: React.ReactNode
 }
 
-class Card extends PureComponent<ICardProps> {
+class Card extends React.PureComponent<ICardProps> {
   static displayName = "Card"
   render() {
     const { title, actions, footerActions, children } = this.props

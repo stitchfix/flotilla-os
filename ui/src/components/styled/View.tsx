@@ -1,4 +1,4 @@
-import React, { SFC } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import { NAVIGATION_HEIGHT_PX } from "../../helpers/styles"
 
@@ -19,7 +19,7 @@ const ViewInner = styled.div`
   width: 100%;
 `
 
-const View: SFC<{}> = ({ children }) => (
+const View: React.SFC<{}> = ({ children }) => (
   <ViewContainer>
     <ViewInner>{children}</ViewInner>
   </ViewContainer>

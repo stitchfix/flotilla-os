@@ -1,4 +1,4 @@
-import React, { PureComponent, ReactNode, SyntheticEvent } from "react"
+import * as React from "react"
 import styled, { css } from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
@@ -42,15 +42,15 @@ const StyledButton = styled.button`
 `
 
 interface IButtonProps {
-  children: ReactNode
+  children: React.ReactNode
   intent?: intents
   isDisabled: boolean
   isLoading: boolean
-  onClick?: (evt: SyntheticEvent) => void
+  onClick?: (evt: React.SyntheticEvent) => void
   type: string
 }
 
-class Button extends PureComponent<IButtonProps> {
+class Button extends React.PureComponent<IButtonProps> {
   static displayName = "Button"
   static defaultProps: Partial<IButtonProps> = {
     isDisabled: false,

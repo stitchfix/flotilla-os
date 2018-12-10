@@ -1,4 +1,4 @@
-import React, { ReactNode, SFC } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import colors from "../../helpers/colors"
 import {
@@ -38,11 +38,15 @@ const ViewHeaderInner = styled.div`
 `
 
 interface IViewHeaderProps {
-  actions?: ReactNode
-  title?: ReactNode
+  actions?: React.ReactNode
+  title?: React.ReactNode
 }
 
-const ViewHeader: SFC<IViewHeaderProps> = ({ children, title, actions }) => (
+const ViewHeader: React.SFC<IViewHeaderProps> = ({
+  children,
+  title,
+  actions,
+}) => (
   <ViewHeaderContainer>
     <ViewHeaderInner>
       {!!title && <h3>{title}</h3>}

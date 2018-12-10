@@ -1,5 +1,4 @@
 import * as moment from "moment"
-import { has } from "lodash"
 import { IFlotillaRun } from "../.."
 
 const addZeroPadding = (value: number): string =>

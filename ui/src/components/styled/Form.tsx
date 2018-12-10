@@ -1,4 +1,4 @@
-import React, { ReactNode, PureComponent } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import HeaderText from "./HeaderText"
 import { SPACING_PX } from "../../helpers/styles"
@@ -24,10 +24,10 @@ const FormInner = styled.div`
   }
 `
 interface IFormProps {
-  title?: ReactNode
+  title?: React.ReactNode
 }
 
-class Form extends PureComponent<IFormProps> {
+class Form extends React.PureComponent<IFormProps> {
   render() {
     const { children, title } = this.props
 

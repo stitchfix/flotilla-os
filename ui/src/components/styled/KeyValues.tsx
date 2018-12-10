@@ -1,4 +1,4 @@
-import React, { Component, ReactNode, SyntheticEvent } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import JSONView from "react-json-view"
 import Field from "./Field"
@@ -21,9 +21,9 @@ const KeyValuesHeader = styled.div`
 `
 
 interface IKeyValuesProps {
-  actions?: ReactNode
-  items: { [key: string]: ReactNode }
-  label?: ReactNode
+  actions?: React.ReactNode
+  items: { [key: string]: React.ReactNode }
+  label?: React.ReactNode
   raw: any
 }
 
@@ -31,7 +31,7 @@ interface IKeyValuesState {
   displayRawData: boolean
 }
 
-class KeyValues extends Component<IKeyValuesProps, IKeyValuesState> {
+class KeyValues extends React.Component<IKeyValuesProps, IKeyValuesState> {
   static defaultProps: IKeyValuesProps = {
     items: {},
     raw: {},
@@ -41,7 +41,7 @@ class KeyValues extends Component<IKeyValuesProps, IKeyValuesState> {
     displayRawData: false,
   }
 
-  onDisplayRawDataButtonClick = (evt: SyntheticEvent) => {
+  onDisplayRawDataButtonClick = (evt: React.SyntheticEvent) => {
     this.setState(prevState => ({ displayRawData: !prevState.displayRawData }))
   }
 

@@ -1,4 +1,4 @@
-import React, { Fragment, ReactNode, PureComponent } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import Loader from "./Loader"
 import { SPACING_PX } from "../../helpers/styles"
@@ -18,13 +18,13 @@ const EmptyTableTitle = styled.h2`
 `
 
 interface IEmptyTableProps {
-  actions?: ReactNode
+  actions?: React.ReactNode
   error: boolean
   isLoading: boolean
-  title?: ReactNode
+  title?: React.ReactNode
 }
 
-class EmptyTable extends PureComponent<IEmptyTableProps> {
+class EmptyTable extends React.PureComponent<IEmptyTableProps> {
   static displayName = "EmptyTable"
   static defaultProps = {
     isLoading: false,
@@ -38,10 +38,10 @@ class EmptyTable extends PureComponent<IEmptyTableProps> {
       content = <Loader />
     } else {
       content = (
-        <Fragment>
+        <React.Fragment>
           {title && <EmptyTableTitle>{title}</EmptyTableTitle>}
           {actions && <h2>{actions}</h2>}
-        </Fragment>
+        </React.Fragment>
       )
     }
 

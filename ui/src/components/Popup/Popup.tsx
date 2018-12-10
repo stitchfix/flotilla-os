@@ -1,4 +1,4 @@
-import React, { Component } from "react"
+import * as React from "react"
 import styled from "styled-components"
 import PopupContext from "./PopupContext"
 import { Z_INDICES } from "../../helpers/styles"
@@ -18,8 +18,8 @@ const PopupPositioner = styled.div`
   width: ${POPUP_WIDTH_PX}px;
 `
 
-class Popup extends Component<IPopupProps> {
-  static defaultProps = {
+export class UnwrappedPopup extends React.Component<IPopupProps> {
+  static defaultProps: Partial<IPopupProps> = {
     shouldAutohide: true,
     visibleDuration: 5000,
   }
@@ -34,23 +34,20 @@ class Popup extends Component<IPopupProps> {
     }
   }
 
-  renderActions = () => {
-    const { actions, unrenderPopup } = this.props
-
-    return (
-      <ButtonGroup>
-        <Button onClick={unrenderPopup}>Close</Button>
-        {!!actions && actions}
-      </ButtonGroup>
-    )
-  }
-
   render() {
-    const { body, title } = this.props
+    const { body, title, unrenderPopup, actions } = this.props
 
     return (
       <PopupPositioner>
-        <Card title={title} actions={this.renderActions()}>
+        <Card
+          title={title}
+          actions={
+            <ButtonGroup>
+              <Button onClick={unrenderPopup}>Close</Button>
+              {!!actions && actions}
+            </ButtonGroup>
+          }
+        >
           {body}
         </Card>
       </PopupPositioner>
@@ -61,7 +58,7 @@ class Popup extends Component<IPopupProps> {
 export default (props: IPopupProps) => (
   <PopupContext.Consumer>
     {(pCtx: IPopupContext) => (
-      <Popup {...props} unrenderPopup={pCtx.unrenderPopup} />
+      <UnwrappedPopup {...props} unrenderPopup={pCtx.unrenderPopup} />
     )}
   </PopupContext.Consumer>
 )

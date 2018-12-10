@@ -1,5 +1,4 @@
-import React, { SFC } from "react"
-import PropTypes from "prop-types"
+import React from "react"
 import styled, { keyframes } from "styled-components"
 import colors from "../../helpers/colors"
 import { LOADER_SIZE_PX } from "../../helpers/styles"
@@ -51,7 +50,7 @@ interface ILoaderProps {
   intent?: intents
 }
 
-const Loader: SFC<ILoaderProps> = ({ intent }) => (
+const Loader: React.SFC<ILoaderProps> = ({ intent }) => (
   <LoaderContainer>
     <LoaderInner intent={intent} />
   </LoaderContainer>
