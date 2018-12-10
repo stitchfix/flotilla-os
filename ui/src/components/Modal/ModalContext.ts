@@ -1,6 +1,7 @@
 import { createContext } from "react"
+import { IModalContext } from "../../.."
 
-const ModalContext = createContext({
+const ModalContext = createContext<IModalContext>({
   renderModal: () => {},
   unrenderModal: () => {},
 })

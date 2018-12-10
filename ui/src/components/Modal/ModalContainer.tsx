@@ -1,9 +1,9 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import styled from "styled-components"
 import { Z_INDICES } from "../../helpers/styles"
 import colors from "../../helpers/colors"
 import ModalContext from "./ModalContext"
+import { IModalContext } from "../../.."
 
 const StyledModalContainer = styled.div`
   width: 100vw;
@@ -33,21 +33,27 @@ const ModalOverlay = styled.div`
   z-index: ${Z_INDICES.MODAL_OVERLAY};
 `
 
-class ModalContainer extends Component {
+interface IModalContainerState {
+  isVisible: boolean
+  modal: React.ReactNode | undefined
+}
+
+class ModalContainer extends React.Component<{}, IModalContainerState> {
+  static displayName = "ModalContainer"
   state = {
     isVisible: false,
-    modal: null,
+    modal: undefined,
   }
 
-  renderModal = modal => {
+  renderModal = (modal: React.ReactNode): void => {
     this.setState({ isVisible: true, modal })
   }
 
-  unrenderModal = () => {
-    this.setState({ isVisible: false, modal: null })
+  unrenderModal = (): void => {
+    this.setState({ isVisible: false, modal: undefined })
   }
 
-  getCtx() {
+  getCtx(): IModalContext {
     return {
       renderModal: this.renderModal,
       unrenderModal: this.unrenderModal,
@@ -69,12 +75,6 @@ class ModalContainer extends Component {
       </ModalContext.Provider>
     )
   }
-}
-
-ModalContainer.displayName = "ModalContainer"
-
-ModalContainer.propTypes = {
-  children: PropTypes.node,
 }
 
 export default ModalContainer

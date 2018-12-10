@@ -1,4 +1,4 @@
-import React from "react"
+import * as React from "react"
 import styled, { keyframes } from "styled-components"
 import colors from "../../helpers/colors"
 import { LOADER_SIZE_PX } from "../../helpers/styles"

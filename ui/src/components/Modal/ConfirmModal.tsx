@@ -1,14 +1,44 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import Button from "../styled/Button"
 import ButtonGroup from "../styled/ButtonGroup"
 import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../helpers/intentTypes"
+import { IPopupProps, intents } from "../../.."
 
-class ConfirmModal extends Component {
+interface IConfirmModalProps {
+  body?: React.ReactNode
+  getRequestArgs?: () => any
+  onFailure?: (error: any) => void
+  onSuccess?: (response: any) => void
+  requestFn: (opts: any) => Promise<any>
+  title?: React.ReactNode
+}
+
+interface IUnwrappedConfirmModalProps extends IConfirmModalProps {
+  renderPopup: (popupProps: IPopupProps) => void
+  unrenderModal: () => void
+  unrenderPopup: () => void
+}
+
+interface IConfirmModalState {
+  inFlight: boolean
+  error: any
+}
+
+export class UnwrappedConfirmModal extends React.Component<
+  IUnwrappedConfirmModalProps,
+  IConfirmModalState
+> {
+  static defaultProps: Partial<IUnwrappedConfirmModalProps> = {
+    body: "Are you sure?",
+    getRequestArgs: () => null,
+    onFailure: () => {},
+    onSuccess: () => {},
+    title: "Confirm",
+  }
+
   state = {
     inFlight: false,
     error: false,
@@ -26,15 +56,16 @@ class ConfirmModal extends Component {
 
     this.setState({ inFlight: true, error: false })
 
-    requestFn(getRequestArgs())
+    requestFn(!!getRequestArgs ? getRequestArgs() : {})
       .then(res => {
         renderPopup({
           body: "Action was completed successfully.",
           title: "Success!",
-          intent: intentTypes.success,
+          intent: intents.SUCCESS,
         })
         unrenderModal()
-        onSuccess(res)
+
+        if (onSuccess) onSuccess(res)
       })
       .catch(error => {
         this.setState({ inFlight: false, error })
@@ -42,11 +73,11 @@ class ConfirmModal extends Component {
         renderPopup({
           body: "TODO: put error text here",
           title: "Error!",
-          intent: intentTypes.error,
+          intent: intents.ERROR,
           shouldAutohide: false,
         })
 
-        onFailure()
+        if (onFailure) onFailure(error)
       })
   }
 
@@ -60,9 +91,12 @@ class ConfirmModal extends Component {
           title={title}
           footerActions={
             <ButtonGroup>
-              <Button onClick={unrenderModal}>Cancel</Button>
+              <Button id="cancel" onClick={unrenderModal}>
+                Cancel
+              </Button>
               <Button
-                intent={intentTypes.error}
+                id="confirm"
+                intent={intents.ERROR}
                 onClick={this.handleConfirm}
                 isLoading={inFlight}
               >
@@ -79,34 +113,12 @@ class ConfirmModal extends Component {
   }
 }
 
-ConfirmModal.displayName = "ConfirmModal"
-
-ConfirmModal.propTypes = {
-  body: PropTypes.node,
-  getRequestArgs: PropTypes.func.isRequired,
-  onFailure: PropTypes.func,
-  onSuccess: PropTypes.func,
-  renderPopup: PropTypes.func.isRequired,
-  requestFn: PropTypes.func.isRequired,
-  title: PropTypes.node,
-  unrenderModal: PropTypes.func.isRequired,
-  unrenderPopup: PropTypes.func.isRequired,
-}
-
-ConfirmModal.defaultProps = {
-  body: "Are you sure?",
-  getRequestArgs: () => null,
-  onFailure: () => {},
-  onSuccess: () => {},
-  title: "Confirm",
-}
-
-export default props => (
+const ConfirmModal = (props: IConfirmModalProps) => (
   <ModalContext.Consumer>
     {mCtx => (
       <PopupContext.Consumer>
         {pCtx => (
-          <ConfirmModal
+          <UnwrappedConfirmModal
             {...props}
             renderPopup={pCtx.renderPopup}
             unrenderPopup={pCtx.unrenderPopup}
@@ -117,3 +129,5 @@ export default props => (
     )}
   </ModalContext.Consumer>
 )
+
+export default ConfirmModal

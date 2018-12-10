@@ -84,13 +84,18 @@ export interface IPopupProps {
   actions?: ReactNode
   body?: ReactNode
   intent?: intents
-  shouldAutohide: boolean
+  shouldAutohide?: boolean
   title?: ReactNode
-  unrenderPopup: () => void
-  visibleDuration: number
+  unrenderPopup?: () => void
+  visibleDuration?: number
 }
 
 export interface IPopupContext {
   renderPopup: (props: IPopupProps) => void
   unrenderPopup: () => void
+}
+
+export interface IModalContext {
+  renderModal: (modal: React.ReactNode) => void
+  unrenderModal: () => void
 }
