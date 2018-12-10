@@ -50,7 +50,9 @@ interface IButtonProps {
   type: string
 }
 
-class Button extends React.PureComponent<IButtonProps> {
+class Button extends React.PureComponent<
+  IButtonProps & React.HTMLProps<HTMLButtonElement>
+> {
   static displayName = "Button"
   static defaultProps: Partial<IButtonProps> = {
     isDisabled: false,

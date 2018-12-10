@@ -1,5 +1,4 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import PopupContext from "./PopupContext"
 import Popup from "./Popup"
 import { IPopupProps } from "../../.."
@@ -9,7 +8,7 @@ interface IPopupContainerState {
   popupProps: IPopupProps | undefined
 }
 
-class PopupContainer extends Component<{}, IPopupContainerState> {
+class PopupContainer extends React.Component<{}, IPopupContainerState> {
   state = {
     isVisible: false,
     popupProps: undefined,

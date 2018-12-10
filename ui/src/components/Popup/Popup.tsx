@@ -17,17 +17,19 @@ const PopupPositioner = styled.div`
   z-index: ${Z_INDICES.POPUP};
   width: ${POPUP_WIDTH_PX}px;
 `
+PopupPositioner.displayName = "PopupPositioner"
 
 export class UnwrappedPopup extends React.Component<IPopupProps> {
+  static displayName = "UnwrappedPopup"
   static defaultProps: Partial<IPopupProps> = {
     shouldAutohide: true,
     visibleDuration: 5000,
+    unrenderPopup: () => {},
   }
 
   componentDidMount() {
     const { shouldAutohide, unrenderPopup, visibleDuration } = this.props
-
-    if (!!shouldAutohide) {
+    if (shouldAutohide === true) {
       window.setTimeout(() => {
         unrenderPopup()
       }, visibleDuration)
@@ -43,7 +45,9 @@ export class UnwrappedPopup extends React.Component<IPopupProps> {
           title={title}
           actions={
             <ButtonGroup>
-              <Button onClick={unrenderPopup}>Close</Button>
+              <Button onClick={unrenderPopup} id="popupCloseButton">
+                Close
+              </Button>
               {!!actions && actions}
             </ButtonGroup>
           }
@@ -55,10 +59,12 @@ export class UnwrappedPopup extends React.Component<IPopupProps> {
   }
 }
 
-export default (props: IPopupProps) => (
+const Popup = (props: IPopupProps) => (
   <PopupContext.Consumer>
     {(pCtx: IPopupContext) => (
       <UnwrappedPopup {...props} unrenderPopup={pCtx.unrenderPopup} />
     )}
   </PopupContext.Consumer>
 )
+Popup.displayName = "Popup"
+export default Popup
