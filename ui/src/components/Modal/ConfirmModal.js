@@ -28,16 +28,16 @@ class ConfirmModal extends Component {
 
     requestFn(getRequestArgs())
       .then(res => {
+        onSuccess(res)
         renderPopup({
           body: "Action was completed successfully.",
           title: "Success!",
           intent: intentTypes.success,
         })
         unrenderModal()
-        onSuccess(res)
       })
       .catch(error => {
-        this.setState({ inFlight: false, error })
+        this.setState({ inFlight: false, error: error.data })
 
         renderPopup({
           body: "TODO: put error text here",
@@ -66,7 +66,7 @@ class ConfirmModal extends Component {
                 onClick={this.handleConfirm}
                 isLoading={inFlight}
               >
-                Delete Task
+                Confirm
               </Button>
             </ButtonGroup>
           }
