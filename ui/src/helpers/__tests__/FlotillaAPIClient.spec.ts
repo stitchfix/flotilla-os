@@ -4,7 +4,11 @@ import AxiosMockAdapter from "axios-mock-adapter"
 import * as urljoin from "url-join"
 import * as qs from "qs"
 import FlotillaAPIClient from "../FlotillaAPIClient"
-import { IFlotillaCreateTaskPayload, IFlotillaRunTaskPayload } from "../../.."
+import {
+  IFlotillaCreateTaskPayload,
+  IFlotillaRunTaskPayload,
+  IFlotillaEditTaskPayload,
+} from "../../.."
 
 const ROOT_LOCATION = "ROOT_LOCATION"
 const SUCCESS_PATH = "/mock_path"
@@ -171,7 +175,13 @@ describe("FlotillaAPIClient", () => {
     })
 
     it("createTask method calls request method with the correct arguments", () => {
-      const values: IFlotillaCreateTaskPayload = {}
+      const values: IFlotillaCreateTaskPayload = {
+        memory: 1024,
+        image: "",
+        group_name: "",
+        command: "",
+        alias: "",
+      }
       expect(api.request).toHaveBeenCalledTimes(0)
       api.createTask({ values })
       expect(api.request).toHaveBeenCalledTimes(1)
@@ -184,7 +194,12 @@ describe("FlotillaAPIClient", () => {
 
     it("updateTask method calls request method with the correct arguments", () => {
       const definitionID = "definitionID"
-      const values: IFlotillaCreateTaskPayload = {}
+      const values: IFlotillaEditTaskPayload = {
+        memory: 1024,
+        image: "",
+        group_name: "",
+        command: "",
+      }
       expect(api.request).toHaveBeenCalledTimes(0)
       api.updateTask({ definitionID, values })
       expect(api.request).toHaveBeenCalledTimes(1)

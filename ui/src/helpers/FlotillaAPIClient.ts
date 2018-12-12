@@ -6,7 +6,9 @@ import {
   IFlotillaAPIError,
   IFlotillaCreateTaskPayload,
   IFlotillaRunTaskPayload,
+  IFlotillaEditTaskPayload,
 } from "../../index"
+import { stringToSelectOpt } from "./reactSelectHelpers"
 
 export interface IRequestOpts {
   method: string
@@ -87,7 +89,7 @@ class FlotillaAPIClient {
     values,
   }: {
     definitionID: string
-    values: IFlotillaCreateTaskPayload
+    values: IFlotillaEditTaskPayload
   }): Promise<any> => {
     return this.request({
       method: "put",
