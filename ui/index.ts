@@ -1,5 +1,14 @@
 import { ReactNode } from "react"
 
+export interface IFlotillaUITaskContext {
+  data: IFlotillaTaskDefinition
+  inFlight: boolean
+  error: boolean
+  requestState: requestStates
+  definitionID: string
+  requestData: () => void
+}
+
 export interface IFlotillaUIConfig {
   DEFAULT_CLUSTER: string
   FLOTILLA_API: string
