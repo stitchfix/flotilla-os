@@ -166,8 +166,9 @@ class FlotillaAPIClient {
       path: `/v1/groups`,
       query: { limit: 2000 },
       preprocess: (res: any): string[] =>
-        get(res, "groups", []).filter((v: string) => !isEmpty(v)),
-      // .map(stringToSelectOpt),
+        get(res, "groups", [])
+          .filter((v: string) => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
@@ -177,8 +178,9 @@ class FlotillaAPIClient {
       method: "get",
       path: `/v1/clusters`,
       preprocess: (res: any): string[] =>
-        get(res, "clusters", []).filter((v: string) => !isEmpty(v)),
-      // .map(stringToSelectOpt),
+        get(res, "clusters", [])
+          .filter((v: string) => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
@@ -189,8 +191,9 @@ class FlotillaAPIClient {
       path: `/v1/tags`,
       query: { limit: 5000 },
       preprocess: (res: any): string[] =>
-        get(res, "tags", []).filter((v: string) => !isEmpty(v)),
-      // .map(stringToSelectOpt),
+        get(res, "tags", [])
+          .filter((v: string) => !isEmpty(v))
+          .map(stringToSelectOpt),
     })
   }
 
