@@ -19,4 +19,6 @@ const NestedKeyValueRow = styled.div`
   }
 `
 
+NestedKeyValueRow.displayName = "NestedKeyValueRow"
+
 export default NestedKeyValueRow

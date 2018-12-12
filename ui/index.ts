@@ -25,8 +25,21 @@ export interface IFlotillaAPIError {
   headers?: any
 }
 
+export interface IFlotillaEditTaskPayload {
+  memory: number
+  image: string
+  group_name: string
+  tags?: string[]
+  env?: IFlotillaEnv[]
+  command: string
+}
+
 /** The values required to create a task definition. */
-export interface IFlotillaCreateTaskPayload {}
+export interface IFlotillaCreateTaskPayload extends IFlotillaEditTaskPayload {
+  alias: string
+}
+
+export interface IFlotillaTaskDefinition {}
 
 /** The values required to execute a task definition. */
 export interface IFlotillaRunTaskPayload {}

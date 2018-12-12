@@ -1,14 +1,42 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { isEmpty } from "lodash"
 import { Plus } from "react-feather"
 import Field from "../styled/Field"
 import { Input } from "../styled/Inputs"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import Button from "../styled/Button"
-import intentTypes from "../../helpers/intentTypes"
 
-class KVFieldInput extends Component {
+interface IKVFieldInputProps {
+  addValue: any
+  field: string
+  isKeyRequired: boolean
+  isValueRequired: boolean
+  keyField: string
+  valueField: string
+}
+
+interface IKVFieldInputState {
+  keyValue: string
+  valueValue: string
+  isKeyInputFocused: boolean
+  isValueInputFocused: boolean
+}
+
+class KVFieldInput extends React.PureComponent<
+  IKVFieldInputProps,
+  IKVFieldInputState
+> {
+  static displayName = "KVFieldInput"
+
+  static defaultProps: Partial<IKVFieldInputProps> = {
+    isKeyRequired: true,
+    isValueRequired: false,
+    keyField: "name",
+    valueField: "value",
+  }
+
+  private keyInputRef = React.createRef<HTMLInputElement>()
+
   state = {
     keyValue: "",
     valueValue: "",
@@ -20,7 +48,8 @@ class KVFieldInput extends Component {
     window.addEventListener("keypress", this.handleKeypress)
   }
 
-  shouldAddField = () => {
+  /** Determines whether or not to add the user input to the value. */
+  shouldAddField = (): boolean => {
     const { isKeyRequired, isValueRequired } = this.props
     const {
       keyValue,
@@ -44,7 +73,7 @@ class KVFieldInput extends Component {
     return true
   }
 
-  addField = () => {
+  addField = (): void => {
     const { addValue, field, keyField, valueField } = this.props
     const { keyValue, valueValue } = this.state
 
@@ -54,11 +83,15 @@ class KVFieldInput extends Component {
 
   resetState = () => {
     this.setState({ keyValue: "", valueValue: "" }, () => {
-      this.keyInput.focus()
+      const keyInputNode = this.keyInputRef.current
+
+      if (keyInputNode) {
+        keyInputNode.focus()
+      }
     })
   }
 
-  handleKeypress = evt => {
+  handleKeypress = (evt: KeyboardEvent) => {
     const { isKeyInputFocused, isValueInputFocused } = this.state
 
     if (isKeyInputFocused || isValueInputFocused) {
@@ -101,9 +134,7 @@ class KVFieldInput extends Component {
             onChange={evt => {
               this.setState({ keyValue: evt.target.value })
             }}
-            ref={x => {
-              this.keyInput = x
-            }}
+            ref={this.keyInputRef}
             onFocus={this.toggleKeyInputFocus}
             onBlur={this.toggleKeyInputFocus}
           />
@@ -127,22 +158,6 @@ class KVFieldInput extends Component {
       </NestedKeyValueRow>
     )
   }
-}
-
-KVFieldInput.displayName = "KVFieldInput"
-KVFieldInput.propTypes = {
-  addValue: PropTypes.func.isRequired,
-  field: PropTypes.string.isRequired,
-  isKeyRequired: PropTypes.bool.isRequired,
-  isValueRequired: PropTypes.bool.isRequired,
-  keyField: PropTypes.string.isRequired,
-  valueField: PropTypes.string.isRequired,
-}
-KVFieldInput.defaultProps = {
-  isKeyRequired: true,
-  isValueRequired: false,
-  keyField: "name",
-  valueField: "value",
 }
 
 export default KVFieldInput

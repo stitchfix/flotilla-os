@@ -1,22 +1,26 @@
 import * as React from "react"
-import DebounceInput from "react-debounce-input"
-import { Field as RFField } from "react-form"
-import { get, has } from "lodash"
-import Field from "../styled/Field"
+import { DebounceInput } from "react-debounce-input"
+import { FieldProps } from "formik"
+import { get, omit } from "lodash"
+import StyledField from "../styled/Field"
 import { Input, Textarea } from "../styled/Inputs"
 import QueryParams from "../QueryParams/QueryParams"
 
 interface IFieldTextProps {
   description?: string
   error?: any
-  field: string
+  name: string
   inputRef?: () => void
   isNumber: boolean
   isRequired: boolean
   isTextArea: boolean
   label?: string
-  onChange: (value: any) => void
   shouldDebounce: boolean
+  validate: any
+}
+
+interface IUnwrappedFieldTextProps extends IFieldTextProps {
+  onChange: (value: any) => void
   value: any
 }
 
@@ -27,8 +31,8 @@ interface ISharedInputProps {
   ref?: () => void
 }
 
-class FieldText extends React.PureComponent<IFieldTextProps> {
-  static defaultProps: Partial<IFieldTextProps> = {
+class FieldText extends React.PureComponent<IUnwrappedFieldTextProps> {
+  static defaultProps: Partial<IUnwrappedFieldTextProps> = {
     isNumber: false,
     isRequired: false,
     isTextArea: false,
@@ -47,7 +51,7 @@ class FieldText extends React.PureComponent<IFieldTextProps> {
       onChange,
       shouldDebounce,
       value,
-      field,
+      name,
     } = this.props
 
     // Common props for all input components
@@ -84,29 +88,29 @@ class FieldText extends React.PureComponent<IFieldTextProps> {
     }
 
     return (
-      <Field
+      <StyledField
         label={label}
         isRequired={isRequired}
         description={description}
         error={error}
       >
         {input}
-      </Field>
+      </StyledField>
     )
   }
 }
 
-export const QueryParamsFieldText = props => {
+export const QueryParamsFieldText: React.SFC<IFieldTextProps> = props => {
   return (
     <QueryParams>
       {({ queryParams, setQueryParams }) => (
         <FieldText
           {...props}
-          value={get(queryParams, props.field, "")}
+          value={get(queryParams, props.name, "")}
           onChange={value => {
             setQueryParams(
               {
-                [props.field]: value,
+                [props.name]: value,
               },
               false
             )
@@ -117,19 +121,15 @@ export const QueryParamsFieldText = props => {
   )
 }
 
-export const ReactFormFieldText = props => {
+export const FormikFieldText: React.SFC<
+  IFieldTextProps & FieldProps
+> = props => {
   return (
-    <RFField field={props.field} validate={props.validate}>
-      {fieldAPI => {
-        return (
-          <FieldText
-            {...props}
-            value={get(fieldAPI, "value", "")}
-            onChange={value => fieldAPI.setValue(value)}
-            error={get(fieldAPI, "error", null)}
-          />
-        )
+    <FieldText
+      {...omit(props, ["field", "form"])}
+      onChange={value => {
+        props.form.setFieldValue(props.field.name, value)
       }}
-    </RFField>
+    />
   )
 }
