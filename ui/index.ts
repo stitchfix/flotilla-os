@@ -55,6 +55,27 @@ export interface IReactSelectOption {
   value: any
 }
 
+export interface IFlotillaUIBreadcrumb {
+  text: string
+  href: string
+}
+
+export interface IFlotillaUINavigationLink {
+  isLink: boolean
+  text: string
+  href?: string
+  buttonProps?: Partial<IFlotillaUIButtonProps>
+}
+
+export interface IFlotillaUIButtonProps
+  extends React.HTMLProps<HTMLButtonElement> {
+  intent?: intents
+  isDisabled: boolean
+  isLoading: boolean
+  onClick?: (evt: React.SyntheticEvent) => void
+  type: string
+}
+
 export enum intents {
   PRIMARY = "PRIMARY",
   SUCCESS = "SUCCESS",
