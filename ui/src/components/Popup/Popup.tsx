@@ -31,7 +31,7 @@ export class UnwrappedPopup extends React.Component<IPopupProps> {
     const { shouldAutohide, unrenderPopup, visibleDuration } = this.props
     if (shouldAutohide === true) {
       window.setTimeout(() => {
-        unrenderPopup()
+        if (!!unrenderPopup) unrenderPopup()
       }, visibleDuration)
     }
   }

@@ -3,7 +3,7 @@ import styled, { css } from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
 import intentToColor from "../../helpers/intentToColor"
-import { intents } from "../../.."
+import { intents, IFlotillaUIButtonProps } from "../../.."
 
 export const buttonStyles = css`
   background: ${({ intent }: { intent?: intents }) => intentToColor(intent)};
@@ -41,20 +41,9 @@ const StyledButton = styled.button`
   ${buttonStyles};
 `
 
-interface IButtonProps {
-  children: React.ReactNode
-  intent?: intents
-  isDisabled: boolean
-  isLoading: boolean
-  onClick?: (evt: React.SyntheticEvent) => void
-  type: string
-}
-
-class Button extends React.PureComponent<
-  IButtonProps & React.HTMLProps<HTMLButtonElement>
-> {
+class Button extends React.PureComponent<IFlotillaUIButtonProps> {
   static displayName = "Button"
-  static defaultProps: Partial<IButtonProps> = {
+  static defaultProps: Partial<IFlotillaUIButtonProps> = {
     isDisabled: false,
     isLoading: false,
     type: "button",
