@@ -58,7 +58,10 @@ export const TableHeaderCell = styled.div`
   flex: ${({ width }: { width?: number }) => (!!width ? width : 1)};
 `
 
-export const TableHeaderCellSortable = styled(TableHeaderCell)`
+export const TableHeaderCellSortable =
+  styled(TableHeaderCell) <
+  { isActive: boolean, width: number } >
+  `
   cursor: pointer;
   color: ${({ isActive }: { isActive?: boolean }) =>
     isActive ? colors.blue[0] : colors.gray[4]};

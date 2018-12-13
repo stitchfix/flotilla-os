@@ -1,23 +1,42 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { X } from "react-feather"
 import { get, pick, isArray } from "lodash"
 import { FieldText } from "./FieldText"
 import Button from "../styled/Button"
-import Field from "../styled/Field"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
-import intentTypes from "../../helpers/intentTypes"
 import KVFieldInput from "./KVFieldInput"
 import QueryParams from "../QueryParams/QueryParams"
-import {
-  SHARED_KV_FIELD_PROPS,
-  SHARED_KV_FIELD_DEFAULT_PROPS,
-} from "../../helpers/kvFieldHelpers"
 import KVFieldContainer from "./KVFieldContainer"
+import { intents } from "../../.."
 
-class UnwrappedQueryParamsKVField extends Component {
+interface IUnwrappedQueryParamsKVFieldProps {
+  description?: string
+  isKeyRequired: boolean
+  isValueRequired: boolean
+  keyField: string
+  label: string
+  name: string
+  value: any[]
+  valueField: string
+  keyValueDelimiterChar: string
+}
+
+interface IQueryParamsKVFieldProps extends IUnwrappedQueryParamsKVFieldProps {
+  queryParams: any
+  setQueryParams: (query: object, shouldReplace: boolean) => void
+}
+
+type ParsedKVField = any
+
+class UnwrappedQueryParamsKVField extends React.PureComponent<
+  IQueryParamsKVFieldProps
+> {
+  static defaultProps: Partial<IQueryParamsKVFieldProps> = {
+    keyValueDelimiterChar: "|",
+  }
+
   /** Handles input events for key fields. */
-  handleKeyChange = (value, index) => {
+  handleKeyChange = (value: any, index: number): void => {
     const { keyField } = this.props
 
     this.handleChange({
@@ -28,7 +47,7 @@ class UnwrappedQueryParamsKVField extends Component {
   }
 
   /** Handles input events for value fields. */
-  handleValueChange = (value, index) => {
+  handleValueChange = (value: any, index: number): void => {
     const { valueField } = this.props
 
     this.handleChange({
@@ -38,10 +57,16 @@ class UnwrappedQueryParamsKVField extends Component {
     })
   }
 
-  /**
-   * Injects a new value into the values array prop then calls this.setValues.
-   */
-  handleChange = ({ key, value, index }) => {
+  /** Injects a new value into the values array prop then calls this.setValues. */
+  handleChange = ({
+    key,
+    value,
+    index,
+  }: {
+    key: string
+    value: any
+    index: number
+  }): void => {
     const values = this.getValues()
     const next = [
       ...values.slice(0, index),
@@ -56,13 +81,13 @@ class UnwrappedQueryParamsKVField extends Component {
   }
 
   /** Appends the newly added KV pair to the query[field] array. */
-  handleAddField = (_, kv) => {
+  handleAddField = (_: any, kv: ParsedKVField): void => {
     const values = this.getValues()
     this.setValues([...values, kv])
   }
 
   /** Removes a value specified by index. */
-  handleRemoveClick = index => {
+  handleRemoveClick = (index: number): void => {
     const values = this.getValues()
     this.setValues([...values.slice(0, index), ...values.slice(index + 1)])
   }
@@ -71,7 +96,7 @@ class UnwrappedQueryParamsKVField extends Component {
    * Stringifies a key value object (e.g. { name: "", value: ""}) into a string
    * delimited by the keyValueDelimiterChar prop (e.g. "key|value").
    */
-  stringifyValue = obj => {
+  stringifyValue = (obj: ParsedKVField): string => {
     const { keyField, valueField, keyValueDelimiterChar } = this.props
     return `${obj[keyField]}${keyValueDelimiterChar}${obj[valueField]}`
   }
@@ -79,7 +104,7 @@ class UnwrappedQueryParamsKVField extends Component {
   /**
    * Parses a key value string object and transforms it into an object.
    */
-  parseValue = str => {
+  parseValue = (str: string): ParsedKVField => {
     const { keyField, valueField, keyValueDelimiterChar } = this.props
     const split = str.split(keyValueDelimiterChar)
     return {
@@ -89,17 +114,17 @@ class UnwrappedQueryParamsKVField extends Component {
   }
 
   /** Calls props.setQueryParams to set new values. */
-  setValues = values => {
-    const { setQueryParams, field } = this.props
+  setValues = (values: ParsedKVField[]): void => {
+    const { setQueryParams, name } = this.props
 
-    setQueryParams({ [field]: values.map(this.stringifyValue) })
+    setQueryParams({ [name]: values.map(this.stringifyValue) }, false)
   }
 
   /** Transforms each value in the values prop to an object. */
-  getValues = () => {
-    const { values } = this.props
+  getValues = (): ParsedKVField[] => {
+    const { value } = this.props
 
-    return values.map(this.parseValue)
+    return value.map(this.parseValue)
   }
 
   render() {
@@ -118,7 +143,7 @@ class UnwrappedQueryParamsKVField extends Component {
           return (
             <NestedKeyValueRow>
               <FieldText
-                field={keyField}
+                name={keyField}
                 isRequired={isKeyRequired}
                 onChange={value => {
                   this.handleKeyChange(value, i)
@@ -127,7 +152,7 @@ class UnwrappedQueryParamsKVField extends Component {
                 shouldDebounce
               />
               <FieldText
-                field={valueField}
+                name={valueField}
                 isRequired={isValueRequired}
                 onChange={value => {
                   this.handleValueChange(value, i)
@@ -136,7 +161,7 @@ class UnwrappedQueryParamsKVField extends Component {
                 shouldDebounce
               />
               <Button
-                intent={intentTypes.error}
+                intent={intents.ERROR}
                 onClick={this.handleRemoveClick.bind(this, i)}
                 type="button"
               >
@@ -160,33 +185,26 @@ class UnwrappedQueryParamsKVField extends Component {
   }
 }
 
-UnwrappedQueryParamsKVField.propsTypes = {
-  ...SHARED_KV_FIELD_PROPS,
-  setQueryParams: PropTypes.func.isRequired,
-  keyValueDelimiterChar: PropTypes.string.isRequired,
-}
-
-UnwrappedQueryParamsKVField.defaultProps = {
-  ...SHARED_KV_FIELD_DEFAULT_PROPS,
-  keyValueDelimiterChar: "|",
-}
-
-export default props => (
+const WrappedQueryParamsKVField: React.SFC<
+  IUnwrappedQueryParamsKVFieldProps
+> = props => (
   <QueryParams>
     {({ queryParams, setQueryParams }) => {
-      let values = get(queryParams, props.field, [])
+      let value = get(queryParams, props.name, [])
 
-      if (!isArray(values)) {
-        values = [values]
+      if (!isArray(value)) {
+        value = [value]
       }
 
       return (
         <UnwrappedQueryParamsKVField
           {...props}
           setQueryParams={setQueryParams}
-          values={values}
+          value={value}
         />
       )
     }}
   </QueryParams>
 )
+
+export default WrappedQueryParamsKVField

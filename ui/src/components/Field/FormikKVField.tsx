@@ -10,7 +10,7 @@ import KVFieldContainer from "./KVFieldContainer"
 import { intents } from "../../.."
 
 interface IFormikKVFieldProps {
-  description: string
+  description?: string
   isKeyRequired: boolean
   isValueRequired: boolean
   keyField: string

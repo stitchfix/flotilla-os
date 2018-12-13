@@ -1,15 +1,36 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
-import withQueryParams from "react-router-query-params"
+import * as React from "react"
 import { get } from "lodash"
 import {
   TableHeaderCell,
   TableHeaderSortIcon,
   TableHeaderCellSortable,
 } from "../styled/Table"
+import QueryParams from "../QueryParams/QueryParams"
 
-class AsyncDataTableSortHeader extends Component {
-  constructor(props) {
+interface IUnwrappedAsyncDataTableSortHeaderProps {
+  allowSort: boolean
+  displayName: React.ReactNode
+  sortKey: string
+  width: number
+}
+
+interface IAsyncDataTableSortHeaderProps
+  extends IUnwrappedAsyncDataTableSortHeaderProps {
+  queryParams: any
+  setQueryParams: (query: object, shouldReplace: boolean) => void
+}
+
+class AsyncDataTableSortHeader extends React.PureComponent<
+  IAsyncDataTableSortHeaderProps
+> {
+  static displayName = "AsyncDataTableSortHeader"
+
+  static defaultProps: Partial<IAsyncDataTableSortHeaderProps> = {
+    allowSort: false,
+    width: 1,
+  }
+
+  constructor(props: IAsyncDataTableSortHeaderProps) {
     super(props)
     this.getCurrSortKey = this.getCurrSortKey.bind(this)
     this.getCurrSortOrder = this.getCurrSortOrder.bind(this)
@@ -54,11 +75,14 @@ class AsyncDataTableSortHeader extends Component {
     const { setQueryParams } = this.props
     const { sortBy, order } = this.getNextSortState()
 
-    setQueryParams({
-      sort_by: sortBy,
-      order,
-      page: 1,
-    })
+    setQueryParams(
+      {
+        sort_by: sortBy,
+        order,
+        page: 1,
+      },
+      false
+    )
   }
 
   render() {
@@ -82,7 +106,6 @@ class AsyncDataTableSortHeader extends Component {
         onClick={this.handleClick}
         width={width}
         isActive={isActive}
-        direction={direction}
       >
         {displayName}
         {!!isActive &&
@@ -96,20 +119,18 @@ class AsyncDataTableSortHeader extends Component {
   }
 }
 
-AsyncDataTableSortHeader.displayName = "AsyncDataTableSortHeader"
+const WrappedAsyncDataTableSortHeader: React.SFC<
+  IUnwrappedAsyncDataTableSortHeaderProps
+> = props => (
+  <QueryParams>
+    {({ queryParams, setQueryParams }) => (
+      <AsyncDataTableSortHeader
+        {...props}
+        queryParams={queryParams}
+        setQueryParams={setQueryParams}
+      />
+    )}
+  </QueryParams>
+)
 
-AsyncDataTableSortHeader.propTypes = {
-  allowSort: PropTypes.bool.isRequired,
-  displayName: PropTypes.node.isRequired,
-  queryParams: PropTypes.object.isRequired,
-  setQueryParams: PropTypes.func.isRequired,
-  sortKey: PropTypes.string.isRequired,
-  width: PropTypes.number.isRequired,
-}
-
-AsyncDataTableSortHeader.defaultProps = {
-  allowSort: false,
-  width: 1,
-}
-
-export default withQueryParams()(AsyncDataTableSortHeader)
+export default WrappedAsyncDataTableSortHeader

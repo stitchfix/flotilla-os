@@ -1,6 +1,4 @@
-import React, { Component, Fragment } from "react"
-import PropTypes from "prop-types"
-import PageVisibility from "react-page-visibility"
+import * as React from "react"
 import {
   get,
   isEmpty,
@@ -13,12 +11,9 @@ import {
 } from "lodash"
 import EmptyTable from "../styled/EmptyTable"
 import { Table, TableRow, TableCell } from "../styled/Table"
-import AsyncDataTableFilter, {
-  asyncDataTableFilterTypes,
-} from "./AsyncDataTableFilter"
+import AsyncDataTableFilter from "./AsyncDataTableFilter"
 import AsyncDataTableSortHeader from "./AsyncDataTableSortHeader"
 import AsyncDataTablePagination from "./AsyncDataTablePagination"
-import * as requestStateTypes from "../../helpers/requestStateTypes"
 import {
   AsyncDataTableContainer,
   AsyncDataTableFilters,
@@ -27,9 +22,51 @@ import {
 } from "../styled/AsyncDataTable"
 import config from "../../config"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../helpers/intentTypes"
 import QueryParams from "../QueryParams/QueryParams"
 import Loader from "../styled/Loader"
+import {
+  IAsyncDataTableFilterProps,
+  requestStates,
+  IPopupProps,
+  intents,
+  IFlotillaAPIError,
+} from "../../.."
+
+interface IAsyncDataTableColumn {
+  allowSort: boolean
+  displayName: string
+  render: (item: any) => React.ReactNode
+  width?: number
+}
+
+interface IUnwrappedAsyncDataTableProps {
+  columns: { [key: string]: IAsyncDataTableColumn }
+  emptyTableBody?: React.ReactNode
+  emptyTableTitle: string
+  filters?: { [key: string]: IAsyncDataTableFilterProps }
+  getItemKey: (item: any, index: number) => number
+  getItems: (data: any) => any[]
+  getRequestArgs: (query: any) => any
+  getTotal: (data: any) => number
+  initialQuery: object
+  isView: boolean
+  limit: number
+  requestFn: (arg: any) => any
+  shouldContinuouslyFetch: boolean
+}
+
+interface IAsyncDataTableProps extends IUnwrappedAsyncDataTableProps {
+  renderPopup: (p: IPopupProps) => void
+  queryParams: any
+  setQueryParams: (query: object, shouldReplace: boolean) => void
+}
+
+interface IAsyncDataTableState {
+  requestState: requestStates
+  data: any[]
+  error: any
+  inFlight: boolean
+}
 
 /**
  * AsyncDataTable takes a requestFn prop (usually a bound method of the
@@ -37,14 +74,34 @@ import Loader from "../styled/Loader"
  * Additionally, it will handle pagination, filters, and sorting via the router
  * query.
  */
-class AsyncDataTable extends Component {
-  static offsetToPage = (offset, limit) => +offset / +limit + 1
+class AsyncDataTable extends React.PureComponent<
+  IAsyncDataTableProps,
+  IAsyncDataTableState
+> {
+  static displayName = "AsyncDataTable"
+  static defaultProps: Partial<IAsyncDataTableProps> = {
+    columns: {},
+    emptyTableBody: "",
+    emptyTableTitle: "This collection is empty",
+    filters: {},
+    getItemKey: (item, index) => index,
+    getItems: data => [],
+    getRequestArgs: query => query,
+    initialQuery: {},
+    isView: true,
+    limit: 50,
+    requestFn: () => {},
+    shouldContinuouslyFetch: false,
+  }
+  static offsetToPage = (offset: any, limit: any): number =>
+    +offset / +limit + 1
+  static pageToOffset = (page: any, limit: any): number => (+page - 1) * +limit
 
-  static pageToOffset = (page, limit) => (+page - 1) * +limit
+  private requestInterval: number | null = null
 
   state = {
-    requestState: requestStateTypes.NOT_READY,
-    data: null,
+    requestState: requestStates.NOT_READY,
+    data: [],
     error: false,
     inFlight: false,
   }
@@ -74,14 +131,14 @@ class AsyncDataTable extends Component {
     if (shouldContinuouslyFetch) {
       this.requestInterval = window.setInterval(() => {
         // Return if the browser tab isn't focused.
-        if (!this.props.isTabFocused) return
+        if (document.visibilityState !== "visible") return
 
         this.requestData()
-      }, config.RUN_REQUEST_INTERVAL_MS)
+      }, +config.RUN_REQUEST_INTERVAL_MS)
     }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: IAsyncDataTableProps) {
     const { queryParams } = this.props
 
     const prevQ = prevProps.queryParams
@@ -98,14 +155,11 @@ class AsyncDataTable extends Component {
     }
   }
 
-  /**
-   * Performs a shallow comparison of two query objects.
-   *
-   * @param {object} a
-   * @param {object} b
-   * @returns {boolean}
-   */
-  areQueriesEqual(a = {}, b = {}) {
+  /** Performs a shallow comparison of two query objects. */
+  areQueriesEqual(
+    a: { [key: string]: any },
+    b: { [key: string]: any }
+  ): boolean {
     // Return false if the arguments are not objects.
     if (!isObject(a) || !isObject(b)) {
       return false
@@ -130,12 +184,8 @@ class AsyncDataTable extends Component {
     return true
   }
 
-  /**
-   * Sends a request via the requestFn prop then stores data in state.
-   *
-   * @param {object} query
-   */
-  requestData() {
+  /** Sends a request via the requestFn prop then stores data in state. */
+  requestData(): void {
     if (this.state.inFlight === true) return
 
     this.setState({ inFlight: true, error: false })
@@ -153,22 +203,21 @@ class AsyncDataTable extends Component {
     q.limit = limit
 
     requestFn(getRequestArgs(q))
-      .then(data => {
+      .then((data: any) => {
         this.setState({
           data,
-          requestState: requestStateTypes.READY,
+          requestState: requestStates.READY,
           inFlight: false,
         })
       })
-      .catch(error => {
+      .catch((error: IFlotillaAPIError) => {
         this.clearInterval()
-        const e = error.getError()
 
         this.props.renderPopup({
-          body: e.data,
-          intent: intentTypes.error,
+          body: error.data,
+          intent: intents.ERROR,
           shouldAutohide: false,
-          title: `Error (${e.status})`,
+          title: `An error occurred (Status Code: ${error.status})`,
         })
 
         this.setState({ error, inFlight: false })
@@ -176,7 +225,8 @@ class AsyncDataTable extends Component {
   }
 
   clearInterval = () => {
-    window.clearInterval(this.requestInterval)
+    if (this.requestInterval !== null)
+      window.clearInterval(this.requestInterval)
   }
 
   render() {
@@ -196,10 +246,10 @@ class AsyncDataTable extends Component {
     const { requestState, data, error, inFlight } = this.state
 
     switch (requestState) {
-      case requestStateTypes.ERROR:
+      case requestStates.ERROR:
         const errorDisplay = error.toString() || "An error occurred."
         return <EmptyTable title={errorDisplay} error />
-      case requestStateTypes.READY:
+      case requestStates.READY:
         const items = getItems(data)
         const total = getTotal(data)
 
@@ -207,25 +257,26 @@ class AsyncDataTable extends Component {
           <AsyncDataTableContainer>
             {!!inFlight && (
               <AsyncDataTableLoadingMask>
-                <Loader intent={intentTypes.primary} />
+                <Loader intent={intents.PRIMARY} />
               </AsyncDataTableLoadingMask>
             )}
-            {!isEmpty(filters) && (
-              <AsyncDataTableFilters isView={isView}>
-                {Object.keys(filters).map(key => (
-                  <AsyncDataTableFilter
-                    {...filters[key]}
-                    field={key}
-                    key={key}
-                  />
-                ))}
-              </AsyncDataTableFilters>
-            )}
+            {!!filters &&
+              !isEmpty(filters) && (
+                <AsyncDataTableFilters isView={isView}>
+                  {Object.keys(filters).map(key => (
+                    <AsyncDataTableFilter
+                      {...filters[key]}
+                      field={key}
+                      key={key}
+                    />
+                  ))}
+                </AsyncDataTableFilters>
+              )}
             <AsyncDataTableContent>
               {isEmpty(items) ? (
                 <EmptyTable title={emptyTableTitle} actions={emptyTableBody} />
               ) : (
-                <Fragment>
+                <React.Fragment>
                   <Table>
                     <TableRow>
                       {Object.keys(columns).map(key => (
@@ -234,7 +285,7 @@ class AsyncDataTable extends Component {
                           displayName={columns[key].displayName}
                           sortKey={key}
                           key={key}
-                          width={columns[key].width}
+                          width={columns[key].width || 1}
                         />
                       ))}
                     </TableRow>
@@ -252,95 +303,35 @@ class AsyncDataTable extends Component {
                     ))}
                   </Table>
                   <AsyncDataTablePagination total={total} limit={limit} />
-                </Fragment>
+                </React.Fragment>
               )}
             </AsyncDataTableContent>
           </AsyncDataTableContainer>
         )
-      case requestStateTypes.NOT_READY:
+      case requestStates.NOT_READY:
       default:
         return <EmptyTable isLoading />
     }
   }
 }
 
-AsyncDataTable.displayName = "AsyncDataTable"
-
-AsyncDataTable.propTypes = {
-  children: PropTypes.func.isRequired,
-  columns: PropTypes.objectOf(
-    PropTypes.shape({
-      allowSort: PropTypes.bool.isRequired,
-      displayName: PropTypes.string.isRequired,
-      render: PropTypes.func.isRequired,
-      width: PropTypes.number,
-    })
-  ).isRequired,
-  emptyTableBody: PropTypes.node,
-  emptyTableTitle: PropTypes.string.isRequired,
-  filters: PropTypes.objectOf(
-    PropTypes.shape({
-      displayName: PropTypes.string.isRequired,
-      type: PropTypes.oneOf(Object.values(asyncDataTableFilterTypes))
-        .isRequired,
-      options: PropTypes.arrayOf(
-        PropTypes.shape({
-          label: PropTypes.string,
-          value: PropTypes.string,
-        })
-      ),
-    })
-  ),
-  getItemKey: PropTypes.func.isRequired,
-  getItems: PropTypes.func.isRequired,
-  getRequestArgs: PropTypes.func.isRequired,
-  getTotal: PropTypes.func.isRequired,
-  initialQuery: PropTypes.object,
-  isTabFocused: PropTypes.bool.isRequired,
-  isView: PropTypes.bool.isRequired,
-  limit: PropTypes.number.isRequired,
-  queryParams: PropTypes.object.isRequired,
-  requestFn: PropTypes.func.isRequired,
-  setQueryParams: PropTypes.func.isRequired,
-  shouldContinuouslyFetch: PropTypes.bool.isRequired,
-  shouldRequest: PropTypes.func.isRequired,
-}
-
-AsyncDataTable.defaultProps = {
-  children: () => <span />,
-  columns: {},
-  emptyTableBody: "",
-  emptyTableTitle: "This collection is empty",
-  filters: {},
-  getItemKey: (item, index) => index,
-  getItems: data => [],
-  getRequestArgs: query => query,
-  initialQuery: {},
-  isView: true,
-  limit: 50,
-  requestFn: () => {},
-  shouldContinuouslyFetch: false,
-  shouldRequest: (prevProps, currProps) => false,
-}
-
-export default props => (
-  <PageVisibility>
-    {isTabFocused => (
-      <PopupContext.Consumer>
-        {ctx => (
-          <QueryParams>
-            {({ queryParams, setQueryParams }) => (
-              <AsyncDataTable
-                {...props}
-                isTabFocused={isTabFocused}
-                renderPopup={ctx.renderPopup}
-                queryParams={queryParams}
-                setQueryParams={setQueryParams}
-              />
-            )}
-          </QueryParams>
+const WrappedAsyncDataTable: React.SFC<
+  IUnwrappedAsyncDataTableProps
+> = props => (
+  <PopupContext.Consumer>
+    {ctx => (
+      <QueryParams>
+        {({ queryParams, setQueryParams }) => (
+          <AsyncDataTable
+            {...props}
+            renderPopup={ctx.renderPopup}
+            queryParams={queryParams}
+            setQueryParams={setQueryParams}
+          />
         )}
-      </PopupContext.Consumer>
+      </QueryParams>
     )}
-  </PageVisibility>
+  </PopupContext.Consumer>
 )
+
+export default WrappedAsyncDataTable

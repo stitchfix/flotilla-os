@@ -31,7 +31,7 @@ interface ISharedInputProps {
   ref?: () => void
 }
 
-class FieldText extends React.PureComponent<IUnwrappedFieldTextProps> {
+export class FieldText extends React.PureComponent<IUnwrappedFieldTextProps> {
   static defaultProps: Partial<IUnwrappedFieldTextProps> = {
     isNumber: false,
     isRequired: false,

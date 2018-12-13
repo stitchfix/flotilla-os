@@ -1,10 +1,9 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
-import withQueryParams from "react-router-query-params"
+import * as React from "react"
 import styled from "styled-components"
 import { get } from "lodash"
 import Button from "../styled/Button"
 import { SPACING_PX } from "../../helpers/styles"
+import QueryParams from "../QueryParams/QueryParams"
 
 const PaginationButtonGroup = styled.div`
   display: flex;
@@ -19,37 +18,54 @@ const PaginationButtonGroup = styled.div`
   }
 `
 
-class AsyncDataTablePagination extends Component {
-  handlePrevClick = () => {
+interface IUnwrappedAsyncDataTablePaginationProps {
+  limit: number
+  total: number
+}
+
+interface IAsyncDataTablePaginationProps
+  extends IUnwrappedAsyncDataTablePaginationProps {
+  queryParams: any
+  setQueryParams: (query: object, shouldReplace: boolean) => void
+}
+
+class AsyncDataTablePagination extends React.PureComponent<
+  IAsyncDataTablePaginationProps
+> {
+  static displayName = "AsyncDataTablePagination"
+  static defaultProps: Partial<IAsyncDataTablePaginationProps> = {
+    total: 0,
+  }
+  handlePrevClick = (): void => {
     this.updateQuery(this.getCurrPage() - 1)
   }
 
-  handleNextClick = () => {
+  handleNextClick = (): void => {
     this.updateQuery(this.getCurrPage() + 1)
   }
 
-  handleFirstClick = () => {
+  handleFirstClick = (): void => {
     this.updateQuery(1)
   }
 
-  handleLastClick = () => {
+  handleLastClick = (): void => {
     const { total, limit } = this.props
     this.updateQuery((total - total % limit) / limit)
   }
 
-  getCurrPage = () => {
+  getCurrPage = (): number => {
     return +get(this.props.queryParams, "page", 1)
   }
 
-  updateQuery = page => {
-    this.props.setQueryParams({ page })
+  updateQuery = (page: number): void => {
+    this.props.setQueryParams({ page }, false)
   }
 
-  isFirstPage = () => {
+  isFirstPage = (): boolean => {
     return this.getCurrPage() === 1
   }
 
-  isLastPage = () => {
+  isLastPage = (): boolean => {
     const { limit, total } = this.props
     return this.getCurrPage() * limit + limit > total
   }
@@ -84,15 +100,18 @@ class AsyncDataTablePagination extends Component {
   }
 }
 
-AsyncDataTablePagination.displayName = "AsyncDataTablePagination"
+const WrappedAsyncDataTablePagination: React.SFC<
+  IUnwrappedAsyncDataTablePaginationProps
+> = props => (
+  <QueryParams>
+    {({ queryParams, setQueryParams }) => (
+      <AsyncDataTablePagination
+        {...props}
+        queryParams={queryParams}
+        setQueryParams={setQueryParams}
+      />
+    )}
+  </QueryParams>
+)
 
-AsyncDataTablePagination.propTypes = {
-  limit: PropTypes.number.isRequired,
-  queryParams: PropTypes.object.isRequired,
-  setQueryParams: PropTypes.func.isRequired,
-  total: PropTypes.number,
-}
-
-AsyncDataTablePagination.defaultProps = {}
-
-export default withQueryParams()(AsyncDataTablePagination)
+export default WrappedAsyncDataTablePagination

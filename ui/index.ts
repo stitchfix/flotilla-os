@@ -9,6 +9,21 @@ export interface IFlotillaUITaskContext {
   requestData: () => void
 }
 
+export enum asyncDataTableFilters {
+  INPUT = "INPUT",
+  SELECT = "SELECT",
+  CUSTOM = "CUSTOM",
+  KV = "KV",
+}
+
+export interface IAsyncDataTableFilterProps {
+  description?: string
+  displayName: string
+  field: string
+  type: asyncDataTableFilters
+  filterProps?: any
+}
+
 export interface IFlotillaUIConfig {
   DEFAULT_CLUSTER: string
   FLOTILLA_API: string
