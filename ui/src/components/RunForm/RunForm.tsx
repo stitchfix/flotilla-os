@@ -32,17 +32,19 @@ class RunForm extends React.PureComponent<IRunFormProps> {
   handleSubmit = (values: IFlotillaRunTaskPayload): void => {
     const { data, push } = this.props
 
-    api
-      .runTask({
-        values,
-        definitionID: get(data, "definition_id", ""),
-      })
-      .then(res => {
-        push(`/runs/${res.run_id}`)
-      })
-      .catch(error => {
-        console.log(error)
-      })
+    if (data && data.definition_id) {
+      api
+        .runTask({
+          values,
+          definitionID: data.definition_id,
+        })
+        .then(res => {
+          push(`/runs/${res.run_id}`)
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    }
   }
 
   getDefaultValues = (): IFlotillaRunTaskPayload => {
@@ -186,21 +188,21 @@ class RunForm extends React.PureComponent<IRunFormProps> {
         onSubmit={this.handleSubmit}
       >
         {(formikProps: FormikProps<IFlotillaRunTaskPayload>) => (
-          <View>
-            <Navigation
-              breadcrumbs={this.getBreadcrumbs()}
-              actions={this.getActions({
-                shouldDisableSubmitButton: false,
-              })}
-            />
-            <Form>
+          <Form>
+            <View>
+              <Navigation
+                breadcrumbs={this.getBreadcrumbs()}
+                actions={this.getActions({
+                  shouldDisableSubmitButton: false,
+                })}
+              />
               <StyledForm title={`Run ${get(data, "alias", definitionID)}`}>
                 <Field
                   name="cluster"
                   value={formikProps.values.cluster}
                   onChange={formikProps.handleChange}
                   component={FormikFieldSelect}
-                  label="Group Name"
+                  label="Cluster"
                   description="Select a cluster for this task to be executed on."
                   requestOptionsFn={api.getClusters}
                   shouldRequestOptions
@@ -209,7 +211,7 @@ class RunForm extends React.PureComponent<IRunFormProps> {
                 />
                 <FormikKVField
                   name="run_tags"
-                  value={formikProps.values.env}
+                  value={formikProps.values.run_tags}
                   description={this.getRunTagsDescription()}
                   isKeyRequired
                   isValueRequired={false}
@@ -226,8 +228,8 @@ class RunForm extends React.PureComponent<IRunFormProps> {
                   setFieldValue={formikProps.setFieldValue}
                 />
               </StyledForm>
-            </Form>
-          </View>
+            </View>
+          </Form>
         )}
       </Formik>
     )

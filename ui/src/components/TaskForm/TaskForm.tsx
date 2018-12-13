@@ -287,15 +287,15 @@ class UnwrappedTaskForm extends React.PureComponent<
         onSubmit={this.handleSubmit}
       >
         {(formikProps: FormikProps<IFlotillaCreateTaskPayload>) => (
-          <View>
-            <Navigation
-              breadcrumbs={this.getBreadcrumbs()}
-              actions={this.getActions({
-                shouldDisableSubmitButton: false,
-              })}
-            />
-            <StyledForm title={this.renderTitle()}>
-              <Form>
+          <Form>
+            <View>
+              <Navigation
+                breadcrumbs={this.getBreadcrumbs()}
+                actions={this.getActions({
+                  shouldDisableSubmitButton: false,
+                })}
+              />
+              <StyledForm title={this.renderTitle()}>
                 {type !== taskFormTypes.EDIT && (
                   <Field
                     name="alias"
@@ -370,9 +370,9 @@ class UnwrappedTaskForm extends React.PureComponent<
                   label="Environment Variables"
                   setFieldValue={formikProps.setFieldValue}
                 />
-              </Form>
-            </StyledForm>
-          </View>
+              </StyledForm>
+            </View>
+          </Form>
         )}
       </Formik>
     )
