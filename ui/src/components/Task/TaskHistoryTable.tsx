@@ -1,29 +1,34 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { Link } from "react-router-dom"
 import moment from "moment"
 import { get, omit } from "lodash"
 import AsyncDataTable from "../AsyncDataTable/AsyncDataTable"
-import { asyncDataTableFilterTypes } from "../AsyncDataTable/AsyncDataTableFilter"
 import api from "../../api"
 import RunStatus from "../Run/RunStatus"
 import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
 import SecondaryText from "../styled/SecondaryText"
-import runStatusTypes from "../../helpers/runStatusTypes"
 import getRunDuration from "../../helpers/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
 import historyTableFilters from "../../helpers/historyTableFilters"
-import intentTypes from "../../helpers/intentTypes"
+import { ecsRunStatuses, IFlotillaRun, intents } from "../../.."
 
-class TaskHistoryTable extends Component {
-  static isTaskActive = status =>
-    status === runStatusTypes.pending ||
-    status === runStatusTypes.queued ||
-    status === runStatusTypes.running
+interface IUnwrappedTaskHistoryTableProps {
+  definitionID: string
+}
 
-  handleStopButtonClick = runData => {
+interface ITaskHistoryTableProps extends IUnwrappedTaskHistoryTableProps {
+  renderModal: (modal: React.ReactNode) => void
+}
+
+class TaskHistoryTable extends React.PureComponent<ITaskHistoryTableProps> {
+  static isTaskActive = (status: ecsRunStatuses): boolean =>
+    status === ecsRunStatuses.PENDING ||
+    status === ecsRunStatuses.QUEUED ||
+    status === ecsRunStatuses.RUNNING
+
+  handleStopButtonClick = (runData: IFlotillaRun): void => {
     this.props.renderModal(
       <StopRunModal
         runID={runData.run_id}
@@ -37,14 +42,14 @@ class TaskHistoryTable extends Component {
 
     return (
       <AsyncDataTable
+        limit={50}
+        shouldContinuouslyFetch={false}
+        getItemKey={(item: any, index: number) => index}
         getRequestArgs={query => ({
           definitionID,
           query,
         })}
         requestFn={api.getTaskHistory}
-        shouldRequest={(prevProps, currProps) =>
-          prevProps.definitionID !== currProps.definitionID
-        }
         columns={{
           stop: {
             allowSort: false,
@@ -123,7 +128,7 @@ class TaskHistoryTable extends Component {
         emptyTableTitle="No items were found."
         emptyTableBody={
           <ButtonLink
-            intent={intentTypes.primary}
+            intent={intents.PRIMARY}
             to={`/tasks/${definitionID}/run`}
           >
             Run Task
@@ -135,17 +140,12 @@ class TaskHistoryTable extends Component {
   }
 }
 
-TaskHistoryTable.propTypes = {
-  definitionID: PropTypes.string.isRequired,
-  renderModal: PropTypes.func.isRequired,
-}
-
-TaskHistoryTable.defaultProps = {
-  renderModal: () => {},
-}
-
-export default props => (
+const WrappedTaskHistoryTable: React.SFC<
+  IUnwrappedTaskHistoryTableProps
+> = props => (
   <ModalContext.Consumer>
     {ctx => <TaskHistoryTable {...props} renderModal={ctx.renderModal} />}
   </ModalContext.Consumer>
 )
+
+export default WrappedTaskHistoryTable

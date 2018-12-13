@@ -55,15 +55,20 @@ class Navigation extends React.PureComponent<INavigationProps> {
               {!!actions &&
                 !isEmpty(actions) &&
                 actions.map((a, i) => {
+                  const buttonProps: any = a.buttonProps
                   if (a.isLink === true && !!a.href) {
                     return (
-                      <ButtonLink key={i} to={a.href}>
+                      <ButtonLink key={i} to={a.href} {...buttonProps}>
                         {a.text}
                       </ButtonLink>
                     )
                   }
 
-                  return <Button key={i}>{a.text}</Button>
+                  return (
+                    <Button key={i} {...buttonProps}>
+                      {a.text}
+                    </Button>
+                  )
                 })}
             </ButtonGroup>
           </NavigationSection>

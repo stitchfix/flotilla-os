@@ -224,7 +224,9 @@ describe("FlotillaAPIClient", () => {
 
     it("runTask method calls request method with the correct arguments", () => {
       const definitionID = "definitionID"
-      const values: IFlotillaRunTaskPayload = {}
+      const values: IFlotillaRunTaskPayload = {
+        cluster: "cluster",
+      }
       expect(api.request).toHaveBeenCalledTimes(0)
       api.runTask({ definitionID, values })
       expect(api.request).toHaveBeenCalledTimes(1)

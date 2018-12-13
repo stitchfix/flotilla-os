@@ -206,7 +206,7 @@ class UnwrappedTaskForm extends React.PureComponent<
     return [
       { text: "Tasks", href: "/tasks" },
       {
-        text: get(data, "alias", definitionID),
+        text: data ? data.alias : "",
         href: `/tasks/${definitionID}`,
       },
       {
