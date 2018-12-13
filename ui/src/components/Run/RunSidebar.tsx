@@ -3,16 +3,16 @@ import { Link } from "react-router-dom"
 import { has, get, omit } from "lodash"
 import moment from "moment"
 import KeyValues from "../styled/KeyValues"
-import Pre from "../styled/Pre"
+import { Pre } from "../styled/Monospace"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
-import * as requestStateTypes from "../../helpers/requestStateTypes"
+import { requestStates, IFlotillaEnv } from "../../.."
 
-const RunSidebar = props => {
+const RunSidebar = () => {
   return (
     <RunContext.Consumer>
       {({ data, requestState }) => {
-        if (requestState === requestStateTypes.READY) {
+        if (requestState === requestStates.READY && data) {
           return (
             <Fragment>
               <KeyValues
@@ -62,10 +62,14 @@ const RunSidebar = props => {
               <KeyValues
                 raw={get(data, "env", [])}
                 label="Environment Variables"
-                items={get(data, "env", []).reduce((acc, env) => {
-                  acc[env.name] = <Pre>{env.value}</Pre>
-                  return acc
-                }, {})}
+                items={
+                  data &&
+                  data.env &&
+                  data.env.reduce((acc: any, env: IFlotillaEnv): any => {
+                    acc[env.name] = <Pre>{env.value}</Pre>
+                    return acc
+                  }, {})
+                }
               />
             </Fragment>
           )

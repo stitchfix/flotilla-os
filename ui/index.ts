@@ -1,4 +1,5 @@
 import { ReactNode } from "react"
+import { LocationDescriptor } from "history"
 
 export interface IFlotillaUITaskContext {
   data: IFlotillaTaskDefinition | null
@@ -97,9 +98,14 @@ export interface IFlotillaRun {
   started_at?: string
 }
 
-export interface IFlotillaLogChunk {
+export interface IFlotillaUILogChunk {
   chunk: string
   lastSeen: string
+}
+
+export interface IFlotillaAPILogsResponse {
+  log: string
+  last_seen: string
 }
 
 export interface IReactSelectOption {
@@ -115,7 +121,7 @@ export interface IFlotillaUIBreadcrumb {
 export interface IFlotillaUINavigationLink {
   isLink: boolean
   text: string
-  href?: string
+  href?: string | LocationDescriptor
   buttonProps?: Partial<IFlotillaUIButtonProps>
 }
 
@@ -176,4 +182,12 @@ export interface IPopupContext {
 export interface IModalContext {
   renderModal: (modal: React.ReactNode) => void
   unrenderModal: () => void
+}
+
+export interface IFlotillaRunContext {
+  data: IFlotillaRun | null
+  inFlight: boolean
+  error: any
+  requestState: requestStates
+  runID: string
 }

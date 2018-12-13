@@ -1,22 +1,40 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { Switch, Route } from "react-router-dom"
 import { get, omit, isEqual } from "lodash"
-import * as requestStateTypes from "../../helpers/requestStateTypes"
 import api from "../../api"
 import config from "../../config"
 import RunContext from "./RunContext"
 import RunView from "./RunView"
-import runStatusTypes from "../../helpers/runStatusTypes"
 import PopupContext from "../Popup/PopupContext"
-import intentTypes from "../../helpers/intentTypes"
+import {
+  IFlotillaRun,
+  requestStates,
+  ecsRunStatuses,
+  intents,
+  IPopupProps,
+  IFlotillaRunContext,
+} from "../../.."
 
-class Run extends Component {
+interface IRunProps {
+  renderPopup: (p: IPopupProps) => void
+  rootPath: string
+  runID: string
+}
+
+interface IRunState {
+  inFlight: boolean
+  error: any
+  data: IFlotillaRun | null
+  requestState: requestStates
+}
+
+class Run extends React.PureComponent<IRunProps, IRunState> {
+  private requestInterval: number | undefined
   state = {
     inFlight: false,
     error: false,
-    data: {},
-    requestState: requestStateTypes.NOT_READY,
+    data: null,
+    requestState: requestStates.NOT_READY,
   }
 
   componentDidMount() {
@@ -24,17 +42,17 @@ class Run extends Component {
 
     this.requestInterval = window.setInterval(() => {
       this.requestData()
-    }, config.RUN_REQUEST_INTERVAL_MS)
+    }, +config.RUN_REQUEST_INTERVAL_MS)
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps: IRunProps, prevState: IRunState) {
     if (!isEqual(prevProps.runID, this.props.runID)) {
       this.requestData()
     }
 
     if (
-      get(prevState, ["data", "status"]) !== runStatusTypes.stopped &&
-      get(this.state, ["data", "status"]) === runStatusTypes.stopped
+      get(prevState, ["data", "status"]) !== ecsRunStatuses.STOPPED &&
+      get(this.state, ["data", "status"]) === ecsRunStatuses.STOPPED
     ) {
       this.clearInterval()
     }
@@ -44,11 +62,11 @@ class Run extends Component {
     this.clearInterval()
   }
 
-  clearInterval = () => {
+  clearInterval = (): void => {
     window.clearInterval(this.requestInterval)
   }
 
-  requestData = () => {
+  requestData = (): void => {
     // If the previous request is still in flight, return.
     if (this.state.inFlight === true) {
       return
@@ -63,7 +81,7 @@ class Run extends Component {
           inFlight: false,
           data,
           error: false,
-          requestState: requestStateTypes.READY,
+          requestState: requestStates.READY,
         })
       })
       .catch(error => {
@@ -72,7 +90,7 @@ class Run extends Component {
 
         this.props.renderPopup({
           body: e.data,
-          intent: intentTypes.error,
+          intent: intents.ERROR,
           shouldAutohide: false,
           title: `Error (${e.status})`,
         })
@@ -80,12 +98,12 @@ class Run extends Component {
         this.setState({
           inFlight: false,
           error,
-          requestState: requestStateTypes.ERROR,
+          requestState: requestStates.ERROR,
         })
       })
   }
 
-  getCtx() {
+  getCtx = (): IFlotillaRunContext => {
     const { runID } = this.props
     return {
       ...this.state,
@@ -106,21 +124,18 @@ class Run extends Component {
   }
 }
 
-Run.propTypes = {
-  renderPopup: PropTypes.func.isRequired,
-  rootPath: PropTypes.string.isRequired,
-  runID: PropTypes.string.isRequired,
+export default class WrappedRun extends React.PureComponent<{}> {
+  render() {
+    return (
+      <PopupContext.Consumer>
+        {ctx => (
+          <Run
+            runID={get(this.props, ["match", "params", "runID"], "")}
+            rootPath={get(this.props, ["match", "url"], "")}
+            renderPopup={ctx.renderPopup}
+          />
+        )}
+      </PopupContext.Consumer>
+    )
+  }
 }
-
-export default props => (
-  <PopupContext.Consumer>
-    {ctx => (
-      <Run
-        {...omit(props, ["history", "location", "match", "staticContext"])}
-        runID={get(props, ["match", "params", "runID"], "")}
-        rootPath={get(props, ["match", "url"], "")}
-        renderPopup={ctx.renderPopup}
-      />
-    )}
-  </PopupContext.Consumer>
-)

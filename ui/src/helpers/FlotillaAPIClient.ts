@@ -159,7 +159,7 @@ class FlotillaAPIClient {
   }
 
   /** Gets logs of a specific run. */
-  getRunLogs = ({ runID, lastSeen }: { runID: string; lastSeen: string }) => {
+  getRunLogs = ({ runID, lastSeen }: { runID: string; lastSeen?: string }) => {
     return this.request({
       method: "get",
       path: `/v1/${runID}/logs`,

@@ -1,28 +1,27 @@
-import React, { PureComponent } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import Ansi from "ansi-to-react"
 import { get } from "lodash"
-import Pre from "../styled/Pre"
+import { Pre } from "../styled/Monospace"
 import Loader from "../styled/Loader"
-import runStatusTypes from "../../helpers/runStatusTypes"
 import RunContext from "../Run/RunContext"
-import intentTypes from "../../helpers/intentTypes"
+import { ecsRunStatuses, intents } from "../../.."
+import { ListChildComponentProps } from "react-window"
 
 /**
  * Renders a line of logs. Will also render a spinner as the last child if
  * the run is still active.
  */
-class LogRow extends PureComponent {
+class LogRow extends React.PureComponent<ListChildComponentProps> {
   render() {
-    const { data, index, style } = this.props
+    const { index, style } = this.props
 
     return (
       <RunContext.Consumer>
         {ctx => {
           const isStopped =
-            get(ctx, ["data", "status"]) === runStatusTypes.stopped
+            get(ctx, ["data", "status"]) === ecsRunStatuses.STOPPED
 
-          if (!isStopped && index === data.length - 1) {
+          if (!isStopped && index === get(this.props, "data", []).length - 1) {
             return (
               <span
                 style={{
@@ -34,26 +33,20 @@ class LogRow extends PureComponent {
                   width: "100%",
                 }}
               >
-                <Loader intent={intentTypes.primary} />
+                <Loader intent={intents.PRIMARY} />
               </span>
             )
           }
 
           return (
             <Pre style={style}>
-              <Ansi>{data[index]}</Ansi>
+              <Ansi>{get(this.props, "data", [])[index]}</Ansi>
             </Pre>
           )
         }}
       </RunContext.Consumer>
     )
   }
-}
-
-LogRow.propTypes = {
-  data: PropTypes.array,
-  index: PropTypes.number,
-  style: PropTypes.object,
 }
 
 export default LogRow

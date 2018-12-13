@@ -1,16 +1,35 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { has, isEmpty } from "lodash"
-import runStatusTypes from "../../helpers/runStatusTypes"
 import api from "../../api"
-import LogChunk from "./LogChunk"
 import LogProcessor from "./LogProcessor"
 import config from "../../config"
+import {
+  IFlotillaUILogChunk,
+  ecsRunStatuses,
+  IFlotillaAPILogsResponse,
+} from "../../.."
 
-class LogRequester extends Component {
+interface ILogRequesterProps {
+  status: ecsRunStatuses | undefined
+  runID: string
+}
+
+interface ILogRequesterState {
+  logs: IFlotillaUILogChunk[]
+  lastSeen: string | undefined
+  inFlight: boolean
+  error: any
+}
+
+class LogRequester extends React.PureComponent<
+  ILogRequesterProps,
+  ILogRequesterState
+> {
+  private requestInterval: number | undefined
+
   state = {
     logs: [],
-    lastSeen: null,
+    lastSeen: undefined,
     inFlight: false,
     error: false,
   }
@@ -18,15 +37,15 @@ class LogRequester extends Component {
   componentDidMount() {
     this.requestLogs()
 
-    if (this.props.status !== runStatusTypes.stopped) {
+    if (this.props.status !== ecsRunStatuses.STOPPED) {
       this.setRequestInterval()
     }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: ILogRequesterProps) {
     if (
-      prevProps.status !== runStatusTypes.stopped &&
-      this.props.status === runStatusTypes.stopped
+      prevProps.status !== ecsRunStatuses.STOPPED &&
+      this.props.status === ecsRunStatuses.STOPPED
     ) {
       this.clearRequestInterval()
     }
@@ -36,10 +55,10 @@ class LogRequester extends Component {
     this.clearRequestInterval()
   }
 
-  setRequestInterval = () => {
+  setRequestInterval = (): void => {
     this.requestInterval = window.setInterval(
       this.requestLogs,
-      config.RUN_LOGS_REQUEST_INTERVAL_MS
+      +config.RUN_LOGS_REQUEST_INTERVAL_MS
     )
   }
 
@@ -69,8 +88,9 @@ class LogRequester extends Component {
    * "exhaust" the logs endpoint - meaning that it will continuously hit the
    * logs endpoint until all remaining logs have been fetched.
    */
-  handleResponse = async response => {
+  handleResponse = async (response: IFlotillaAPILogsResponse) => {
     this.setState({ inFlight: false, error: false })
+
     // Return if there are no logs.
     if (!has(response, "log") || isEmpty(response.log)) {
       return
@@ -94,7 +114,9 @@ class LogRequester extends Component {
    * Returns a Promise that resolves with whether logs should be appended to
    * the component's state.
    */
-  shouldAppendLogsToState = response =>
+  shouldAppendLogsToState = (
+    response: IFlotillaAPILogsResponse
+  ): Promise<boolean> =>
     new Promise((resolve, reject) => {
       const { lastSeen } = this.state
 
@@ -111,15 +133,17 @@ class LogRequester extends Component {
    * previous state's lastSeen is then used to determine whether or not there
    * are additional logs still waiting to be fetched.
    */
-  appendLogsToState = response =>
+  appendLogsToState = (
+    response: IFlotillaAPILogsResponse
+  ): Promise<string | undefined> =>
     new Promise((resolve, reject) => {
       // Create a new LogChunk object.
-      const chunk = new LogChunk({
+      const chunk: IFlotillaUILogChunk = {
         chunk: response.log,
         lastSeen: response.last_seen,
-      })
+      }
 
-      let prevLastSeen
+      let prevLastSeen: string | undefined
 
       // Append it to state.logs
       this.setState(
@@ -136,7 +160,13 @@ class LogRequester extends Component {
       )
     })
 
-  hasAdditionalLogs = ({ prevLastSeen, response }) => {
+  hasAdditionalLogs = ({
+    prevLastSeen,
+    response,
+  }: {
+    prevLastSeen: string | undefined
+    response: IFlotillaAPILogsResponse
+  }): boolean => {
     if (!prevLastSeen || response.last_seen !== prevLastSeen) {
       if (has(response, "last_seen")) {
         return true
@@ -146,16 +176,11 @@ class LogRequester extends Component {
     return false
   }
 
-  hasRunFinished = () => this.props.status === runStatusTypes.stopped
+  hasRunFinished = (): boolean => this.props.status === ecsRunStatuses.STOPPED
 
   render() {
-    return <LogProcessor logs={this.state.logs} status={this.props.status} />
+    return <LogProcessor logs={this.state.logs} />
   }
-}
-
-LogRequester.propTypes = {
-  runID: PropTypes.string,
-  status: PropTypes.oneOf(Object.values(runStatusTypes)),
 }
 
 export default LogRequester

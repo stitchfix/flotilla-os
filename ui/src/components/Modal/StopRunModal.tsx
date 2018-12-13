@@ -20,4 +20,4 @@ const StopRunModal: React.SFC<IStopRunModalProps> = props => (
 )
 
 StopRunModal.displayName = "StopRunModal"
-export default withRouter(StopRunModal)
+export default withRouter(StopRunModal) as React.ComponentType<any>

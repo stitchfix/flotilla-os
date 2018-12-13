@@ -1,48 +1,76 @@
-import React, { Component, createRef, Fragment } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { FixedSizeList as List } from "react-window"
 import { get } from "lodash"
 import LogRow from "./LogRow"
 import { RUN_BAR_HEIGHT_PX } from "../../helpers/styles"
 import RunBar from "../Run/RunBar"
 import RunContext from "../Run/RunContext"
-import runStatusTypes from "../../helpers/runStatusTypes"
+import { ecsRunStatuses } from "../../.."
 
-// Create a ref for the FixedSizeList component.
-const LIST_REF = createRef()
+interface ILogRendererProps {
+  len: number
+  width: number
+  height: number
+  logs: string[]
+}
 
-/**
- * Renders the processed logs using react-window for performance.
- */
-class LogRenderer extends Component {
+interface ILogRendererState {
+  shouldAutoscroll: boolean
+}
+
+/** Renders the processed logs using react-window for performance. */
+class LogRenderer extends React.PureComponent<
+  ILogRendererProps,
+  ILogRendererState
+> {
+  static defaultProps: Partial<ILogRendererProps> = {
+    height: 0,
+    len: 0,
+    logs: [],
+    width: 0,
+  }
+  private LIST_REF = React.createRef<any>()
   state = {
     shouldAutoscroll: true,
   }
 
   componentDidMount() {
+    const listRef = this.LIST_REF.current
+
     // Scroll to the most recent log.
-    LIST_REF.current.scrollToItem(this.props.len)
+    if (listRef) {
+      listRef.scrollToItem(this.props.len)
+    }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: ILogRendererProps) {
     if (
       this.state.shouldAutoscroll === true &&
       prevProps.len !== this.props.len
     ) {
       // Scroll to the most recent log if autoscroll is enabled.
-      LIST_REF.current.scrollToItem(this.props.len)
+      const listRef = this.LIST_REF.current
+      if (listRef) {
+        listRef.scrollToItem(this.props.len)
+      }
     }
   }
 
-  toggleShouldAutoscroll = () => {
+  toggleShouldAutoscroll = (): void => {
     this.setState(prev => ({ shouldAutoscroll: !prev.shouldAutoscroll }))
   }
 
-  handleScrollToTopClick = () => {
-    LIST_REF.current.scrollToItem(0)
+  handleScrollToTopClick = (): void => {
+    const listRef = this.LIST_REF.current
+    if (listRef) {
+      listRef.scrollToItem(0)
+    }
   }
-  handleScrollToBottomClick = () => {
-    LIST_REF.current.scrollToItem(this.props.len)
+  handleScrollToBottomClick = (): void => {
+    const listRef = this.LIST_REF.current
+    if (listRef) {
+      listRef.scrollToItem(this.props.len)
+    }
   }
 
   render() {
@@ -52,9 +80,9 @@ class LogRenderer extends Component {
       <RunContext.Consumer>
         {({ data }) => {
           const _len =
-            get(data, "status") === runStatusTypes.stopped ? len : len + 1
+            get(data, "status") === ecsRunStatuses.STOPPED ? len : len + 1
           return (
-            <Fragment>
+            <React.Fragment>
               <RunBar
                 shouldAutoscroll={this.state.shouldAutoscroll}
                 toggleShouldAutoscroll={this.toggleShouldAutoscroll}
@@ -62,7 +90,7 @@ class LogRenderer extends Component {
                 onScrollToBottomClick={this.handleScrollToBottomClick}
               />
               <List
-                ref={LIST_REF}
+                ref={this.LIST_REF}
                 height={height - RUN_BAR_HEIGHT_PX}
                 itemCount={_len}
                 itemData={logs}
@@ -73,26 +101,12 @@ class LogRenderer extends Component {
               >
                 {LogRow}
               </List>
-            </Fragment>
+            </React.Fragment>
           )
         }}
       </RunContext.Consumer>
     )
   }
-}
-
-LogRenderer.propTypes = {
-  height: PropTypes.number,
-  len: PropTypes.number.isRequired,
-  logs: PropTypes.arrayOf(PropTypes.string).isRequired,
-  width: PropTypes.number,
-}
-
-LogRenderer.defaultProps = {
-  height: 0,
-  len: 0,
-  logs: [],
-  width: 0,
 }
 
 export default LogRenderer
