@@ -7,6 +7,8 @@ import {
   IFlotillaCreateTaskPayload,
   IFlotillaRunTaskPayload,
   IFlotillaEditTaskPayload,
+  IFlotillaEnv,
+  IFlotillaRun,
 } from "../../index"
 import { stringToSelectOpt } from "./reactSelectHelpers"
 
@@ -114,16 +116,21 @@ class FlotillaAPIClient {
     definitionID: string
     values: IFlotillaRunTaskPayload
   }): Promise<any> => {
-    // static transformRunTags = (arr: IFlotillaEnv[]): { [key: string]: any } =>
-    // arr.reduce((acc: { [key: string]: any }, val: IFlotillaEnv) => {
-    //   acc[val.name] = val.value
-    //   return acc
-    // }, {})
-    debugger
+    let _values: any = values
+
+    if (values.run_tags) {
+      _values = {
+        ...values,
+        run_tags: FlotillaAPIClient.transformUIRunTagsToAPIRunTags(
+          values.run_tags
+        ),
+      }
+    }
+
     return this.request({
       method: "put",
       path: `/v4/task/${definitionID}/execute`,
-      payload: values,
+      payload: _values,
     })
   }
 
@@ -249,11 +256,18 @@ class FlotillaAPIClient {
         status: error.response.status,
         headers: error.response.headers,
       }
-    } else if (!!error.request) {
-      return { data: error.request }
     }
 
     return { data: error.message }
+  }
+
+  static transformUIRunTagsToAPIRunTags = (
+    arr: IFlotillaEnv[]
+  ): { [key: string]: any } => {
+    return arr.reduce((acc: any, val) => {
+      acc[val.name] = val.value
+      return acc
+    }, {})
   }
 }
 
