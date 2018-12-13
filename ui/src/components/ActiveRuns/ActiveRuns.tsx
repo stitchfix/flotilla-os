@@ -120,7 +120,7 @@ class ActiveRuns extends React.PureComponent<{
           }}
           emptyTableTitle="No tasks are currently running."
           isView
-          getRequestArgs={query => query}
+          getRequestArgs={query => ({ query })}
           limit={50}
         />
       </View>

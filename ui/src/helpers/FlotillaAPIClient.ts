@@ -31,7 +31,7 @@ class FlotillaAPIClient {
   }
 
   /** Requests list of task definitions. */
-  getTasks = (opts: { query?: object | undefined }): Promise<any> => {
+  getTasks = (opts: { query: object }): Promise<any> => {
     return this.request({
       method: "get",
       path: "/v1/task",
@@ -122,11 +122,11 @@ class FlotillaAPIClient {
   }
 
   /** Requests list of currently running tasks. */
-  getActiveRuns = (query: object): Promise<any> => {
+  getActiveRuns = (opts: { query: object }): Promise<any> => {
     return this.request({
       method: "get",
       path: "/v1/history",
-      query,
+      query: opts.query,
     })
   }
 
