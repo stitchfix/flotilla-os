@@ -28,7 +28,7 @@ interface IQueryParamsKVFieldProps extends IUnwrappedQueryParamsKVFieldProps {
 
 type ParsedKVField = any
 
-class UnwrappedQueryParamsKVField extends React.PureComponent<
+class UnwrappedQueryParamsKVField extends React.Component<
   IQueryParamsKVFieldProps
 > {
   static defaultProps: Partial<IQueryParamsKVFieldProps> = {
@@ -116,7 +116,6 @@ class UnwrappedQueryParamsKVField extends React.PureComponent<
   /** Calls props.setQueryParams to set new values. */
   setValues = (values: ParsedKVField[]): void => {
     const { setQueryParams, name } = this.props
-
     setQueryParams({ [name]: values.map(this.stringifyValue) }, false)
   }
 
@@ -129,6 +128,7 @@ class UnwrappedQueryParamsKVField extends React.PureComponent<
 
   render() {
     const {
+      name,
       label,
       keyField,
       isKeyRequired,
@@ -141,7 +141,7 @@ class UnwrappedQueryParamsKVField extends React.PureComponent<
       <KVFieldContainer label={label} description={description}>
         {this.getValues().map((v, i) => {
           return (
-            <NestedKeyValueRow>
+            <NestedKeyValueRow key={i}>
               <FieldText
                 name={keyField}
                 isRequired={isKeyRequired}
@@ -172,13 +172,11 @@ class UnwrappedQueryParamsKVField extends React.PureComponent<
         })}
         <KVFieldInput
           addValue={this.handleAddField}
-          {...pick(this.props, [
-            "field",
-            "isKeyRequired",
-            "isValueRequired",
-            "keyField",
-            "valueField",
-          ])}
+          name={name}
+          isKeyRequired={isKeyRequired}
+          isValueRequired={isValueRequired}
+          keyField={keyField}
+          valueField={valueField}
         />
       </KVFieldContainer>
     )

@@ -8,7 +8,7 @@ import Button from "../styled/Button"
 
 interface IKVFieldInputProps {
   addValue: any
-  field: string
+  name: string
   isKeyRequired: boolean
   isValueRequired: boolean
   keyField: string
@@ -74,10 +74,10 @@ class KVFieldInput extends React.PureComponent<
   }
 
   addField = (): void => {
-    const { addValue, field, keyField, valueField } = this.props
+    const { addValue, name, keyField, valueField } = this.props
     const { keyValue, valueValue } = this.state
 
-    addValue(field, { [keyField]: keyValue, [valueField]: valueValue })
+    addValue(name, { [keyField]: keyValue, [valueField]: valueValue })
     this.resetState()
   }
 

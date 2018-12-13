@@ -4,9 +4,12 @@ import { QueryParamsFieldSelect } from "../Field/FieldSelect"
 import QueryParamsKVField from "../Field/QueryParamsKVField"
 import { asyncDataTableFilters, IAsyncDataTableFilterProps } from "../../.."
 
-class AsyncDataTableFilter extends React.PureComponent<
-  IAsyncDataTableFilterProps
-> {
+/**
+ * Note: this is not a PureComponent as it's children (notably, the
+ * QueryParamsKVField component) will not update if it only makes a shallow
+ * props comparison.
+ */
+class AsyncDataTableFilter extends React.Component<IAsyncDataTableFilterProps> {
   render() {
     const { description, displayName, name, type, filterProps } = this.props
 

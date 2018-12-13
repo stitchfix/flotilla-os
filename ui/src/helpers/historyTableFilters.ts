@@ -51,6 +51,10 @@ const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
     displayName: "Environment Variables",
     type: asyncDataTableFilters.KV,
     description: "Search environemnt variables",
+    filterProps: {
+      keyField: "name",
+      valueField: "value",
+    },
   },
   started_at_since: {
     name: "started_at_since",
