@@ -12,7 +12,7 @@ import getRunDuration from "../../helpers/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
 import historyTableFilters from "../../helpers/historyTableFilters"
-import { ecsRunStatuses, IFlotillaRun, intents } from "../../.."
+import { flotillaRunStatuses, IFlotillaRun, flotillaUIIntents } from "../../.."
 
 interface IUnwrappedTaskHistoryTableProps {
   definitionID: string
@@ -23,10 +23,10 @@ interface ITaskHistoryTableProps extends IUnwrappedTaskHistoryTableProps {
 }
 
 class TaskHistoryTable extends React.PureComponent<ITaskHistoryTableProps> {
-  static isTaskActive = (status: ecsRunStatuses): boolean =>
-    status === ecsRunStatuses.PENDING ||
-    status === ecsRunStatuses.QUEUED ||
-    status === ecsRunStatuses.RUNNING
+  static isTaskActive = (status: flotillaRunStatuses): boolean =>
+    status === flotillaRunStatuses.PENDING ||
+    status === flotillaRunStatuses.QUEUED ||
+    status === flotillaRunStatuses.RUNNING
 
   handleStopButtonClick = (runData: IFlotillaRun): void => {
     this.props.renderModal(
@@ -128,7 +128,7 @@ class TaskHistoryTable extends React.PureComponent<ITaskHistoryTableProps> {
         emptyTableTitle="No items were found."
         emptyTableBody={
           <ButtonLink
-            intent={intents.PRIMARY}
+            intent={flotillaUIIntents.PRIMARY}
             to={`/tasks/${definitionID}/run`}
           >
             Run Task

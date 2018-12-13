@@ -5,12 +5,12 @@ import LogProcessor from "./LogProcessor"
 import config from "../../config"
 import {
   IFlotillaUILogChunk,
-  ecsRunStatuses,
+  flotillaRunStatuses,
   IFlotillaAPILogsResponse,
 } from "../../.."
 
 interface ILogRequesterProps {
-  status: ecsRunStatuses | undefined
+  status: flotillaRunStatuses | undefined
   runID: string
 }
 
@@ -37,15 +37,15 @@ class LogRequester extends React.PureComponent<
   componentDidMount() {
     this.requestLogs()
 
-    if (this.props.status !== ecsRunStatuses.STOPPED) {
+    if (this.props.status !== flotillaRunStatuses.STOPPED) {
       this.setRequestInterval()
     }
   }
 
   componentDidUpdate(prevProps: ILogRequesterProps) {
     if (
-      prevProps.status !== ecsRunStatuses.STOPPED &&
-      this.props.status === ecsRunStatuses.STOPPED
+      prevProps.status !== flotillaRunStatuses.STOPPED &&
+      this.props.status === flotillaRunStatuses.STOPPED
     ) {
       this.clearRequestInterval()
     }
@@ -176,7 +176,8 @@ class LogRequester extends React.PureComponent<
     return false
   }
 
-  hasRunFinished = (): boolean => this.props.status === ecsRunStatuses.STOPPED
+  hasRunFinished = (): boolean =>
+    this.props.status === flotillaRunStatuses.STOPPED
 
   render() {
     return <LogProcessor logs={this.state.logs} />

@@ -1,7 +1,7 @@
 import { createContext } from "react"
-import { IModalContext } from "../../.."
+import { IFlotillaUIModalContext } from "../../.."
 
-const ModalContext = createContext<IModalContext>({
+const ModalContext = createContext<IFlotillaUIModalContext>({
   renderModal: (modal: React.ReactNode) => {},
   unrenderModal: () => {},
 })

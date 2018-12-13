@@ -16,9 +16,9 @@ import {
   IFlotillaEnv,
   IFlotillaRunTaskPayload,
   IFlotillaUITaskContext,
-  requestStates,
+  flotillaUIRequestStates,
   IFlotillaUINavigationLink,
-  intents,
+  flotillaUIIntents,
   IFlotillaUIBreadcrumb,
 } from "../../.."
 
@@ -146,7 +146,7 @@ class RunForm extends React.PureComponent<IRunFormProps> {
         text: "Run",
         buttonProps: {
           type: "submit",
-          intent: intents.PRIMARY,
+          intent: flotillaUIIntents.PRIMARY,
           isDisabled: shouldDisableSubmitButton,
         },
       },
@@ -169,7 +169,7 @@ class RunForm extends React.PureComponent<IRunFormProps> {
   render() {
     const { requestState, definitionID, data, goBack } = this.props
 
-    if (requestState === requestStates.NOT_READY) {
+    if (requestState === flotillaUIRequestStates.NOT_READY) {
       return <Loader />
     }
 

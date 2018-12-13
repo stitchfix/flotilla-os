@@ -1,11 +1,11 @@
 import * as React from "react"
 import PopupContext from "./PopupContext"
 import Popup from "./Popup"
-import { IPopupProps } from "../../.."
+import { IFlotillaUIPopupProps } from "../../.."
 
 interface IPopupContainerState {
   isVisible: boolean
-  popupProps: IPopupProps | undefined
+  popupProps: IFlotillaUIPopupProps | undefined
 }
 
 class PopupContainer extends React.Component<{}, IPopupContainerState> {
@@ -14,7 +14,7 @@ class PopupContainer extends React.Component<{}, IPopupContainerState> {
     popupProps: undefined,
   }
 
-  renderPopup = (popupProps: IPopupProps) => {
+  renderPopup = (popupProps: IFlotillaUIPopupProps) => {
     this.setState({ isVisible: true, popupProps })
   }
 

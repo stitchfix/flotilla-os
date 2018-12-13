@@ -1,7 +1,7 @@
 import * as React from "react"
 import { mount } from "enzyme"
 import PopupContainer from "../PopupContainer"
-import { IPopupProps } from "../../../.."
+import { IFlotillaUIPopupProps } from "../../../.."
 
 describe("PopupContainer", () => {
   it("can render and unrender popups", () => {
@@ -16,7 +16,7 @@ describe("PopupContainer", () => {
 
     // Access instance methods per: https://github.com/airbnb/enzyme/issues/208#issuecomment-344401247
     const instance = wrapper.instance() as PopupContainer
-    const popupProps: IPopupProps = {
+    const popupProps: IFlotillaUIPopupProps = {
       shouldAutohide: true,
       unrenderPopup: () => {},
       visibleDuration: 5000,

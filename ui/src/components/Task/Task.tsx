@@ -3,7 +3,7 @@ import { get, isEqual, isEmpty } from "lodash"
 import api from "../../api"
 import TaskContext from "./TaskContext"
 import {
-  requestStates,
+  flotillaUIRequestStates,
   IFlotillaTaskDefinition,
   IFlotillaAPIError,
   IFlotillaUITaskContext,
@@ -20,7 +20,7 @@ interface ITaskState {
   inFlight: boolean
   error: any
   data: IFlotillaTaskDefinition | null
-  requestState: requestStates
+  requestState: flotillaUIRequestStates
 }
 
 class Task extends React.PureComponent<ITaskProps, ITaskState> {
@@ -28,7 +28,7 @@ class Task extends React.PureComponent<ITaskProps, ITaskState> {
     inFlight: false,
     error: false,
     data: null,
-    requestState: requestStates.NOT_READY,
+    requestState: flotillaUIRequestStates.NOT_READY,
   }
 
   componentDidMount() {
@@ -65,7 +65,7 @@ class Task extends React.PureComponent<ITaskProps, ITaskState> {
       inFlight: false,
       data,
       error: false,
-      requestState: requestStates.READY,
+      requestState: flotillaUIRequestStates.READY,
     })
   }
 
@@ -73,7 +73,7 @@ class Task extends React.PureComponent<ITaskProps, ITaskState> {
     this.setState({
       inFlight: false,
       error,
-      requestState: requestStates.ERROR,
+      requestState: flotillaUIRequestStates.ERROR,
     })
   }
 

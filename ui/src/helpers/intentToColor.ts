@@ -1,17 +1,17 @@
 import colors from "./colors"
-import { intents } from "../.."
+import { flotillaUIIntents } from "../.."
 
-const intentToColor = (intent?: intents): string => {
+const intentToColor = (intent?: flotillaUIIntents): string => {
   switch (intent) {
-    case intents.PRIMARY:
+    case flotillaUIIntents.PRIMARY:
       return colors.blue[0]
-    case intents.ERROR:
+    case flotillaUIIntents.ERROR:
       return colors.red[0]
-    case intents.WARNING:
+    case flotillaUIIntents.WARNING:
       return colors.yellow[0]
-    case intents.SUCCESS:
+    case flotillaUIIntents.SUCCESS:
       return colors.green[0]
-    case intents.SUBTLE:
+    case flotillaUIIntents.SUBTLE:
       return colors.light_gray[2]
     default:
       return colors.black[4]

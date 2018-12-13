@@ -12,7 +12,11 @@ import {
 } from "../styled/DetailView"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
-import { ecsRunStatuses, intents, IFlotillaUINavigationLink } from "../../.."
+import {
+  flotillaRunStatuses,
+  flotillaUIIntents,
+  IFlotillaUINavigationLink,
+} from "../../.."
 
 interface IUnwrappedRunViewProps {
   renderModal: (m: React.ReactNode) => void
@@ -41,13 +45,13 @@ class UnwrappedRunView extends React.PureComponent<IUnwrappedRunViewProps> {
 
           if (
             has(data, "status") &&
-            get(data, "status") !== ecsRunStatuses.STOPPED
+            get(data, "status") !== flotillaRunStatuses.STOPPED
           ) {
             actions.push({
               isLink: false,
               text: "Stop Run",
               buttonProps: {
-                intent: intents.ERROR,
+                intent: flotillaUIIntents.ERROR,
                 onClick: (evt: React.SyntheticEvent) => {
                   renderModal(
                     <StopRunModal

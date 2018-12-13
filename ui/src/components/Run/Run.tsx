@@ -8,15 +8,15 @@ import RunView from "./RunView"
 import PopupContext from "../Popup/PopupContext"
 import {
   IFlotillaRun,
-  requestStates,
-  ecsRunStatuses,
-  intents,
-  IPopupProps,
-  IFlotillaRunContext,
+  flotillaUIRequestStates,
+  flotillaRunStatuses,
+  flotillaUIIntents,
+  IFlotillaUIPopupProps,
+  IFlotillaUIRunContext,
 } from "../../.."
 
 interface IRunProps {
-  renderPopup: (p: IPopupProps) => void
+  renderPopup: (p: IFlotillaUIPopupProps) => void
   rootPath: string
   runID: string
 }
@@ -25,7 +25,7 @@ interface IRunState {
   inFlight: boolean
   error: any
   data: IFlotillaRun | null
-  requestState: requestStates
+  requestState: flotillaUIRequestStates
 }
 
 class Run extends React.PureComponent<IRunProps, IRunState> {
@@ -34,7 +34,7 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
     inFlight: false,
     error: false,
     data: null,
-    requestState: requestStates.NOT_READY,
+    requestState: flotillaUIRequestStates.NOT_READY,
   }
 
   componentDidMount() {
@@ -51,8 +51,8 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
     }
 
     if (
-      get(prevState, ["data", "status"]) !== ecsRunStatuses.STOPPED &&
-      get(this.state, ["data", "status"]) === ecsRunStatuses.STOPPED
+      get(prevState, ["data", "status"]) !== flotillaRunStatuses.STOPPED &&
+      get(this.state, ["data", "status"]) === flotillaRunStatuses.STOPPED
     ) {
       this.clearInterval()
     }
@@ -81,7 +81,7 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
           inFlight: false,
           data,
           error: false,
-          requestState: requestStates.READY,
+          requestState: flotillaUIRequestStates.READY,
         })
       })
       .catch(error => {
@@ -90,7 +90,7 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
 
         this.props.renderPopup({
           body: e.data,
-          intent: intents.ERROR,
+          intent: flotillaUIIntents.ERROR,
           shouldAutohide: false,
           title: `Error (${e.status})`,
         })
@@ -98,12 +98,12 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
         this.setState({
           inFlight: false,
           error,
-          requestState: requestStates.ERROR,
+          requestState: flotillaUIRequestStates.ERROR,
         })
       })
   }
 
-  getCtx = (): IFlotillaRunContext => {
+  getCtx = (): IFlotillaUIRunContext => {
     const { runID } = this.props
     return {
       ...this.state,

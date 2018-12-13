@@ -3,13 +3,14 @@ import styled, { css } from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
 import intentToColor from "../../helpers/intentToColor"
-import { intents, IFlotillaUIButtonProps } from "../../.."
+import { flotillaUIIntents, IFlotillaUIButtonProps } from "../../.."
 
 export const buttonStyles = css`
-  background: ${({ intent }: { intent?: intents }) => intentToColor(intent)};
+  background: ${({ intent }: { intent?: flotillaUIIntents }) =>
+    intentToColor(intent)};
   border-radius: 2px;
   border: 1px solid
-    ${({ intent }: { intent?: intents }) => intentToColor(intent)};
+    ${({ intent }: { intent?: flotillaUIIntents }) => intentToColor(intent)};
   box-shadow: none;
   color: ${colors.light_gray[3]};
   cursor: pointer;
@@ -25,7 +26,8 @@ export const buttonStyles = css`
   &:hover {
     background: ${colors.light_gray[3]};
     border-color: ${colors.light_gray[3]};
-    color: ${({ intent }: { intent?: intents }) => intentToColor(intent)};
+    color: ${({ intent }: { intent?: flotillaUIIntents }) =>
+      intentToColor(intent)};
   }
 
   &:disabled {

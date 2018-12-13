@@ -7,7 +7,7 @@ import Button from "../styled/Button"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import KVFieldInput from "./KVFieldInput"
 import KVFieldContainer from "./KVFieldContainer"
-import { intents } from "../../.."
+import { flotillaUIIntents } from "../../.."
 
 interface IFormikKVFieldProps {
   description?: string
@@ -69,7 +69,7 @@ class FormikKVField extends React.PureComponent<IFormikKVFieldProps> {
                       component={Input}
                     />
                     <Button
-                      intent={intents.ERROR}
+                      intent={flotillaUIIntents.ERROR}
                       onClick={() => {
                         arrayHelpers.remove(i)
                       }}

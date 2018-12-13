@@ -5,7 +5,7 @@ import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import { IPopupProps, intents } from "../../.."
+import { IFlotillaUIPopupProps, flotillaUIIntents } from "../../.."
 
 interface IConfirmModalProps {
   body?: React.ReactNode
@@ -17,7 +17,7 @@ interface IConfirmModalProps {
 }
 
 interface IUnwrappedConfirmModalProps extends IConfirmModalProps {
-  renderPopup: (popupProps: IPopupProps) => void
+  renderPopup: (popupProps: IFlotillaUIPopupProps) => void
   unrenderModal: () => void
   unrenderPopup: () => void
 }
@@ -61,7 +61,7 @@ export class UnwrappedConfirmModal extends React.PureComponent<
         renderPopup({
           body: "Action was completed successfully.",
           title: "Success!",
-          intent: intents.SUCCESS,
+          intent: flotillaUIIntents.SUCCESS,
         })
         unrenderModal()
         if (onSuccess) onSuccess(res)
@@ -72,7 +72,7 @@ export class UnwrappedConfirmModal extends React.PureComponent<
         renderPopup({
           body: "TODO: put error text here",
           title: "Error!",
-          intent: intents.ERROR,
+          intent: flotillaUIIntents.ERROR,
           shouldAutohide: false,
         })
 
@@ -95,7 +95,7 @@ export class UnwrappedConfirmModal extends React.PureComponent<
               </Button>
               <Button
                 id="confirm"
-                intent={intents.ERROR}
+                intent={flotillaUIIntents.ERROR}
                 onClick={this.handleConfirm}
                 isLoading={inFlight}
               >

@@ -4,7 +4,7 @@ import { get } from "lodash"
 import { Pre } from "../styled/Monospace"
 import Loader from "../styled/Loader"
 import RunContext from "../Run/RunContext"
-import { ecsRunStatuses, intents } from "../../.."
+import { flotillaRunStatuses, flotillaUIIntents } from "../../.."
 import { ListChildComponentProps } from "react-window"
 
 /**
@@ -19,7 +19,7 @@ class LogRow extends React.PureComponent<ListChildComponentProps> {
       <RunContext.Consumer>
         {ctx => {
           const isStopped =
-            get(ctx, ["data", "status"]) === ecsRunStatuses.STOPPED
+            get(ctx, ["data", "status"]) === flotillaRunStatuses.STOPPED
 
           if (!isStopped && index === get(this.props, "data", []).length - 1) {
             return (
@@ -33,7 +33,7 @@ class LogRow extends React.PureComponent<ListChildComponentProps> {
                   width: "100%",
                 }}
               >
-                <Loader intent={intents.PRIMARY} />
+                <Loader intent={flotillaUIIntents.PRIMARY} />
               </span>
             )
           }

@@ -3,7 +3,7 @@ import styled, { keyframes } from "styled-components"
 import colors from "../../helpers/colors"
 import { LOADER_SIZE_PX } from "../../helpers/styles"
 import intentToColor from "../../helpers/intentToColor"
-import { intents } from "../../.."
+import { flotillaUIIntents } from "../../.."
 
 const LOADER_BORDER_WIDTH_PX = LOADER_SIZE_PX / 6
 const LOADER_BORDER = `${LOADER_BORDER_WIDTH_PX}px solid ${colors.black[3]}`
@@ -32,7 +32,7 @@ const LoaderInner = styled.div`
   border-right: ${LOADER_BORDER};
   border-top: ${LOADER_BORDER};
   border-left: ${LOADER_BORDER_WIDTH_PX}px solid
-    ${({ intent }: { intent?: intents }) => intentToColor(intent)};
+    ${({ intent }: { intent?: flotillaUIIntents }) => intentToColor(intent)};
   height: ${LOADER_SIZE_PX}px;
   position: relative;
   text-indent: -9999em;
@@ -47,7 +47,7 @@ const LoaderInner = styled.div`
 `
 
 interface ILoaderProps {
-  intent?: intents
+  intent?: flotillaUIIntents
 }
 
 const Loader: React.SFC<ILoaderProps> = ({ intent }) => (

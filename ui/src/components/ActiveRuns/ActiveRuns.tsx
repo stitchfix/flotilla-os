@@ -13,7 +13,7 @@ import View from "../styled/View"
 import SecondaryText from "../styled/SecondaryText"
 import historyTableFilters from "../../helpers/historyTableFilters"
 import api from "../../api"
-import { IFlotillaRun, ecsRunStatuses } from "../../.."
+import { IFlotillaRun, flotillaRunStatuses } from "../../.."
 
 class ActiveRuns extends React.PureComponent<{
   renderModal: (modal: React.ReactNode) => void
@@ -113,9 +113,9 @@ class ActiveRuns extends React.PureComponent<{
             sort_by: "started_at",
             order: "desc",
             status: [
-              ecsRunStatuses.RUNNING,
-              ecsRunStatuses.PENDING,
-              ecsRunStatuses.QUEUED,
+              flotillaRunStatuses.RUNNING,
+              flotillaRunStatuses.PENDING,
+              flotillaRunStatuses.QUEUED,
             ],
           }}
           emptyTableTitle="No tasks are currently running."

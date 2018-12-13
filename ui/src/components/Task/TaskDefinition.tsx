@@ -12,7 +12,11 @@ import {
   DetailViewSidebar,
 } from "../styled/DetailView"
 import TaskDefinitionSidebar from "./TaskDefinitionSidebar"
-import { requestStates, intents, IFlotillaUINavigationLink } from "../../.."
+import {
+  flotillaUIRequestStates,
+  flotillaUIIntents,
+  IFlotillaUINavigationLink,
+} from "../../.."
 
 class UnwrappedTaskDefinition extends React.PureComponent<{
   renderModal: (modal: React.ReactNode) => void
@@ -32,13 +36,13 @@ class UnwrappedTaskDefinition extends React.PureComponent<{
           let sidebar = null
 
           switch (ctx.requestState) {
-            case requestStates.READY:
+            case flotillaUIRequestStates.READY:
               actions = [
                 {
                   isLink: false,
                   text: "Delete",
                   buttonProps: {
-                    intent: intents.ERROR,
+                    intent: flotillaUIIntents.ERROR,
                     onClick: () => {
                       this.props.renderModal(
                         <DeleteTaskModal definitionID={ctx.definitionID} />
@@ -61,16 +65,16 @@ class UnwrappedTaskDefinition extends React.PureComponent<{
                   text: "Run",
                   href: `/tasks/${ctx.definitionID}/run`,
                   buttonProps: {
-                    intent: intents.PRIMARY,
+                    intent: flotillaUIIntents.PRIMARY,
                   },
                 },
               ]
               sidebar = <TaskDefinitionSidebar data={ctx.data} />
               break
-            case requestStates.ERROR:
+            case flotillaUIRequestStates.ERROR:
               sidebar = "blork"
               break
-            case requestStates.NOT_READY:
+            case flotillaUIRequestStates.NOT_READY:
             default:
               sidebar = "loading"
               break

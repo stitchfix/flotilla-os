@@ -2,7 +2,7 @@ import * as React from "react"
 import { mount, EnzymeAdapter, ReactWrapper } from "enzyme"
 import { Formik, FormikProps, Field } from "formik"
 import FormikKVField from "../FormikKVField"
-import { intents } from "../../../.."
+import { flotillaUIIntents } from "../../../.."
 
 describe("FormikKVField", () => {
   let wrapper: ReactWrapper<any>
@@ -51,7 +51,7 @@ describe("FormikKVField", () => {
       expect(fields.at(1).prop("value")).toEqual(initialValue[i][valueField])
       expect(removeButton).toHaveLength(1)
       expect(removeButton.prop("type")).toEqual("button")
-      expect(removeButton.prop("intent")).toEqual(intents.ERROR)
+      expect(removeButton.prop("intent")).toEqual(flotillaUIIntents.ERROR)
     }
   })
 })

@@ -6,13 +6,13 @@ import KeyValues from "../styled/KeyValues"
 import { Pre } from "../styled/Monospace"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
-import { requestStates, IFlotillaEnv } from "../../.."
+import { flotillaUIRequestStates, IFlotillaEnv } from "../../.."
 
 const RunSidebar = () => {
   return (
     <RunContext.Consumer>
       {({ data, requestState }) => {
-        if (requestState === requestStates.READY && data) {
+        if (requestState === flotillaUIRequestStates.READY && data) {
           return (
             <Fragment>
               <KeyValues

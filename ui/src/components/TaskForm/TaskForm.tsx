@@ -15,10 +15,10 @@ import {
   IFlotillaEditTaskPayload,
   IFlotillaAPIError,
   IFlotillaTaskDefinition,
-  taskFormTypes,
-  intents,
-  IPopupProps,
-  requestStates,
+  flotillaUITaskFormTypes,
+  flotillaUIIntents,
+  IFlotillaUIPopupProps,
+  flotillaUIRequestStates,
   IFlotillaUIBreadcrumb,
   IFlotillaUINavigationLink,
 } from "../../.."
@@ -27,16 +27,16 @@ import { FormikFieldSelect } from "../Field/FieldSelect"
 import FormikKVField from "../Field/FormikKVField"
 
 interface ITaskFormProps extends RouteComponentProps<any> {
-  type: taskFormTypes
+  type: flotillaUITaskFormTypes
   data?: IFlotillaTaskDefinition
-  requestState?: requestStates
+  requestState?: flotillaUIRequestStates
   definitionID?: string
   requestData?: () => void
 }
 
 interface IUnwrappedTaskFormProps extends ITaskFormProps {
   push: (opt: any) => void
-  renderPopup: (p: IPopupProps) => void
+  renderPopup: (p: IFlotillaUIPopupProps) => void
   goBack: () => void
 }
 
@@ -87,7 +87,7 @@ class UnwrappedTaskForm extends React.PureComponent<
     this.setState({ inFlight: true })
 
     switch (type) {
-      case taskFormTypes.EDIT:
+      case flotillaUITaskFormTypes.EDIT:
         api
           .updateTask({
             definitionID: get(data, "definition_id", ""),
@@ -102,8 +102,8 @@ class UnwrappedTaskForm extends React.PureComponent<
             this.handleSubmitError(error)
           })
         break
-      case taskFormTypes.CREATE:
-      case taskFormTypes.COPY:
+      case flotillaUITaskFormTypes.CREATE:
+      case flotillaUITaskFormTypes.COPY:
         api
           .createTask({ values: this.getCreatePayload(values) })
           .then(responseData => {
@@ -128,7 +128,7 @@ class UnwrappedTaskForm extends React.PureComponent<
 
     renderPopup({
       body: error.data,
-      intent: intents.ERROR,
+      intent: flotillaUIIntents.ERROR,
       shouldAutohide: false,
       title: `An error occurred (Status Code: ${error.status})`,
     })
@@ -139,11 +139,11 @@ class UnwrappedTaskForm extends React.PureComponent<
    */
   renderTitle() {
     switch (this.props.type) {
-      case taskFormTypes.CREATE:
+      case flotillaUITaskFormTypes.CREATE:
         return "Create New Task"
-      case taskFormTypes.EDIT:
+      case flotillaUITaskFormTypes.EDIT:
         return `Edit Task`
-      case taskFormTypes.COPY:
+      case flotillaUITaskFormTypes.COPY:
         return `Copy Task`
       default:
         return "Task Form"
@@ -158,8 +158,8 @@ class UnwrappedTaskForm extends React.PureComponent<
     const { type, requestState } = this.props
 
     if (
-      type !== taskFormTypes.CREATE &&
-      requestState === requestStates.NOT_READY
+      type !== flotillaUITaskFormTypes.CREATE &&
+      requestState === flotillaUIRequestStates.NOT_READY
     ) {
       return true
     }
@@ -194,14 +194,14 @@ class UnwrappedTaskForm extends React.PureComponent<
   getBreadcrumbs = (): IFlotillaUIBreadcrumb[] => {
     const { type, data, definitionID } = this.props
 
-    if (type === taskFormTypes.CREATE) {
+    if (type === flotillaUITaskFormTypes.CREATE) {
       return [
         { text: "Tasks", href: "/tasks" },
         { text: "Create Task", href: "/tasks/create" },
       ]
     }
 
-    const hrefSuffix = type === taskFormTypes.COPY ? "copy" : "edit"
+    const hrefSuffix = type === flotillaUITaskFormTypes.COPY ? "copy" : "edit"
 
     return [
       { text: "Tasks", href: "/tasks" },
@@ -240,7 +240,7 @@ class UnwrappedTaskForm extends React.PureComponent<
         text: "Submit",
         buttonProps: {
           type: "submit",
-          intent: intents.PRIMARY,
+          intent: flotillaUIIntents.PRIMARY,
           isDisabled: shouldDisableSubmitButton === true,
           isLoading: !!inFlight,
         },
@@ -259,7 +259,7 @@ class UnwrappedTaskForm extends React.PureComponent<
 
   //   let requiredValues = ["group_name", "image", "command", "memory"]
 
-  //   if (this.props.type !== taskFormTypes.EDIT) {
+  //   if (this.props.type !== flotillaUITaskFormTypes.EDIT) {
   //     requiredValues.push("alias")
   //   }
 
@@ -296,7 +296,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                 })}
               />
               <StyledForm title={this.renderTitle()}>
-                {type !== taskFormTypes.EDIT && (
+                {type !== flotillaUITaskFormTypes.EDIT && (
                   <Field
                     name="alias"
                     value={formikProps.values.alias}
@@ -394,17 +394,17 @@ const ConnectedTaskForm = withRouter(props => (
 )) as React.ComponentType<any>
 
 export const CreateTaskForm: React.SFC<{}> = () => (
-  <ConnectedTaskForm type={taskFormTypes.CREATE} />
+  <ConnectedTaskForm type={flotillaUITaskFormTypes.CREATE} />
 )
 
 export const UpdateTaskForm: React.SFC<{}> = () => (
   <TaskContext.Consumer>
-    {ctx => <ConnectedTaskForm type={taskFormTypes.EDIT} {...ctx} />}
+    {ctx => <ConnectedTaskForm type={flotillaUITaskFormTypes.EDIT} {...ctx} />}
   </TaskContext.Consumer>
 )
 
 export const CloneTaskForm: React.SFC<{}> = () => (
   <TaskContext.Consumer>
-    {ctx => <ConnectedTaskForm type={taskFormTypes.COPY} {...ctx} />}
+    {ctx => <ConnectedTaskForm type={flotillaUITaskFormTypes.COPY} {...ctx} />}
   </TaskContext.Consumer>
 )

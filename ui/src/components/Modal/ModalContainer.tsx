@@ -3,7 +3,7 @@ import styled from "styled-components"
 import { Z_INDICES } from "../../helpers/styles"
 import colors from "../../helpers/colors"
 import ModalContext from "./ModalContext"
-import { IModalContext } from "../../.."
+import { IFlotillaUIModalContext } from "../../.."
 
 const StyledModalContainer = styled.div`
   width: 100vw;
@@ -53,7 +53,7 @@ class ModalContainer extends React.Component<{}, IModalContainerState> {
     this.setState({ isVisible: false, modal: undefined })
   }
 
-  getCtx(): IModalContext {
+  getCtx(): IFlotillaUIModalContext {
     return {
       renderModal: this.renderModal,
       unrenderModal: this.unrenderModal,

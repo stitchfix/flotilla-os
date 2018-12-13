@@ -1,15 +1,17 @@
 import api from "../api"
 import { stringToSelectOpt } from "./reactSelectHelpers"
 import {
-  asyncDataTableFilters,
-  IAsyncDataTableFilterProps,
-  ecsRunStatuses,
+  flotillaUIAsyncDataTableFilters,
+  IFlotillaUIAsyncDataTableFilterProps,
+  flotillaRunStatuses,
 } from "../.."
 
-const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
+const historyTableFilters: {
+  [key: string]: IFlotillaUIAsyncDataTableFilterProps
+} = {
   alias: {
     displayName: "Alias",
-    type: asyncDataTableFilters.SELECT,
+    type: flotillaUIAsyncDataTableFilters.SELECT,
     description: "Search by task alias.",
     name: "alias",
     filterProps: {
@@ -20,16 +22,16 @@ const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
   },
   status: {
     displayName: "Run Status",
-    type: asyncDataTableFilters.SELECT,
+    type: flotillaUIAsyncDataTableFilters.SELECT,
     name: "status",
     filterProps: {
-      options: Object.values(ecsRunStatuses)
+      options: Object.values(flotillaRunStatuses)
         .filter(
           v =>
-            v !== ecsRunStatuses.FAILED &&
-            v !== ecsRunStatuses.SUCCESS &&
-            v !== ecsRunStatuses.STOPPED &&
-            v !== ecsRunStatuses.NEEDS_RETRY
+            v !== flotillaRunStatuses.FAILED &&
+            v !== flotillaRunStatuses.SUCCESS &&
+            v !== flotillaRunStatuses.STOPPED &&
+            v !== flotillaRunStatuses.NEEDS_RETRY
         )
         .map(stringToSelectOpt),
       isMulti: true,
@@ -38,7 +40,7 @@ const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
   },
   cluster_name: {
     displayName: "Cluster Name",
-    type: asyncDataTableFilters.SELECT,
+    type: flotillaUIAsyncDataTableFilters.SELECT,
     description: "Search runs running on a specific cluster.",
     name: "cluster_name",
     filterProps: {
@@ -49,7 +51,7 @@ const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
   env: {
     name: "env",
     displayName: "Environment Variables",
-    type: asyncDataTableFilters.KV,
+    type: flotillaUIAsyncDataTableFilters.KV,
     description: "Search environemnt variables",
     filterProps: {
       keyField: "name",
@@ -59,25 +61,25 @@ const historyTableFilters: { [key: string]: IAsyncDataTableFilterProps } = {
   started_at_since: {
     name: "started_at_since",
     displayName: "Started At Since",
-    type: asyncDataTableFilters.INPUT,
+    type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that started since a certain time (ISO8601)",
   },
   started_at_until: {
     name: "started_at_until",
     displayName: "Started At Until",
-    type: asyncDataTableFilters.INPUT,
+    type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that started before a certain time (ISO8601)",
   },
   finished_at_since: {
     name: "finished_at_since",
     displayName: "Finished At Since",
-    type: asyncDataTableFilters.INPUT,
+    type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that ended after a certain time (ISO8601)",
   },
   finished_at_until: {
     name: "finished_at_until",
     displayName: "Finished At Until",
-    type: asyncDataTableFilters.INPUT,
+    type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that ended before a certain time (ISO8601)",
   },
 }

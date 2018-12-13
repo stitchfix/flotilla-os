@@ -1,11 +1,11 @@
 import { createContext } from "react"
-import { IFlotillaRunContext, requestStates } from "../../.."
+import { IFlotillaUIRunContext, flotillaUIRequestStates } from "../../.."
 
-const RunContext = createContext<IFlotillaRunContext>({
+const RunContext = createContext<IFlotillaUIRunContext>({
   data: null,
   inFlight: false,
   error: false,
-  requestState: requestStates.NOT_READY,
+  requestState: flotillaUIRequestStates.NOT_READY,
   runID: "",
 })
 

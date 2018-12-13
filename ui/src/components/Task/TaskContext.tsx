@@ -1,11 +1,11 @@
 import { createContext } from "react"
-import { requestStates, IFlotillaUITaskContext } from "../../.."
+import { flotillaUIRequestStates, IFlotillaUITaskContext } from "../../.."
 
 const TaskContext = createContext<IFlotillaUITaskContext>({
   data: null,
   inFlight: false,
   error: false,
-  requestState: requestStates.NOT_READY,
+  requestState: flotillaUIRequestStates.NOT_READY,
   definitionID: "",
   requestData: () => {},
 })

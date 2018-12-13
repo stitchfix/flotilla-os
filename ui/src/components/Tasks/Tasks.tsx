@@ -8,7 +8,7 @@ import ButtonLink from "../styled/ButtonLink"
 import View from "../styled/View"
 import api from "../../api"
 import config from "../../config"
-import { intents, asyncDataTableFilters } from "../../.."
+import { flotillaUIIntents, flotillaUIAsyncDataTableFilters } from "../../.."
 
 class Tasks extends React.PureComponent {
   render() {
@@ -24,7 +24,7 @@ class Tasks extends React.PureComponent {
               href: "/tasks/create",
               text: "Create New Task",
               buttonProps: {
-                intent: intents.PRIMARY,
+                intent: flotillaUIIntents.PRIMARY,
               },
             },
           ]}
@@ -80,13 +80,13 @@ class Tasks extends React.PureComponent {
             alias: {
               name: "alias",
               displayName: "Alias",
-              type: asyncDataTableFilters.INPUT,
+              type: flotillaUIAsyncDataTableFilters.INPUT,
               description: "Search tasks by alias.",
             },
             group_name: {
               name: "group_name",
               displayName: "Group Name",
-              type: asyncDataTableFilters.SELECT,
+              type: flotillaUIAsyncDataTableFilters.SELECT,
               description: "Search tasks by existing group names.",
               filterProps: {
                 shouldRequestOptions: true,
@@ -98,7 +98,7 @@ class Tasks extends React.PureComponent {
             image: {
               name: "image",
               displayName: "Image",
-              type: asyncDataTableFilters.INPUT,
+              type: flotillaUIAsyncDataTableFilters.INPUT,
               description: "Search tasks by Docker image.",
             },
           }}

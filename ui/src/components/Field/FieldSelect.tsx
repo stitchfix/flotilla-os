@@ -11,7 +11,11 @@ import {
 } from "../../helpers/reactSelectHelpers"
 import PopupContext from "../Popup/PopupContext"
 import QueryParams from "../QueryParams/QueryParams"
-import { requestStates, IReactSelectOption, IPopupProps } from "../../.."
+import {
+  flotillaUIRequestStates,
+  IReactSelectOption,
+  IFlotillaUIPopupProps,
+} from "../../.."
 import { ValueType, ActionMeta } from "react-select/lib/types"
 import { FieldProps } from "formik"
 
@@ -32,11 +36,11 @@ interface IFieldSelectProps {
 }
 
 interface IUnwrappedFieldSelectFieldSelectProps extends IFieldSelectProps {
-  renderPopup: (popupProps: IPopupProps) => void
+  renderPopup: (popupProps: IFlotillaUIPopupProps) => void
 }
 
 interface IFieldSelectState {
-  requestState: requestStates
+  requestState: flotillaUIRequestStates
   inFlight: boolean
   options: IReactSelectOption[]
   error: any
@@ -70,7 +74,7 @@ class UnwrappedFieldSelect extends React.PureComponent<
   }
 
   state = {
-    requestState: requestStates.NOT_READY,
+    requestState: flotillaUIRequestStates.NOT_READY,
     inFlight: false,
     options: [],
     error: false,
@@ -100,14 +104,14 @@ class UnwrappedFieldSelect extends React.PureComponent<
           this.setState({
             options,
             inFlight: false,
-            requestState: requestStates.READY,
+            requestState: flotillaUIRequestStates.READY,
             error: false,
           })
         })
         .catch(error => {
           this.setState({
             inFlight: false,
-            requestState: requestStates.ERROR,
+            requestState: flotillaUIRequestStates.ERROR,
             error,
           })
           renderPopup({
@@ -181,7 +185,10 @@ class UnwrappedFieldSelect extends React.PureComponent<
     const { shouldRequestOptions } = this.props
     const { requestState } = this.state
 
-    if (shouldRequestOptions && requestState !== requestStates.READY) {
+    if (
+      shouldRequestOptions &&
+      requestState !== flotillaUIRequestStates.READY
+    ) {
       return false
     }
 

@@ -4,7 +4,7 @@ import { capitalize } from "lodash"
 import { CheckCircle, XCircle } from "react-feather"
 import colors from "../../helpers/colors"
 import Loader from "../styled/Loader"
-import { ecsRunStatuses, intents } from "../../.."
+import { flotillaRunStatuses, flotillaUIIntents } from "../../.."
 
 const RunStatusContainer = styled.div`
   display: flex;
@@ -21,14 +21,14 @@ const getHumanReadableStatus = ({
   status,
   exitCode,
 }: {
-  status: ecsRunStatuses
+  status: flotillaRunStatuses
   exitCode?: number
 }) => {
-  if (status === ecsRunStatuses.STOPPED) {
+  if (status === flotillaRunStatuses.STOPPED) {
     if (exitCode === 0) {
-      return ecsRunStatuses.SUCCESS
+      return flotillaRunStatuses.SUCCESS
     } else {
-      return ecsRunStatuses.FAILED
+      return flotillaRunStatuses.FAILED
     }
   }
   return status
@@ -37,7 +37,7 @@ const getHumanReadableStatus = ({
 interface IRunStatusProps {
   exitCode?: number
   onlyRenderIcon: boolean
-  status: ecsRunStatuses
+  status: flotillaRunStatuses
 }
 
 class RunStatus extends React.PureComponent<IRunStatusProps> {
@@ -47,18 +47,18 @@ class RunStatus extends React.PureComponent<IRunStatusProps> {
     onlyRenderIcon: true,
   }
 
-  getIconByStatus = (status: ecsRunStatuses): React.ReactNode => {
+  getIconByStatus = (status: flotillaRunStatuses): React.ReactNode => {
     switch (status) {
-      case ecsRunStatuses.QUEUED:
-        return <Loader intent={intents.SUBTLE} />
-      case ecsRunStatuses.PENDING:
-        return <Loader intent={intents.WARNING} />
-      case ecsRunStatuses.RUNNING:
-        return <Loader intent={intents.PRIMARY} />
-      case ecsRunStatuses.SUCCESS:
+      case flotillaRunStatuses.QUEUED:
+        return <Loader intent={flotillaUIIntents.SUBTLE} />
+      case flotillaRunStatuses.PENDING:
+        return <Loader intent={flotillaUIIntents.WARNING} />
+      case flotillaRunStatuses.RUNNING:
+        return <Loader intent={flotillaUIIntents.PRIMARY} />
+      case flotillaRunStatuses.SUCCESS:
         return <CheckCircle size={14} color={colors.green[0]} />
-      case ecsRunStatuses.FAILED:
-      case ecsRunStatuses.NEEDS_RETRY:
+      case flotillaRunStatuses.FAILED:
+      case flotillaRunStatuses.NEEDS_RETRY:
         return <XCircle size={14} color={colors.red[0]} />
       default:
         return null

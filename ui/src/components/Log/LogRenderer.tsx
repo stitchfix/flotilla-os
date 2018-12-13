@@ -5,7 +5,7 @@ import LogRow from "./LogRow"
 import { RUN_BAR_HEIGHT_PX } from "../../helpers/styles"
 import RunBar from "../Run/RunBar"
 import RunContext from "../Run/RunContext"
-import { ecsRunStatuses } from "../../.."
+import { flotillaRunStatuses } from "../../.."
 
 interface ILogRendererProps {
   len: number
@@ -80,7 +80,7 @@ class LogRenderer extends React.PureComponent<
       <RunContext.Consumer>
         {({ data }) => {
           const _len =
-            get(data, "status") === ecsRunStatuses.STOPPED ? len : len + 1
+            get(data, "status") === flotillaRunStatuses.STOPPED ? len : len + 1
           return (
             <React.Fragment>
               <RunBar

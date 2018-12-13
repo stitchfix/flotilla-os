@@ -5,7 +5,7 @@ import { Z_INDICES } from "../../helpers/styles"
 import Card from "../styled/Card"
 import Button from "../styled/Button"
 import ButtonGroup from "../styled/ButtonGroup"
-import { IPopupProps, IPopupContext } from "../../.."
+import { IFlotillaUIPopupProps, IFlotillaUIPopupContext } from "../../.."
 
 const POPUP_WINDOW_DISTANCE_PX = 48
 const POPUP_WIDTH_PX = 400
@@ -19,9 +19,9 @@ const PopupPositioner = styled.div`
 `
 PopupPositioner.displayName = "PopupPositioner"
 
-export class UnwrappedPopup extends React.PureComponent<IPopupProps> {
+export class UnwrappedPopup extends React.PureComponent<IFlotillaUIPopupProps> {
   static displayName = "UnwrappedPopup"
-  static defaultProps: Partial<IPopupProps> = {
+  static defaultProps: Partial<IFlotillaUIPopupProps> = {
     shouldAutohide: true,
     visibleDuration: 5000,
     unrenderPopup: () => {},
@@ -59,9 +59,9 @@ export class UnwrappedPopup extends React.PureComponent<IPopupProps> {
   }
 }
 
-const Popup = (props: IPopupProps) => (
+const Popup = (props: IFlotillaUIPopupProps) => (
   <PopupContext.Consumer>
-    {(pCtx: IPopupContext) => (
+    {(pCtx: IFlotillaUIPopupContext) => (
       <UnwrappedPopup {...props} unrenderPopup={pCtx.unrenderPopup} />
     )}
   </PopupContext.Consumer>

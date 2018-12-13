@@ -1,7 +1,7 @@
 import { createContext } from "react"
-import { IPopupContext } from "../../.."
+import { IFlotillaUIPopupContext } from "../../.."
 
-const PopupContext = createContext<IPopupContext>({
+const PopupContext = createContext<IFlotillaUIPopupContext>({
   renderPopup: () => {},
   unrenderPopup: () => {},
 })

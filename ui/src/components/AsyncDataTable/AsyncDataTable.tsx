@@ -25,10 +25,10 @@ import PopupContext from "../Popup/PopupContext"
 import QueryParams from "../QueryParams/QueryParams"
 import Loader from "../styled/Loader"
 import {
-  IAsyncDataTableFilterProps,
-  requestStates,
-  IPopupProps,
-  intents,
+  IFlotillaUIAsyncDataTableFilterProps,
+  flotillaUIRequestStates,
+  IFlotillaUIPopupProps,
+  flotillaUIIntents,
   IFlotillaAPIError,
 } from "../../.."
 
@@ -43,7 +43,7 @@ interface IUnwrappedAsyncDataTableProps {
   columns: { [key: string]: IAsyncDataTableColumn }
   emptyTableBody?: React.ReactNode
   emptyTableTitle: string
-  filters?: { [key: string]: IAsyncDataTableFilterProps }
+  filters?: { [key: string]: IFlotillaUIAsyncDataTableFilterProps }
   getItemKey: (item: any, index: number) => number
   getItems: (data: any) => any[]
   getRequestArgs: (query: any) => any
@@ -56,13 +56,13 @@ interface IUnwrappedAsyncDataTableProps {
 }
 
 interface IAsyncDataTableProps extends IUnwrappedAsyncDataTableProps {
-  renderPopup: (p: IPopupProps) => void
+  renderPopup: (p: IFlotillaUIPopupProps) => void
   queryParams: any
   setQueryParams: (query: object, shouldReplace: boolean) => void
 }
 
 interface IAsyncDataTableState {
-  requestState: requestStates
+  requestState: flotillaUIRequestStates
   data: any[]
   error: any
   inFlight: boolean
@@ -100,7 +100,7 @@ class AsyncDataTable extends React.PureComponent<
   private requestInterval: number | null = null
 
   state = {
-    requestState: requestStates.NOT_READY,
+    requestState: flotillaUIRequestStates.NOT_READY,
     data: [],
     error: false,
     inFlight: false,
@@ -206,7 +206,7 @@ class AsyncDataTable extends React.PureComponent<
       .then((data: any) => {
         this.setState({
           data,
-          requestState: requestStates.READY,
+          requestState: flotillaUIRequestStates.READY,
           inFlight: false,
         })
       })
@@ -215,7 +215,7 @@ class AsyncDataTable extends React.PureComponent<
 
         this.props.renderPopup({
           body: error.data,
-          intent: intents.ERROR,
+          intent: flotillaUIIntents.ERROR,
           shouldAutohide: false,
           title: `An error occurred (Status Code: ${error.status})`,
         })
@@ -246,10 +246,10 @@ class AsyncDataTable extends React.PureComponent<
     const { requestState, data, error, inFlight } = this.state
 
     switch (requestState) {
-      case requestStates.ERROR:
+      case flotillaUIRequestStates.ERROR:
         const errorDisplay = error.toString() || "An error occurred."
         return <EmptyTable title={errorDisplay} error />
-      case requestStates.READY:
+      case flotillaUIRequestStates.READY:
         const items = getItems(data)
         const total = getTotal(data)
 
@@ -257,7 +257,7 @@ class AsyncDataTable extends React.PureComponent<
           <AsyncDataTableContainer>
             {!!inFlight && (
               <AsyncDataTableLoadingMask>
-                <Loader intent={intents.PRIMARY} />
+                <Loader intent={flotillaUIIntents.PRIMARY} />
               </AsyncDataTableLoadingMask>
             )}
             {!!filters &&
@@ -308,7 +308,7 @@ class AsyncDataTable extends React.PureComponent<
             </AsyncDataTableContent>
           </AsyncDataTableContainer>
         )
-      case requestStates.NOT_READY:
+      case flotillaUIRequestStates.NOT_READY:
       default:
         return <EmptyTable isLoading />
     }

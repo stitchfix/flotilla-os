@@ -7,7 +7,7 @@ import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import KVFieldInput from "./KVFieldInput"
 import QueryParams from "../QueryParams/QueryParams"
 import KVFieldContainer from "./KVFieldContainer"
-import { intents } from "../../.."
+import { flotillaUIIntents } from "../../.."
 
 interface IUnwrappedQueryParamsKVFieldProps {
   description?: string
@@ -161,7 +161,7 @@ class UnwrappedQueryParamsKVField extends React.Component<
                 shouldDebounce
               />
               <Button
-                intent={intents.ERROR}
+                intent={flotillaUIIntents.ERROR}
                 onClick={this.handleRemoveClick.bind(this, i)}
                 type="button"
               >
