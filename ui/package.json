@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/stitchfix/flotilla-os",
   "dependencies": {
-    "ansi-to-react": "1.6.0",
+    "ansi-to-react": "^4.0.0-alpha.0",
     "axios": "0.17.1",
     "formik": "^1.4.0",
     "lodash": "4.17.4",
@@ -86,10 +86,8 @@
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack":
-      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev":
-      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
@@ -97,7 +95,9 @@
     "test:watch": "npm test -- --watch"
   },
   "jest": {
-    "setupFiles": ["raf/polyfill"],
+    "setupFiles": [
+      "raf/polyfill"
+    ],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
       "\\.png$": "<rootDir>/src/__testutils__/styleMock.js"
