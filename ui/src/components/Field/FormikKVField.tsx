@@ -21,7 +21,7 @@ interface IFormikKVFieldProps {
   valueField: string
 }
 
-class FormikKVField extends React.Component<IFormikKVFieldProps> {
+class FormikKVField extends React.PureComponent<IFormikKVFieldProps> {
   static defaultProps: Partial<IFormikKVFieldProps> = {
     isKeyRequired: true,
     isValueRequired: false,

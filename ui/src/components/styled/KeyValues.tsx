@@ -7,7 +7,7 @@ import Button from "./Button"
 import ButtonGroup from "./ButtonGroup"
 
 const KeyValuesContainer = styled.div`
-  padding: ${SPACING_PX * 2}px 0;
+  padding: ${SPACING_PX * 2}px;
 `
 
 const KeyValuesHeader = styled.div`
@@ -31,7 +31,7 @@ interface IKeyValuesState {
   displayRawData: boolean
 }
 
-class KeyValues extends React.Component<IKeyValuesProps, IKeyValuesState> {
+class KeyValues extends React.PureComponent<IKeyValuesProps, IKeyValuesState> {
   static defaultProps: IKeyValuesProps = {
     items: {},
     raw: {},

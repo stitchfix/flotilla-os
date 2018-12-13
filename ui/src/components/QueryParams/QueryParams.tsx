@@ -18,7 +18,9 @@ interface IQueryParamsProps {
   children: (opts: IQueryParams) => React.ReactNode
 }
 
-class UnwrappedQueryParams extends React.Component<IUnwrappedQueryParamsProps> {
+class UnwrappedQueryParams extends React.PureComponent<
+  IUnwrappedQueryParamsProps
+> {
   getQuery = (): any => {
     const { search } = this.props
 

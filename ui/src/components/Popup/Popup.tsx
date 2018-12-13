@@ -19,7 +19,7 @@ const PopupPositioner = styled.div`
 `
 PopupPositioner.displayName = "PopupPositioner"
 
-export class UnwrappedPopup extends React.Component<IPopupProps> {
+export class UnwrappedPopup extends React.PureComponent<IPopupProps> {
   static displayName = "UnwrappedPopup"
   static defaultProps: Partial<IPopupProps> = {
     shouldAutohide: true,

@@ -27,7 +27,7 @@ interface IConfirmModalState {
   error: any
 }
 
-export class UnwrappedConfirmModal extends React.Component<
+export class UnwrappedConfirmModal extends React.PureComponent<
   IUnwrappedConfirmModalProps,
   IConfirmModalState
 > {
