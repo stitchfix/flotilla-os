@@ -8,11 +8,11 @@ class AsyncDataTableFilter extends React.PureComponent<
   IAsyncDataTableFilterProps
 > {
   render() {
-    const { description, displayName, field, type, filterProps } = this.props
+    const { description, displayName, name, type, filterProps } = this.props
 
     const sharedProps = {
       label: displayName,
-      field,
+      name,
       description,
       ...filterProps,
     }

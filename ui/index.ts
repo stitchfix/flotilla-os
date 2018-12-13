@@ -19,7 +19,7 @@ export enum asyncDataTableFilters {
 export interface IAsyncDataTableFilterProps {
   description?: string
   displayName: string
-  field: string
+  name: string
   type: asyncDataTableFilters
   filterProps?: any
 }

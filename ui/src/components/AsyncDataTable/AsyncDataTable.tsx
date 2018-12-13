@@ -266,7 +266,7 @@ class AsyncDataTable extends React.PureComponent<
                   {Object.keys(filters).map(key => (
                     <AsyncDataTableFilter
                       {...filters[key]}
-                      field={key}
+                      name={key}
                       key={key}
                     />
                   ))}

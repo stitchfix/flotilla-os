@@ -1,5 +1,4 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { Link } from "react-router-dom"
 import Helmet from "react-helmet"
 import { get } from "lodash"
@@ -13,11 +12,13 @@ import Button from "../styled/Button"
 import View from "../styled/View"
 import SecondaryText from "../styled/SecondaryText"
 import historyTableFilters from "../../helpers/historyTableFilters"
-import runStatusTypes from "../../helpers/runStatusTypes"
 import api from "../../api"
+import { IFlotillaRun, ecsRunStatuses } from "../../.."
 
-class ActiveRuns extends Component {
-  handleStopButtonClick = runData => {
+class ActiveRuns extends React.PureComponent<{
+  renderModal: (modal: React.ReactNode) => void
+}> {
+  handleStopButtonClick = (runData: IFlotillaRun): void => {
     this.props.renderModal(
       <StopRunModal
         runID={runData.run_id}
@@ -36,7 +37,6 @@ class ActiveRuns extends Component {
         <AsyncDataTable
           shouldContinuouslyFetch
           requestFn={api.getActiveRuns}
-          shouldRequest={(prevProps, currProps) => false}
           columns={{
             stop: {
               allowSort: false,
@@ -113,34 +113,23 @@ class ActiveRuns extends Component {
             sort_by: "started_at",
             order: "desc",
             status: [
-              runStatusTypes.running,
-              runStatusTypes.pending,
-              runStatusTypes.queued,
+              ecsRunStatuses.RUNNING,
+              ecsRunStatuses.PENDING,
+              ecsRunStatuses.QUEUED,
             ],
           }}
           emptyTableTitle="No tasks are currently running."
+          isView
+          getRequestArgs={query => query}
+          limit={50}
         />
       </View>
     )
   }
 }
 
-ActiveRuns.propTypes = {
-  renderModal: PropTypes.func.isRequired,
-}
-
-ActiveRuns.defaultProps = {
-  renderModal: () => {},
-}
-
-export default props => (
+export default () => (
   <ModalContext.Consumer>
-    {ctx => (
-      <ActiveRuns
-        {...props}
-        renderModal={ctx.renderModal}
-        unrenderModal={ctx.unrenderModal}
-      />
-    )}
+    {ctx => <ActiveRuns renderModal={ctx.renderModal} />}
   </ModalContext.Consumer>
 )

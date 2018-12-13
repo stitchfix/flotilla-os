@@ -122,7 +122,7 @@ class FlotillaAPIClient {
   }
 
   /** Requests list of currently running tasks. */
-  getActiveRuns = ({ query }: { query: object }): Promise<any> => {
+  getActiveRuns = (query: object): Promise<any> => {
     return this.request({
       method: "get",
       path: "/v1/history",
