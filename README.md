@@ -64,7 +64,12 @@ export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_ac
                 "ecs:ListContainerInstances",
                 "ecs:DescribeContainerInstances",
                 "ecs:ListClusters",
-                "ecs:StopTask"
+                "ecs:StopTask",
+                "logs:CreateLogGroup",
+                "logs:PutRetentionPolicy",
+                "logs:GetLogEvents",
+                "events:PutTargets",
+                "sqs:SetQueueAttributes"
             ],
             "Resource": "*"
         }

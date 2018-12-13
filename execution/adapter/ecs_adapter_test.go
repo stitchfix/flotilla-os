@@ -340,7 +340,7 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 		t.Errorf("Expected non-empty DockerLabels with field [group.name] set")
 	}
 	if *groupName != d.GroupName {
-		t.Errorf("Expected groupName %s but was %s", d.GroupName, groupName)
+		t.Errorf("Expected groupName %s but was %s", d.GroupName, *groupName)
 	}
 
 	tagsList, ok := container.DockerLabels["tags"]
