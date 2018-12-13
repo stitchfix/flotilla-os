@@ -1,5 +1,4 @@
 import * as React from "react"
-import PropTypes from "prop-types"
 import ReactResizeDetector from "react-resize-detector"
 import { isEmpty, round } from "lodash"
 import {

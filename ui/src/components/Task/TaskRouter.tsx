@@ -6,19 +6,27 @@ import TaskDefinition from "./TaskDefinition"
 import RunForm from "../RunForm/RunForm"
 import { UpdateTaskForm, CloneTaskForm } from "../TaskForm/TaskForm"
 
-interface ITaskRouterProps
-  extends RouteComponentProps<{ definitionID: string }> {}
+interface ITaskRouterProps extends RouteComponentProps<any> {
+  shouldRequestByAlias?: boolean
+}
 
 class TaskRouter extends React.PureComponent<ITaskRouterProps> {
   render() {
+    const shouldRequestByAlias = this.props.shouldRequestByAlias === true
     const definitionID = get(
       this.props,
       ["match", "params", "definitionID"],
       ""
     )
     const rootPath = get(this.props, ["match", "url"], "")
+    const alias = get(this.props, ["match", "params", "alias"], "")
+
     return (
-      <Task definitionID={definitionID}>
+      <Task
+        definitionID={definitionID}
+        shouldRequestByAlias={shouldRequestByAlias}
+        alias={alias}
+      >
         <Switch>
           <Route exact path={rootPath} component={TaskDefinition} />
           <Route exact path={`${rootPath}/run`} component={RunForm} />

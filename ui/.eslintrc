@@ -1,7 +1,3 @@
 {
-  "extends": "react-app",
-  "rules": {
-    "react/prop-types": 2,
-    "react/sort-prop-types": 2
-  }
+  "extends": "react-app"
 }

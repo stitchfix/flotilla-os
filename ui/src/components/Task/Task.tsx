@@ -1,11 +1,19 @@
 import * as React from "react"
-import { isEqual } from "lodash"
+import { get, isEqual, isEmpty } from "lodash"
 import api from "../../api"
 import TaskContext from "./TaskContext"
-import { requestStates, IFlotillaTaskDefinition } from "../../.."
+import {
+  requestStates,
+  IFlotillaTaskDefinition,
+  IFlotillaAPIError,
+  IFlotillaUITaskContext,
+} from "../../.."
+import Loader from "../styled/Loader"
 
 interface ITaskProps {
   definitionID: string
+  alias?: string
+  shouldRequestByAlias: boolean
 }
 
 interface ITaskState {
@@ -34,38 +42,63 @@ class Task extends React.PureComponent<ITaskProps, ITaskState> {
   }
 
   requestData(): void {
+    const { definitionID, alias, shouldRequestByAlias } = this.props
     this.setState({ inFlight: false, error: false })
 
+    if (!!shouldRequestByAlias && !!alias) {
+      api
+        .getTaskByAlias({ alias })
+        .then(this.handleResponse)
+        .catch(this.handleResponse)
+
+      return
+    }
+
     api
-      .getTask({ definitionID: this.props.definitionID })
-      .then(data => {
-        this.setState({
-          inFlight: false,
-          data,
-          error: false,
-          requestState: requestStates.READY,
-        })
-      })
-      .catch(error => {
-        this.setState({
-          inFlight: false,
-          error,
-          requestState: requestStates.ERROR,
-        })
-      })
+      .getTask({ definitionID })
+      .then(this.handleResponse)
+      .catch(this.handleResponse)
   }
 
-  getCtx() {
-    const { definitionID } = this.props
-    return {
+  handleResponse = (data: IFlotillaTaskDefinition): void => {
+    this.setState({
+      inFlight: false,
+      data,
+      error: false,
+      requestState: requestStates.READY,
+    })
+  }
+
+  handleError = (error: IFlotillaAPIError): void => {
+    this.setState({
+      inFlight: false,
+      error,
+      requestState: requestStates.ERROR,
+    })
+  }
+
+  getCtx = (): IFlotillaUITaskContext => {
+    const { definitionID, shouldRequestByAlias } = this.props
+
+    let ret = {
       ...this.state,
       definitionID,
       requestData: this.requestData.bind(this),
     }
+
+    if (shouldRequestByAlias) {
+      ret.definitionID = get(this.state, ["data", "definition_id"], null)
+    }
+
+    return ret
   }
 
   render() {
-    const { children } = this.props
+    const { children, shouldRequestByAlias } = this.props
+
+    if (shouldRequestByAlias && isEmpty(this.state.data)) {
+      return <Loader />
+    }
 
     return (
       <TaskContext.Provider value={this.getCtx()}>
