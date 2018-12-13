@@ -1,7 +1,7 @@
 import { ReactNode } from "react"
 
 export interface IFlotillaUITaskContext {
-  data: IFlotillaTaskDefinition
+  data: IFlotillaTaskDefinition | null
   inFlight: boolean
   error: boolean
   requestState: requestStates
@@ -54,10 +54,25 @@ export interface IFlotillaCreateTaskPayload extends IFlotillaEditTaskPayload {
   alias: string
 }
 
-export interface IFlotillaTaskDefinition {}
+export interface IFlotillaTaskDefinition {
+  alias: string
+  arn: string
+  command: string
+  container_name: string
+  definition_id: string
+  env: []
+  group_name: string
+  image: string
+  memory: number
+  tags: string[]
+}
 
 /** The values required to execute a task definition. */
-export interface IFlotillaRunTaskPayload {}
+export interface IFlotillaRunTaskPayload {
+  run_tags?: IFlotillaEnv[]
+  cluster: string
+  env?: IFlotillaEnv[]
+}
 
 export interface IFlotillaEnv {
   name: string

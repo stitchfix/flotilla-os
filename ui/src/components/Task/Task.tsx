@@ -1,29 +1,39 @@
-import React, { Component } from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { isEqual } from "lodash"
-import * as requestStateTypes from "../../helpers/requestStateTypes"
 import api from "../../api"
 import TaskContext from "./TaskContext"
+import { requestStates, IFlotillaTaskDefinition } from "../../.."
 
-class Task extends Component {
+interface ITaskProps {
+  definitionID: string
+}
+
+interface ITaskState {
+  inFlight: boolean
+  error: any
+  data: IFlotillaTaskDefinition | null
+  requestState: requestStates
+}
+
+class Task extends React.PureComponent<ITaskProps, ITaskState> {
   state = {
     inFlight: false,
     error: false,
-    data: {},
-    requestState: requestStateTypes.NOT_READY,
+    data: null,
+    requestState: requestStates.NOT_READY,
   }
 
   componentDidMount() {
     this.requestData()
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: ITaskProps) {
     if (!isEqual(prevProps.definitionID, this.props.definitionID)) {
       this.requestData()
     }
   }
 
-  requestData() {
+  requestData(): void {
     this.setState({ inFlight: false, error: false })
 
     api
@@ -33,14 +43,14 @@ class Task extends Component {
           inFlight: false,
           data,
           error: false,
-          requestState: requestStateTypes.READY,
+          requestState: requestStates.READY,
         })
       })
       .catch(error => {
         this.setState({
           inFlight: false,
           error,
-          requestState: requestStateTypes.ERROR,
+          requestState: requestStates.ERROR,
         })
       })
   }
@@ -63,11 +73,6 @@ class Task extends Component {
       </TaskContext.Provider>
     )
   }
-}
-
-Task.propTypes = {
-  children: PropTypes.node,
-  definitionID: PropTypes.string.isRequired,
 }
 
 export default Task

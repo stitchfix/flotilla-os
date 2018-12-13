@@ -1,5 +1,4 @@
-import React from "react"
-import PropTypes from "prop-types"
+import * as React from "react"
 import { Switch, Route } from "react-router-dom"
 import { get, omit } from "lodash"
 import Task from "./Task"

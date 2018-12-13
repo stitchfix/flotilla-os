@@ -114,6 +114,12 @@ class FlotillaAPIClient {
     definitionID: string
     values: IFlotillaRunTaskPayload
   }): Promise<any> => {
+    // static transformRunTags = (arr: IFlotillaEnv[]): { [key: string]: any } =>
+    // arr.reduce((acc: { [key: string]: any }, val: IFlotillaEnv) => {
+    //   acc[val.name] = val.value
+    //   return acc
+    // }, {})
+    debugger
     return this.request({
       method: "put",
       path: `/v4/task/${definitionID}/execute`,
