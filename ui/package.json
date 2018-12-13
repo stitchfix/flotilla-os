@@ -13,32 +13,27 @@
   },
   "homepage": "https://github.com/stitchfix/flotilla-os",
   "dependencies": {
-    "ansi-to-react": "^4.0.0-alpha.0",
+    "ansi-to-react": "4.0.0-alpha.0",
     "axios": "0.17.1",
-    "formik": "^1.4.0",
+    "formik": "1.4.0",
     "lodash": "4.17.4",
     "moment": "2.19.2",
     "qs": "6.5.2",
     "react": "16.6.1",
-    "react-debounce-input": "^3.2.0",
+    "react-debounce-input": "3.2.0",
     "react-dom": "16.6.1",
-    "react-feather": "^1.1.4",
+    "react-feather": "1.1.4",
     "react-helmet": "5.2.0",
-    "react-json-view": "^1.19.1",
-    "react-resize-detector": "^3.2.0",
+    "react-json-view": "1.19.1",
+    "react-resize-detector": "3.2.0",
     "react-router-dom": "4.2.2",
-    "react-select": "^2.1.2",
-    "react-transition-group": "^2.5.1",
-    "react-window": "^1.2.4",
+    "react-select": "2.1.2",
+    "react-transition-group": "2.5.1",
+    "react-window": "1.2.4",
     "styled-components": "4.0.3",
     "url-join": "4.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.1.5",
-    "@babel/core": "7.1.5",
-    "@babel/plugin-proposal-class-properties": "7.1.0",
-    "@babel/preset-env": "7.1.5",
-    "@babel/preset-react": "7.0.0",
     "@types/enzyme": "^3.1.15",
     "@types/jest": "^23.3.10",
     "@types/lodash": "^4.14.118",
@@ -54,9 +49,6 @@
     "@types/url-join": "^0.8.2",
     "awesome-typescript-loader": "^5.2.1",
     "axios-mock-adapter": "^1.15.0",
-    "babel-eslint": "9.0.0",
-    "babel-jest": "17.0.2",
-    "babel-loader": "8.0.4",
     "dotenv-webpack": "^1.5.7",
     "enzyme": "^3.7.0",
     "enzyme-adapter-react-16": "^1.7.0",
@@ -82,10 +74,8 @@
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack":
-      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev":
-      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
@@ -93,7 +83,9 @@
     "test:watch": "npm test -- --watch"
   },
   "jest": {
-    "setupFiles": ["raf/polyfill"],
+    "setupFiles": [
+      "raf/polyfill"
+    ],
     "setupTestFrameworkScriptFile": "./src/__testutils__/setupTests.js",
     "moduleNameMapper": {
       "\\.png$": "<rootDir>/src/__testutils__/styleMock.js"
