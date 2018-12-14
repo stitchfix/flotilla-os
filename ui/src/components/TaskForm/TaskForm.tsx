@@ -1,7 +1,7 @@
 import * as React from "react"
 import { withRouter, RouteComponentProps } from "react-router-dom"
 import { Formik, FormikProps, Form, Field } from "formik"
-import { get, omit } from "lodash"
+import { get, omit, isEmpty, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
@@ -248,30 +248,6 @@ class UnwrappedTaskForm extends React.PureComponent<
     ]
   }
 
-  /**
-   * Disable the submit button if there are errors or if certain fields have
-   * not been filled out.
-   */
-  // shouldDisableSubmitButton = formAPI => {
-  //   if (!isEmpty(formAPI.errors)) {
-  //     return true
-  //   }
-
-  //   let requiredValues = ["group_name", "image", "command", "memory"]
-
-  //   if (this.props.type !== flotillaUITaskFormTypes.EDIT) {
-  //     requiredValues.push("alias")
-  //   }
-
-  //   for (let i = 0; i < requiredValues.length; i++) {
-  //     if (!has(formAPI.values, requiredValues[i])) {
-  //       return true
-  //     }
-  //   }
-
-  //   return false
-  // }
-
   render() {
     const { type } = this.props
 
@@ -292,7 +268,7 @@ class UnwrappedTaskForm extends React.PureComponent<
               <Navigation
                 breadcrumbs={this.getBreadcrumbs()}
                 actions={this.getActions({
-                  shouldDisableSubmitButton: false,
+                  shouldDisableSubmitButton: formikProps.isValid !== true,
                 })}
               />
               <StyledForm title={this.renderTitle()}>

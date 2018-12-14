@@ -121,15 +121,17 @@ export const QueryParamsFieldText: React.SFC<IFieldTextProps> = props => {
   )
 }
 
-export const FormikFieldText: React.SFC<
+export class FormikFieldText extends React.PureComponent<
   IFieldTextProps & FieldProps
-> = props => {
-  return (
-    <FieldText
-      {...omit(props, ["field", "form"])}
-      onChange={value => {
-        props.form.setFieldValue(props.field.name, value)
-      }}
-    />
-  )
+> {
+  render() {
+    return (
+      <FieldText
+        {...omit(this.props, ["field", "form"])}
+        onChange={value => {
+          this.props.form.setFieldValue(this.props.field.name, value)
+        }}
+      />
+    )
+  }
 }
