@@ -53,7 +53,10 @@ class UnwrappedQueryParams extends React.PureComponent<
     Object.keys(values).reduce((acc: { [k: string]: any }, key: string): {
       [k: string]: any
     } => {
-      if (!isEmpty(values[key])) {
+      if (
+        (typeof values[key] === "number" && values[key] !== 0) ||
+        !isEmpty(values[key])
+      ) {
         acc[key] = values[key]
       }
 
