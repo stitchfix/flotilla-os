@@ -7,6 +7,8 @@ import { Pre } from "../styled/Monospace"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
 import { flotillaUIRequestStates, IFlotillaEnv } from "../../.."
+import getRunDuration from "../../helpers/getRunDuration"
+import RunDurationCounter from "./RunDurationCounter"
 
 const RunSidebar = () => {
   return (
@@ -19,6 +21,12 @@ const RunSidebar = () => {
                 raw={omit(data, ["env"])}
                 label="Run Info"
                 items={{
+                  Duration: (
+                    <RunDurationCounter
+                      started_at={data.started_at}
+                      finished_at={data.finished_at}
+                    />
+                  ),
                   Cluster: get(data, "cluster", "-"),
                   "Exit Code": get(data, "exit_code", "-"),
                   "Started At": has(data, "started_at") ? (
