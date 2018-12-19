@@ -203,7 +203,7 @@ class FlotillaAPIClient {
   getTags = () => {
     return this.request({
       method: "get",
-      path: `/v1/tags`,
+      path: "/v1/tags",
       query: { limit: 5000 },
       preprocess: (res: any): string[] =>
         get(res, "tags", [])
