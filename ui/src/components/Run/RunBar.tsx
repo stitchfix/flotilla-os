@@ -13,6 +13,7 @@ import {
   SPACING_PX,
   RUN_BAR_HEIGHT_PX,
 } from "../../helpers/styles"
+import colors from "../../helpers/colors"
 
 const RunBarContainer = styled.div`
   height: ${RUN_BAR_HEIGHT_PX}px;
@@ -26,6 +27,7 @@ const RunBarContainer = styled.div`
   top: ${NAVIGATION_HEIGHT_PX}px;
   left: ${DETAIL_VIEW_SIDEBAR_WIDTH_PX}px;
   right: 0;
+  background: ${colors.black[0]};
 `
 
 const iconProps = {
@@ -52,12 +54,12 @@ class RunBar extends React.PureComponent<IRunBarProps> {
               exitCode={get(data, "exit_code")}
             />
             <ButtonGroup>
-              <Button onClick={this.props.onScrollToTopClick}>
+              {/* <Button onClick={this.props.onScrollToTopClick}>
                 <ChevronsUp {...iconProps} />
               </Button>
               <Button onClick={this.props.onScrollToBottomClick}>
                 <ChevronsDown {...iconProps} />
-              </Button>
+              </Button> */}
               <Button onClick={this.props.toggleShouldAutoscroll}>
                 {this.props.shouldAutoscroll ? (
                   <CheckSquare {...iconProps} />

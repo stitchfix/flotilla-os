@@ -66,6 +66,7 @@ class LogRenderer extends React.PureComponent<
       listRef.scrollToItem(0)
     }
   }
+
   handleScrollToBottomClick = (): void => {
     const listRef = this.LIST_REF.current
     if (listRef) {

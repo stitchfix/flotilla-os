@@ -2,6 +2,7 @@ import * as React from "react"
 import { has, isEmpty } from "lodash"
 import api from "../../api"
 import LogProcessor from "./LogProcessor"
+import NonOptimizedLogRenderer from "./NonOptimizedLogRenderer"
 import config from "../../config"
 import {
   IFlotillaUILogChunk,
@@ -19,6 +20,7 @@ interface ILogRequesterState {
   lastSeen: string | undefined
   inFlight: boolean
   error: any
+  usePerfOptimization: boolean
 }
 
 class LogRequester extends React.PureComponent<
@@ -32,6 +34,7 @@ class LogRequester extends React.PureComponent<
     lastSeen: undefined,
     inFlight: false,
     error: false,
+    usePerfOptimization: false,
   }
 
   componentDidMount() {
@@ -180,7 +183,15 @@ class LogRequester extends React.PureComponent<
     this.props.status === flotillaRunStatuses.STOPPED
 
   render() {
-    return <LogProcessor logs={this.state.logs} />
+    const { logs, usePerfOptimization } = this.state
+
+    if (usePerfOptimization) return <LogProcessor logs={logs} />
+    return (
+      <NonOptimizedLogRenderer
+        logs={logs}
+        hasRunFinished={this.hasRunFinished()}
+      />
+    )
   }
 }
 

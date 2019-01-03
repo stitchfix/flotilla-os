@@ -40,7 +40,9 @@ class LogRow extends React.PureComponent<ListChildComponentProps> {
 
           return (
             <Pre style={style}>
-              <Ansi>{get(this.props, "data", [])[index]}</Ansi>
+              <Ansi className="flotilla-ansi">
+                {get(this.props, "data", [])[index]}
+              </Ansi>
             </Pre>
           )
         }}
