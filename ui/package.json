@@ -31,7 +31,8 @@
     "react-transition-group": "2.5.1",
     "react-window": "1.2.4",
     "styled-components": "4.0.3",
-    "url-join": "4.0.0"
+    "url-join": "4.0.0",
+    "yup": "^0.26.6"
   },
   "devDependencies": {
     "@types/enzyme": "^3.1.15",
@@ -47,6 +48,7 @@
     "@types/react-window": "^1.1.0",
     "@types/styled-components": "^4.1.2",
     "@types/url-join": "^0.8.2",
+    "@types/yup": "^0.26.4",
     "awesome-typescript-loader": "^5.2.1",
     "axios-mock-adapter": "^1.15.0",
     "dotenv-webpack": "^1.5.7",

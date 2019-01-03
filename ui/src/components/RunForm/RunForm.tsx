@@ -1,6 +1,7 @@
 import * as React from "react"
 import { withRouter } from "react-router-dom"
 import { Formik, FormikProps, Form, Field } from "formik"
+import * as Yup from "yup"
 import { get, omit } from "lodash"
 import Loader from "../styled/Loader"
 import View from "../styled/View"
@@ -31,6 +32,28 @@ interface IRunFormProps extends IFlotillaUITaskContext {
   goBack: () => void
   renderPopup: (p: IFlotillaUIPopupProps) => void
 }
+
+const RunYupSchema = Yup.object().shape({
+  cluster: Yup.string()
+    .min(1, "")
+    .required("Required"),
+  run_tags: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().min(1, ""),
+      value: Yup.string()
+        .min(1, "")
+        .required("Required"),
+    })
+  ),
+  env: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().min(1, ""),
+      value: Yup.string()
+        .min(1, "")
+        .required("Required"),
+    })
+  ),
+})
 
 class RunForm extends React.PureComponent<IRunFormProps> {
   handleSubmit = (values: IFlotillaRunTaskPayload): void => {
@@ -157,7 +180,7 @@ class RunForm extends React.PureComponent<IRunFormProps> {
       <Formik
         initialValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
-        validateOnChange={false}
+        validationSchema={RunYupSchema}
       >
         {(formikProps: FormikProps<IFlotillaRunTaskPayload>) => {
           return (
@@ -188,7 +211,7 @@ class RunForm extends React.PureComponent<IRunFormProps> {
                     description={this.getRunTagsDescription()}
                     isKeyRequired
                     isValueRequired={false}
-                    label="Environment Variables"
+                    label="Run Tags"
                     setFieldValue={formikProps.setFieldValue}
                   />
                   <FormikKVField

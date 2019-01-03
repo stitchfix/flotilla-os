@@ -1,6 +1,7 @@
 import * as React from "react"
 import { withRouter, RouteComponentProps } from "react-router-dom"
 import { Formik, FormikProps, Form, Field } from "formik"
+import * as Yup from "yup"
 import { get, omit, isEmpty, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
 import Loader from "../styled/Loader"
@@ -25,6 +26,45 @@ import {
 import { FormikFieldText } from "../Field/FieldText"
 import { FormikFieldSelect } from "../Field/FieldSelect"
 import FormikKVField from "../Field/FormikKVField"
+
+const sharedYup = {
+  command: Yup.string()
+    .min(1, "")
+    .required("Required"),
+  memory: Yup.number()
+    .min(1, "")
+    .required("Required"),
+  image: Yup.string()
+    .min(1, "")
+    .required("Required"),
+  group_name: Yup.string()
+    .min(1, "")
+    .required("Required"),
+  tags: Yup.array().of(
+    Yup.string()
+      .min(1, "")
+      .required("Required")
+  ),
+  env: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string()
+        .min(1, "")
+        .required("Required"),
+      value: Yup.string()
+        .min(1, "")
+        .required("Required"),
+    })
+  ),
+}
+
+const CreateTaskYupSchema = Yup.object().shape({
+  alias: Yup.string()
+    .min(1, "")
+    .required("Required"),
+  ...sharedYup,
+})
+
+const EditTaskYupSchema = Yup.object().shape(sharedYup)
 
 interface ITaskFormProps extends RouteComponentProps<any> {
   type: flotillaUITaskFormTypes
@@ -261,6 +301,11 @@ class UnwrappedTaskForm extends React.PureComponent<
       <Formik
         initialValues={this.getDefaultValues()}
         onSubmit={this.handleSubmit}
+        validationSchema={
+          type === flotillaUITaskFormTypes.EDIT
+            ? EditTaskYupSchema
+            : CreateTaskYupSchema
+        }
       >
         {(formikProps: FormikProps<IFlotillaCreateTaskPayload>) => (
           <Form>
