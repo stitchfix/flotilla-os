@@ -16,8 +16,8 @@
     "ansi-to-react": "4.0.0-alpha.0",
     "axios": "0.17.1",
     "formik": "1.4.0",
-    "lodash": "4.17.4",
-    "moment": "2.19.2",
+    "lodash": "4.17.11",
+    "moment": "2.23.0",
     "qs": "6.5.2",
     "react": "16.6.1",
     "react-debounce-input": "3.2.0",
@@ -72,14 +72,12 @@
     "url-loader": "^1.1.2",
     "webpack": "4.25.1",
     "webpack-cli": "3.1.2",
-    "webpack-dev-server": "3.1.10"
+    "webpack-dev-server": "3.1.14"
   },
   "scripts": {
     "lint": "eslint **/*.js src/**/*.js src/**/__tests__/*.js",
-    "webpack":
-      "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
-    "dev":
-      "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
+    "webpack": "NODE_ENV=production ./node_modules/.bin/webpack --mode production",
+    "dev": "NODE_ENV=dev ./node_modules/.bin/webpack-dev-server --mode development",
     "watch": "npm run webpack -- --watch",
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
