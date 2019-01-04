@@ -223,8 +223,8 @@ class UnwrappedTaskForm extends React.PureComponent<
         `${get(config, "IMAGE_PREFIX", "")}IMAGE_NAME:IMAGE_TAG`
       ),
       command: get(data, "command", ""),
-      tags: get(data, "tags", []),
       env: get(data, "env", []),
+      tags: get(data, "tags", []).filter(t => t.length > 0),
     }
   }
 
