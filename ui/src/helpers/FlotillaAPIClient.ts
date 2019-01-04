@@ -47,7 +47,7 @@ class FlotillaAPIClient {
     return this.request({
       method: "get",
       path: `/v1/task/${definitionID}`,
-      preprocess: FlotillaAPIClient.preprocessTaskDefinitionResponse,
+      preprocess: FlotillaAPIClient.preprocessGetTaskResponse,
     })
   }
 
@@ -56,7 +56,7 @@ class FlotillaAPIClient {
     return this.request({
       method: "get",
       path: `/v1/task/alias/${alias}`,
-      preprocess: FlotillaAPIClient.preprocessTaskDefinitionResponse,
+      preprocess: FlotillaAPIClient.preprocessGetTaskResponse,
     })
   }
 
@@ -273,9 +273,7 @@ class FlotillaAPIClient {
     }, {})
   }
 
-  static preprocessTaskDefinitionResponse = (
-    data: IFlotillaTaskDefinition
-  ) => ({
+  static preprocessGetTaskResponse = (data: IFlotillaTaskDefinition) => ({
     ...data,
     tags: get(data, "tags", []).filter((t: string) => t.length > 0),
   })
