@@ -9,6 +9,7 @@ import {
   IFlotillaEditTaskPayload,
   IFlotillaEnv,
   IFlotillaRun,
+  IFlotillaTaskDefinition,
 } from "../../index"
 import { stringToSelectOpt } from "./reactSelectHelpers"
 
@@ -46,6 +47,7 @@ class FlotillaAPIClient {
     return this.request({
       method: "get",
       path: `/v1/task/${definitionID}`,
+      preprocess: FlotillaAPIClient.preprocessTaskDefinitionResponse,
     })
   }
 
@@ -54,6 +56,7 @@ class FlotillaAPIClient {
     return this.request({
       method: "get",
       path: `/v1/task/alias/${alias}`,
+      preprocess: FlotillaAPIClient.preprocessTaskDefinitionResponse,
     })
   }
 
@@ -269,6 +272,13 @@ class FlotillaAPIClient {
       return acc
     }, {})
   }
+
+  static preprocessTaskDefinitionResponse = (
+    data: IFlotillaTaskDefinition
+  ) => ({
+    ...data,
+    tags: get(data, "tags", []).filter((t: string) => t.length > 0),
+  })
 }
 
 export default FlotillaAPIClient

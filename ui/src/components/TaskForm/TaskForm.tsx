@@ -224,7 +224,7 @@ class UnwrappedTaskForm extends React.PureComponent<
       ),
       command: get(data, "command", ""),
       env: get(data, "env", []),
-      tags: get(data, "tags", []).filter(t => t.length > 0),
+      tags: get(data, "tags", []),
     }
   }
 
