@@ -7,6 +7,10 @@ const config: IFlotillaUIConfig = {
   /** The location of the Flotilla API, e.g. `flotilla.mycompany.com/api/v1` */
   FLOTILLA_API: process.env.FLOTILLA_API || "FILL_ME_IN",
 
+  /** The location of the Flotilla API used for development, e.g. `flotilla.mycompany.com/api/v1` */
+  FLOTILLA_API_DEV:
+    process.env.FLOTILLA_API_DEV || process.env.FLOTILLA_API || "FILL_ME_IN",
+
   /** Prefix for Docker images, e.g. `my-docker-repository:4567` */
   IMAGE_PREFIX: process.env.IMAGE_PREFIX || "",
 

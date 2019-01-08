@@ -24,6 +24,7 @@ export interface IFlotillaAPILogsResponse {
 export interface IFlotillaUIConfig {
   DEFAULT_CLUSTER: string
   FLOTILLA_API: string
+  FLOTILLA_API_DEV: string
   IMAGE_PREFIX: string
   INVALID_RUN_ENV: string[]
   REQUIRED_RUN_TAGS: string[]
