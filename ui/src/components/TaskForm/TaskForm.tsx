@@ -50,9 +50,7 @@ const sharedYup = {
       name: Yup.string()
         .min(1, "")
         .required("Required"),
-      value: Yup.string()
-        .min(1, "")
-        .required("Required"),
+      value: Yup.string(),
     })
   ),
 }
