@@ -1,6 +1,6 @@
 import * as React from "react"
 import { withRouter, RouteComponentProps } from "react-router-dom"
-import { Formik, FormikProps, Form, Field } from "formik"
+import { Formik, FormikProps, Form, FastField } from "formik"
 import * as Yup from "yup"
 import { get, omit, isEmpty, has } from "lodash"
 import Navigation from "../Navigation/Navigation"
@@ -316,7 +316,7 @@ class UnwrappedTaskForm extends React.PureComponent<
               />
               <StyledForm title={this.renderTitle()}>
                 {type !== flotillaUITaskFormTypes.EDIT && (
-                  <Field
+                  <FastField
                     name="alias"
                     value={formikProps.values.alias}
                     onChange={formikProps.handleChange}
@@ -326,7 +326,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                     isRequired
                   />
                 )}
-                <Field
+                <FastField
                   name="group_name"
                   value={formikProps.values.group_name}
                   onChange={formikProps.handleChange}
@@ -338,7 +338,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                   isCreatable
                   isRequired
                 />
-                <Field
+                <FastField
                   name="image"
                   value={formikProps.values.image}
                   onChange={formikProps.handleChange}
@@ -347,7 +347,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                   description="The full URL of the Docker image and tag."
                   isRequired
                 />
-                <Field
+                <FastField
                   name="command"
                   value={formikProps.values.command}
                   onChange={formikProps.handleChange}
@@ -357,7 +357,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                   isRequired
                   isTextArea
                 />
-                <Field
+                <FastField
                   name="memory"
                   value={formikProps.values.memory}
                   onChange={formikProps.handleChange}
@@ -367,7 +367,7 @@ class UnwrappedTaskForm extends React.PureComponent<
                   description="The amount of memory this task needs."
                   isRequired
                 />
-                <Field
+                <FastField
                   name="tags"
                   value={formikProps.values.tags}
                   onChange={formikProps.handleChange}
