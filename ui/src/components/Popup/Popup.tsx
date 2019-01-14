@@ -52,7 +52,7 @@ export class UnwrappedPopup extends React.PureComponent<IFlotillaUIPopupProps> {
             </ButtonGroup>
           }
         >
-          {body}
+          {JSON.stringify(body)}
         </Card>
       </PopupPositioner>
     )
