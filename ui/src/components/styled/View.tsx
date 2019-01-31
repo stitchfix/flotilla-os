@@ -4,7 +4,7 @@ import { NAVIGATION_HEIGHT_PX } from "../../helpers/styles"
 
 const ViewContainer = styled.div`
   height: calc(100vh - ${NAVIGATION_HEIGHT_PX}px);
-  overflow-y: hidden;
+  overflow-y: scroll;
   margin-top: ${NAVIGATION_HEIGHT_PX}px;
 `
 
