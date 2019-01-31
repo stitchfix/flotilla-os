@@ -54,12 +54,6 @@ class RunBar extends React.PureComponent<IRunBarProps> {
               exitCode={get(data, "exit_code")}
             />
             <ButtonGroup>
-              {/* <Button onClick={this.props.onScrollToTopClick}>
-                <ChevronsUp {...iconProps} />
-              </Button>
-              <Button onClick={this.props.onScrollToBottomClick}>
-                <ChevronsDown {...iconProps} />
-              </Button> */}
               <Button onClick={this.props.toggleShouldAutoscroll}>
                 {this.props.shouldAutoscroll ? (
                   <CheckSquare {...iconProps} />

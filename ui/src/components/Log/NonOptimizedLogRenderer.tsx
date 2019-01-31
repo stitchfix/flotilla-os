@@ -15,13 +15,19 @@ interface INonOptimizedLogRendererState {
   shouldAutoscroll: boolean
 }
 
-class NonOptimizedLogRenderer extends React.PureComponent<
+class NonOptimizedLogRenderer extends React.Component<
   INonOptimizedLogRendererProps,
   INonOptimizedLogRendererState
 > {
   private CONTAINER_DIV = React.createRef<HTMLDivElement>()
   state = {
     shouldAutoscroll: true,
+  }
+
+  componentDidMount() {
+    if (this.state.shouldAutoscroll) {
+      this.scrollToBottom()
+    }
   }
 
   componentDidUpdate(prevProps: INonOptimizedLogRendererProps) {
@@ -76,7 +82,10 @@ class NonOptimizedLogRenderer extends React.PureComponent<
     }
 
     return (
-      <div ref={this.CONTAINER_DIV}>
+      <div
+        ref={this.CONTAINER_DIV}
+        style={{ overflowY: "scroll", height: "100%" }}
+      >
         <RunBar
           shouldAutoscroll={this.state.shouldAutoscroll}
           toggleShouldAutoscroll={this.toggleShouldAutoscroll}

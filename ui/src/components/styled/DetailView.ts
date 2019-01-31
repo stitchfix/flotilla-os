@@ -18,7 +18,7 @@ export const DetailViewContent = s.div`
   margin-left: ${DETAIL_VIEW_SIDEBAR_WIDTH_PX + 24}px;
   flex: 1;
   height: calc(100vh - ${NAVIGATION_HEIGHT_PX}px);
-  overflow-y: scroll;
+  overflow-y: hidden;
 `
 
 export const DetailViewSidebar = s.div`
