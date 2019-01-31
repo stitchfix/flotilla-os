@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { has, get, omit } from "lodash"
 import moment from "moment"
 import KeyValues from "../styled/KeyValues"
-import { Pre } from "../styled/Monospace"
+import { Code } from "../styled/Monospace"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
 import { flotillaUIRequestStates, IFlotillaEnv } from "../../.."
@@ -74,7 +74,7 @@ const RunSidebar = () => {
                   data &&
                   data.env &&
                   data.env.reduce((acc: any, env: IFlotillaEnv): any => {
-                    acc[env.name] = <Pre>{env.value}</Pre>
+                    acc[env.name] = <Code>{env.value}</Code>
                     return acc
                   }, {})
                 }

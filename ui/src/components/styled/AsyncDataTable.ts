@@ -11,6 +11,8 @@ const ASYNC_DATA_TABLE_FILTERS_WIDTH_PX = 280
 export const AsyncDataTableContent = styled.div`
   flex: 1;
   margin-left: ${ASYNC_DATA_TABLE_FILTERS_WIDTH_PX}px;
+  height: calc(100vh - ${NAVIGATION_HEIGHT_PX}px);
+  overflow-y: scroll;
 `
 
 export const AsyncDataTableFilters = styled.div`
