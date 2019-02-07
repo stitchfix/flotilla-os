@@ -1,3 +1,4 @@
+import moment from "moment"
 import api from "../api"
 import { stringToSelectOpt } from "./reactSelectHelpers"
 import {
@@ -5,6 +6,9 @@ import {
   IFlotillaUIAsyncDataTableFilterProps,
   flotillaRunStatuses,
 } from "../.."
+
+const isValidISOString = (value: string): boolean =>
+  value !== "" ? moment.utc(value).isValid() : true
 
 const historyTableFilters: {
   [key: string]: IFlotillaUIAsyncDataTableFilterProps
@@ -63,24 +67,28 @@ const historyTableFilters: {
     displayName: "Started At Since",
     type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that started since a certain time (ISO8601)",
+    filterProps: { validate: isValidISOString },
   },
   started_at_until: {
     name: "started_at_until",
     displayName: "Started At Until",
     type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that started before a certain time (ISO8601)",
+    filterProps: { validate: isValidISOString },
   },
   finished_at_since: {
     name: "finished_at_since",
     displayName: "Finished At Since",
     type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that ended after a certain time (ISO8601)",
+    filterProps: { validate: isValidISOString },
   },
   finished_at_until: {
     name: "finished_at_until",
     displayName: "Finished At Until",
     type: flotillaUIAsyncDataTableFilters.INPUT,
     description: "Filter by runs that ended before a certain time (ISO8601)",
+    filterProps: { validate: isValidISOString },
   },
 }
 

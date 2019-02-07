@@ -16,7 +16,7 @@ interface IFieldTextProps {
   isTextArea: boolean
   label?: string
   shouldDebounce: boolean
-  validate: any
+  validate?: (value: string) => boolean
 }
 
 interface IUnwrappedFieldTextProps extends IFieldTextProps {
@@ -100,25 +100,39 @@ export class FieldText extends React.PureComponent<IUnwrappedFieldTextProps> {
   }
 }
 
-export const QueryParamsFieldText: React.SFC<IFieldTextProps> = props => {
-  return (
-    <QueryParams>
-      {({ queryParams, setQueryParams }) => (
-        <FieldText
-          {...props}
-          value={get(queryParams, props.name, "")}
-          onChange={value => {
-            setQueryParams(
-              {
-                [props.name]: value,
-              },
-              false
-            )
-          }}
-        />
-      )}
-    </QueryParams>
-  )
+export class QueryParamsFieldText extends React.Component<
+  IFieldTextProps,
+  { error?: any }
+> {
+  state = {
+    error: false,
+  }
+  render() {
+    const { validate, name } = this.props
+    return (
+      <QueryParams>
+        {({ queryParams, setQueryParams }) => (
+          <FieldText
+            {...this.props}
+            error={this.state.error}
+            value={get(queryParams, this.props.name, "")}
+            onChange={value => {
+              if (!validate || (validate && validate(value))) {
+                setQueryParams(
+                  {
+                    [this.props.name]: value,
+                  },
+                  false
+                )
+              } else {
+                this.setState({ error: "Invalid value." })
+              }
+            }}
+          />
+        )}
+      </QueryParams>
+    )
+  }
 }
 
 export class FormikFieldText extends React.PureComponent<
