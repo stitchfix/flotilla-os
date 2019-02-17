@@ -2,7 +2,8 @@ import * as React from "react"
 import { withRouter, RouteComponentProps } from "react-router-dom"
 import { Formik, FormikProps, Form, FastField } from "formik"
 import * as Yup from "yup"
-import { get, omit, isEmpty, has } from "lodash"
+import { get, omit } from "lodash"
+import CreatableSelect from "react-select/lib/Creatable"
 import Navigation from "../Navigation/Navigation"
 import Loader from "../styled/Loader"
 import PopupContext from "../Popup/PopupContext"
@@ -22,11 +23,18 @@ import {
   flotillaUIRequestStates,
   IFlotillaUIBreadcrumb,
   IFlotillaUINavigationLink,
-} from "../../.."
-import { FormikFieldText } from "../Field/FieldText"
-import { FormikFieldSelect } from "../Field/FieldSelect"
+  IReactSelectOption,
+} from "../../types"
 import FormikKVField from "../Field/FormikKVField"
+import StyledField from "../styled/Field"
+import {
+  stringToSelectOpt,
+  preprocessSelectValue,
+  preprocessMultiSelectValue,
+} from "../../helpers/reactSelectHelpers"
 
+// Shared Yup configuration for all task form types. Yup is used for Formik's
+// form validation.
 const sharedYup = {
   command: Yup.string()
     .min(1, "")
@@ -64,7 +72,7 @@ const CreateTaskYupSchema = Yup.object().shape({
 
 const EditTaskYupSchema = Yup.object().shape(sharedYup)
 
-interface ITaskFormProps extends RouteComponentProps<any> {
+interface ITaskFormProps {
   type: flotillaUITaskFormTypes
   data?: IFlotillaTaskDefinition
   requestState?: flotillaUIRequestStates
@@ -81,18 +89,16 @@ interface IUnwrappedTaskFormProps extends ITaskFormProps {
 interface ITaskFormState {
   inFlight: boolean
   error: IFlotillaAPIError | undefined
+  groupOptions: IReactSelectOption[]
+  tagOptions: IReactSelectOption[]
+  hasFetchedOptions: boolean
 }
 
-class UnwrappedTaskForm extends React.PureComponent<
+export class TaskForm extends React.PureComponent<
   IUnwrappedTaskFormProps,
   ITaskFormState
 > {
-  state = {
-    inFlight: false,
-    error: undefined,
-  }
-
-  getCreatePayload = (
+  static getCreateTaskPayload = (
     values: IFlotillaCreateTaskPayload
   ): IFlotillaCreateTaskPayload => {
     return {
@@ -106,7 +112,7 @@ class UnwrappedTaskForm extends React.PureComponent<
     }
   }
 
-  getEditPayload = (
+  static getEditTaskPayload = (
     values: IFlotillaCreateTaskPayload
   ): IFlotillaEditTaskPayload => {
     return {
@@ -119,6 +125,44 @@ class UnwrappedTaskForm extends React.PureComponent<
     }
   }
 
+  static renderTitle(type: flotillaUITaskFormTypes) {
+    switch (type) {
+      case flotillaUITaskFormTypes.CREATE:
+        return "Create New Task"
+      case flotillaUITaskFormTypes.EDIT:
+        return "Edit Task"
+      case flotillaUITaskFormTypes.COPY:
+        return "Copy Task"
+      default:
+        return "Task Form"
+    }
+  }
+
+  state = {
+    inFlight: false,
+    error: undefined,
+    hasFetchedOptions: false,
+    groupOptions: [],
+    tagOptions: [],
+  }
+
+  componentDidMount() {
+    this.requestSelectOptions()
+  }
+
+  /** Requests the groups and tags options. */
+  requestSelectOptions(): void {
+    Promise.all([api.getGroups(), api.getTags()]).then(
+      (values: IReactSelectOption[][]) => {
+        this.setState({
+          groupOptions: values[0],
+          tagOptions: values[1],
+          hasFetchedOptions: true,
+        })
+      }
+    )
+  }
+
   handleSubmit = (values: IFlotillaCreateTaskPayload) => {
     const { data, type, push, requestData } = this.props
 
@@ -129,7 +173,7 @@ class UnwrappedTaskForm extends React.PureComponent<
         api
           .updateTask({
             definitionID: get(data, "definition_id", ""),
-            values: this.getEditPayload(values),
+            values: TaskForm.getEditTaskPayload(values),
           })
           .then(responseData => {
             this.setState({ inFlight: false })
@@ -143,7 +187,7 @@ class UnwrappedTaskForm extends React.PureComponent<
       case flotillaUITaskFormTypes.CREATE:
       case flotillaUITaskFormTypes.COPY:
         api
-          .createTask({ values: this.getCreatePayload(values) })
+          .createTask({ values: TaskForm.getCreateTaskPayload(values) })
           .then(responseData => {
             this.setState({ inFlight: false })
             push(`/tasks/${get(responseData, "definition_id", "")}`)
@@ -173,27 +217,12 @@ class UnwrappedTaskForm extends React.PureComponent<
   }
 
   /**
-   * Renders the form's title.
-   */
-  renderTitle() {
-    switch (this.props.type) {
-      case flotillaUITaskFormTypes.CREATE:
-        return "Create New Task"
-      case flotillaUITaskFormTypes.EDIT:
-        return `Edit Task`
-      case flotillaUITaskFormTypes.COPY:
-        return `Copy Task`
-      default:
-        return "Task Form"
-    }
-  }
-
-  /**
    * For the clone and update forms, the task definition is required to fill
    * out the default values of the form before it can be rendered.
    */
   shouldNotRenderForm = (): boolean => {
     const { type, requestState } = this.props
+    const { hasFetchedOptions } = this.state
 
     if (
       type !== flotillaUITaskFormTypes.CREATE &&
@@ -202,12 +231,12 @@ class UnwrappedTaskForm extends React.PureComponent<
       return true
     }
 
+    if (hasFetchedOptions === false) return true
+
     return false
   }
 
-  /**
-   * Returns the default values of the form.
-   */
+  /** Returns the default values of the form. */
   getDefaultValues = (): IFlotillaCreateTaskPayload => {
     const { data } = this.props
 
@@ -226,9 +255,7 @@ class UnwrappedTaskForm extends React.PureComponent<
     }
   }
 
-  /**
-   * Returns a breadcrumbs array.
-   */
+  /** Returns a breadcrumbs array. */
   getBreadcrumbs = (): IFlotillaUIBreadcrumb[] => {
     const { type, data, definitionID } = this.props
 
@@ -248,15 +275,13 @@ class UnwrappedTaskForm extends React.PureComponent<
         href: `/tasks/${definitionID}`,
       },
       {
-        text: this.renderTitle(),
+        text: TaskForm.renderTitle(this.props.type),
         href: `/tasks/${definitionID}/${hrefSuffix}`,
       },
     ]
   }
 
-  /**
-   * Returns an action array for the view to render.
-   */
+  /** Returns an action array for the view to render. */
   getActions = ({
     shouldDisableSubmitButton,
   }: {
@@ -288,6 +313,7 @@ class UnwrappedTaskForm extends React.PureComponent<
 
   render() {
     const { type } = this.props
+    const { groupOptions, tagOptions } = this.state
 
     // Don't render the form if, say, the task definition for updating a task
     // has not been fetched. Wait until the next render call.
@@ -314,72 +340,72 @@ class UnwrappedTaskForm extends React.PureComponent<
                   shouldDisableSubmitButton: formikProps.isValid !== true,
                 })}
               />
-              <StyledForm title={this.renderTitle()}>
+              <StyledForm title={TaskForm.renderTitle(this.props.type)}>
                 {type !== flotillaUITaskFormTypes.EDIT && (
-                  <FastField
-                    name="alias"
-                    value={formikProps.values.alias}
-                    onChange={formikProps.handleChange}
-                    component={FormikFieldText}
+                  <StyledField
                     label="Alias"
                     description="Choose a descriptive alias for this task."
                     isRequired
-                  />
+                  >
+                    <FastField name="alias" />
+                  </StyledField>
                 )}
-                <FastField
-                  name="group_name"
-                  value={formikProps.values.group_name}
-                  onChange={formikProps.handleChange}
-                  component={FormikFieldSelect}
+                <StyledField
                   label="Group Name"
                   description="Create a new group name or select an existing one to help searching for this task in the future."
-                  requestOptionsFn={api.getGroups}
-                  shouldRequestOptions
-                  isCreatable
                   isRequired
-                />
-                <FastField
-                  name="image"
-                  value={formikProps.values.image}
-                  onChange={formikProps.handleChange}
-                  component={FormikFieldText}
+                >
+                  <FastField
+                    name="group_name"
+                    onChange={(selected: IReactSelectOption) => {
+                      formikProps.setFieldValue(
+                        "group_name",
+                        preprocessSelectValue(selected)
+                      )
+                    }}
+                    value={stringToSelectOpt(formikProps.values.group_name)}
+                    component={CreatableSelect}
+                    options={groupOptions}
+                  />
+                </StyledField>
+                <StyledField
                   label="Image"
                   description="The full URL of the Docker image and tag."
                   isRequired
-                />
-                <FastField
-                  name="command"
-                  value={formikProps.values.command}
-                  onChange={formikProps.handleChange}
-                  component={FormikFieldText}
+                >
+                  <FastField name="image" />
+                </StyledField>
+                <StyledField
                   label="Command"
                   description="The command for this task to execute."
                   isRequired
-                  isTextArea
-                />
-                <FastField
-                  name="memory"
-                  value={formikProps.values.memory}
-                  onChange={formikProps.handleChange}
-                  component={FormikFieldText}
-                  isNumber
+                >
+                  <FastField name="command" component="textarea" />
+                </StyledField>
+                <StyledField
                   label="Memory (MB)"
                   description="The amount of memory this task needs."
                   isRequired
-                />
-                <FastField
-                  name="tags"
-                  value={formikProps.values.tags}
-                  onChange={formikProps.handleChange}
-                  component={FormikFieldSelect}
-                  label="Tags"
-                  description=""
-                  requestOptionsFn={api.getTags}
-                  shouldRequestOptions
-                  isCreatable
-                  isMulti
-                  isRequired={false}
-                />
+                >
+                  <FastField name="memory" type="number" />
+                </StyledField>
+                <StyledField label="Tags">
+                  <FastField
+                    name="tags"
+                    onChange={(selected: IReactSelectOption[]) => {
+                      formikProps.setFieldValue(
+                        "tags",
+                        preprocessMultiSelectValue(selected)
+                      )
+                    }}
+                    value={get(formikProps, ["values", "tags"], []).map(
+                      stringToSelectOpt
+                    )}
+                    component={CreatableSelect}
+                    options={tagOptions}
+                    isMulti
+                  />
+                </StyledField>
                 <FormikKVField
                   name="env"
                   value={formikProps.values.env}
@@ -398,19 +424,23 @@ class UnwrappedTaskForm extends React.PureComponent<
   }
 }
 
-const ConnectedTaskForm = withRouter(props => (
-  <PopupContext.Consumer>
-    {ctx => (
-      <UnwrappedTaskForm
-        {...omit(props, ["history", "location", "match", "staticContext"])}
-        push={props.history.push}
-        goBack={props.history.goBack}
-        renderPopup={ctx.renderPopup}
-        type={get(props, "type", "")}
-      />
-    )}
-  </PopupContext.Consumer>
-)) as React.ComponentType<any>
+// Connect the TaskForm component to the router to access various methods and
+// to the PopupContext in order to render error messages if the POST fails.
+const ConnectedTaskForm: React.ComponentType<any> = withRouter(
+  (props: ITaskFormProps & RouteComponentProps<any>) => (
+    <PopupContext.Consumer>
+      {ctx => (
+        <TaskForm
+          {...omit(props, ["history", "location", "match", "staticContext"])}
+          push={props.history.push}
+          goBack={props.history.goBack}
+          renderPopup={ctx.renderPopup}
+          type={props.type}
+        />
+      )}
+    </PopupContext.Consumer>
+  )
+)
 
 export const CreateTaskForm: React.SFC<{}> = () => (
   <ConnectedTaskForm type={flotillaUITaskFormTypes.CREATE} />

@@ -90,7 +90,7 @@ describe("FlotillaAPIClient", () => {
         }
         const api = new FlotillaAPIClient(ROOT_LOCATION)
         expect(api.processError(responseError)).toEqual({
-          data: get(responseError, ["response", "data"]),
+          data: get(responseError, ["message"]),
           status: get(responseError, ["response", "status"]),
           headers: get(responseError, ["response", "headers"]),
         })
