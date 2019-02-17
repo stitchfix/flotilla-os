@@ -4,7 +4,7 @@ import { ChevronRight } from "react-feather"
 import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
 import ButtonGroup from "../styled/ButtonGroup"
-import { IFlotillaUINavigationLink, IFlotillaUIBreadcrumb } from "../../.."
+import { IFlotillaUINavigationLink, IFlotillaUIBreadcrumb } from "../../types"
 import {
   NavigationContainer,
   NavigationInner,

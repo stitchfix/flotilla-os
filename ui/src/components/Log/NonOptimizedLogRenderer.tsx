@@ -3,7 +3,7 @@ import Ansi from "ansi-to-react"
 import { Pre } from "../styled/Monospace"
 import Loader from "../styled/Loader"
 import RunBar from "../Run/RunBar"
-import { IFlotillaUILogChunk, flotillaUIIntents } from "../../.."
+import { IFlotillaUILogChunk, flotillaUIIntents } from "../../types"
 import { RUN_BAR_HEIGHT_PX } from "../../helpers/styles"
 
 interface INonOptimizedLogRendererProps {

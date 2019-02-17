@@ -2,7 +2,6 @@ import * as React from "react"
 import { isEmpty } from "lodash"
 import { Plus } from "react-feather"
 import Field from "../styled/Field"
-import { Input } from "../styled/Inputs"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import Button from "../styled/Button"
 
@@ -128,7 +127,7 @@ class KVFieldInput extends React.PureComponent<
           isRequired={isKeyRequired}
           description="Press enter to add."
         >
-          <Input
+          <input
             type="text"
             value={this.state.keyValue}
             onChange={evt => {
@@ -140,7 +139,7 @@ class KVFieldInput extends React.PureComponent<
           />
         </Field>
         <Field label="Value" isRequired={isValueRequired}>
-          <Input
+          <input
             type="text"
             value={this.state.valueValue}
             onChange={evt => {

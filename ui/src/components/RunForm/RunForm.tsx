@@ -23,7 +23,7 @@ import {
   IFlotillaUIBreadcrumb,
   IFlotillaAPIError,
   IFlotillaUIPopupProps,
-} from "../../.."
+} from "../../types"
 import PopupContext from "../Popup/PopupContext"
 
 interface IRunFormProps extends IFlotillaUITaskContext {

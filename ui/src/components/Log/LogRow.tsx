@@ -4,7 +4,7 @@ import { get } from "lodash"
 import { Pre } from "../styled/Monospace"
 import Loader from "../styled/Loader"
 import RunContext from "../Run/RunContext"
-import { flotillaRunStatuses, flotillaUIIntents } from "../../.."
+import { flotillaRunStatuses, flotillaUIIntents } from "../../types"
 import { ListChildComponentProps } from "react-window"
 
 /**

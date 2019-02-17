@@ -6,8 +6,7 @@ import KeyValues from "../styled/KeyValues"
 import { Code } from "../styled/Monospace"
 import SecondaryText from "../styled/SecondaryText"
 import RunContext from "./RunContext"
-import { flotillaUIRequestStates, IFlotillaEnv } from "../../.."
-import getRunDuration from "../../helpers/getRunDuration"
+import { flotillaUIRequestStates, IFlotillaEnv } from "../../types"
 import RunDurationCounter from "./RunDurationCounter"
 
 const RunSidebar = () => {

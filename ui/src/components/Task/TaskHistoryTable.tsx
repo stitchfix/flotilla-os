@@ -12,7 +12,11 @@ import getRunDuration from "../../helpers/getRunDuration"
 import StopRunModal from "../Modal/StopRunModal"
 import ModalContext from "../Modal/ModalContext"
 import historyTableFilters from "../../helpers/historyTableFilters"
-import { flotillaRunStatuses, IFlotillaRun, flotillaUIIntents } from "../../.."
+import {
+  flotillaRunStatuses,
+  IFlotillaRun,
+  flotillaUIIntents,
+} from "../../types"
 
 interface IUnwrappedTaskHistoryTableProps {
   definitionID: string

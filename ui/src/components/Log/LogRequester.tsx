@@ -8,7 +8,7 @@ import {
   IFlotillaUILogChunk,
   flotillaRunStatuses,
   IFlotillaAPILogsResponse,
-} from "../../.."
+} from "../../types"
 
 interface ILogRequesterProps {
   status: flotillaRunStatuses | undefined

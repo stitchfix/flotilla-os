@@ -15,7 +15,7 @@ import {
   flotillaUIRequestStates,
   IReactSelectOption,
   IFlotillaUIPopupProps,
-} from "../../.."
+} from "../../types"
 import { ValueType, ActionMeta } from "react-select/lib/types"
 import { FieldProps } from "formik"
 

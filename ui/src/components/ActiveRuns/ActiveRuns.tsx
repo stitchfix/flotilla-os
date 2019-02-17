@@ -13,7 +13,7 @@ import View from "../styled/View"
 import SecondaryText from "../styled/SecondaryText"
 import historyTableFilters from "../../helpers/historyTableFilters"
 import api from "../../api"
-import { IFlotillaRun, flotillaRunStatuses } from "../../.."
+import { IFlotillaRun, flotillaRunStatuses } from "../../types"
 
 class ActiveRuns extends React.PureComponent<{
   renderModal: (modal: React.ReactNode) => void

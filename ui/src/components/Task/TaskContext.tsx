@@ -1,5 +1,5 @@
 import { createContext } from "react"
-import { flotillaUIRequestStates, IFlotillaUITaskContext } from "../../.."
+import { flotillaUIRequestStates, IFlotillaUITaskContext } from "../../types"
 
 const TaskContext = createContext<IFlotillaUITaskContext>({
   data: null,

@@ -1,4 +1,4 @@
-import { IFlotillaUIConfig } from ".."
+import { IFlotillaUIConfig } from "./types"
 
 const config: IFlotillaUIConfig = {
   /** The default ECS cluster tasks will be executed on. */

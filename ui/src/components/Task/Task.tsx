@@ -7,7 +7,7 @@ import {
   IFlotillaTaskDefinition,
   IFlotillaAPIError,
   IFlotillaUITaskContext,
-} from "../../.."
+} from "../../types"
 import Loader from "../styled/Loader"
 
 interface ITaskProps {

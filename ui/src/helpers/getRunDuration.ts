@@ -1,5 +1,5 @@
 import * as moment from "moment"
-import { IFlotillaRun } from "../.."
+import { IFlotillaRun } from "../types"
 
 const addZeroPadding = (value: number): string =>
   value.toString().length === 1 ? `0${value}` : value.toString()

@@ -1,5 +1,5 @@
 import colors from "./colors"
-import { flotillaUIIntents } from "../.."
+import { flotillaUIIntents } from "../types"
 
 const intentToColor = (intent?: flotillaUIIntents): string => {
   switch (intent) {

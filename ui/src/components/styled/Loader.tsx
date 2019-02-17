@@ -3,7 +3,7 @@ import styled, { keyframes } from "styled-components"
 import colors from "../../helpers/colors"
 import { LOADER_SIZE_PX } from "../../helpers/styles"
 import intentToColor from "../../helpers/intentToColor"
-import { flotillaUIIntents } from "../../.."
+import { flotillaUIIntents } from "../../types"
 
 const LOADER_BORDER_WIDTH_PX = LOADER_SIZE_PX / 6
 const LOADER_BORDER = `${LOADER_BORDER_WIDTH_PX}px solid ${colors.black[3]}`

@@ -4,7 +4,7 @@ import KeyValues from "../styled/KeyValues"
 import Tag from "../styled/Tag"
 import { Code } from "../styled/Monospace"
 import TagGroup from "../styled/TagGroup"
-import { IFlotillaTaskDefinition, IFlotillaEnv } from "../../.."
+import { IFlotillaTaskDefinition, IFlotillaEnv } from "../../types"
 
 interface ITaskDefinitionSidebarProps {
   data: IFlotillaTaskDefinition | null

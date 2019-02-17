@@ -4,7 +4,7 @@ import { capitalize } from "lodash"
 import { CheckCircle, XCircle } from "react-feather"
 import colors from "../../helpers/colors"
 import Loader from "../styled/Loader"
-import { flotillaRunStatuses, flotillaUIIntents } from "../../.."
+import { flotillaRunStatuses, flotillaUIIntents } from "../../types"
 
 const RunStatusContainer = styled.div`
   display: flex;

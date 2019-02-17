@@ -16,7 +16,7 @@ import {
   flotillaUIRequestStates,
   flotillaUIIntents,
   IFlotillaUINavigationLink,
-} from "../../.."
+} from "../../types"
 
 class UnwrappedTaskDefinition extends React.PureComponent<{
   renderModal: (modal: React.ReactNode) => void

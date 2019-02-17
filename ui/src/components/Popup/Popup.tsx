@@ -5,7 +5,7 @@ import { Z_INDICES } from "../../helpers/styles"
 import Card from "../styled/Card"
 import Button from "../styled/Button"
 import ButtonGroup from "../styled/ButtonGroup"
-import { IFlotillaUIPopupProps, IFlotillaUIPopupContext } from "../../.."
+import { IFlotillaUIPopupProps, IFlotillaUIPopupContext } from "../../types"
 
 const POPUP_WINDOW_DISTANCE_PX = 48
 const POPUP_WIDTH_PX = 400

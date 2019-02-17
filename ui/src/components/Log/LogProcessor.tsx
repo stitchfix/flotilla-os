@@ -6,7 +6,7 @@ import {
   DETAIL_VIEW_SIDEBAR_WIDTH_PX,
 } from "../../helpers/styles"
 import LogRenderer from "./LogRenderer"
-import { IFlotillaUILogChunk } from "../../.."
+import { IFlotillaUILogChunk } from "../../types"
 
 interface IUnwrappedLogProcessorProps {
   logs: IFlotillaUILogChunk[]

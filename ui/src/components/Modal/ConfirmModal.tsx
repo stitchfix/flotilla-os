@@ -5,7 +5,7 @@ import Card from "../styled/Card"
 import ModalContext from "./ModalContext"
 import Modal from "./Modal"
 import PopupContext from "../Popup/PopupContext"
-import { IFlotillaUIPopupProps, flotillaUIIntents } from "../../.."
+import { IFlotillaUIPopupProps, flotillaUIIntents } from "../../types"
 
 interface IConfirmModalProps {
   body?: React.ReactNode

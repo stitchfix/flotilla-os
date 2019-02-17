@@ -10,8 +10,9 @@ import {
   IFlotillaEnv,
   IFlotillaRun,
   IFlotillaTaskDefinition,
-} from "../../index"
+} from "../types"
 import { stringToSelectOpt } from "./reactSelectHelpers"
+import { IReactSelectOption } from "../types"
 
 export interface IRequestOpts {
   method: string
@@ -80,7 +81,7 @@ class FlotillaAPIClient {
     values,
   }: {
     values: IFlotillaCreateTaskPayload
-  }): Promise<any> => {
+  }): Promise<IFlotillaTaskDefinition> => {
     return this.request({
       method: "post",
       path: "/v1/task",
@@ -95,7 +96,7 @@ class FlotillaAPIClient {
   }: {
     definitionID: string
     values: IFlotillaEditTaskPayload
-  }): Promise<any> => {
+  }): Promise<IFlotillaTaskDefinition> => {
     return this.request({
       method: "put",
       path: `/v1/task/${definitionID}`,
@@ -178,7 +179,7 @@ class FlotillaAPIClient {
   }
 
   /** Requests the available Flotilla groups. */
-  getGroups = (): Promise<any> => {
+  getGroups = (): Promise<IReactSelectOption[]> => {
     return this.request({
       method: "get",
       path: `/v1/groups`,
@@ -191,7 +192,7 @@ class FlotillaAPIClient {
   }
 
   /** Requests the available ECS clusters. */
-  getClusters = () => {
+  getClusters = (): Promise<IReactSelectOption[]> => {
     return this.request({
       method: "get",
       path: `/v1/clusters`,
@@ -203,7 +204,7 @@ class FlotillaAPIClient {
   }
 
   /** Requests lists of existing tags. */
-  getTags = () => {
+  getTags = (): Promise<IReactSelectOption[]> => {
     return this.request({
       method: "get",
       path: "/v1/tags",

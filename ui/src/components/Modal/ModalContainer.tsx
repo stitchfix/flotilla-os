@@ -3,7 +3,7 @@ import styled from "styled-components"
 import { Z_INDICES } from "../../helpers/styles"
 import colors from "../../helpers/colors"
 import ModalContext from "./ModalContext"
-import { IFlotillaUIModalContext } from "../../.."
+import { IFlotillaUIModalContext } from "../../types"
 
 const StyledModalContainer = styled.div`
   width: 100vw;

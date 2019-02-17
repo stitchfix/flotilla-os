@@ -16,7 +16,7 @@ import {
   flotillaRunStatuses,
   flotillaUIIntents,
   IFlotillaUINavigationLink,
-} from "../../.."
+} from "../../types"
 
 interface IUnwrappedRunViewProps {
   renderModal: (m: React.ReactNode) => void

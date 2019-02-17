@@ -7,7 +7,7 @@ import NestedKeyValueRow from "../styled/NestedKeyValueRow"
 import KVFieldInput from "./KVFieldInput"
 import QueryParams from "../QueryParams/QueryParams"
 import KVFieldContainer from "./KVFieldContainer"
-import { flotillaUIIntents } from "../../.."
+import { flotillaUIIntents } from "../../types"
 
 interface IUnwrappedQueryParamsKVFieldProps {
   description?: string

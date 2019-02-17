@@ -1,7 +1,7 @@
 import * as React from "react"
 import PopupContext from "./PopupContext"
 import Popup from "./Popup"
-import { IFlotillaUIPopupProps } from "../../.."
+import { IFlotillaUIPopupProps } from "../../types"
 
 interface IPopupContainerState {
   isVisible: boolean

@@ -13,7 +13,7 @@ import {
   flotillaUIIntents,
   IFlotillaUIPopupProps,
   IFlotillaUIRunContext,
-} from "../../.."
+} from "../../types"
 
 interface IRunProps {
   renderPopup: (p: IFlotillaUIPopupProps) => void

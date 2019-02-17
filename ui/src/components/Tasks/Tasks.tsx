@@ -8,7 +8,7 @@ import ButtonLink from "../styled/ButtonLink"
 import View from "../styled/View"
 import api from "../../api"
 import config from "../../config"
-import { flotillaUIIntents, flotillaUIAsyncDataTableFilters } from "../../.."
+import { flotillaUIIntents, flotillaUIAsyncDataTableFilters } from "../../types"
 
 class Tasks extends React.PureComponent {
   render() {

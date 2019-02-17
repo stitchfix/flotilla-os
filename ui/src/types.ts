@@ -91,7 +91,7 @@ export interface IFlotillaTaskDefinition {
   command: string
   container_name: string
   definition_id: string
-  env: []
+  env: IFlotillaEnv[]
   group_name: string
   image: string
   memory: number

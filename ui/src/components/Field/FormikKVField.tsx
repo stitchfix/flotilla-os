@@ -1,13 +1,12 @@
 import * as React from "react"
 import { X } from "react-feather"
 import { pick, get, isEmpty } from "lodash"
-import { Field, FieldArray } from "formik"
-import { Input } from "../styled/Inputs"
+import { FastField, FieldArray } from "formik"
 import Button from "../styled/Button"
 import NestedKeyValueRow from "../styled/NestedKeyValueRow"
-import KVFieldInput from "./KVFieldInput"
 import KVFieldContainer from "./KVFieldContainer"
-import { flotillaUIIntents } from "../../.."
+import { flotillaUIIntents } from "../../types"
+import KVFieldInput from "./KVFieldInput"
 
 interface IFormikKVFieldProps {
   description?: string
@@ -47,27 +46,8 @@ class FormikKVField extends React.PureComponent<IFormikKVFieldProps> {
               {!isEmpty(value) &&
                 value.map((v, i) => (
                   <NestedKeyValueRow key={i}>
-                    <Field
-                      name={`${name}[${i}].${keyField}`}
-                      value={v[keyField]}
-                      onChange={(evt: React.SyntheticEvent) => {
-                        const target = evt.target as HTMLInputElement
-                        setFieldValue(`${name}[${i}].${keyField}`, target.value)
-                      }}
-                      component={Input}
-                    />
-                    <Field
-                      name={`${name}[${i}].${valueField}`}
-                      value={v[valueField]}
-                      onChange={(evt: React.SyntheticEvent) => {
-                        const target = evt.target as HTMLInputElement
-                        setFieldValue(
-                          `${name}[${i}].${valueField}`,
-                          target.value
-                        )
-                      }}
-                      component={Input}
-                    />
+                    <FastField name={`${name}[${i}].${keyField}`} />
+                    <FastField name={`${name}[${i}].${valueField}`} />
                     <Button
                       intent={flotillaUIIntents.ERROR}
                       onClick={() => {

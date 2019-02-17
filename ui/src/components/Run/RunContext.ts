@@ -1,5 +1,5 @@
 import { createContext } from "react"
-import { IFlotillaUIRunContext, flotillaUIRequestStates } from "../../.."
+import { IFlotillaUIRunContext, flotillaUIRequestStates } from "../../types"
 
 const RunContext = createContext<IFlotillaUIRunContext>({
   data: null,

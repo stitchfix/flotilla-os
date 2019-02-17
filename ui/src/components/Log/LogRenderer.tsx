@@ -5,7 +5,7 @@ import LogRow from "./LogRow"
 import { RUN_BAR_HEIGHT_PX } from "../../helpers/styles"
 import RunBar from "../Run/RunBar"
 import RunContext from "../Run/RunContext"
-import { flotillaRunStatuses } from "../../.."
+import { flotillaRunStatuses } from "../../types"
 
 interface ILogRendererProps {
   len: number

@@ -5,7 +5,7 @@ import QueryParamsKVField from "../Field/QueryParamsKVField"
 import {
   flotillaUIAsyncDataTableFilters,
   IFlotillaUIAsyncDataTableFilterProps,
-} from "../../.."
+} from "../../types"
 
 /**
  * Note: this is not a PureComponent as it's children (notably, the

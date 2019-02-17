@@ -30,7 +30,7 @@ import {
   IFlotillaUIPopupProps,
   flotillaUIIntents,
   IFlotillaAPIError,
-} from "../../.."
+} from "../../types"
 
 interface IAsyncDataTableColumn {
   allowSort: boolean
@@ -74,7 +74,7 @@ interface IAsyncDataTableState {
  * Additionally, it will handle pagination, filters, and sorting via the router
  * query.
  */
-class AsyncDataTable extends React.PureComponent<
+export class AsyncDataTable extends React.PureComponent<
   IAsyncDataTableProps,
   IAsyncDataTableState
 > {
@@ -213,7 +213,7 @@ class AsyncDataTable extends React.PureComponent<
       .catch((error: IFlotillaAPIError) => {
         this.clearInterval()
 
-        this.props.renderPopup({
+        renderPopup({
           body: error.data,
           intent: flotillaUIIntents.ERROR,
           shouldAutohide: false,

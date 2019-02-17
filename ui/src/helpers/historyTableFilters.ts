@@ -5,7 +5,7 @@ import {
   flotillaUIAsyncDataTableFilters,
   IFlotillaUIAsyncDataTableFilterProps,
   flotillaRunStatuses,
-} from "../.."
+} from "../types"
 
 const isValidISOString = (value: string): boolean =>
   value !== "" ? moment.utc(value).isValid() : true

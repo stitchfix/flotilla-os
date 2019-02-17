@@ -2,7 +2,7 @@ import * as React from "react"
 import { mount, EnzymeAdapter, ReactWrapper } from "enzyme"
 import { Formik, FormikProps, Field } from "formik"
 import FormikKVField from "../FormikKVField"
-import { flotillaUIIntents } from "../../../.."
+import { flotillaUIIntents } from "../../../types"
 
 describe("FormikKVField", () => {
   let wrapper: ReactWrapper<any>

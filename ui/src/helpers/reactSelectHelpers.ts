@@ -1,7 +1,20 @@
 import { get } from "lodash"
-import { IReactSelectOption } from "../.."
+import { IReactSelectOption } from "../types"
 import colors from "./colors"
 import { Theme } from "react-select/lib/types"
+
+export const preprocessSelectValue = (selected: IReactSelectOption): string => {
+  if (selected === null || selected === undefined) return ""
+
+  return selected.value
+}
+export const preprocessMultiSelectValue = (
+  selected: IReactSelectOption[]
+): string[] => {
+  if (selected === null || selected === undefined) return []
+
+  return selected.map(selectOptToString)
+}
 
 export const stringToSelectOpt = (str: string): IReactSelectOption => ({
   label: str,

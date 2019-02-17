@@ -1,7 +1,7 @@
 import * as React from "react"
 import { mount } from "enzyme"
 import PopupContainer from "../PopupContainer"
-import { IFlotillaUIPopupProps } from "../../../.."
+import { IFlotillaUIPopupProps } from "../../../types"
 
 describe("PopupContainer", () => {
   it("can render and unrender popups", () => {

@@ -3,7 +3,7 @@ import styled, { css } from "styled-components"
 import colors from "../../helpers/colors"
 import Loader from "./Loader"
 import intentToColor from "../../helpers/intentToColor"
-import { flotillaUIIntents, IFlotillaUIButtonProps } from "../../.."
+import { flotillaUIIntents, IFlotillaUIButtonProps } from "../../types"
 
 export const buttonStyles = css`
   background: ${({ intent }: { intent?: flotillaUIIntents }) =>
