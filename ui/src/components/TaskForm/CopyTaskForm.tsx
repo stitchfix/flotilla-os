@@ -4,6 +4,7 @@ import { flotillaUIRequestStates } from "../../types"
 import TaskContext from "../Task/TaskContext"
 import CreateTaskForm from "./CreateTaskForm"
 import Loader from "../styled/Loader"
+import config from "../../config"
 
 /**
  * The CopyTaskForm is just a CreateTaskForm that gets its defaults from the
@@ -16,11 +17,11 @@ const CopyTaskForm: React.SFC<{}> = () => (
         return (
           <CreateTaskForm
             defaultValues={{
-              alias: get(ctx, ["data", "alias"], ""),
+              alias: "",
               command: get(ctx, ["data", "command"], ""),
               env: get(ctx, ["data", "env"], []),
               group_name: get(ctx, ["data", "group_name"], ""),
-              image: get(ctx, ["data", "image"], ""),
+              image: get(ctx, ["data", "image"], config.IMAGE_PREFIX),
               memory: get(ctx, ["data", "memory"], 1024),
               tags: get(ctx, ["data", "tags"], []),
             }}

@@ -1,3 +1,5 @@
+jest.mock("../../../helpers/FlotillaAPIClient")
+
 import * as React from "react"
 import { mount, ReactWrapper } from "enzyme"
 import { MemoryRouter } from "react-router-dom"
@@ -29,6 +31,7 @@ const defaultProps: IProps = {
   onSuccess: (opts?: any) => {},
   onFail: (error?: any) => {},
   validateSchema: CreateTaskYupSchema,
+  shouldRenderAliasField: true,
 }
 
 describe("BaseTaskForm", () => {
@@ -47,7 +50,7 @@ describe("BaseTaskForm", () => {
     })
 
     it("renders a Navigation component", () => {
-      const navWrapper = wrapper.find("TaskFormNavigation")
+      const navWrapper = wrapper.find("ConnectedTaskFormNavigation")
       const btnsWrapper = navWrapper.find("Button")
       expect(navWrapper.length).toBe(1)
       expect(btnsWrapper.length).toBe(2)

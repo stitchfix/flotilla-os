@@ -22,6 +22,7 @@ export interface IProps {
   renderPopup: (p: IFlotillaUIPopupProps) => void
   title: string
   definitionID: string
+  requestData: () => void
 }
 
 export class UpdateTaskForm extends React.PureComponent<IProps> {
@@ -41,7 +42,9 @@ export class UpdateTaskForm extends React.PureComponent<IProps> {
     })
 
   handleSuccess = (res: IFlotillaTaskDefinition) => {
-    this.props.push(`/tasks/${res.definition_id}`)
+    const { push, definitionID, requestData } = this.props
+    requestData()
+    push(`/tasks/${definitionID}`)
   }
 
   handleFail = (error: IFlotillaAPIError) => {
@@ -65,6 +68,7 @@ export class UpdateTaskForm extends React.PureComponent<IProps> {
         onSuccess={this.handleSuccess}
         onFail={this.handleFail}
         validateSchema={UpdateTaskYupSchema}
+        shouldRenderAliasField={false}
       />
     )
   }
@@ -93,8 +97,13 @@ export const WithTaskContext: React.SFC<
               memory: get(ctx, ["data", "memory"], 1024),
               tags: get(ctx, ["data", "tags"], []),
             }}
-            title={`Copy Task ${get(ctx, ["data", "alias"], ctx.definitionID)}`}
+            title={`Update Task ${get(
+              ctx,
+              ["data", "alias"],
+              ctx.definitionID
+            )}`}
             definitionID={ctx.definitionID}
+            requestData={ctx.requestData}
           />
         )
       }

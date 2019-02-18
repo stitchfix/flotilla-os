@@ -6,7 +6,7 @@ import {
   Redirect,
   RouteComponentProps,
 } from "react-router-dom"
-import { CreateTaskForm } from "../TaskForm/TaskForm"
+import CreateTaskForm from "../TaskForm/CreateTaskForm"
 import Tasks from "../Tasks/Tasks"
 import ActiveRuns from "../ActiveRuns/ActiveRuns"
 import TaskRouter from "../Task/TaskRouter"

@@ -14,7 +14,14 @@ import FormikKVField from "../Field/FormikKVField"
 import View from "../styled/View"
 import StyledForm from "../styled/Form"
 import api from "../../api"
-import * as TaskFormFields from "./Fields"
+import {
+  AliasField,
+  GroupNameField,
+  ImageField,
+  CommandField,
+  MemoryField,
+  TagsField,
+} from "./Fields"
 import { CreateTaskYupSchema } from "./validation"
 import Request, { IChildProps as IRequestChildProps } from "../Request/Request"
 import Loader from "../styled/Loader"
@@ -32,6 +39,7 @@ export interface IProps {
   onSuccess?: (definition: IFlotillaTaskDefinition) => void
   onFail?: (error: IFlotillaAPIError) => void
   validateSchema: any
+  shouldRenderAliasField: boolean
 }
 
 interface IState {
@@ -42,6 +50,7 @@ interface IState {
 export class BaseTaskForm extends React.PureComponent<IProps, IState> {
   static defaultProps: Partial<IProps> = {
     validateSchema: CreateTaskYupSchema,
+    shouldRenderAliasField: true,
   }
   state = {
     inFlight: false,
@@ -67,14 +76,21 @@ export class BaseTaskForm extends React.PureComponent<IProps, IState> {
   }
 
   render() {
-    const { defaultValues, title, groupOptions, tagOptions } = this.props
+    const {
+      defaultValues,
+      title,
+      groupOptions,
+      tagOptions,
+      shouldRenderAliasField,
+      validateSchema,
+    } = this.props
     const { inFlight } = this.state
 
     return (
       <Formik
         initialValues={defaultValues}
         onSubmit={this.handleSubmit}
-        validationSchema={CreateTaskYupSchema}
+        validationSchema={validateSchema}
       >
         {(formikProps: FormikProps<TaskFormPayload>) => {
           return (
@@ -85,18 +101,18 @@ export class BaseTaskForm extends React.PureComponent<IProps, IState> {
                   inFlight={inFlight}
                 />
                 <StyledForm title={title}>
-                  <TaskFormFields.AliasField />
-                  <TaskFormFields.GroupNameField
+                  {shouldRenderAliasField && <AliasField />}
+                  <GroupNameField
                     onChange={(value: string) => {
                       formikProps.setFieldValue("group_name", value)
                     }}
                     value={formikProps.values.group_name}
                     options={groupOptions}
                   />
-                  <TaskFormFields.ImageField />
-                  <TaskFormFields.CommandField />
-                  <TaskFormFields.MemoryField />
-                  <TaskFormFields.TagsField
+                  <ImageField />
+                  <CommandField />
+                  <MemoryField />
+                  <TagsField
                     onChange={(value: string[]) => {
                       formikProps.setFieldValue("tags", value)
                     }}

@@ -1,3 +1,5 @@
+jest.mock("../../../helpers/FlotillaAPIClient")
+
 import * as React from "react"
 import { mount } from "enzyme"
 import { get } from "lodash"
@@ -56,7 +58,7 @@ describe("CopyTaskForm", () => {
     let createTaskFormWrapper = wrapper.find("CreateTaskForm")
     expect(createTaskFormWrapper.length).toBe(1)
     expect(createTaskFormWrapper.prop("defaultValues")).toEqual({
-      alias: get(ctx, ["data", "alias"], ""),
+      alias: "",
       command: get(ctx, ["data", "command"], ""),
       env: get(ctx, ["data", "env"], []),
       group_name: get(ctx, ["data", "group_name"], ""),

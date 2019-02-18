@@ -1,3 +1,5 @@
+jest.mock("../../../helpers/FlotillaAPIClient")
+
 import * as React from "react"
 import { mount } from "enzyme"
 import { MemoryRouter } from "react-router-dom"
@@ -30,6 +32,7 @@ describe("UpdateTaskForm", () => {
       defaultValues: submitValues,
       definitionID: mockDefinitionID,
       title: "",
+      requestData: () => {},
     }
     const realUpdateTask = api.updateTask
 
@@ -67,7 +70,7 @@ describe("UpdateTaskForm", () => {
       })
     })
 
-    it("redirects to the created task if created successfully", async () => {
+    it("calls requestData and returns to the task definition if created successfully", async () => {
       const taskDef: IFlotillaTaskDefinition = {
         alias: "alias",
         arn: "arn",
@@ -81,16 +84,23 @@ describe("UpdateTaskForm", () => {
         tags: [],
       }
       const push = jest.fn()
+      const requestData = jest.fn()
       const wrapper = mount(
         <MemoryRouter>
-          <UpdateTaskForm {...defaultProps} push={push} />
+          <UpdateTaskForm
+            {...defaultProps}
+            push={push}
+            requestData={requestData}
+          />
         </MemoryRouter>
       )
       expect(push).toHaveBeenCalledTimes(0)
+      expect(requestData).toHaveBeenCalledTimes(0)
       const inst = wrapper.find("UpdateTaskForm").instance() as UpdateTaskForm
       inst.handleSuccess(taskDef)
+      expect(requestData).toHaveBeenCalledTimes(1)
       expect(push).toHaveBeenCalledTimes(1)
-      expect(push).toHaveBeenCalledWith(`/tasks/${taskDef.definition_id}`)
+      expect(push).toHaveBeenCalledWith(`/tasks/${inst.props.definitionID}`)
     })
 
     it("renders a popup if not created successfully", () => {
@@ -172,7 +182,7 @@ describe("UpdateTaskForm", () => {
         tags: get(ctx, ["data", "tags"], []),
       })
       expect(baseTaskFormWrapper.prop("title")).toBe(
-        `Copy Task ${get(ctx, ["data", "alias"], ctx.definitionID)}`
+        `Update Task ${get(ctx, ["data", "alias"], ctx.definitionID)}`
       )
     })
   })

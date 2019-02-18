@@ -4,7 +4,8 @@ import { get } from "lodash"
 import Task from "./Task"
 import TaskDefinition from "./TaskDefinition"
 import RunForm from "../RunForm/RunForm"
-import { UpdateTaskForm, CloneTaskForm } from "../TaskForm/TaskForm"
+import CopyTaskForm from "../TaskForm/CopyTaskForm"
+import UpdateTaskForm from "../TaskForm/UpdateTaskForm"
 
 interface ITaskRouterProps extends RouteComponentProps<any> {
   shouldRequestByAlias?: boolean
@@ -30,7 +31,7 @@ class TaskRouter extends React.PureComponent<ITaskRouterProps> {
         <Switch>
           <Route exact path={rootPath} component={TaskDefinition} />
           <Route exact path={`${rootPath}/run`} component={RunForm} />
-          <Route exact path={`${rootPath}/copy`} component={CloneTaskForm} />
+          <Route exact path={`${rootPath}/copy`} component={CopyTaskForm} />
           <Route exact path={`${rootPath}/edit`} component={UpdateTaskForm} />
         </Switch>
       </Task>

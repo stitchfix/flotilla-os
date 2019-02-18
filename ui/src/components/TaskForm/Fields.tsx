@@ -19,6 +19,8 @@ export const AliasField: React.SFC<{}> = () => (
   </StyledField>
 )
 
+AliasField.displayName = "AliasField"
+
 export const CommandField: React.SFC<{}> = () => (
   <StyledField
     label="Command"
@@ -28,6 +30,8 @@ export const CommandField: React.SFC<{}> = () => (
     <FastField name="command" component="textarea" />
   </StyledField>
 )
+
+CommandField.displayName = "CommandField"
 
 export const GroupNameField: React.SFC<{
   onChange: (value: string) => void
@@ -51,6 +55,8 @@ export const GroupNameField: React.SFC<{
   </StyledField>
 )
 
+GroupNameField.displayName = "GroupNameField"
+
 export const ImageField: React.SFC<{}> = () => (
   <StyledField
     label="Image"
@@ -61,6 +67,8 @@ export const ImageField: React.SFC<{}> = () => (
   </StyledField>
 )
 
+ImageField.displayName = "ImageField"
+
 export const MemoryField: React.SFC<{}> = () => (
   <StyledField
     label="Memory (MB)"
@@ -70,6 +78,8 @@ export const MemoryField: React.SFC<{}> = () => (
     <FastField name="memory" type="number" />
   </StyledField>
 )
+
+MemoryField.displayName = "MemoryField"
 
 export const TagsField: React.SFC<{
   onChange: (value: string[]) => void
@@ -89,3 +99,5 @@ export const TagsField: React.SFC<{
     />
   </StyledField>
 )
+
+TagsField.displayName = "TagsField"

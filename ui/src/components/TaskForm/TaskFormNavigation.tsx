@@ -1,15 +1,18 @@
 import * as React from "react"
+import { withRouter, RouteComponentProps } from "react-router-dom"
 import Navigation from "../Navigation/Navigation"
 import { flotillaUIIntents, IFlotillaUIBreadcrumb } from "../../types"
+import { Omit } from "lodash"
 
-interface IProps {
+export interface IProps {
   isSubmitDisabled: boolean
   inFlight: boolean
   breadcrumbs?: IFlotillaUIBreadcrumb[]
+  goBack: () => void
 }
 
-const TaskFormNavigation: React.SFC<IProps> = props => {
-  const { isSubmitDisabled, inFlight, breadcrumbs } = props
+export const TaskFormNavigation: React.SFC<IProps> = props => {
+  const { isSubmitDisabled, inFlight, breadcrumbs, goBack } = props
   return (
     <Navigation
       breadcrumbs={breadcrumbs}
@@ -18,7 +21,7 @@ const TaskFormNavigation: React.SFC<IProps> = props => {
           isLink: false,
           text: "Cancel",
           buttonProps: {
-            // onClick: goBack,
+            onClick: goBack,
           },
         },
         {
@@ -36,4 +39,17 @@ const TaskFormNavigation: React.SFC<IProps> = props => {
   )
 }
 
-export default TaskFormNavigation
+const ConnectedTaskFormNavigation: React.ComponentType<any> = withRouter(
+  (props: Omit<IProps, "goBack"> & RouteComponentProps<{}>) => (
+    <TaskFormNavigation
+      isSubmitDisabled={props.isSubmitDisabled}
+      inFlight={props.inFlight}
+      breadcrumbs={props.breadcrumbs}
+      goBack={props.history.goBack}
+    />
+  )
+)
+
+ConnectedTaskFormNavigation.displayName = "ConnectedTaskFormNavigation"
+
+export default ConnectedTaskFormNavigation

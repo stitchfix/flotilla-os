@@ -11,6 +11,7 @@ import {
 } from "../../types"
 import PopupContext from "../Popup/PopupContext"
 import { CreateTaskYupSchema } from "./validation"
+import config from "../../config"
 
 interface IProps {
   defaultValues: TaskFormPayload
@@ -24,7 +25,7 @@ export class CreateTaskForm extends React.PureComponent<IProps> {
     defaultValues: {
       alias: "",
       group_name: "",
-      image: "",
+      image: config.IMAGE_PREFIX,
       memory: 1024,
       command: "",
     },
@@ -70,6 +71,7 @@ export class CreateTaskForm extends React.PureComponent<IProps> {
         onSuccess={this.handleSuccess}
         onFail={this.handleFail}
         validateSchema={CreateTaskYupSchema}
+        shouldRenderAliasField
       />
     )
   }
