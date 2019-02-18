@@ -10,9 +10,9 @@ import {
   IFlotillaEnv,
   IFlotillaRun,
   IFlotillaTaskDefinition,
+  IReactSelectOption,
 } from "../types"
 import { stringToSelectOpt } from "./reactSelectHelpers"
-import { IReactSelectOption } from "../types"
 
 export interface IRequestOpts {
   method: string

@@ -8,7 +8,7 @@ import {
   IFlotillaCreateTaskPayload,
   IFlotillaRunTaskPayload,
   IFlotillaEditTaskPayload,
-} from "../../.."
+} from "../../types"
 
 const ROOT_LOCATION = "ROOT_LOCATION"
 const SUCCESS_PATH = "/mock_path"

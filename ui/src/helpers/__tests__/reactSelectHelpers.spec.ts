@@ -1,5 +1,5 @@
 import { stringToSelectOpt, selectOptToString } from "../reactSelectHelpers"
-import { IReactSelectOption } from "../../.."
+import { IReactSelectOption } from "../../types"
 
 describe("reactSelectHelpers", () => {
   describe("stringToSelectOpt", () => {

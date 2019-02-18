@@ -1,5 +1,5 @@
 import filterInvalidRunEnv from "../filterInvalidRunEnv"
-import { IFlotillaEnv } from "../../.."
+import { IFlotillaEnv } from "../../types"
 import config from "../../config"
 
 describe("filterInvalidRunEnv", () => {
