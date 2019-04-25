@@ -20,7 +20,15 @@ module.exports = opts => {
     module: {
       rules: [
         { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
-        { enforce: "pre", test: /\.js$/, loader: "source-map-loader" },
+        {
+          enforce: "pre",
+          test: /\.js$/,
+          loader: "source-map-loader",
+
+          // Prevents a source-map-loader warning from being logged per:
+          // https://github.com/angular/angular-cli/issues/7115
+          exclude: [path.join(process.cwd(), "node_modules")],
+        },
         {
           test: /\.jpe?g$|\.gif$|\.png$|\.ttf$|\.eot$|\.svg$/,
           use: "file-loader?name=[name].[ext]?[hash]",

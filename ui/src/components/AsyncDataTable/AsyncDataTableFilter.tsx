@@ -1,4 +1,4 @@
-import React from "react"
+import * as React from "react"
 import { QueryParamsFieldText } from "../Field/FieldText"
 import { QueryParamsFieldSelect } from "../Field/FieldSelect"
 import QueryParamsKVField from "../Field/QueryParamsKVField"

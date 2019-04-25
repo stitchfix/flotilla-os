@@ -30,6 +30,7 @@ export interface IFlotillaUIConfig {
   REQUIRED_RUN_TAGS: string[]
   RUN_LOGS_REQUEST_INTERVAL_MS: string | number
   RUN_REQUEST_INTERVAL_MS: string | number
+  COOKIES_TO_RUN_TAGS: string[]
 }
 
 /** The shape of the task React Context available to consumers. */
@@ -81,7 +82,7 @@ export interface IFlotillaUIButtonProps
   isDisabled: boolean
   isLoading: boolean
   onClick?: (evt: React.SyntheticEvent) => void
-  type: string
+  type?: "submit" | "reset" | "button"
 }
 
 /** Task definition shared by API and UI. */

@@ -2,14 +2,15 @@ import styled, { css } from "styled-components"
 import colors from "../../helpers/colors"
 import { DEFAULT_BORDER } from "../../helpers/styles"
 
-export const Table = styled.div`
+export const Table = styled.table`
   background: ${colors.black[0]};
   display: flex;
   flex-flow: column nowrap;
   overflow: hidden;
+  width: 100%;
 `
 
-export const TableRow = styled.div`
+export const TableRow = styled.tr`
   align-items: center;
   background: inherit;
   border-bottom: 1px solid ${colors.black[3]};
@@ -36,10 +37,10 @@ const cellStyles = css`
   text-overflow: ellipsis;
   white-space: nowrap;
   height: 100%;
-  border-left: ${DEFAULT_BORDER};
+  /* border-left: ${DEFAULT_BORDER}; */
 `
 
-export const TableCell = styled.div`
+export const TableCell = styled.td`
   ${cellStyles};
   flex: ${({ width }: { width?: number }) => (!!width ? width : 1)};
 `
@@ -49,7 +50,7 @@ export const TableHeaderSortIcon = styled.div`
   font-size: 0.6rem;
 `
 
-export const TableHeaderCell = styled.div`
+export const TableHeaderCell = styled.th`
   ${cellStyles};
   font-size: 0.9rem;
   text-transform: uppercase;

@@ -26,6 +26,9 @@ const config: IFlotillaUIConfig = {
 
   /** Run tags that must be filled out. */
   REQUIRED_RUN_TAGS: (process.env.REQUIRED_RUN_TAGS || "").split(","),
+
+  /** Comma-separated string that maps run tags to cookies */
+  COOKIES_TO_RUN_TAGS: (process.env.COOKIES_TO_RUN_TAGS || "").split(","),
 }
 
 export default config
