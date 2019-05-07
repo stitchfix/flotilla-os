@@ -1,5 +1,5 @@
 import * as React from "react"
-import { get, isEmpty } from "lodash"
+import { isEmpty } from "lodash"
 import { ChevronRight } from "react-feather"
 import Button from "../styled/Button"
 import ButtonLink from "../styled/ButtonLink"
@@ -12,7 +12,9 @@ import {
   NavigationLink,
   NavigationBreadcrumbs,
   NavigationBreadcrumb,
+  NavigationLogo,
 } from "../styled/Navigation"
+import Favicon from "../../assets/favicon.png"
 
 interface INavigationProps {
   actions: IFlotillaUINavigationLink[]
@@ -21,7 +23,7 @@ interface INavigationProps {
 
 class Navigation extends React.PureComponent<INavigationProps> {
   static displayName = "Navigation"
-  static defaultProps: Partial<INavigationProps> = {
+  static defaultProps = {
     actions: [],
     breadcrumbs: [],
   }
@@ -32,7 +34,7 @@ class Navigation extends React.PureComponent<INavigationProps> {
         <NavigationInner>
           <NavigationSection position="left">
             <NavigationLink to="/">
-              {/* <NavigationLogo src={Favicon} alt="flotilla-logo" /> */}
+              <NavigationLogo src={Favicon} alt="flotilla-logo" />
             </NavigationLink>
             <NavigationLink to="/tasks">Tasks</NavigationLink>
             <NavigationLink to="/runs">Runs</NavigationLink>
