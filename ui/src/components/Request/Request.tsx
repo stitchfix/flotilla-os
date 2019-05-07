@@ -23,6 +23,11 @@ export interface IChildProps extends IState {
   request: (args?: any) => void
 }
 
+/**
+ * This component takes a requestFn prop (any function that returns a promise)
+ * then calls its `children` prop with the promise's resolved value, along with
+ * other useful attributes.
+ */
 class Request extends React.PureComponent<IProps, IState> {
   static defaultProps: Partial<IProps> = {
     shouldRequestOnMount: true,
@@ -82,16 +87,21 @@ class Request extends React.PureComponent<IProps, IState> {
           })
         })
     } else {
-      console.error(
-        `The requestFn and requestArgs props passed to <Request> must either both be arrays or non arrays.`
-      )
+      const errMsg =
+        "The `requestFn` and `requestArgs` props passed to <Request> must either both be arrays or non-arrays."
+      this.setState({
+        inFlight: false,
+        error: errMsg,
+        requestState: flotillaUIRequestStates.ERROR,
+      })
+      console.error(errMsg)
     }
   }
 
   render() {
     return this.props.children({
       ...this.state,
-      request: this.request,
+      request: this.request.bind(this),
     })
   }
 }

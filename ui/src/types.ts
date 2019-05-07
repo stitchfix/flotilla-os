@@ -146,23 +146,6 @@ export interface IFlotillaEnv {
   value: any
 }
 
-/** Filter types for the AsyncDataTable component */
-export enum flotillaUIAsyncDataTableFilters {
-  INPUT = "INPUT",
-  SELECT = "SELECT",
-  CUSTOM = "CUSTOM",
-  KV = "KV",
-}
-
-/** Filter prop shape for AsyncDataTableFilter components. */
-export interface IFlotillaUIAsyncDataTableFilterProps {
-  description?: string
-  displayName: string
-  name: string
-  type: flotillaUIAsyncDataTableFilters
-  filterProps?: any
-}
-
 /** Shape of react-select option. */
 export interface IReactSelectOption {
   label: string

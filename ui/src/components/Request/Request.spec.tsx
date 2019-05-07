@@ -1,7 +1,7 @@
 import * as React from "react"
 import { mount } from "enzyme"
-import Request, { IProps, IChildProps } from "../Request"
-import { flotillaUIRequestStates } from "../../../types"
+import Request, { IProps, IChildProps } from "./Request"
+import { flotillaUIRequestStates } from "../../types"
 
 const DEFAULT_PROPS: Partial<IProps> = {
   shouldRequestOnMount: true,
@@ -10,7 +10,7 @@ const DEFAULT_PROPS: Partial<IProps> = {
 }
 
 describe("Request", () => {
-  it("calls its request method on componentDidMount if the shouldRequestOnMount prop is true", () => {
+  it("calls its request method on componentDidMount if props.shouldRequestOnMount is true", () => {
     let realRequest = Request.prototype.request
     Request.prototype.request = jest.fn()
     const initialRequestArgs = { foo: "bar" }
@@ -29,7 +29,7 @@ describe("Request", () => {
     )
     const childProps: IChildProps = {
       ...wrapper.state(),
-      request: wrapper.instance().request,
+      request: expect.any(Function),
     }
     expect(children).toHaveBeenCalledWith(childProps)
   })

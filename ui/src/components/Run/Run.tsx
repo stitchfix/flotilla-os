@@ -68,9 +68,8 @@ class Run extends React.PureComponent<IRunProps, IRunState> {
 
   requestData = (): void => {
     // If the previous request is still in flight, return.
-    if (this.state.inFlight === true) {
-      return
-    }
+    if (this.state.inFlight === true) return
+    if (this.state.error !== false) return
 
     this.setState({ inFlight: false, error: false })
 

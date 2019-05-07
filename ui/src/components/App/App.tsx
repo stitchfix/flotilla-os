@@ -8,7 +8,7 @@ import {
 } from "react-router-dom"
 import CreateTaskForm from "../TaskForm/CreateTaskForm"
 import Tasks from "../Tasks/Tasks"
-import ActiveRuns from "../ActiveRuns/ActiveRuns"
+import ActiveRuns from "../Runs/Runs"
 import TaskRouter from "../Task/TaskRouter"
 import Run from "../Run/Run"
 import ModalContainer from "../Modal/ModalContainer"
