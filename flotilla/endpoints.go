@@ -29,14 +29,14 @@ type listRequest struct {
 	envFilters map[string]string
 }
 
-type launchRequest struct {
+type LaunchRequest struct {
 	ClusterName string         `json:"cluster"`
 	Env         *state.EnvList `json:"env"`
 }
 
 type launchRequestV2 struct {
 	RunTags RunTags `json:"run_tags"`
-	*launchRequest
+	*LaunchRequest
 }
 
 //
@@ -253,7 +253,7 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
-	var lr launchRequest
+	var lr LaunchRequest
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
