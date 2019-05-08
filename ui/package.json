@@ -96,8 +96,7 @@
     "build": "rimraf build/ && npm run webpack",
     "start": "npm run dev",
     "test": "NODE_ENV=test jest",
-    "test:watch": "npm test -- --watch",
-    "precommit": "lint-staged"
+    "test:watch": "npm test -- --watch"
   },
   "lint-staged": {
     "*.{js,scss}": [
