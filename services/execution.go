@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
@@ -145,7 +146,19 @@ func (es *executionService) createFromDefinition(
 	}
 
 	// Queue run
-	return run, es.ee.Enqueue(run)
+	err = es.ee.Enqueue(run)
+	queuedAt := time.Now()
+
+	if err != nil {
+		return run, err
+	}
+
+	// Update the run's QueuedAt field
+	if run, err = es.sm.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
+		return run, err
+	}
+
+	return run, nil
 }
 
 func (es *executionService) constructRun(

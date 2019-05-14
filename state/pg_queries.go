@@ -164,6 +164,7 @@ select
   coalesce(t.cluster_name,'')                as clustername,
   t.exit_code                                as exitcode,
   coalesce(t.status,'')                      as status,
+  queued_at                                  as queuedat,
   started_at                                 as startedat,
   finished_at                                as finishedat,
   coalesce(t.instance_id,'')                 as instanceid,
@@ -191,9 +192,16 @@ const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 //
 const GetRunSQLForUpdate = GetRunSQL + " for update"
 
+//
+// GroupsSelect returns existing group_names
+//
 const GroupsSelect = `
 select distinct group_name from task_def
 `
+
+//
+// TagsSelect returns existing tags
+//
 const TagsSelect = `
 select distinct text from tags
 `

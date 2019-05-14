@@ -4,16 +4,19 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
+
 	// Pull in postgres specific drivers
 	"database/sql"
+	"math"
+	"strings"
+	"time"
+
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"math"
-	"strings"
-	"time"
 )
 
 //
@@ -484,7 +487,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	for rows.Next() {
 		err = rows.Scan(
 			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
-			&existing.ClusterName, &existing.ExitCode, &existing.Status, &existing.StartedAt,
+			&existing.ClusterName, &existing.ExitCode, &existing.Status, &existing.StartedAt, &existing.QueuedAt,
 			&existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName,
 			&existing.User, &existing.TaskType, &existing.Env)
 	}
@@ -502,7 +505,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       status = $8, started_at = $9,
       finished_at = $10, instance_id = $11,
       instance_dns_name = $12,
-      group_name = $13, env = $14
+			group_name = $13, env = $14,
+			queued_at = $15
     WHERE run_id = $1;
     `
 
@@ -514,7 +518,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Status, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName,
-		existing.Env); err != nil {
+		existing.Env, existing.QueuedAt); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}

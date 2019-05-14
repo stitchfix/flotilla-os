@@ -42,6 +42,7 @@ func TestExecutionService_Create(t *testing.T) {
 		"IsImageValid":  true,
 		"CanBeRun":      true,
 		"CreateRun":     true,
+		"UpdateRun":     true,
 		"Enqueue":       true,
 	}
 	run, err := es.Create("B", "clusta", env, "somebody")
@@ -80,6 +81,10 @@ func TestExecutionService_Create(t *testing.T) {
 		t.Errorf("Expected new run to have user 'somebody' but was '%s'", run.User)
 	}
 
+	if run.QueuedAt == nil {
+		t.Errorf("Expected new run to have a 'queued_at' field but was nil.")
+	}
+
 	if run.Env == nil {
 		t.Errorf("Expected non-nil environment")
 	}
@@ -112,6 +117,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		"IsImageValid":         true,
 		"CanBeRun":             true,
 		"CreateRun":            true,
+		"UpdateRun":            true,
 		"Enqueue":              true,
 	}
 	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody")
@@ -148,6 +154,10 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 
 	if run.User != "somebody" {
 		t.Errorf("Expected new run to have user 'somebody' but was '%s'", run.User)
+	}
+
+	if run.QueuedAt == nil {
+		t.Errorf("Expected new run to have a 'queued_at' field but was nil.")
 	}
 
 	if run.Env == nil {
