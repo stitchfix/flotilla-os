@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS task (
   cluster_name character varying,
   exit_code integer,
   status character varying,
+  queued_at timestamp with time zone,
   started_at timestamp with time zone,
   finished_at timestamp with time zone,
   instance_id character varying,
@@ -61,6 +62,8 @@ CREATE TABLE IF NOT EXISTS task (
   task_type character varying
   -- Refactor these --
 );
+
+ALTER TABLE task ADD COLUMN IF NOT EXISTS queued_at timestamp with time zone;
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_cluster_name ON task(cluster_name);
