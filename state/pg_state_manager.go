@@ -4,16 +4,20 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
+
 	// Pull in postgres specific drivers
 	"database/sql"
+	"math"
+	"strings"
+	"time"
+
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"math"
-	"strings"
-	"time"
+	"github.com/stitchfix/flotilla-os/worker"
 )
 
 //
@@ -60,6 +64,11 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 
 		if err = sm.createTables(); err != nil {
 			return errors.Wrap(err, "problem executing create tables sql")
+		}
+
+		// Populate worker table
+		if err = sm.initWorkerTable(conf); err != nil {
+			return errors.Wrap(err, "problem populating worker table sql")
 		}
 	}
 	return nil
@@ -564,7 +573,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 }
 
 //
-// Metadata
+// ListGroups returns a list of the existing group names.
 //
 func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (GroupsList, error) {
 	var (
@@ -592,6 +601,9 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 	return result, nil
 }
 
+//
+// ListTags returns a list of the existing tags.
+//
 func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsList, error) {
 	var (
 		err         error
@@ -616,6 +628,47 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	}
 
 	return result, nil
+}
+
+func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
+	// Get worker count from configuration.
+	rt := int64(c.GetInt("worker.num_retry_workers_per_instance"))
+	sb := int64(c.GetInt("worker.num_submit_workers_per_instance"))
+	st := int64(c.GetInt("worker.num_status_workers_per_instance"))
+
+	// Run query.
+	_, err := sm.db.Exec(InitWorkerTableSQL, rt, sb, st)
+	return err
+}
+
+//
+// UpdateWorkerCount updates the count for a particular worker type.
+//
+func (sm *SQLStateManager) UpdateWorkerCount(workerType worker.WorkerType, numWorkersPerInstance int) error {
+	var err error
+
+	// Ensure that the count is greater than or equal to `1`.
+	if numWorkersPerInstance < 1 {
+		return errors.Wrap(err, "cannot have less than 1 worker")
+	}
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	update := `UPDATE worker SET num_workers = $2 WHERE worker_type = $1;`
+
+	if _, err = tx.Exec(update, workerType, numWorkersPerInstance); err != nil {
+		tx.Rollback()
+		return errors.WithStack(err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
 
 //
