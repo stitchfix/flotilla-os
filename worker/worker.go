@@ -2,13 +2,33 @@ package worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"time"
 )
+
+//
+// WorkerTypes is an enum for the different types of workers.
+//
+var WorkerTypes = newWorkerTypes()
+
+type workerTypes struct {
+	Retry  string
+	Submit string
+	Status string
+}
+
+func newWorkerTypes() *workerTypes {
+	return &workerTypes{
+		Retry:  "retry",
+		Submit: "submit",
+		Status: "status",
+	}
+}
 
 //
 // Worker defines a background worker process
@@ -19,6 +39,9 @@ type Worker interface {
 	Run()
 }
 
+//
+// NewWorker instantiates a new worker.
+//
 func NewWorker(
 	workerType string,
 	log flotillaLog.Logger,
@@ -29,11 +52,11 @@ func NewWorker(
 	var worker Worker
 
 	switch workerType {
-	case "submit":
+	case WorkerTypes.Submit:
 		worker = &submitWorker{}
-	case "retry":
+	case WorkerTypes.Retry:
 		worker = &retryWorker{}
-	case "status":
+	case WorkerTypes.Status:
 		worker = &statusWorker{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
@@ -46,6 +69,9 @@ func NewWorker(
 	return worker, nil
 }
 
+//
+// GetPollInterval returns the frequency at which a worker will run.
+//
 func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
 	var interval time.Duration
 	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
