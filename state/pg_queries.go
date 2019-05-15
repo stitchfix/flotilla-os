@@ -103,6 +103,20 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
   tag_id character varying NOT NULL REFERENCES tags(text),
   task_def_id character varying NOT NULL REFERENCES task_def(definition_id)
 );
+
+CREATE TABLE IF NOT EXISTS worker (
+  type character varying PRIMARY KEY,
+  num_workers_per_instance integer
+);
+`
+
+//
+// InitWorkerTableSQL populates the `worker` table with default values from the
+// configuration file.
+//
+const InitWorkerTableSQL = `
+  INSERT INTO worker (type, num_workers)
+  VALUES ('retry', $1), ('submit', $2), ('status', $3);
 `
 
 //
