@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
 );
 
 CREATE TABLE IF NOT EXISTS worker (
-  type character varying PRIMARY KEY,
+  worker_type character varying PRIMARY KEY,
   num_workers_per_instance integer
 );
 `
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS worker (
 // configuration file.
 //
 const InitWorkerTableSQL = `
-  INSERT INTO worker (type, num_workers)
+  INSERT INTO worker (worker_type, num_workers)
   VALUES ('retry', $1), ('submit', $2), ('status', $3);
 `
 
