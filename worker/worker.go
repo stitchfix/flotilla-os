@@ -33,11 +33,11 @@ func NewWorker(
 	var worker Worker
 
 	switch workerType {
-	case WorkerTypes.Submit:
+	case state.WorkerTypes.Submit:
 		worker = &submitWorker{}
-	case WorkerTypes.Retry:
+	case state.WorkerTypes.Retry:
 		worker = &retryWorker{}
-	case WorkerTypes.Status:
+	case state.WorkerTypes.Status:
 		worker = &statusWorker{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)

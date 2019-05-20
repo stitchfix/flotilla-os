@@ -420,7 +420,7 @@ func newWorkerTypes() *workerTypes {
 //
 type Worker struct {
 	WorkerType       *workerTypes `json:"worker_type"`
-	CountPerInstance *int64       `json:"count_per_instance"`
+	CountPerInstance int          `json:"count_per_instance"`
 }
 
 //
@@ -428,7 +428,7 @@ type Worker struct {
 //
 func (w *Worker) UpdateWith(other Worker) {
 	if other.CountPerInstance > 0 {
-		d.CountPerInstance = other.CountPerInstance
+		w.CountPerInstance = other.CountPerInstance
 	}
 }
 
