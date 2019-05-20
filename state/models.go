@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/nu7hatch/gouuid"
 	"regexp"
 	"text/template"
 	"time"
+
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 // StatusRunning indicates the run is running
@@ -393,4 +394,71 @@ type GroupsList struct {
 type TagsList struct {
 	Tags  []string
 	Total int
+}
+
+//
+// WorkerTypes is an enum for the different types of workers.
+//
+var WorkerTypes = newWorkerTypes()
+
+type workerTypes struct {
+	Retry  string
+	Submit string
+	Status string
+}
+
+func newWorkerTypes() *workerTypes {
+	return &workerTypes{
+		Retry:  "retry",
+		Submit: "submit",
+		Status: "status",
+	}
+}
+
+//
+// Worker represents a Flotilla Worker
+//
+type Worker struct {
+	WorkerType       *WorkerTypes `json:"worker_type"`
+	CountPerInstance *int64       `json:"count_per_instance"`
+}
+
+//
+// MarshalJSON transforms a Worker into a valid JSON object.
+//
+func (w Worker) MarshalJSON() ([]byte, error) {
+	type Wk Worker
+
+	return json.Marshal(&struct {
+		Wk
+	}{
+		Wk: (Wk)(d),
+	})
+}
+
+//
+// WorkerList wraps a list of Workers
+//
+type WorkerList struct {
+	Total   int      `json:"total"`
+	Workers []Worker `json:"workers"`
+}
+
+//
+// MarshalJSON transforms a WorkerList into a valid JSON object.
+//
+func (wl *WorkerList) MarshalJSON() ([]byte, error) {
+	type WList WorkerList
+	l := wl.Workers
+	if l == nil {
+		l = []Worker{}
+	}
+
+	return json.Marshal(&struct {
+		Workers []Worker `json:"workers"`
+		*WList
+	}{
+		Workers: l,
+		WList:   (*WList)(wl),
+	})
 }
