@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"github.com/stitchfix/flotilla-os/worker"
 )
 
 //
@@ -630,11 +629,14 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	return result, nil
 }
 
+//
+// initWorkerTable initializes the `worker` table with values from the config
+//
 func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration.
-	rt := int64(c.GetInt("worker.num_retry_workers_per_instance"))
-	sb := int64(c.GetInt("worker.num_submit_workers_per_instance"))
-	st := int64(c.GetInt("worker.num_status_workers_per_instance"))
+	rt := int64(c.GetInt("worker.retry_worker_count_per_instance"))
+	sb := int64(c.GetInt("worker.submit_worker_count_per_instance"))
+	st := int64(c.GetInt("worker.status_worker_count_per_instance"))
 
 	// Run query.
 	_, err := sm.db.Exec(InitWorkerTableSQL, rt, sb, st)
@@ -642,33 +644,92 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 }
 
 //
-// UpdateWorkerCount updates the count for a particular worker type.
+// ListWorkers returns list of workers
 //
-func (sm *SQLStateManager) UpdateWorkerCount(workerType worker.WorkerType, numWorkersPerInstance int) error {
+func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 	var err error
+	var result WorkersList
 
-	// Ensure that the count is greater than or equal to `1`.
-	if numWorkersPerInstance < 1 {
-		return errors.Wrap(err, "cannot have less than 1 worker")
+	sql := fmt.Sprintf(ListWorkersSQL)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+	err = sm.db.Select(&result.Workers, sql)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list workers sql")
 	}
+	err = sm.db.Get(&result.Total, countSQL)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list workers count sql")
+	}
+
+	return result, nil
+}
+
+//
+// GetWorker returns data for a single worker.
+//
+func (sm *SQLStateManager) GetWorker(workerType workerTypes) (Worker, error) {
+	var err error
+	var w Worker
+	err = sm.db.Get(&w, GetWorkerSQL, workerType)
+
+	// Handle errors
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return w, exceptions.MissingResource{
+				fmt.Sprintf("Worker of type %s not found", workerType)}
+		}
+
+		return w, errors.Wrapf(err, "issue getting worker of type [%s]", workerType)
+	}
+
+	return w, nil
+}
+
+//
+// UpdateWorker updates a single worker.
+//
+func (sm *SQLStateManager) UpdateWorker(workerType workerTypes, updates Worker) (Worker, error) {
+	var (
+		err      error
+		existing Worker
+	)
 
 	tx, err := sm.db.Begin()
 	if err != nil {
-		return errors.WithStack(err)
+		return existing, errors.WithStack(err)
 	}
 
-	update := `UPDATE worker SET num_workers = $2 WHERE worker_type = $1;`
-
-	if _, err = tx.Exec(update, workerType, numWorkersPerInstance); err != nil {
+	rows, err := tx.Query(GetWorkerSQLForUpdate, workerType)
+	if err != nil {
 		tx.Rollback()
-		return errors.WithStack(err)
+		return existing, errors.WithStack(err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&existing.WorkerType, &existing.CountPerInstance)
+	}
+	if err != nil {
+		return existing, errors.WithStack(err)
+	}
+
+	existing.UpdateWith(updates)
+
+	update := `
+		UPDATE worker SET count_per_instance = $2
+    WHERE worker_type = $1;
+    `
+
+	if _, err = tx.Exec(update, workerType, existing.CountPerInstance); err != nil {
+		tx.Rollback()
+		return existing, errors.WithStack(err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.WithStack(err)
+		return existing, errors.WithStack(err)
 	}
 
-	return nil
+	return existing, nil
 }
 
 //

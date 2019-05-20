@@ -419,8 +419,17 @@ func newWorkerTypes() *workerTypes {
 // Worker represents a Flotilla Worker
 //
 type Worker struct {
-	WorkerType       *WorkerTypes `json:"worker_type"`
+	WorkerType       *workerTypes `json:"worker_type"`
 	CountPerInstance *int64       `json:"count_per_instance"`
+}
+
+//
+// UpdateWith updates this definition with information from another
+//
+func (w *Worker) UpdateWith(other Worker) {
+	if other.CountPerInstance > 0 {
+		d.CountPerInstance = other.CountPerInstance
+	}
 }
 
 //
@@ -432,23 +441,23 @@ func (w Worker) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Wk
 	}{
-		Wk: (Wk)(d),
+		Wk: (Wk)(w),
 	})
 }
 
 //
-// WorkerList wraps a list of Workers
+// WorkersList wraps a list of Workers
 //
-type WorkerList struct {
+type WorkersList struct {
 	Total   int      `json:"total"`
 	Workers []Worker `json:"workers"`
 }
 
 //
-// MarshalJSON transforms a WorkerList into a valid JSON object.
+// MarshalJSON transforms a WorkersList into a valid JSON object.
 //
-func (wl *WorkerList) MarshalJSON() ([]byte, error) {
-	type WList WorkerList
+func (wl *WorkersList) MarshalJSON() ([]byte, error) {
+	type WList WorkersList
 	l := wl.Workers
 	if l == nil {
 		l = []Worker{}

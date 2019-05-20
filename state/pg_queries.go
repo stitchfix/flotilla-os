@@ -106,17 +106,8 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
 
 CREATE TABLE IF NOT EXISTS worker (
   worker_type character varying PRIMARY KEY,
-  num_workers_per_instance integer
+  count_per_instance integer
 );
-`
-
-//
-// InitWorkerTableSQL populates the `worker` table with default values from the
-// configuration file.
-//
-const InitWorkerTableSQL = `
-  INSERT INTO worker (worker_type, num_workers)
-  VALUES ('retry', $1), ('submit', $2), ('status', $3);
 `
 
 //
@@ -205,12 +196,63 @@ const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 //
 const GetRunSQLForUpdate = GetRunSQL + " for update"
 
+//
+// GroupsSelect postgres specific query for getting existing definition
+// group_names
+//
 const GroupsSelect = `
 select distinct group_name from task_def
 `
+
+//
+// TagsSelect postgres specific query for getting existing definition tags
+//
 const TagsSelect = `
 select distinct text from tags
 `
 
+//
+// ListGroupsSQL postgres specific query for listing definition group_names
+//
 const ListGroupsSQL = GroupsSelect + "\n%s order by group_name asc limit $1 offset $2"
+
+//
+// ListGroupsSQL postgres specific query for listing definition tags
+//
 const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"
+
+//
+// InitWorkerTableSQL populates the `worker` table with default values from the
+// configuration file.
+//
+const InitWorkerTableSQL = `
+  INSERT INTO worker (worker_type, count_per_instance)
+  VALUES ('retry', $1), ('submit', $2), ('status', $3);
+`
+
+//
+// WorkerSelect postgres specific query for workers
+//
+const WorkerSelect = `
+  select
+    worker_type        as worker_type
+    count_per_instance as count_per_instance
+  from worker
+`
+
+//
+// ListWorkersSQL postgres specific query for listing workers
+//
+const ListWorkersSQL = WorkerSelect + "\norder by worker_type asc limit 10 offset 0"
+
+//
+// GetWorkerSQL postgres specific query for retrieving data for a specific
+// worker type.
+//
+const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1"
+
+//
+// GetWorkerSQLForUpdate postgres specific query for retrieving data for a specific
+// worker type; locks the row.
+//
+const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
