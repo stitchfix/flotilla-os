@@ -12,25 +12,6 @@ import (
 )
 
 //
-// WorkerTypes is an enum for the different types of workers.
-//
-var WorkerTypes = newWorkerTypes()
-
-type workerTypes struct {
-	Retry  string
-	Submit string
-	Status string
-}
-
-func newWorkerTypes() *workerTypes {
-	return &workerTypes{
-		Retry:  "retry",
-		Submit: "submit",
-		Status: "status",
-	}
-}
-
-//
 // Worker defines a background worker process
 //
 type Worker interface {
