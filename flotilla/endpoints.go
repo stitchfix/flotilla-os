@@ -455,3 +455,13 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, response)
 	}
 }
+
+func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	worker, err := ep.workerService.Get(vars["worker_type"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, worker)
+	}
+}

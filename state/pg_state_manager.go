@@ -693,11 +693,6 @@ func (sm *SQLStateManager) GetWorker(workerType string) (Worker, error) {
 	var err error
 	var w Worker
 
-	// Ensure that the `workerType` param is valid.
-	if w.IsValidWorkerType(workerType) == false {
-		return w, exceptions.MalformedInput{fmt.Sprintf("Worker of type %s not found", workerType)}
-	}
-
 	// Check DB.
 	err = sm.db.Get(&w, GetWorkerSQL, workerType)
 

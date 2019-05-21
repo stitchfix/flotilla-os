@@ -10,6 +10,7 @@ import (
 //
 type WorkerService interface {
 	List() (state.WorkersList, error)
+	Get(workerType string) (state.Worker, error)
 }
 
 type workerService struct {
@@ -26,4 +27,8 @@ func NewWorkerService(conf config.Config, sm state.Manager) (WorkerService, erro
 
 func (ws *workerService) List() (state.WorkersList, error) {
 	return ws.sm.ListWorkers()
+}
+
+func (ws *workerService) Get(workerType string) (state.Worker, error) {
+	return ws.sm.GetWorker(workerType)
 }
