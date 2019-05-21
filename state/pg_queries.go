@@ -217,33 +217,24 @@ select distinct text from tags
 const ListGroupsSQL = GroupsSelect + "\n%s order by group_name asc limit $1 offset $2"
 
 //
-// ListGroupsSQL postgres specific query for listing definition tags
+// ListTagsSQL postgres specific query for listing definition tags
 //
 const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"
-
-//
-// InitWorkerTableSQL populates the `worker` table with default values from the
-// configuration file.
-//
-const InitWorkerTableSQL = `
-  INSERT INTO worker (worker_type, count_per_instance)
-  VALUES ('retry', $1), ('submit', $2), ('status', $3);
-`
 
 //
 // WorkerSelect postgres specific query for workers
 //
 const WorkerSelect = `
   select
-    worker_type        as worker_type
-    count_per_instance as count_per_instance
+    worker_type        as workertype,
+    count_per_instance as countperinstance
   from worker
 `
 
 //
 // ListWorkersSQL postgres specific query for listing workers
 //
-const ListWorkersSQL = WorkerSelect + "\norder by worker_type asc limit 10 offset 0"
+const ListWorkersSQL = WorkerSelect
 
 //
 // GetWorkerSQL postgres specific query for retrieving data for a specific

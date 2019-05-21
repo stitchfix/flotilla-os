@@ -671,10 +671,9 @@ func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 	var err error
 	var result WorkersList
 
-	sql := fmt.Sprintf(ListWorkersSQL)
-	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListWorkersSQL)
 
-	err = sm.db.Select(&result.Workers, sql)
+	err = sm.db.Select(&result.Workers, ListWorkersSQL)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers sql")
 	}
