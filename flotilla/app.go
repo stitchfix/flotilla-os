@@ -1,6 +1,10 @@
 package flotilla
 
 import (
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -12,9 +16,6 @@ import (
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/worker"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type App struct {
@@ -65,11 +66,16 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing log service")
 	}
+	workerService, err := services.NewWorkerService(conf, sm)
+	if err != nil {
+		return app, errors.Wrap(err, "problem initializing worker service")
+	}
 
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
 		logService:        logService,
+		workerService:     workerService,
 	}
 
 	app.configureRoutes(ep)

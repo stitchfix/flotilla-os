@@ -18,6 +18,7 @@ type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
 	logService        services.LogService
+	workerService     services.WorkerService
 }
 
 type listRequest struct {
@@ -434,6 +435,23 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response := make(map[string]interface{})
 		response["clusters"] = clusters
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
+	wl, err := ep.workerService.List()
+
+	if wl.Workers == nil {
+		wl.Workers = []state.Worker{}
+	}
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = wl.Total
+		response["workers"] = wl.Workers
 		ep.encodeResponse(w, response)
 	}
 }

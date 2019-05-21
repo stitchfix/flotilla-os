@@ -2,6 +2,9 @@ package flotilla
 
 import "github.com/gorilla/mux"
 
+//
+// NewRouter creates and returns a Mux Router
+//
 func NewRouter(ep endpoints) *mux.Router {
 	r := mux.NewRouter()
 	v1 := r.PathPrefix("/api/v1").Subrouter()
@@ -33,5 +36,8 @@ func NewRouter(ep endpoints) *mux.Router {
 
 	v4 := r.PathPrefix("/api/v4").Subrouter()
 	v4.HandleFunc("/task/{definition_id}/execute", ep.CreateRunV4).Methods("PUT")
+
+	v5 := r.PathPrefix("/api/v5").Subrouter()
+	v5.HandleFunc("/worker", ep.ListWorkers).Methods("GET")
 	return r
 }
