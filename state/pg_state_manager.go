@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	// Blank import for sqlx
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
@@ -634,13 +635,33 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 //
 func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration.
-	rt := int64(c.GetInt("worker.retry_worker_count_per_instance"))
-	sb := int64(c.GetInt("worker.submit_worker_count_per_instance"))
-	st := int64(c.GetInt("worker.status_worker_count_per_instance"))
+	retryCount := int64(c.GetInt("worker.retry_worker_count_per_instance"))
+	submitCount := int64(c.GetInt("worker.submit_worker_count_per_instance"))
+	statusCount := int64(c.GetInt("worker.status_worker_count_per_instance"))
 
-	// Run query.
-	_, err := sm.db.Exec(InitWorkerTableSQL, rt, sb, st)
-	return err
+	var err error
+	insert := `
+		INSERT INTO worker (worker_type, count_per_instance)
+		VALUES ('retry', $1), ('submit', $2), ('status', $3)
+		ON CONFLICT (worker_type) DO NOTHING;
+	`
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(insert, retryCount, submitCount, statusCount); err != nil {
+		tx.Rollback()
+		return errors.Wrapf(err, "issue populating worker table")
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 //
@@ -657,6 +678,7 @@ func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers sql")
 	}
+
 	err = sm.db.Get(&result.Total, countSQL)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers count sql")
@@ -668,12 +690,18 @@ func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 //
 // GetWorker returns data for a single worker.
 //
-func (sm *SQLStateManager) GetWorker(workerType workerTypes) (Worker, error) {
+func (sm *SQLStateManager) GetWorker(workerType string) (Worker, error) {
 	var err error
 	var w Worker
+
+	// Ensure that the `workerType` param is valid.
+	if w.IsValidWorkerType(workerType) == false {
+		return w, exceptions.MalformedInput{fmt.Sprintf("Worker of type %s not found", workerType)}
+	}
+
+	// Check DB.
 	err = sm.db.Get(&w, GetWorkerSQL, workerType)
 
-	// Handle errors
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return w, exceptions.MissingResource{
@@ -689,11 +717,15 @@ func (sm *SQLStateManager) GetWorker(workerType workerTypes) (Worker, error) {
 //
 // UpdateWorker updates a single worker.
 //
-func (sm *SQLStateManager) UpdateWorker(workerType workerTypes, updates Worker) (Worker, error) {
+func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Worker, error) {
 	var (
 		err      error
 		existing Worker
 	)
+
+	if existing.IsValidWorkerType(workerType) == false {
+		return existing, exceptions.MalformedInput{fmt.Sprintf("Worker of type %s not found", workerType)}
+	}
 
 	tx, err := sm.db.Begin()
 	if err != nil {
