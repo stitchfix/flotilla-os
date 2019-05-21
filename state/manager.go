@@ -35,8 +35,8 @@ type Manager interface {
 	ListTags(limit int, offset int, name *string) (TagsList, error)
 
 	ListWorkers() (WorkersList, error)
-	GetWorker(workerType workerTypes) (Worker, error)
-	UpdateWorker(workerType workerTypes, updates Worker) (Worker, error)
+	GetWorker(workerType string) (Worker, error)
+	UpdateWorker(workerType string, updates Worker) (Worker, error)
 }
 
 //

@@ -397,30 +397,26 @@ type TagsList struct {
 }
 
 //
-// WorkerTypes is an enum for the different types of workers.
-//
-var WorkerTypes = newWorkerTypes()
-
-type workerTypes struct {
-	Retry  string
-	Submit string
-	Status string
-}
-
-func newWorkerTypes() *workerTypes {
-	return &workerTypes{
-		Retry:  "retry",
-		Submit: "submit",
-		Status: "status",
-	}
-}
-
-//
 // Worker represents a Flotilla Worker
 //
 type Worker struct {
-	WorkerType       *workerTypes `json:"worker_type"`
-	CountPerInstance int          `json:"count_per_instance"`
+	WorkerType       string `json:"worker_type"`
+	CountPerInstance int    `json:"count_per_instance"`
+}
+
+//
+// IsValidWorkerType checks if a string is a valid worker type.
+//
+func (w *Worker) IsValidWorkerType(t string) bool {
+	validWorkerTypes := []string{"retry", "submit", "status"}
+
+	for i := 0; i <= len(validWorkerTypes); i++ {
+		if t == validWorkerTypes[i] {
+			return true
+		}
+	}
+
+	return false
 }
 
 //
