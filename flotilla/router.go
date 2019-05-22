@@ -40,5 +40,6 @@ func NewRouter(ep endpoints) *mux.Router {
 	v5 := r.PathPrefix("/api/v5").Subrouter()
 	v5.HandleFunc("/worker", ep.ListWorkers).Methods("GET")
 	v5.HandleFunc("/worker/{worker_type}", ep.GetWorker).Methods("GET")
+	v5.HandleFunc("/worker/{worker_type}", ep.UpdateWorker).Methods("PUT")
 	return r
 }

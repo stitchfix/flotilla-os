@@ -465,3 +465,22 @@ func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, worker)
 	}
 }
+
+func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
+	var worker state.Worker
+	err := ep.decodeRequest(r, &worker)
+
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	vars := mux.Vars(r)
+	updated, err := ep.workerService.Update(vars["worker_type"], worker)
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
+	}
+}

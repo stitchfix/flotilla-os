@@ -11,6 +11,7 @@ import (
 type WorkerService interface {
 	List() (state.WorkersList, error)
 	Get(workerType string) (state.Worker, error)
+	Update(workerType string, updates state.Worker) (state.Worker, error)
 }
 
 type workerService struct {
@@ -31,4 +32,8 @@ func (ws *workerService) List() (state.WorkersList, error) {
 
 func (ws *workerService) Get(workerType string) (state.Worker, error) {
 	return ws.sm.GetWorker(workerType)
+}
+
+func (ws *workerService) Update(workerType string, updates state.Worker) (state.Worker, error) {
+	return ws.sm.UpdateWorker(workerType, updates)
 }
