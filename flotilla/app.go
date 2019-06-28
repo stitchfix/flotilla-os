@@ -70,6 +70,7 @@ func NewApp(conf config.Config,
 		executionService:  executionService,
 		definitionService: definitionService,
 		logService:        logService,
+		logger:            log,
 	}
 
 	app.configureRoutes(ep)
