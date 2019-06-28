@@ -114,7 +114,7 @@ set -x
 
 {{.Command}}
 `
-var commandTemplate, _ = template.New("command").Parse(commandWrapper)
+var CommandTemplate, _ = template.New("command").Parse(commandWrapper)
 
 //
 // WrappedCommand returns the wrapped command for the definition
@@ -122,7 +122,7 @@ var commandTemplate, _ = template.New("command").Parse(commandWrapper)
 //
 func (d *Definition) WrappedCommand() (string, error) {
 	var result bytes.Buffer
-	if err := commandTemplate.Execute(&result, d); err != nil {
+	if err := CommandTemplate.Execute(&result, d); err != nil {
 		return "", err
 	}
 	return result.String(), nil
@@ -275,6 +275,9 @@ type Run struct {
 	User            string     `json:"user,omitempty"`
 	TaskType        string     `json:"-"`
 	Env             *EnvList   `json:"env,omitempty"`
+	Command         *string    `json:"command,omitempty"`
+	Memory          *int64     `json:"memory,omitempty"`
+	Cpu             *int64     `json:"cpu,omitempty"`
 }
 
 //

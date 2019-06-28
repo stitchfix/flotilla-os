@@ -58,8 +58,11 @@ CREATE TABLE IF NOT EXISTS task (
   task_arn character varying,
   docker_id character varying,
   "user" character varying,
-  task_type character varying
+  task_type character varying,
   -- Refactor these --
+  command text,
+  memory integer,
+  cpu integer
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -171,7 +174,10 @@ select
   coalesce(t.group_name,'')                  as groupname,
   coalesce(t.user,'')                        as "user",
   coalesce(t.task_type,'')                   as tasktype,
-  env::TEXT                                  as env
+  env::TEXT                                  as env,
+  command,
+  memory,
+  cpu
 from task t
 `
 

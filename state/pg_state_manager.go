@@ -486,7 +486,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
 			&existing.ClusterName, &existing.ExitCode, &existing.Status, &existing.StartedAt,
 			&existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName,
-			&existing.User, &existing.TaskType, &existing.Env)
+			&existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory, &existing.Cpu)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -535,9 +535,9 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, status,
       started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type
+      env, task_type, command, memory, cpu
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'task'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'task', $15, $16, $17
     );
     `
 
@@ -551,7 +551,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Alias, r.Image, r.ClusterName,
 		r.ExitCode, r.Status, r.StartedAt,
 		r.FinishedAt, r.InstanceID,
-		r.InstanceDNSName, r.GroupName, r.Env); err != nil {
+		r.InstanceDNSName, r.GroupName, r.Env, r.Command, r.Memory, r.Cpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
