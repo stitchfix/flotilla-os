@@ -278,6 +278,7 @@ type Run struct {
 	Command         *string    `json:"command,omitempty"`
 	Memory          *int64     `json:"memory,omitempty"`
 	Cpu             *int64     `json:"cpu,omitempty"`
+	ExitReason      *string    `json:"exit_reason,omitempty"`
 }
 
 //
@@ -329,6 +330,10 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if other.Env != nil {
 		d.Env = other.Env
+	}
+
+	if other.ExitReason != nil {
+		d.ExitReason = other.ExitReason
 	}
 
 	//
