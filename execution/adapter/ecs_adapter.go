@@ -102,6 +102,7 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		mainContainer := task.Containers[0]
 		run.ExitCode = mainContainer.ExitCode
 		run.Status = *mainContainer.LastStatus
+		run.ExitReason = mainContainer.Reason
 	}
 
 	if task.DesiredStatus != nil && *task.DesiredStatus == state.StatusStopped {

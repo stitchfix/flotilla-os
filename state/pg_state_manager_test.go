@@ -518,6 +518,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	}
 
 	ec := int64(137)
+	reason := "instance is ded."
 	cmd := "_test cmd__"
 	mem := int64(10)
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
@@ -532,6 +533,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Alias:        "AliasA",
 		Image:        "ImageA",
 		ExitCode:     &ec,
+		ExitReason:   &reason,
 		StartedAt:    &t1,
 		FinishedAt:   &t2,
 		ClusterName:  "clusta",
@@ -563,6 +565,10 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 
 	if *f2.ExitCode != *r2.ExitCode {
 		t.Errorf("Expected exit code %v but was %v", *r2.ExitCode, *f2.ExitCode)
+	}
+
+	if *f2.ExitReason != *r2.ExitReason {
+		t.Errorf("Expected exit reason %s but was %s", *r2.ExitReason, *f2.ExitReason)
 	}
 
 	if (*f2.StartedAt).UTC().String() != (*r2.StartedAt).String() {
