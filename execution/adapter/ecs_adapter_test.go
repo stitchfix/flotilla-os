@@ -1,12 +1,13 @@
 package adapter
 
 import (
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
-	"testing"
-	"time"
 )
 
 type testClient struct {
@@ -187,7 +188,7 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	}
 
 	exitCode := int64(0)
-	reason := ""
+	reason := "exited"
 	retriableReason := "CannotPullContainerError"
 
 	container := ecs.Container{
@@ -246,6 +247,10 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 
 	if adapted.ExitCode == nil || *adapted.ExitCode != exitCode {
 		t.Errorf("Expected exit code 0")
+	}
+
+	if adapted.ExitReason == nil || *adapted.ExitReason != reason {
+		t.Errorf("Expected reason %s", reason)
 	}
 
 	if adapted.Status != lastStatus {
