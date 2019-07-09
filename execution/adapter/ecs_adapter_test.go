@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -189,6 +190,8 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 
 	exitCode := int64(0)
 	reason := "exited"
+	stopReason := "Essential container in task exited"
+	stopCode := "EssentialContainerExited"
 	retriableReason := "CannotPullContainerError"
 
 	container := ecs.Container{
@@ -222,6 +225,8 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 		Overrides:            &overrides,
 		LastStatus:           &lastStatus,
 		Containers:           containers,
+		StopCode:             &stopCode,
+		StoppedReason:        &stopReason,
 	}
 	adapted := adapter.AdaptTask(task1)
 
@@ -249,7 +254,8 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 		t.Errorf("Expected exit code 0")
 	}
 
-	if adapted.ExitReason == nil || *adapted.ExitReason != reason {
+	expectedReason := fmt.Sprintf("%s - %s - %s", stopCode, stopReason, reason)
+	if adapted.ExitReason == nil || *adapted.ExitReason != expectedReason {
 		t.Errorf("Expected reason %s", reason)
 	}
 
