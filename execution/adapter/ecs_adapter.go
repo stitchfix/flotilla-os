@@ -98,11 +98,9 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if len(task.Containers) > 0 {
-		mainContainer := task.Containers[0]
+	if mainContainer := a.getMainContainer(task); mainContainer != nil {
 		run.ExitCode = mainContainer.ExitCode
 		run.Status = *mainContainer.LastStatus
-		run.ExitReason = mainContainer.Reason
 	}
 
 	if task.DesiredStatus != nil && *task.DesiredStatus == state.StatusStopped {
@@ -115,7 +113,35 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		run.InstanceDNSName = ""
 	}
 
+	if reason := a.reasonString(task); len(reason) > 0 {
+		run.ExitReason = &reason
+	}
+
 	return run
+}
+
+func (a *ecsAdapter) getMainContainer(task ecs.Task) (main *ecs.Container) {
+	if len(task.Containers) > 0 {
+		main = task.Containers[0]
+	}
+	return
+}
+
+func (a *ecsAdapter) reasonString(task ecs.Task) string {
+	var reasons []string
+
+	if task.StopCode != nil {
+		reasons = append(reasons, *task.StopCode)
+	}
+
+	if task.StoppedReason != nil {
+		reasons = append(reasons, *task.StoppedReason)
+	}
+
+	if mainContainer := a.getMainContainer(task); mainContainer != nil && mainContainer.Reason != nil {
+		reasons = append(reasons, *mainContainer.Reason)
+	}
+	return strings.Join(reasons, " - ")
 }
 
 func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
