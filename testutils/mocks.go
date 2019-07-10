@@ -19,6 +19,7 @@ type ImplementsAllTheThings struct {
 	Calls                   []string                    // Collects calls
 	Definitions             map[string]state.Definition // Definitions stored in "state"
 	Runs                    map[string]state.Run        // Runs stored in "state"
+	Workers                 []state.Worker              // Workers stored in "state"
 	Qurls                   map[string]string           // Urls returned by Queue Manager
 	Defined                 []string                    // List of defined definitions (Execution Engine)
 	Queued                  []string                    // List of queued runs (Queue Manager)
@@ -155,6 +156,30 @@ func (iatt *ImplementsAllTheThings) ListGroups(limit int, offset int, name *stri
 func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
 	iatt.Calls = append(iatt.Calls, "ListTags")
 	return state.TagsList{Total: len(iatt.Tags), Tags: iatt.Tags}, nil
+}
+
+// initWorkerTable - StateManager
+func (iatt *ImplementsAllTheThings) initWorkerTable(c config.Config) error {
+	iatt.Calls = append(iatt.Calls, "initWorkerTable")
+	return nil
+}
+
+// ListWorkers - StateManager
+func (iatt *ImplementsAllTheThings) ListWorkers() (state.WorkersList, error) {
+	iatt.Calls = append(iatt.Calls, "ListWorkers")
+	return state.WorkersList{Total: len(iatt.Workers), Workers: iatt.Workers}, nil
+}
+
+// GetWorker - StateManager
+func (iatt *ImplementsAllTheThings) GetWorker(workerType string) (state.Worker, error) {
+	iatt.Calls = append(iatt.Calls, "GetWorker")
+	return state.Worker{WorkerType: workerType, CountPerInstance: 2}, nil
+}
+
+// UpdateWorker - StateManager
+func (iatt *ImplementsAllTheThings) UpdateWorker(workerType string, updates state.Worker) (state.Worker, error) {
+	iatt.Calls = append(iatt.Calls, "UpdateWorker")
+	return state.Worker{WorkerType: workerType, CountPerInstance: updates.CountPerInstance}, nil
 }
 
 // QurlFor - QueueManager
