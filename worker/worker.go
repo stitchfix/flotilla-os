@@ -9,6 +9,7 @@ import (
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
+	"gopkg.in/tomb.v2"
 )
 
 //
@@ -17,7 +18,8 @@ import (
 type Worker interface {
 	Initialize(
 		conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error
-	Run()
+	Run() error
+	GetTomb() *tomb.Tomb
 }
 
 //
@@ -29,7 +31,6 @@ func NewWorker(
 	conf config.Config,
 	ee engine.Engine,
 	sm state.Manager) (Worker, error) {
-
 	var worker Worker
 
 	switch workerType {
@@ -39,6 +40,8 @@ func NewWorker(
 		worker = &retryWorker{}
 	case "status":
 		worker = &statusWorker{}
+	case "worker_manager":
+		worker = &workerManager{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}
