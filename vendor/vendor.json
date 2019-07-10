@@ -819,6 +819,12 @@
 			"revisionTime": "2017-07-09T00:38:22Z"
 		},
 		{
+			"checksumSHA1": "t95/FNK2nGCx3e6IARbO7OrcCuY=",
+			"path": "gopkg.in/tomb.v2",
+			"revision": "d5d1b5820637886def9eef33e03a27a9f166942c",
+			"revisionTime": "2016-12-08T15:16:19Z"
+		},
+		{
 			"checksumSHA1": "KHOUE9QA14iPCFNIVs5X72MYdkA=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "3b4ad1db5b2a649883ff3782f5f9f6fb52be71af",
