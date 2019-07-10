@@ -1,3 +1,4 @@
+flotilla_mode: dev
 # aws region - relevant for aws related components (sqs,ecs)
 aws_default_region: us-east-1
 
@@ -17,7 +18,6 @@ enabled_workers:
   - retry
   - submit
   - status
-
 
 # Log namespace
 log:
@@ -50,6 +50,7 @@ worker:
   retry_interval: 30s
   submit_interval: 5s
   status_interval: 300ms
+  worker_manager_interval: 10000ms
   retry_worker_count_per_instance: 1
   submit_worker_count_per_instance: 2
   status_worker_count_per_instance: 2
@@ -60,7 +61,7 @@ http:
     write_timeout_seconds: 10
     listen_address: :3000
     cors_allowed_origins:
-     - http://localhost:3000
+      - http://localhost:3001
 
 #
 # Environment variable name to inject into every run
