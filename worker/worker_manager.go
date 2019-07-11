@@ -18,9 +18,7 @@ type workerManager struct {
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
-	submitWorkers []Worker
-	retryWorkers []Worker
-	statusWorkers []Worker
+	workers map[string][]Worker
 	t tomb.Tomb
 }
 
@@ -53,6 +51,7 @@ func (wm *workerManager) InitializeWorkers() error {
 	if err != nil {
 		return err
 	}
+	wm.workers = make(map[string][]Worker)
 
 	// Iterate through list of workers.
 	for _, w := range workerList.Workers {
@@ -66,19 +65,7 @@ func (wm *workerManager) InitializeWorkers() error {
 
 			// Start goroutine via tomb
 			wk.GetTomb().Go(wk.Run)
-
-			// Append worker to the appropriate worker slice.
-			switch w.WorkerType {
-			case "retry":
-				wm.retryWorkers = append(wm.retryWorkers, wk)
-			case "status":
-				wm.statusWorkers = append(wm.statusWorkers, wk)
-			case "submit":
-				wm.submitWorkers = append(wm.submitWorkers, wk)
-			default:
-				// todo handle error
-				fmt.Println("invalid worker type")
-			}
+			wm.workers[w.WorkerType] = append(wm.workers[w.WorkerType], wk)
 		}
 	}
 
@@ -101,33 +88,15 @@ func (wm *workerManager) Run() error {
 func (wm *workerManager) runOnce() error {
 	// Check worker count via state manager.
 	workerList, err := wm.sm.ListWorkers()
-	rwLen := len(wm.retryWorkers)
-	sbLen := len(wm.submitWorkers)
-	stLen := len(wm.statusWorkers)
 
 	if err != nil {
 		return err
 	}
 
 	for _, w := range workerList.Workers {
-		switch w.WorkerType {
-		case "retry":
-			if w.CountPerInstance != rwLen {
-				if err := wm.updateWorkerCount("retry", rwLen, w.CountPerInstance); err != nil {
-					// log error
-				}
-			}
-		case "status":
-			if w.CountPerInstance != stLen {
-				if err := wm.updateWorkerCount("status", stLen, w.CountPerInstance); err != nil {
-					// log error
-				}
-			}
-		case "submit":
-			if w.CountPerInstance != sbLen {
-				if err := wm.updateWorkerCount("submit", sbLen, w.CountPerInstance); err != nil {
-					// log error
-				}
+		if len(wm.workers[w.WorkerType]) != w.CountPerInstance {
+			if err := wm.updateWorkerCount(w.WorkerType, len(wm.workers[w.WorkerType]), w.CountPerInstance); err != nil {
+				// log error
 			}
 		}
 	}
@@ -136,39 +105,50 @@ func (wm *workerManager) runOnce() error {
 }
 
 func (wm *workerManager) updateWorkerCount(workerType string, curr int, next int) error {
-	var wSlice *[]Worker
-
-	switch workerType {
-	case "retry":
-		wSlice = &wm.retryWorkers
-	case "status":
-		wSlice = &wm.statusWorkers
-	case "submit":
-		wSlice = &wm.submitWorkers
-	default:
-		return nil
-	}
-
 	if curr > next {
 		// Kill workers
-		for i := next; i < curr-1; i++ {
-			(*wSlice)[i].GetTomb().Kill(nil)
+		for i := next; i < curr; i++ {
+			if err := wm.removeWorker(workerType); err != nil {
+				return err
+			}
 		}
 	} else if curr < next {
 		// Add workers
 		for i := curr; i < next; i++ {
-			wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm)
-
-			if err != nil {
+			if err := wm.addWorker(workerType); err != nil {
 				return err
 			}
-
-			// Start goroutine via tomb
-			wk.GetTomb().Go(wk.Run)
-
-			// Append it
-			*wSlice = append(*wSlice, wk)
 		}
+	}
+	return nil
+}
+
+func (wm *workerManager) removeWorker(workerType string) error {
+	if workers, ok := wm.workers[workerType]; ok {
+		if len(workers) > 0 {
+			toKill := workers[len(workers)-1]
+			toKill.GetTomb().Kill(nil)
+			wm.workers[workerType] = workers[:len(workers)-1]
+		}
+	} else {
+		return fmt.Errorf("invalid worker type %s", workerType)
+	}
+	return nil
+}
+
+func (wm *workerManager) addWorker(workerType string) error {
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm)
+
+	if err != nil {
+		return err
+	}
+
+	// Start goroutine via tomb
+	wk.GetTomb().Go(wk.Run)
+	if workers, ok := wm.workers[workerType]; ok {
+		workers = append(workers, wk)
+	} else {
+		return fmt.Errorf("invalid worker type %s", workerType)
 	}
 	return nil
 }
