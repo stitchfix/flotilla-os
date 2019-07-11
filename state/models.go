@@ -423,7 +423,7 @@ func (w *Worker) IsValidWorkerType(t string) bool {
 // UpdateWith updates this definition with information from another
 //
 func (w *Worker) UpdateWith(other Worker) {
-	if other.CountPerInstance > 0 {
+	if other.CountPerInstance >= 0 {
 		w.CountPerInstance = other.CountPerInstance
 	}
 }
