@@ -27,7 +27,7 @@ func (rw *retryWorker) Initialize(
 	rw.sm = sm
 	rw.ee = ee
 	rw.log = log
-	rw.log.Log("initialized a retry worker")
+	rw.log.Log("message", "initialized a retry worker")
 	return nil
 }
 

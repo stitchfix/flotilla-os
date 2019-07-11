@@ -27,7 +27,7 @@ func (sw *submitWorker) Initialize(
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
-	sw.log.Log("initialized a submit worker")
+	sw.log.Log("message", "initialized a submit worker")
 	return nil
 }
 

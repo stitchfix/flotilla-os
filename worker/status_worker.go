@@ -28,7 +28,7 @@ func (sw *statusWorker) Initialize(
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
-	sw.log.Log("initialized a status worker")
+	sw.log.Log("message", "initialized a status worker")
 	return nil
 }
 
