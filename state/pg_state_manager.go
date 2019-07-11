@@ -759,6 +759,23 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 }
 
 //
+// BatchUpdateWorker updates multiple workers.
+//
+func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, error) {
+	var existing WorkersList
+
+	for _, w := range updates {
+		_, err := sm.UpdateWorker(w.WorkerType, w)
+
+		if err != nil {
+			return existing, err
+		}
+	}
+
+	return sm.ListWorkers()
+}
+
+//
 // Cleanup close any open resources
 //
 func (sm *SQLStateManager) Cleanup() error {

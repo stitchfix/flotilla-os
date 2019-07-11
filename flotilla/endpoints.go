@@ -484,3 +484,21 @@ func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, updated)
 	}
 }
+
+func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) {
+	var wks []state.Worker
+	err := ep.decodeRequest(r, &wks)
+
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	updated, err := ep.workerService.BatchUpdate(wks)
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
+	}
+}

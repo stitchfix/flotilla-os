@@ -12,6 +12,7 @@ type WorkerService interface {
 	List() (state.WorkersList, error)
 	Get(workerType string) (state.Worker, error)
 	Update(workerType string, updates state.Worker) (state.Worker, error)
+	BatchUpdate(updates []state.Worker) (state.WorkersList, error)
 }
 
 type workerService struct {
@@ -36,4 +37,8 @@ func (ws *workerService) Get(workerType string) (state.Worker, error) {
 
 func (ws *workerService) Update(workerType string, updates state.Worker) (state.Worker, error) {
 	return ws.sm.UpdateWorker(workerType, updates)
+}
+
+func (ws *workerService) BatchUpdate(updates []state.Worker) (state.WorkersList, error) {
+	return ws.sm.BatchUpdateWorkers(updates)
 }
