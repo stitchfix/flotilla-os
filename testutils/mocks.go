@@ -182,6 +182,12 @@ func (iatt *ImplementsAllTheThings) UpdateWorker(workerType string, updates stat
 	return state.Worker{WorkerType: workerType, CountPerInstance: updates.CountPerInstance}, nil
 }
 
+// BatchUpdateWorkers- StateManager
+func (iatt *ImplementsAllTheThings) BatchUpdateWorkers(updates []state.Worker) (state.WorkersList, error) {
+	iatt.Calls = append(iatt.Calls, "BatchUpdateWorkers")
+	return state.WorkersList{Total: len(iatt.Workers), Workers: iatt.Workers}, nil
+}
+
 // QurlFor - QueueManager
 func (iatt *ImplementsAllTheThings) QurlFor(name string, prefixed bool) (string, error) {
 	iatt.Calls = append(iatt.Calls, "QurlFor")
