@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/nu7hatch/gouuid"
 	"regexp"
 	"text/template"
 	"time"
+
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 // StatusRunning indicates the run is running
@@ -267,6 +268,7 @@ type Run struct {
 	ClusterName     string     `json:"cluster"`
 	ExitCode        *int64     `json:"exit_code,omitempty"`
 	Status          string     `json:"status"`
+	QueuedAt        *time.Time `json:"queued_at,omitempty"`
 	StartedAt       *time.Time `json:"started_at,omitempty"`
 	FinishedAt      *time.Time `json:"finished_at,omitempty"`
 	InstanceID      string     `json:"-"`
@@ -306,7 +308,9 @@ func (d *Run) UpdateWith(other Run) {
 	if other.ExitCode != nil {
 		d.ExitCode = other.ExitCode
 	}
-
+	if other.QueuedAt != nil {
+		d.QueuedAt = other.QueuedAt
+	}
 	if other.StartedAt != nil {
 		d.StartedAt = other.StartedAt
 	}
@@ -336,6 +340,17 @@ func (d *Run) UpdateWith(other Run) {
 		d.ExitReason = other.ExitReason
 	}
 
+	if other.Command != nil && len(*other.Command) > 0 {
+		d.Command = other.Command
+	}
+
+	if other.Memory != nil {
+		d.Memory = other.Memory
+	}
+
+	if other.Cpu != nil {
+		d.Cpu = other.Cpu
+	}
 	//
 	// Runs have a deterministic lifecycle
 	//

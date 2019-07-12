@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -28,7 +29,8 @@ func setUp() Manager {
 	//
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
-	sm, _ := NewStateManager(conf)
+	sm, err := NewStateManager(conf)
+	fmt.Println(err)
 	//
 	//
 	//

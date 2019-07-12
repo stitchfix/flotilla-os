@@ -4,16 +4,19 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
+
 	// Pull in postgres specific drivers
 	"database/sql"
+	"math"
+	"strings"
+	"time"
+
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"math"
-	"strings"
-	"time"
 )
 
 //
@@ -497,9 +500,10 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	for rows.Next() {
 		err = rows.Scan(
 			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
-			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.StartedAt,
-			&existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName,
-			&existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory, &existing.Cpu)
+			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.QueuedAt,
+			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
+			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
+			&existing.Cpu)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -512,11 +516,13 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       task_arn = $2, definition_id = $3,
 	  alias = $4, image = $5,
       cluster_name = $6, exit_code = $7,
-      exit_reason = $8,
-      status = $9, started_at = $10,
-      finished_at = $11, instance_id = $12,
-      instance_dns_name = $13,
-      group_name = $14, env = $15
+      exit_reason = $8, 
+      status = $9, queued_at = $10,
+      started_at = $11,
+      finished_at = $12, instance_id = $13,
+      instance_dns_name = $14,
+	  group_name = $15, env = $16,
+	  command = $17, memory = $18, cpu = $19
     WHERE run_id = $1;
     `
 
@@ -525,11 +531,12 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.TaskArn, existing.DefinitionID,
 		existing.Alias, existing.Image,
 		existing.ClusterName, existing.ExitCode,
-		existing.ExitReason,
-		existing.Status, existing.StartedAt,
+		existing.ExitReason, existing.Status,
+		existing.QueuedAt, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName,
-		existing.Env); err != nil {
+		existing.Env, existing.Command,
+		existing.Memory, existing.Cpu); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -549,10 +556,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	insert := `
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name,
+      queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
       env, task_type, command, memory, cpu
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'task', $16, $17, $18
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19
     );
     `
 
@@ -564,9 +571,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	if _, err = tx.Exec(insert,
 		r.TaskArn, r.RunID, r.DefinitionID,
 		r.Alias, r.Image, r.ClusterName,
-		r.ExitCode, r.ExitReason, r.Status, r.StartedAt,
-		r.FinishedAt, r.InstanceID,
-		r.InstanceDNSName, r.GroupName, r.Env, r.Command, r.Memory, r.Cpu); err != nil {
+		r.ExitCode, r.ExitReason, r.Status,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
+		r.InstanceID, r.InstanceDNSName, r.GroupName,
+		r.Env, r.Command, r.Memory, r.Cpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
