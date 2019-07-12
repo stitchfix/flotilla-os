@@ -45,7 +45,10 @@ func TestExecutionService_Create(t *testing.T) {
 		"UpdateRun":     true,
 		"Enqueue":       true,
 	}
-	run, err := es.Create("B", "clusta", env, "somebody")
+
+	cmd := "_test_cmd_"
+	cpu := int64(512)
+	run, err := es.Create("B", "clusta", env, "somebody", &cmd, nil, &cpu)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -92,6 +95,22 @@ func TestExecutionService_Create(t *testing.T) {
 	if len(*run.Env) != (len(es.ReservedVariables()) + len(*env)) {
 		t.Errorf("Unexpected number of environment variables; expected %v but was %v",
 			len(es.ReservedVariables())+len(*env), len(*run.Env))
+	}
+
+	if run.Command == nil {
+		t.Errorf("Expected non-nil command")
+	} else {
+		if *run.Command != cmd {
+			t.Errorf("Unexpected command, found [%s], exptecting [%s]", *run.Command, cmd)
+		}
+	}
+
+	if run.Cpu == nil {
+		t.Errorf("Expected non-nil cpu")
+	} else {
+		if *run.Cpu != cpu {
+			t.Errorf("Unexpected cpu, found [%d], exptecting [%d]", *run.Cpu, cpu)
+		}
 	}
 
 	includesExpected := false
@@ -120,7 +139,8 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		"UpdateRun":            true,
 		"Enqueue":              true,
 	}
-	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody")
+	mem := int64(1024)
+	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -169,6 +189,14 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 			len(es.ReservedVariables())+len(*env), len(*run.Env))
 	}
 
+	if run.Memory == nil {
+		t.Errorf("Expected non-nil memory")
+	} else {
+		if *run.Memory != mem {
+			t.Errorf("Unexpected memory , found [%d], exptecting [%d]", *run.Memory, mem)
+		}
+	}
+
 	includesExpected := false
 	for _, e := range *run.Env {
 		if e.Name == "K1" && e.Value == "V1" {
@@ -191,19 +219,19 @@ func TestExecutionService_Create2(t *testing.T) {
 	var err error
 
 	// Invalid environment
-	_, err = es.Create("A", "clusta", env, "somebody")
+	_, err = es.Create("A", "clusta", env, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
 	// Invalid image
-	_, err = es.Create("C", "clusta", nil, "somebody")
+	_, err = es.Create("C", "clusta", nil, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
 	// Invalid cluster
-	_, err = es.Create("A", "invalidcluster", nil, "somebody")
+	_, err = es.Create("A", "invalidcluster", nil, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
 	}

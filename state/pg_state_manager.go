@@ -34,6 +34,19 @@ func (sm *SQLStateManager) Name() string {
 }
 
 //
+// likeFields are the set of fields
+// that are filtered using a `like` clause
+//
+var likeFields = map[string]bool{
+	"image":       true,
+	"alias":       true,
+	"group_name":  true,
+	"command":     true,
+	"text":        true,
+	"exit_reason": true,
+}
+
+//
 // Initialize creates tables if they do not exist
 //
 func (sm *SQLStateManager) Initialize(conf config.Config) error {
@@ -88,7 +101,7 @@ func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) []string
 		} else if len(v) == 1 {
 			fmtString := "%s='%s'"
 			fieldName := k
-			if k == "image" || k == "alias" || k == "group_name" || k == "command" || k == "text" {
+			if likeFields[k] {
 				fmtString = "%s like '%%%s%%'"
 			} else if strings.HasSuffix(k, "_since") {
 				fieldName = strings.Replace(k, "_since", "", -1)
@@ -487,9 +500,10 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	for rows.Next() {
 		err = rows.Scan(
 			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
-			&existing.ClusterName, &existing.ExitCode, &existing.Status, &existing.StartedAt, &existing.QueuedAt,
-			&existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName, &existing.GroupName,
-			&existing.User, &existing.TaskType, &existing.Env)
+			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.QueuedAt,
+			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
+			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
+			&existing.Cpu)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -502,11 +516,13 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       task_arn = $2, definition_id = $3,
 	  alias = $4, image = $5,
       cluster_name = $6, exit_code = $7,
-      status = $8, started_at = $9,
-      finished_at = $10, instance_id = $11,
-      instance_dns_name = $12,
-			group_name = $13, env = $14,
-			queued_at = $15
+      exit_reason = $8, 
+      status = $9, queued_at = $10,
+      started_at = $11,
+      finished_at = $12, instance_id = $13,
+      instance_dns_name = $14,
+	  group_name = $15, env = $16,
+	  command = $17, memory = $18, cpu = $19
     WHERE run_id = $1;
     `
 
@@ -515,10 +531,12 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.TaskArn, existing.DefinitionID,
 		existing.Alias, existing.Image,
 		existing.ClusterName, existing.ExitCode,
-		existing.Status, existing.StartedAt,
+		existing.ExitReason, existing.Status,
+		existing.QueuedAt, existing.StartedAt,
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName,
-		existing.Env, existing.QueuedAt); err != nil {
+		existing.Env, existing.Command,
+		existing.Memory, existing.Cpu); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -537,11 +555,11 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	var err error
 	insert := `
 	INSERT INTO task (
-      task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type
+      task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
+      queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
+      env, task_type, command, memory, cpu
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'task'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19
     );
     `
 
@@ -553,9 +571,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	if _, err = tx.Exec(insert,
 		r.TaskArn, r.RunID, r.DefinitionID,
 		r.Alias, r.Image, r.ClusterName,
-		r.ExitCode, r.Status, r.StartedAt,
-		r.FinishedAt, r.InstanceID,
-		r.InstanceDNSName, r.GroupName, r.Env); err != nil {
+		r.ExitCode, r.ExitReason, r.Status,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
+		r.InstanceID, r.InstanceDNSName, r.GroupName,
+		r.Env, r.Command, r.Memory, r.Cpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

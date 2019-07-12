@@ -3,7 +3,7 @@ jobs:
    build:
      working_directory: /go/src/github.com/stitchfix/flotilla-os
      docker:
-       - image: circleci/golang:1.8
+       - image: circleci/golang:1.12
          environment:
            FLOTILLA_MODE: test
            DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable

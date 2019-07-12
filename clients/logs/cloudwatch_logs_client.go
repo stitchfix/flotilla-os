@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
+	"log"
+	"os"
 	"sort"
 	"strings"
 )
@@ -23,6 +26,7 @@ type CloudWatchLogsClient struct {
 	logNamespace       string
 	logStreamPrefix    string
 	logsClient         logsClient
+	logger             *log.Logger
 }
 
 type logsClient interface {
@@ -91,6 +95,8 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 
 		cwl.logsClient = cloudwatchlogs.New(sess)
 	}
+	cwl.logger = log.New(os.Stderr, "[cloudwatchlogs] ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 	return cwl.createNamespaceIfNotExists()
 }
 
@@ -122,6 +128,11 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 				}
 
 				return "", nil, exceptions.MissingResource{err.Error()}
+			} else if request.IsErrorThrottle(err) {
+				cwl.logger.Printf(
+					"thottled getting logs; definition_id: %s, run_id: %s, error: %+v\n",
+					definition.DefinitionID, run.RunID, err)
+				return "", lastSeen, nil
 			}
 		}
 		return "", nil, errors.Wrap(err, "problem getting logs")

@@ -98,8 +98,7 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		}
 	}
 
-	if len(task.Containers) > 0 {
-		mainContainer := task.Containers[0]
+	if mainContainer := a.getMainContainer(task); mainContainer != nil {
 		run.ExitCode = mainContainer.ExitCode
 		run.Status = *mainContainer.LastStatus
 	}
@@ -114,7 +113,35 @@ func (a *ecsAdapter) AdaptTask(task ecs.Task) state.Run {
 		run.InstanceDNSName = ""
 	}
 
+	if reason := a.reasonString(task); len(reason) > 0 {
+		run.ExitReason = &reason
+	}
+
 	return run
+}
+
+func (a *ecsAdapter) getMainContainer(task ecs.Task) (main *ecs.Container) {
+	if len(task.Containers) > 0 {
+		main = task.Containers[0]
+	}
+	return
+}
+
+func (a *ecsAdapter) reasonString(task ecs.Task) string {
+	var reasons []string
+
+	if task.StopCode != nil {
+		reasons = append(reasons, *task.StopCode)
+	}
+
+	if task.StoppedReason != nil {
+		reasons = append(reasons, *task.StoppedReason)
+	}
+
+	if mainContainer := a.getMainContainer(task); mainContainer != nil && mainContainer.Reason != nil {
+		reasons = append(reasons, *mainContainer.Reason)
+	}
+	return strings.Join(reasons, " - ")
 }
 
 func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
@@ -155,7 +182,7 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	n := int64(1)
 
 	overrides := ecs.TaskOverride{
-		ContainerOverrides: []*ecs.ContainerOverride{a.envOverrides(definition, run)},
+		ContainerOverrides: []*ecs.ContainerOverride{a.overrides(definition, run)},
 	}
 
 	rti := ecs.RunTaskInput{
@@ -165,7 +192,23 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		TaskDefinition: &definition.Arn,
 		Overrides:      &overrides,
 	}
+
 	return rti
+}
+
+func (a *ecsAdapter) overrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
+	overrides := a.envOverrides(definition, run)
+
+	if run.Command != nil {
+		cmds := a.constructCmdSlice(*run.Command)
+		overrides.Command = []*string{&cmds[0], &cmds[1], &cmds[2], &cmds[3]}
+	}
+
+	overrides.Memory = run.Memory
+	overrides.Cpu = run.Cpu
+
+	return overrides
+
 }
 
 func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
@@ -228,7 +271,7 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		// Fallback
 		cmdString = definition.Command
 	}
-	cmds := []string{"bash", "-l", "-c", cmdString}
+	cmds := a.constructCmdSlice(cmdString)
 	containerDef.Command = []*string{
 		&cmds[0], &cmds[1], &cmds[2], &cmds[3],
 	}
@@ -269,6 +312,13 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		Family:               &definition.DefinitionID,
 		NetworkMode:          &networkMode,
 	}
+}
+
+func (a *ecsAdapter) constructCmdSlice(cmdString string) []string {
+	bashCmd := "bash"
+	optLogin := "-l"
+	optStr := "-c"
+	return []string{bashCmd, optLogin, optStr, cmdString}
 }
 
 //

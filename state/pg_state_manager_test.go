@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -28,7 +29,8 @@ func setUp() Manager {
 	//
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
-	sm, _ := NewStateManager(conf)
+	sm, err := NewStateManager(conf)
+	fmt.Println(err)
 	//
 	//
 	//
@@ -518,6 +520,9 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	}
 
 	ec := int64(137)
+	reason := "instance is ded."
+	cmd := "_test cmd__"
+	mem := int64(10)
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
 	t1 = t1.UTC()
@@ -530,6 +535,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Alias:        "AliasA",
 		Image:        "ImageA",
 		ExitCode:     &ec,
+		ExitReason:   &reason,
 		StartedAt:    &t1,
 		FinishedAt:   &t2,
 		ClusterName:  "clusta",
@@ -537,6 +543,8 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
+		Command: &cmd,
+		Memory:  &mem,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
@@ -561,6 +569,10 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		t.Errorf("Expected exit code %v but was %v", *r2.ExitCode, *f2.ExitCode)
 	}
 
+	if *f2.ExitReason != *r2.ExitReason {
+		t.Errorf("Expected exit reason %s but was %s", *r2.ExitReason, *f2.ExitReason)
+	}
+
 	if (*f2.StartedAt).UTC().String() != (*r2.StartedAt).String() {
 		t.Errorf("Expected started_at %s but was %s", *r2.StartedAt, *f2.StartedAt)
 	}
@@ -576,6 +588,31 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	if f2.Image != r2.Image {
 		t.Errorf("Expected image: [%s] but was [%s]", r2.Image, f2.Image)
 	}
+
+	if f1.Command != nil {
+		t.Errorf("Expected null command, but was [%s]", *f1.Command)
+	}
+
+	if f1.Memory != nil {
+		t.Errorf("Expected null mem, but was [%d]", *f1.Memory)
+	}
+
+	if f2.Command == nil {
+		t.Errorf("Expected non-null command, but was null")
+	}
+
+	if f2.Memory == nil {
+		t.Errorf("Expected non-null memory, but was null")
+	}
+
+	if f2.Command != nil && *f2.Command != cmd {
+		t.Errorf("Expected command [%s], but got [%s]", cmd, *f2.Command)
+	}
+
+	if f2.Memory != nil && *f2.Memory != mem {
+		t.Errorf("Expected mem [%d], but got [%d]", mem, *f2.Memory)
+	}
+
 }
 
 func TestSQLStateManager_UpdateRun(t *testing.T) {

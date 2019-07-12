@@ -1,12 +1,14 @@
 package adapter
 
 import (
+	"fmt"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
-	"testing"
-	"time"
 )
 
 type testClient struct {
@@ -80,6 +82,9 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 		ContainerName: "mynameiswhat",
 	}
 
+	cmd := "_overridden_cmd"
+	mem := int64(11)
+	cpu := int64(111)
 	k1 := "ENVVAR_A"
 	k2 := "ENVVAR_B"
 	v1 := "VALUEA"
@@ -93,6 +98,9 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 		ClusterName: "clusta",
 		GroupName:   "groupa",
 		Env:         &env,
+		Command:     &cmd,
+		Memory:      &mem,
+		Cpu:         &cpu,
 	}
 	rti := adapter.AdaptRun(definition, run)
 
@@ -117,6 +125,31 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 				t.Errorf("Expected %s value %v but was %v", k2, v2, *e.Value)
 			}
 		}
+
+		if ovrdCmd := rti.Overrides.ContainerOverrides[0].Command; len(ovrdCmd) != 4 {
+			t.Errorf("Unexpected command override len: [%d]", len(ovrdCmd))
+		} else {
+			if *ovrdCmd[0] != "bash" {
+				t.Errorf("Expected command [%s], got [%s]", cmd, *ovrdCmd[0])
+			}
+		}
+
+		if ovrdMem := rti.Overrides.ContainerOverrides[0].Memory; ovrdMem == nil {
+			t.Errorf("Expected non-nil mem override")
+		} else {
+			if *ovrdMem != mem {
+				t.Errorf("Expcted mem [%d], got [%d]", mem, *ovrdMem)
+			}
+		}
+
+		if ovrdCpu := rti.Overrides.ContainerOverrides[0].Cpu; ovrdCpu == nil {
+			t.Errorf("Expected non-nil cpu override")
+		} else {
+			if *ovrdCpu != cpu {
+				t.Errorf("Expcted mem [%d], got [%d]", cpu, *ovrdCpu)
+			}
+		}
+
 	} else {
 		t.Errorf("Expected non-nil and non empty container overrides")
 	}
@@ -156,7 +189,9 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 	}
 
 	exitCode := int64(0)
-	reason := ""
+	reason := "exited"
+	stopReason := "Essential container in task exited"
+	stopCode := "EssentialContainerExited"
 	retriableReason := "CannotPullContainerError"
 
 	container := ecs.Container{
@@ -190,6 +225,8 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 		Overrides:            &overrides,
 		LastStatus:           &lastStatus,
 		Containers:           containers,
+		StopCode:             &stopCode,
+		StoppedReason:        &stopReason,
 	}
 	adapted := adapter.AdaptTask(task1)
 
@@ -215,6 +252,11 @@ func TestEcsAdapter_AdaptTask(t *testing.T) {
 
 	if adapted.ExitCode == nil || *adapted.ExitCode != exitCode {
 		t.Errorf("Expected exit code 0")
+	}
+
+	expectedReason := fmt.Sprintf("%s - %s - %s", stopCode, stopReason, reason)
+	if adapted.ExitReason == nil || *adapted.ExitReason != expectedReason {
+		t.Errorf("Expected reason %s", reason)
 	}
 
 	if adapted.Status != lastStatus {

@@ -115,7 +115,7 @@ set -x
 
 {{.Command}}
 `
-var commandTemplate, _ = template.New("command").Parse(commandWrapper)
+var CommandTemplate, _ = template.New("command").Parse(commandWrapper)
 
 //
 // WrappedCommand returns the wrapped command for the definition
@@ -123,7 +123,7 @@ var commandTemplate, _ = template.New("command").Parse(commandWrapper)
 //
 func (d *Definition) WrappedCommand() (string, error) {
 	var result bytes.Buffer
-	if err := commandTemplate.Execute(&result, d); err != nil {
+	if err := CommandTemplate.Execute(&result, d); err != nil {
 		return "", err
 	}
 	return result.String(), nil
@@ -277,6 +277,10 @@ type Run struct {
 	User            string     `json:"user,omitempty"`
 	TaskType        string     `json:"-"`
 	Env             *EnvList   `json:"env,omitempty"`
+	Command         *string    `json:"command,omitempty"`
+	Memory          *int64     `json:"memory,omitempty"`
+	Cpu             *int64     `json:"cpu,omitempty"`
+	ExitReason      *string    `json:"exit_reason,omitempty"`
 }
 
 //
@@ -332,6 +336,21 @@ func (d *Run) UpdateWith(other Run) {
 		d.Env = other.Env
 	}
 
+	if other.ExitReason != nil {
+		d.ExitReason = other.ExitReason
+	}
+
+	if other.Command != nil && len(*other.Command) > 0 {
+		d.Command = other.Command
+	}
+
+	if other.Memory != nil {
+		d.Memory = other.Memory
+	}
+
+	if other.Cpu != nil {
+		d.Cpu = other.Cpu
+	}
 	//
 	// Runs have a deterministic lifecycle
 	//
