@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -19,6 +20,7 @@ type endpoints struct {
 	definitionService services.DefinitionService
 	logService        services.LogService
 	workerService     services.WorkerService
+	logger            flotillaLog.Logger
 }
 
 type listRequest struct {
@@ -30,14 +32,17 @@ type listRequest struct {
 	envFilters map[string]string
 }
 
-type launchRequest struct {
+type LaunchRequest struct {
 	ClusterName string         `json:"cluster"`
 	Env         *state.EnvList `json:"env"`
 }
 
-type launchRequestV2 struct {
+type LaunchRequestV2 struct {
 	RunTags RunTags `json:"run_tags"`
-	*launchRequest
+	Command *string
+	Memory  *int64
+	Cpu     *int64
+	*LaunchRequest
 }
 
 //
@@ -133,6 +138,10 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 		definitionList.Definitions = []state.Definition{}
 	}
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing definitions",
+			"operation", "ListDefinitions",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
@@ -154,6 +163,11 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	definition, err := ep.definitionService.Get(vars["definition_id"])
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting definitions",
+			"operation", "GetDefinition",
+			"error", fmt.Sprintf("%+v", err),
+			"definition_id", vars["definition_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, definition)
@@ -164,6 +178,11 @@ func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	definition, err := ep.definitionService.GetByAlias(vars["alias"])
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting definition by alias",
+			"operation", "GetDefinitionByAlias",
+			"error", fmt.Sprintf("%+v", err),
+			"alias", vars["alias"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, definition)
@@ -174,12 +193,16 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
 	created, err := ep.definitionService.Create(&definition)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating definition",
+			"operation", "CreateDefinition",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, created)
@@ -190,7 +213,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
@@ -198,6 +221,11 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	updated, err := ep.definitionService.Update(vars["definition_id"], definition)
 
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem updating definition",
+			"operation", "UpdateDefinition",
+			"error", fmt.Sprintf("%+v", err),
+			"definition_id", vars["definition_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, updated)
@@ -208,6 +236,11 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	err := ep.definitionService.Delete(vars["definition_id"])
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem deleting definition",
+			"operation", "DeleteDefinition",
+			"error", fmt.Sprintf("%+v", err),
+			"definition_id", vars["definition_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, map[string]bool{"deleted": true})
@@ -226,6 +259,10 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	runList, err := ep.executionService.List(
 		lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing runs",
+			"operation", "ListRuns",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
@@ -247,6 +284,11 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	run, err := ep.executionService.Get(vars["run_id"])
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting run",
+			"operation", "GetRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
@@ -254,16 +296,20 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
-	var lr launchRequest
+	var lr LaunchRequest
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown")
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating run",
+			"operation", "CreateRun",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
@@ -271,10 +317,10 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
-	var lr launchRequestV2
+	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
@@ -285,8 +331,12 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating V2 run",
+			"operation", "CreateRunV2",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
@@ -294,10 +344,10 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
-	var lr launchRequestV2
+	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
@@ -308,8 +358,12 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating V4 run",
+			"operation", "CreateRunV4",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
@@ -317,10 +371,10 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
-	var lr launchRequestV2
+	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
@@ -331,8 +385,13 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID)
+	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating run alias",
+			"operation", "CreateRunByAlias",
+			"error", fmt.Sprintf("%+v", err),
+			"alias", vars["alias"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
@@ -343,6 +402,11 @@ func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	err := ep.executionService.Terminate(vars["run_id"])
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem stopping run",
+			"operation", "StopRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, map[string]bool{"terminated": true})
@@ -353,13 +417,18 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	var run state.Run
 	err := ep.decodeRequest(r, &run)
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
 	vars := mux.Vars(r)
 	err = ep.executionService.UpdateStatus(vars["run_id"], run.Status, run.ExitCode)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem updating run",
+			"operation", "UpdateRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, map[string]bool{"updated": true})
@@ -373,6 +442,12 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	lastSeen := ep.getURLParam(params, "last_seen", "")
 	logs, newLastSeen, err := ep.logService.Logs(vars["run_id"], &lastSeen)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting logs",
+			"operation", "GetLogs",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"],
+			"last_seen", lastSeen)
 		ep.encodeError(w, err)
 		return
 	}
@@ -396,6 +471,10 @@ func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	groups, err := ep.definitionService.ListGroups(lr.limit, lr.offset, &name)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting groups",
+			"operation", "GetGroups",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
@@ -417,6 +496,10 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 
 	tags, err := ep.definitionService.ListTags(lr.limit, lr.offset, &name)
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting tags",
+			"operation", "GetTags",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
@@ -431,6 +514,10 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	clusters, err := ep.executionService.ListClusters()
 	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing clusters",
+			"operation", "ListClusters",
+			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})

@@ -26,7 +26,7 @@ type App struct {
 	readTimeout        time.Duration
 	writeTimeout       time.Duration
 	handler            http.Handler
-	workerManager worker.Worker
+	workerManager      worker.Worker
 }
 
 func (app *App) Run() error {
@@ -75,6 +75,7 @@ func NewApp(conf config.Config,
 		definitionService: definitionService,
 		logService:        logService,
 		workerService:     workerService,
+		logger:            log,
 	}
 
 	app.configureRoutes(ep)

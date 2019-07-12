@@ -1,14 +1,14 @@
 package httpclient
 
 import (
-"bytes"
-"encoding/json"
-"fmt"
-"io"
-"net/http"
-"net/url"
-"strings"
-"time"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 type RetryableError interface {

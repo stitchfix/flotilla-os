@@ -47,7 +47,9 @@ CREATE TABLE IF NOT EXISTS task (
   image character varying,
   cluster_name character varying,
   exit_code integer,
+  exit_reason character varying,
   status character varying,
+  queued_at timestamp with time zone,
   started_at timestamp with time zone,
   finished_at timestamp with time zone,
   instance_id character varying,
@@ -58,8 +60,11 @@ CREATE TABLE IF NOT EXISTS task (
   task_arn character varying,
   docker_id character varying,
   "user" character varying,
-  task_type character varying
+  task_type character varying,
   -- Refactor these --
+  command text,
+  memory integer,
+  cpu integer
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -168,7 +173,9 @@ select
   coalesce(t.image,'')                       as image,
   coalesce(t.cluster_name,'')                as clustername,
   t.exit_code                                as exitcode,
+  t.exit_reason                              as exitreason,
   coalesce(t.status,'')                      as status,
+  queued_at                                  as queuedat,
   started_at                                 as startedat,
   finished_at                                as finishedat,
   coalesce(t.instance_id,'')                 as instanceid,
@@ -176,7 +183,10 @@ select
   coalesce(t.group_name,'')                  as groupname,
   coalesce(t.user,'')                        as "user",
   coalesce(t.task_type,'')                   as tasktype,
-  env::TEXT                                  as env
+  env::TEXT                                  as env,
+  command,
+  memory,
+  cpu
 from task t
 `
 
