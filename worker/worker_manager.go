@@ -18,11 +18,12 @@ type workerManager struct {
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
-	workers map[string][]Worker
-	t tomb.Tomb
+	workers      map[string][]Worker
+	t            tomb.Tomb
 }
 
-func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+func (wm *workerManager) Initialize(
+	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
 	wm.conf = conf
 	wm.log = log
 	wm.ee = ee
@@ -94,9 +95,15 @@ func (wm *workerManager) runOnce() error {
 	}
 
 	for _, w := range workerList.Workers {
-		if len(wm.workers[w.WorkerType]) != w.CountPerInstance {
-			if err := wm.updateWorkerCount(w.WorkerType, len(wm.workers[w.WorkerType]), w.CountPerInstance); err != nil {
-				// log error
+		currentWorkerCount := len(wm.workers[w.WorkerType])
+
+		// Is our current number of workers not the desired number of workers?
+		if currentWorkerCount != w.CountPerInstance {
+
+			if err := wm.updateWorkerCount(w.WorkerType, currentWorkerCount, w.CountPerInstance); err != nil {
+				wm.log.Log(
+					"message", "problem updating worker count",
+					"error", err.Error())
 			}
 		}
 	}
@@ -104,17 +111,18 @@ func (wm *workerManager) runOnce() error {
 	return nil
 }
 
-func (wm *workerManager) updateWorkerCount(workerType string, curr int, next int) error {
-	if curr > next {
-		// Kill workers
-		for i := next; i < curr; i++ {
+func (wm *workerManager) updateWorkerCount(
+	workerType string, currentWorkerCount int, desiredWorkerCount int) error {
+	if currentWorkerCount > desiredWorkerCount {
+		// We have more workers than we need, remove workers until the counts match
+		for i := desiredWorkerCount; i < currentWorkerCount; i++ {
 			if err := wm.removeWorker(workerType); err != nil {
 				return err
 			}
 		}
-	} else if curr < next {
-		// Add workers
-		for i := curr; i < next; i++ {
+	} else if currentWorkerCount < desiredWorkerCount {
+		// We have less workers than we need, add workers until the counts match
+		for i := currentWorkerCount; i < desiredWorkerCount; i++ {
 			if err := wm.addWorker(workerType); err != nil {
 				return err
 			}

@@ -1,7 +1,9 @@
 package services
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
@@ -32,13 +34,42 @@ func (ws *workerService) List() (state.WorkersList, error) {
 }
 
 func (ws *workerService) Get(workerType string) (state.Worker, error) {
+	var w state.Worker
+	if err := ws.validate(workerType); err != nil {
+		return w, err
+	}
 	return ws.sm.GetWorker(workerType)
 }
 
 func (ws *workerService) Update(workerType string, updates state.Worker) (state.Worker, error) {
+	var w state.Worker
+	if err := ws.validate(workerType); err != nil {
+		return w, err
+	}
+
 	return ws.sm.UpdateWorker(workerType, updates)
 }
 
 func (ws *workerService) BatchUpdate(updates []state.Worker) (state.WorkersList, error) {
+	var wl state.WorkersList
+	for _, update := range updates {
+		if err := ws.validate(update.WorkerType); err != nil {
+			return wl, err
+		}
+	}
 	return ws.sm.BatchUpdateWorkers(updates)
+}
+
+func (ws *workerService) validate(workerType string) error {
+	if !state.IsValidWorkerType(workerType) {
+		var validTypesList []string
+		for validType := range state.WorkerTypes {
+			validTypesList = append(validTypesList, validType)
+		}
+		return exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf(
+				"Worker type: [%s] is not a valid worker type; valid types: %s",
+				workerType, validTypesList)}
+	}
+	return nil
 }

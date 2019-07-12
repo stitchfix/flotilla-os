@@ -707,23 +707,16 @@ func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 //
 // GetWorker returns data for a single worker.
 //
-func (sm *SQLStateManager) GetWorker(workerType string) (Worker, error) {
-	var err error
-	var w Worker
-
-	// Check DB.
-	err = sm.db.Get(&w, GetWorkerSQL, workerType)
-
-	if err != nil {
+func (sm *SQLStateManager) GetWorker(workerType string) (w Worker, err error) {
+	if err := sm.db.Get(&w, GetWorkerSQL, workerType); err != nil {
 		if err == sql.ErrNoRows {
-			return w, exceptions.MissingResource{
-				fmt.Sprintf("Worker of type %s not found", workerType)}
+			err = exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Worker of type %s not found", workerType)}
+		} else {
+			err = errors.Wrapf(err, "issue getting worker of type [%s]", workerType)
 		}
-
-		return w, errors.Wrapf(err, "issue getting worker of type [%s]", workerType)
 	}
-
-	return w, nil
+	return
 }
 
 //
@@ -734,10 +727,6 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 		err      error
 		existing Worker
 	)
-
-	if existing.IsValidWorkerType(workerType) == false {
-		return existing, exceptions.MalformedInput{fmt.Sprintf("Worker of type %s not found", workerType)}
-	}
 
 	tx, err := sm.db.Begin()
 	if err != nil {

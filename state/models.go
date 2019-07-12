@@ -26,6 +26,16 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+var WorkerTypes = map[string]bool{
+	"retry":  true,
+	"submit": true,
+	"status": true,
+}
+
+func IsValidWorkerType(workerType string) bool {
+	return WorkerTypes[workerType]
+}
+
 //
 // IsValidStatus checks that the given status
 // string is one of the valid statuses
@@ -427,21 +437,6 @@ type Worker struct {
 }
 
 //
-// IsValidWorkerType checks if a string is a valid worker type.
-//
-func (w *Worker) IsValidWorkerType(t string) bool {
-	validWorkerTypes := []string{"retry", "submit", "status"}
-
-	for i := 0; i <= len(validWorkerTypes); i++ {
-		if t == validWorkerTypes[i] {
-			return true
-		}
-	}
-
-	return false
-}
-
-//
 // UpdateWith updates this definition with information from another
 //
 func (w *Worker) UpdateWith(other Worker) {
@@ -451,41 +446,9 @@ func (w *Worker) UpdateWith(other Worker) {
 }
 
 //
-// MarshalJSON transforms a Worker into a valid JSON object.
-//
-func (w Worker) MarshalJSON() ([]byte, error) {
-	type Wk Worker
-
-	return json.Marshal(&struct {
-		Wk
-	}{
-		Wk: (Wk)(w),
-	})
-}
-
-//
 // WorkersList wraps a list of Workers
 //
 type WorkersList struct {
 	Total   int      `json:"total"`
 	Workers []Worker `json:"workers"`
-}
-
-//
-// MarshalJSON transforms a WorkersList into a valid JSON object.
-//
-func (wl *WorkersList) MarshalJSON() ([]byte, error) {
-	type WList WorkersList
-	l := wl.Workers
-	if l == nil {
-		l = []Worker{}
-	}
-
-	return json.Marshal(&struct {
-		Workers []Worker `json:"workers"`
-		*WList
-	}{
-		Workers: l,
-		WList:   (*WList)(wl),
-	})
 }

@@ -558,7 +558,7 @@ func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	err := ep.decodeRequest(r, &worker)
 
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
@@ -577,7 +577,7 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 	err := ep.decodeRequest(r, &wks)
 
 	if err != nil {
-		ep.encodeError(w, err)
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
