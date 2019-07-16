@@ -9,13 +9,14 @@ import (
 
 	// Pull in postgres specific drivers
 	"database/sql"
+	"math"
+	"strings"
+	"time"
+
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"math"
-	"strings"
-	"time"
 )
 
 //
@@ -652,10 +653,19 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 // initWorkerTable initializes the `worker` table with values from the config
 //
 func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
-	// Get worker count from configuration.
-	retryCount := int64(c.GetInt("worker.retry_worker_count_per_instance"))
-	submitCount := int64(c.GetInt("worker.submit_worker_count_per_instance"))
-	statusCount := int64(c.GetInt("worker.status_worker_count_per_instance"))
+	// Get worker count from configuration (set to 1 as default)
+	retryCount := int64(1)
+	if c.IsSet("worker.retry_worker_count_per_instance") {
+		retryCount = int64(c.GetInt("worker.retry_worker_count_per_instance"))
+	}
+	submitCount := int64(1)
+	if c.IsSet("worker.submit_worker_count_per_instance") {
+		submitCount = int64(c.GetInt("worker.submit_worker_count_per_instance"))
+	}
+	statusCount := int64(1)
+	if c.IsSet("worker.status_worker_count_per_instance") {
+		statusCount = int64(c.GetInt("worker.status_worker_count_per_instance"))
+	}
 
 	var err error
 	insert := `
