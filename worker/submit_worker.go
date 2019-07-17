@@ -2,11 +2,13 @@ package worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"time"
+	"gopkg.in/tomb.v2"
 )
 
 type submitWorker struct {
@@ -15,6 +17,7 @@ type submitWorker struct {
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
+	t            tomb.Tomb
 }
 
 func (sw *submitWorker) Initialize(
@@ -24,16 +27,27 @@ func (sw *submitWorker) Initialize(
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
+	sw.log.Log("message", "initialized a submit worker")
 	return nil
+}
+
+func (sw *submitWorker) GetTomb() *tomb.Tomb {
+	return &sw.t
 }
 
 //
 // Run lists queues, consumes runs from them, and executes them using the execution engine
 //
-func (sw *submitWorker) Run() {
+func (sw *submitWorker) Run() error {
 	for {
-		sw.runOnce()
-		time.Sleep(sw.pollInterval)
+		select {
+		case <-sw.t.Dying():
+			sw.log.Log("message", "A submit worker was terminated")
+			return nil
+		default:
+			sw.runOnce()
+			time.Sleep(sw.pollInterval)
+		}
 	}
 }
 

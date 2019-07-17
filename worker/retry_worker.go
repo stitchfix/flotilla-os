@@ -2,11 +2,13 @@ package worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"time"
+	"gopkg.in/tomb.v2"
 )
 
 type retryWorker struct {
@@ -15,6 +17,7 @@ type retryWorker struct {
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
+	t            tomb.Tomb
 }
 
 func (rw *retryWorker) Initialize(
@@ -24,16 +27,27 @@ func (rw *retryWorker) Initialize(
 	rw.sm = sm
 	rw.ee = ee
 	rw.log = log
+	rw.log.Log("message", "initialized a retry worker")
 	return nil
+}
+
+func (rw *retryWorker) GetTomb() *tomb.Tomb {
+	return &rw.t
 }
 
 //
 // Run finds tasks that NEED_RETRY and requeues them
 //
-func (rw *retryWorker) Run() {
+func (rw *retryWorker) Run() error {
 	for {
-		rw.runOnce()
-		time.Sleep(rw.pollInterval)
+		select {
+		case <-rw.t.Dying():
+			rw.log.Log("message", "A retry worker was terminated")
+			return nil
+		default:
+			rw.runOnce()
+			time.Sleep(rw.pollInterval)
+		}
 	}
 }
 

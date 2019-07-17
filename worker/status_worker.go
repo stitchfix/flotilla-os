@@ -2,12 +2,14 @@ package worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"time"
+	"gopkg.in/tomb.v2"
 )
 
 type statusWorker struct {
@@ -16,6 +18,7 @@ type statusWorker struct {
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
+	t            tomb.Tomb
 }
 
 func (sw *statusWorker) Initialize(
@@ -25,16 +28,27 @@ func (sw *statusWorker) Initialize(
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
+	sw.log.Log("message", "initialized a status worker")
 	return nil
+}
+
+func (sw *statusWorker) GetTomb() *tomb.Tomb {
+	return &sw.t
 }
 
 //
 // Run updates status of tasks
 //
-func (sw *statusWorker) Run() {
+func (sw *statusWorker) Run() error {
 	for {
-		sw.runOnce()
-		time.Sleep(sw.pollInterval)
+		select {
+		case <-sw.t.Dying():
+			sw.log.Log("message", "A status worker was terminated")
+			return nil
+		default:
+			sw.runOnce()
+			time.Sleep(sw.pollInterval)
+		}
 	}
 }
 

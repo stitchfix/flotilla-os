@@ -26,6 +26,16 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+var WorkerTypes = map[string]bool{
+	"retry":  true,
+	"submit": true,
+	"status": true,
+}
+
+func IsValidWorkerType(workerType string) bool {
+	return WorkerTypes[workerType]
+}
+
 //
 // IsValidStatus checks that the given status
 // string is one of the valid statuses
@@ -416,4 +426,29 @@ type GroupsList struct {
 type TagsList struct {
 	Tags  []string
 	Total int
+}
+
+//
+// Worker represents a Flotilla Worker
+//
+type Worker struct {
+	WorkerType       string `json:"worker_type"`
+	CountPerInstance int    `json:"count_per_instance"`
+}
+
+//
+// UpdateWith updates this definition with information from another
+//
+func (w *Worker) UpdateWith(other Worker) {
+	if other.CountPerInstance >= 0 {
+		w.CountPerInstance = other.CountPerInstance
+	}
+}
+
+//
+// WorkersList wraps a list of Workers
+//
+type WorkersList struct {
+	Total   int      `json:"total"`
+	Workers []Worker `json:"workers"`
 }

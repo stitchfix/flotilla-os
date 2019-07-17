@@ -1,6 +1,10 @@
 package flotilla
 
 import (
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -12,9 +16,6 @@ import (
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/worker"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type App struct {
@@ -25,7 +26,7 @@ type App struct {
 	readTimeout        time.Duration
 	writeTimeout       time.Duration
 	handler            http.Handler
-	workers            []worker.Worker
+	workerManager      worker.Worker
 }
 
 func (app *App) Run() error {
@@ -35,9 +36,8 @@ func (app *App) Run() error {
 		ReadTimeout:  app.readTimeout,
 		WriteTimeout: app.writeTimeout,
 	}
-	for _, worker := range app.workers {
-		go worker.Run()
-	}
+	// Start worker manager's run goroutine.
+	app.workerManager.GetTomb().Go(app.workerManager.Run)
 	return srv.ListenAndServe()
 }
 
@@ -65,11 +65,16 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing log service")
 	}
+	workerService, err := services.NewWorkerService(conf, sm)
+	if err != nil {
+		return app, errors.Wrap(err, "problem initializing worker service")
+	}
 
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
 		logService:        logService,
+		workerService:     workerService,
 		logger:            log,
 	}
 
@@ -122,13 +127,11 @@ func (app *App) initializeWorkers(
 	log flotillaLog.Logger,
 	ee engine.Engine,
 	sm state.Manager) error {
-	for _, workerName := range conf.GetStringSlice("enabled_workers") {
-		wk, err := worker.NewWorker(workerName, log, conf, ee, sm)
-		app.logger.Log("message", "Starting worker", "name", workerName)
-		if err != nil {
-			return errors.Wrapf(err, "problem initializing worker with name [%s]", workerName)
-		}
-		app.workers = append(app.workers, wk)
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm)
+	app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	if err != nil {
+		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
 	}
+	app.workerManager = workerManager
 	return nil
 }

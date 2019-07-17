@@ -108,6 +108,11 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
   tag_id character varying NOT NULL REFERENCES tags(text),
   task_def_id character varying NOT NULL REFERENCES task_def(definition_id)
 );
+
+CREATE TABLE IF NOT EXISTS worker (
+  worker_type character varying PRIMARY KEY,
+  count_per_instance integer
+);
 `
 
 //
@@ -202,18 +207,53 @@ const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 const GetRunSQLForUpdate = GetRunSQL + " for update"
 
 //
-// GroupsSelect returns existing group_names
+// GroupsSelect postgres specific query for getting existing definition
+// group_names
 //
 const GroupsSelect = `
 select distinct group_name from task_def
 `
 
 //
-// TagsSelect returns existing tags
+// TagsSelect postgres specific query for getting existing definition tags
 //
 const TagsSelect = `
 select distinct text from tags
 `
 
+//
+// ListGroupsSQL postgres specific query for listing definition group_names
+//
 const ListGroupsSQL = GroupsSelect + "\n%s order by group_name asc limit $1 offset $2"
+
+//
+// ListTagsSQL postgres specific query for listing definition tags
+//
 const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"
+
+//
+// WorkerSelect postgres specific query for workers
+//
+const WorkerSelect = `
+  select
+    worker_type        as workertype,
+    count_per_instance as countperinstance
+  from worker
+`
+
+//
+// ListWorkersSQL postgres specific query for listing workers
+//
+const ListWorkersSQL = WorkerSelect
+
+//
+// GetWorkerSQL postgres specific query for retrieving data for a specific
+// worker type.
+//
+const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1"
+
+//
+// GetWorkerSQLForUpdate postgres specific query for retrieving data for a specific
+// worker type; locks the row.
+//
+const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"

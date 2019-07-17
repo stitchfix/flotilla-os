@@ -19,6 +19,7 @@ type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
 	logService        services.LogService
+	workerService     services.WorkerService
 	logger            flotillaLog.Logger
 }
 
@@ -522,5 +523,69 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 		response := make(map[string]interface{})
 		response["clusters"] = clusters
 		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
+	wl, err := ep.workerService.List()
+
+	if wl.Workers == nil {
+		wl.Workers = []state.Worker{}
+	}
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = wl.Total
+		response["workers"] = wl.Workers
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	worker, err := ep.workerService.Get(vars["worker_type"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, worker)
+	}
+}
+
+func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
+	var worker state.Worker
+	err := ep.decodeRequest(r, &worker)
+
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	vars := mux.Vars(r)
+	updated, err := ep.workerService.Update(vars["worker_type"], worker)
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
+	}
+}
+
+func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) {
+	var wks []state.Worker
+	err := ep.decodeRequest(r, &wks)
+
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	updated, err := ep.workerService.BatchUpdate(wks)
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
 	}
 }

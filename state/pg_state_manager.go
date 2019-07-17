@@ -77,6 +77,11 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 		if err = sm.createTables(); err != nil {
 			return errors.Wrap(err, "problem executing create tables sql")
 		}
+
+		// Populate worker table
+		if err = sm.initWorkerTable(conf); err != nil {
+			return errors.Wrap(err, "problem populating worker table sql")
+		}
 	}
 	return nil
 }
@@ -587,7 +592,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 }
 
 //
-// Metadata
+// ListGroups returns a list of the existing group names.
 //
 func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (GroupsList, error) {
 	var (
@@ -615,6 +620,9 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 	return result, nil
 }
 
+//
+// ListTags returns a list of the existing tags.
+//
 func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsList, error) {
 	var (
 		err         error
@@ -639,6 +647,149 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	}
 
 	return result, nil
+}
+
+//
+// initWorkerTable initializes the `worker` table with values from the config
+//
+func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
+	// Get worker count from configuration (set to 1 as default)
+	retryCount := int64(1)
+	if c.IsSet("worker.retry_worker_count_per_instance") {
+		retryCount = int64(c.GetInt("worker.retry_worker_count_per_instance"))
+	}
+	submitCount := int64(1)
+	if c.IsSet("worker.submit_worker_count_per_instance") {
+		submitCount = int64(c.GetInt("worker.submit_worker_count_per_instance"))
+	}
+	statusCount := int64(1)
+	if c.IsSet("worker.status_worker_count_per_instance") {
+		statusCount = int64(c.GetInt("worker.status_worker_count_per_instance"))
+	}
+
+	var err error
+	insert := `
+		INSERT INTO worker (worker_type, count_per_instance)
+		VALUES ('retry', $1), ('submit', $2), ('status', $3)
+		ON CONFLICT (worker_type) DO NOTHING;
+	`
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(insert, retryCount, submitCount, statusCount); err != nil {
+		tx.Rollback()
+		return errors.Wrapf(err, "issue populating worker table")
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+//
+// ListWorkers returns list of workers
+//
+func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
+	var err error
+	var result WorkersList
+
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListWorkersSQL)
+
+	err = sm.db.Select(&result.Workers, ListWorkersSQL)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list workers sql")
+	}
+
+	err = sm.db.Get(&result.Total, countSQL)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list workers count sql")
+	}
+
+	return result, nil
+}
+
+//
+// GetWorker returns data for a single worker.
+//
+func (sm *SQLStateManager) GetWorker(workerType string) (w Worker, err error) {
+	if err := sm.db.Get(&w, GetWorkerSQL, workerType); err != nil {
+		if err == sql.ErrNoRows {
+			err = exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Worker of type %s not found", workerType)}
+		} else {
+			err = errors.Wrapf(err, "issue getting worker of type [%s]", workerType)
+		}
+	}
+	return
+}
+
+//
+// UpdateWorker updates a single worker.
+//
+func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Worker, error) {
+	var (
+		err      error
+		existing Worker
+	)
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return existing, errors.WithStack(err)
+	}
+
+	rows, err := tx.Query(GetWorkerSQLForUpdate, workerType)
+	if err != nil {
+		tx.Rollback()
+		return existing, errors.WithStack(err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&existing.WorkerType, &existing.CountPerInstance)
+	}
+	if err != nil {
+		return existing, errors.WithStack(err)
+	}
+
+	existing.UpdateWith(updates)
+
+	update := `
+		UPDATE worker SET count_per_instance = $2
+    WHERE worker_type = $1;
+    `
+
+	if _, err = tx.Exec(update, workerType, existing.CountPerInstance); err != nil {
+		tx.Rollback()
+		return existing, errors.WithStack(err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return existing, errors.WithStack(err)
+	}
+
+	return existing, nil
+}
+
+//
+// BatchUpdateWorker updates multiple workers.
+//
+func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, error) {
+	var existing WorkersList
+
+	for _, w := range updates {
+		_, err := sm.UpdateWorker(w.WorkerType, w)
+
+		if err != nil {
+			return existing, err
+		}
+	}
+
+	return sm.ListWorkers()
 }
 
 //

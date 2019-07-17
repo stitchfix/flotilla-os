@@ -2,12 +2,14 @@ package worker
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"time"
+	"gopkg.in/tomb.v2"
 )
 
 //
@@ -16,16 +18,19 @@ import (
 type Worker interface {
 	Initialize(
 		conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error
-	Run()
+	Run() error
+	GetTomb() *tomb.Tomb
 }
 
+//
+// NewWorker instantiates a new worker.
+//
 func NewWorker(
 	workerType string,
 	log flotillaLog.Logger,
 	conf config.Config,
 	ee engine.Engine,
 	sm state.Manager) (Worker, error) {
-
 	var worker Worker
 
 	switch workerType {
@@ -35,6 +40,8 @@ func NewWorker(
 		worker = &retryWorker{}
 	case "status":
 		worker = &statusWorker{}
+	case "worker_manager":
+		worker = &workerManager{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}
@@ -46,6 +53,9 @@ func NewWorker(
 	return worker, nil
 }
 
+//
+// GetPollInterval returns the frequency at which a worker will run.
+//
 func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
 	var interval time.Duration
 	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
