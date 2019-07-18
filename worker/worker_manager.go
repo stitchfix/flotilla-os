@@ -52,10 +52,12 @@ func (wm *workerManager) InitializeWorkers() error {
 	if err != nil {
 		return err
 	}
+
 	wm.workers = make(map[string][]Worker)
 
 	// Iterate through list of workers.
 	for _, w := range workerList.Workers {
+		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
 			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm)
@@ -66,7 +68,7 @@ func (wm *workerManager) InitializeWorkers() error {
 
 			// Start goroutine via tomb
 			wk.GetTomb().Go(wk.Run)
-			wm.workers[w.WorkerType] = append(wm.workers[w.WorkerType], wk)
+			wm.workers[w.WorkerType][i] = wk
 		}
 	}
 
@@ -96,7 +98,6 @@ func (wm *workerManager) runOnce() error {
 
 	for _, w := range workerList.Workers {
 		currentWorkerCount := len(wm.workers[w.WorkerType])
-
 		// Is our current number of workers not the desired number of workers?
 		if currentWorkerCount != w.CountPerInstance {
 
@@ -116,6 +117,9 @@ func (wm *workerManager) updateWorkerCount(
 	if currentWorkerCount > desiredWorkerCount {
 		// We have more workers than we need, remove workers until the counts match
 		for i := desiredWorkerCount; i < currentWorkerCount; i++ {
+			wm.log.Log("message", fmt.Sprintf(
+				"Managing [%v] %s workers but %v are desired, scaling down",
+				currentWorkerCount, workerType, desiredWorkerCount))
 			if err := wm.removeWorker(workerType); err != nil {
 				return err
 			}
@@ -123,6 +127,9 @@ func (wm *workerManager) updateWorkerCount(
 	} else if currentWorkerCount < desiredWorkerCount {
 		// We have less workers than we need, add workers until the counts match
 		for i := currentWorkerCount; i < desiredWorkerCount; i++ {
+			wm.log.Log("message", fmt.Sprintf(
+				"Managing [%v] %s workers but %v are desired, scaling up",
+				currentWorkerCount, workerType, desiredWorkerCount))
 			if err := wm.addWorker(workerType); err != nil {
 				return err
 			}
@@ -153,8 +160,8 @@ func (wm *workerManager) addWorker(workerType string) error {
 
 	// Start goroutine via tomb
 	wk.GetTomb().Go(wk.Run)
-	if workers, ok := wm.workers[workerType]; ok {
-		workers = append(workers, wk)
+	if _, ok := wm.workers[workerType]; ok {
+		wm.workers[workerType] = append(wm.workers[workerType], wk)
 	} else {
 		return fmt.Errorf("invalid worker type %s", workerType)
 	}
