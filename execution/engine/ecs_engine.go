@@ -318,7 +318,7 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 		retryable := false
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == ecs.ErrCodeInvalidParameterException {
-				if strings.Contains(aerr.Message(), "no container instances") {
+				if strings.Contains(strings.ToLower(aerr.Message()), "no container instances") {
 					retryable = true
 				}
 			}
