@@ -155,6 +155,43 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	}
 }
 
+func TestEcsAdapter_AdaptRun2(t *testing.T) {
+	taskRoleArn := "cupcake"
+	adapter := setUp(t)
+	adapter.taskRoleArn = &taskRoleArn
+
+	definition := state.Definition{
+		Arn:           "darn",
+		GroupName:     "groupa",
+		ContainerName: "mynameiswhat",
+	}
+
+	cmd := "_overridden_cmd"
+	mem := int64(11)
+	cpu := int64(111)
+	k1 := "ENVVAR_A"
+	k2 := "ENVVAR_B"
+	v1 := "VALUEA"
+	v2 := "VALUEB"
+	env := state.EnvList([]state.EnvVar{
+		{Name: k1, Value: v1},
+		{Name: k2, Value: v2},
+	})
+
+	run := state.Run{
+		ClusterName: "clusta",
+		GroupName:   "groupa",
+		Env:         &env,
+		Command:     &cmd,
+		Memory:      &mem,
+		Cpu:         &cpu,
+	}
+	rti := adapter.AdaptRun(definition, run)
+	if rti.Overrides.TaskRoleArn == nil || *rti.Overrides.TaskRoleArn != taskRoleArn {
+		t.Errorf("Expected non-nil taskRoleArn with value: %s", taskRoleArn)
+	}
+}
+
 func TestEcsAdapter_AdaptTask(t *testing.T) {
 	adapter := setUp(t)
 

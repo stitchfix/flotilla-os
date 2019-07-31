@@ -68,3 +68,36 @@ http:
 # with ownership information set - "who -owns- this run?"
 #
 owner_id_var: FLOTILLA_RUN_OWNER_ID
+
+#
+# Execution engine specific variables
+#
+#
+# ECS Engine
+#
+# ecs.engine.task_role_arn
+#
+# To use a specific task role ARN (which means all
+# tasks will use this role to make requests to AWS, if any)
+#
+# 1. The AWS user that is running flotilla must have the
+#    iam:PassRole permission for the role you specify
+# 2. Add the following entity to the "trust relationships"
+#    of your task role
+#   {
+#      "Sid": "",
+#      "Effect": "Allow",
+#      "Principal": {
+#        "Service": "ecs-tasks.amazonaws.com"
+#      },
+#      "Action": "sts:AssumeRole"
+#    }
+#  which will allow ecs tasks to assume the role you provide
+#  in the `ecs.engine.task_role_arn` config var.
+#
+#
+#
+#ecs:
+#  engine:
+#    task_role_arn: arn:aws:iam::123456789:role/example
+
