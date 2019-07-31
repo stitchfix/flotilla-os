@@ -31,7 +31,10 @@ type ecsAdapter struct {
 	ecsClient ECSServiceClient
 	ec2Client EC2ServiceClient
 	conf      config.Config
-	retriable []string
+
+	// pulling important config into top-level
+	taskRoleArn *string
+	retriable   []string
 }
 
 //
@@ -48,6 +51,14 @@ func NewECSAdapter(conf config.Config, ecsClient ECSServiceClient, ec2Client EC2
 			"CannotStartContainerError",
 			"CannotPullContainerError",
 		},
+	}
+
+	//
+	// All tasks will run with this role
+	//
+	if conf.IsSet("ecs.engine.task_role_arn") {
+		taskRoleArn := conf.GetString("ecs.engine.task_role_arn")
+		adapter.taskRoleArn = &taskRoleArn
 	}
 	return &adapter, nil
 }
@@ -183,6 +194,10 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 
 	overrides := ecs.TaskOverride{
 		ContainerOverrides: []*ecs.ContainerOverride{a.overrides(definition, run)},
+	}
+
+	if a.taskRoleArn != nil {
+		overrides.TaskRoleArn = a.taskRoleArn
 	}
 
 	rti := ecs.RunTaskInput{
