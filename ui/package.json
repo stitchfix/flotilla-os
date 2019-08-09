@@ -4,9 +4,9 @@
   "private": true,
   "dependencies": {
     "@blueprintjs/core": "^3.15.1",
-    "axios": "^0.18.0",
+    "axios": "^0.19.0",
     "formik": "^1.5.7",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.14",
     "qs": "^6.7.0",
     "react": "^16.8.6",
     "react-debounce-input": "^3.2.0",
@@ -50,10 +50,13 @@
     "@types/react-select": "^2.0.10",
     "@types/yup": "^0.26.14",
     "axios-mock-adapter": "^1.16.0",
+    "babel-core": "^6.26.3",
+    "babel-jest": "^24.8.0",
     "enzyme": "^3.9.0",
     "enzyme-adapter-react-16": "^1.13.2",
     "enzyme-to-json": "^3.3.5",
     "flush-promises": "^1.0.2",
+    "regenerator-runtime": "^0.13.2",
     "typescript": "3.4.5"
   }
 }
