@@ -2,6 +2,8 @@ package registry
 
 import (
 	_ "github.com/docker/distribution/manifest"
+	_ "github.com/docker/distribution/manifest/schema1"
+	_ "github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/reference"
 	_ "github.com/docker/libtrust"
 	"github.com/nokia/docker-registry-client/registry"
