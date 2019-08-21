@@ -18,7 +18,6 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v0.0.0-20170704074345-ac112f7d75a0
 	github.com/hashicorp/hcl v0.0.0-20170509225359-392dba7d905e // indirect
-	github.com/heroku/docker-registry-client v0.0.0-20181004091502-47ecf50fd8d4
 	github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7 // indirect
 	github.com/jmoiron/sqlx v0.0.0-20170430194603-d9bd385d68c0
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 // indirect
@@ -27,6 +26,7 @@ require (
 	github.com/magiconair/properties v1.7.3 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20170523030023-d0303fe80992 // indirect
+	github.com/nokia/docker-registry-client v0.0.0-20190305095957-e91f10057c5b
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/patrickmn/go-cache v0.0.0-20170418232947-7ac151875ffb

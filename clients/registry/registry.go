@@ -1,8 +1,10 @@
 package registry
 
 import (
+	_ "github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/reference"
-	"github.com/heroku/docker-registry-client/registry"
+	_ "github.com/docker/libtrust"
+	"github.com/nokia/docker-registry-client/registry"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 )
