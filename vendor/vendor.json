@@ -303,6 +303,12 @@
 			"revisionTime": "2019-06-28T18:10:51Z"
 		},
 		{
+			"checksumSHA1": "oYy5Q1HBImMQvh9t96cmNzWar80=",
+			"path": "github.com/docker/distribution/manifest",
+			"revision": "1fb7fffdb26687adf375a4433a58a0d66a13fede",
+			"revisionTime": "2019-07-11T22:35:31Z"
+		},
+		{
 			"checksumSHA1": "SKp99zWT5x5AGiQcBfvzPk07K/Y=",
 			"path": "github.com/docker/distribution/metrics",
 			"revision": "be07be99045e304898724e8a8c21aaefbfdc8446",
