@@ -290,6 +290,7 @@ type Run struct {
 	Command         *string    `json:"command,omitempty"`
 	Memory          *int64     `json:"memory,omitempty"`
 	Cpu             *int64     `json:"cpu,omitempty"`
+	Gpu             *int64     `json:"gpu,omitempty"`
 	ExitReason      *string    `json:"exit_reason,omitempty"`
 }
 
@@ -361,6 +362,11 @@ func (d *Run) UpdateWith(other Run) {
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
 	}
+
+	if other.Gpu != nil {
+		d.Gpu = other.Gpu
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
