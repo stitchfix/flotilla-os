@@ -29,6 +29,7 @@ func main() {
 	// Use go-kit for structured logging
 	//
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	l = gklog.With(l, "ts", gklog.DefaultTimestampUTC, "caller", gklog.DefaultCaller)
 	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
 	logger := flotillaLog.NewLogger(l, eventSinks)
 
