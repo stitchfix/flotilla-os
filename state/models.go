@@ -112,6 +112,7 @@ type Definition struct {
 	User          string     `json:"user,omitempty"`
 	Alias         string     `json:"alias"`
 	Memory        *int64     `json:"memory"`
+	Gpu           *int64     `json:"gpu,omitempty"`
 	Command       string     `json:"command,omitempty"`
 	TaskType      string     `json:"-"`
 	Env           *EnvList   `json:"env"`
@@ -199,6 +200,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Memory != nil {
 		d.Memory = other.Memory
+	}
+	if other.Gpu != nil {
+		d.Gpu = other.Gpu
 	}
 	if len(other.Command) > 0 {
 		d.Command = other.Command
