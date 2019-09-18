@@ -273,12 +273,25 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 //
 func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput {
 	containerDef := a.defaultContainerDefinition()
+
 	containerDef.Image = &definition.Image
 	containerDef.Memory = definition.Memory
 	containerDef.Name = &definition.DefinitionID
 	containerDef.DockerLabels = map[string]*string{
 		"alias":      &definition.Alias,
 		"group.name": &definition.GroupName,
+	}
+
+	if definition.Gpu != nil {
+		resourceValue := string(*(definition.Gpu))
+		resourceType := ecs.ResourceTypeGpu
+		resourceRequirements := []*ecs.ResourceRequirement{
+			{
+				Type:  &resourceType,
+				Value: &resourceValue,
+			},
+		}
+		containerDef.ResourceRequirements = resourceRequirements
 	}
 
 	cmdString, err := definition.WrappedCommand()
