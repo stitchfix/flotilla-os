@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
+	"strconv"
 	"strings"
 )
 
@@ -283,7 +284,7 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 	}
 
 	if definition.Gpu != nil {
-		resourceValue := string(*(definition.Gpu))
+		resourceValue := strconv.FormatInt(*(definition.Gpu), 10)
 		resourceType := ecs.ResourceTypeGpu
 		resourceRequirements := []*ecs.ResourceRequirement{
 			{
