@@ -508,7 +508,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.QueuedAt,
 			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
 			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
-			&existing.Cpu)
+			&existing.Cpu, &existing.Gpu)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -527,7 +527,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       finished_at = $12, instance_id = $13,
       instance_dns_name = $14,
 	  group_name = $15, env = $16,
-	  command = $17, memory = $18, cpu = $19
+	  command = $17, memory = $18, cpu = $19, gpu = $20
     WHERE run_id = $1;
     `
 
@@ -541,7 +541,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.FinishedAt, existing.InstanceID,
 		existing.InstanceDNSName, existing.GroupName,
 		existing.Env, existing.Command,
-		existing.Memory, existing.Cpu); err != nil {
+		existing.Memory, existing.Cpu, existing.Gpu); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -562,9 +562,9 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type, command, memory, cpu
+      env, task_type, command, memory, cpu, gpu
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20
     );
     `
 
@@ -579,7 +579,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.ExitCode, r.ExitReason, r.Status,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.InstanceID, r.InstanceDNSName, r.GroupName,
-		r.Env, r.Command, r.Memory, r.Cpu); err != nil {
+		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

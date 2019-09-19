@@ -39,6 +39,7 @@ type resourceClient interface {
 type instanceResources struct {
 	memory int64
 	cpu    int64
+	gpu    int64
 }
 
 //
@@ -147,9 +148,15 @@ func (ecc *ECSClusterClient) getClusterNamesFromApi() ([]string, error) {
 }
 
 func (ecc *ECSClusterClient) validate(resources *instanceResources, definition state.Definition) bool {
-	if resources != nil && definition.Memory != nil && int64(*definition.Memory) < resources.memory {
+	if resources != nil &&
+		definition.Memory != nil &&
+		int64(*definition.Memory) < resources.memory {
 		// TODO - check cpu when available on the definition
-		return true
+		if definition.Gpu == nil {
+			return true
+		} else {
+			return int64(*definition.Gpu) < resources.gpu
+		}
 	}
 	return false
 }
@@ -271,6 +278,8 @@ func (ecc *ECSClusterClient) describeInstances(input *ecs.DescribeContainerInsta
 				irs.cpu = *rsrc.IntegerValue
 			} else if *rsrc.Name == "MEMORY" {
 				irs.memory = *rsrc.IntegerValue
+			} else if *rsrc.Name == "GPU" {
+				irs.gpu = int64(len((*rsrc).StringSetValue))
 			}
 		}
 		res[i] = irs

@@ -237,10 +237,10 @@
 			"revisionTime": "2019-07-02T19:20:17Z"
 		},
 		{
-			"checksumSHA1": "04OPcrXJkYAdVlzMzHY9TcOd1Ls=",
+			"checksumSHA1": "Q3yvYruVARXNDFcSh5druvyao3U=",
 			"path": "github.com/aws/aws-sdk-go/service/ecs",
-			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
-			"revisionTime": "2019-07-02T19:20:17Z"
+			"revision": "b8570525ab161af96a105d7ed3012077705fcc0d",
+			"revisionTime": "2019-08-21T19:24:36Z"
 		},
 		{
 			"checksumSHA1": "RpW0v9zRFRtPX+t49J72fsBQIno=",
