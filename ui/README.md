@@ -3,10 +3,6 @@
 The Flotilla UI is a React application bundled along with the rest of Flotilla. If you are running the entire Flotilla stack locally, it is recommended to use docker-compose as documented in the main [README](https://github.com/stitchfix/flotilla-os#starting-the-service-locally). If you are interested in developing the UI itself, you can follow these steps:
 
 ### Development
-#### Prerequsites
-- [Node 8](https://nodejs.org/en/)
-- [NPM 5](https://www.npmjs.com)
-
 #### Setup
 1. Clone the repo
 
@@ -33,26 +29,21 @@ nvm use
 npm install
 ```
 
-##### Develop
-1. Start Webpack development server
-Note: when developing or building the UI, you will need to add a `FLOTILLA_API` environment variable as shown below. Additionally, you can pass a `DEFAULT_CLUSTER` environment variable to autocomplete the cluster when launching a task (this is optional).
+#### Develop
+Note: when developing or building the UI, you will need to add a `REACT_APP_BASE_URL` environment variable as shown below. Additionally, you can pass a `REACT_APP_DEFAULT_CLUSTER` environment variable to autocomplete the cluster when launching a task (this is optional).
 
 ```
-FLOTILLA_API="http://flotilla-api.com/api/v1"  DEFAULT_CLUSTER="my-flotilla-cluster" npm start
+REACT_APP_BASE_URL="http://flotilla-api.com/api"      REACT_APP_DEFAULT_CLUSTER="my-flotilla-cluster" npm start
 ```
 
-2. Go to [locahost:8080](locahost:8080)
-
-##### Test
-UI testing is done with Jest and Enzyme. You can run the tests once via `npm run test` or have Jest watch for changes via:
-
+#### Test
+UI testing is done with Jest and Enzyme. You can run the tests via:
 ```
-npm run test:watch
+npm run test
 ```
 
-##### Build
+#### Build
 While it is recommended to serve the UI as part of the entire Flotilla stack, you can build a production version of the UI via:
-
 ```
-FLOTILLA_API="http://flotilla-api.com/api/v1"  DEFAULT_CLUSTER="my-flotilla-cluster" npm run build
+REACT_APP_BASE_URL="http://flotilla-api.com/api"  REACT_APP_DEFAULT_CLUSTER="my-flotilla-cluster" npm run build
 ```

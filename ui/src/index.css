@@ -1,0 +1,224 @@
+:root {
+  --spacing: 12px;
+  --blueprint-navbar-height: 50px;
+}
+
+.flotilla-app-container {
+  margin-top: 50px;
+  padding: calc(var(--spacing) * 2);
+}
+
+.flotilla-view-header-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--spacing) * 2);
+}
+
+.flotilla-card-header {
+  text-transform: uppercase;
+  margin-bottom: var(--spacing);
+  font-weight: 700;
+}
+
+/**
+ * Form
+ */
+.flotilla-form-container {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+}
+
+.flotilla-form-container > * {
+  width: 100%;
+  max-width: 600px;
+}
+
+/**
+ * Attribute
+ */
+.flotilla-attributes-container {
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.flotilla-attributes-container .flotilla-attribute-container {
+  display: flex;
+  flex-flow: column nowrap;
+  margin-bottom: var(--spacing);
+}
+
+.flotilla-attributes-container .flotilla-attribute-container:last-child {
+  margin-bottom: 0;
+}
+
+.flotilla-attribute-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+}
+
+.flotilla-attribute-name {
+  font-weight: bold;
+  margin-right: var(--spacing);
+}
+
+.flotilla-attribute-value {
+  color: #5c7080;
+  flex: 1;
+}
+
+/**
+ * Env Field Array
+ */
+.flotilla-env-field-array-header {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: calc(var(--spacing) * 2);
+}
+
+.flotilla-env-field-array-item {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.flotilla-env-field-array-item > .bp3-form-group {
+  flex: 1;
+  margin-right: var(--spacing);
+  margin-bottom: 0;
+}
+
+/**
+ * List Utils
+ */
+.flotilla-list-utils-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--spacing);
+}
+
+.flotilla-list-utils-container > * {
+  margin-right: calc(var(--spacing) / 2);
+}
+
+.flotilla-list-utils-container > *:last-child {
+  margin-right: 0;
+}
+
+.flotilla-list-utils-container .bp3-form-group {
+  flex: 1;
+}
+
+.flotilla-list-utils-container .bp3-input {
+  width: 100%;
+}
+
+.flotilla-list-utils-container .bp3-button {
+  transform: translateY(-7px);
+}
+
+.flotilla-list-filters-card {
+  width: 360px;
+}
+
+.flotilla-list-filters-card > *,
+.flotilla-list-filters-card .bp3-input {
+  width: 100%;
+}
+
+/**
+ * Table
+ */
+table {
+  border: 1px solid #d8e1e8;
+  width: 100%;
+}
+
+.flotilla-th-sortable {
+  cursor: pointer;
+}
+
+.flotilla-th-sortable:hover,
+.flotilla-th-sortable.active {
+  background: #ebf1f5;
+}
+
+.flotilla-th-sortable.active.active-asc::after {
+  content: "▲";
+  font-size: 0.6rem;
+  margin-left: calc(var(--spacing) / 2);
+}
+
+.flotilla-th-sortable.active.active-desc::after {
+  content: "▼";
+  font-size: 0.6rem;
+  margin-left: calc(var(--spacing) / 2);
+}
+
+/**
+ * Sidebar View
+ */
+.flotilla-sidebar-view-container {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
+  flex: 1;
+  min-width: 450px;
+  margin-right: var(--spacing);
+}
+
+.flotilla-sidebar-view-container > .flotilla-sidebar-view-content {
+  flex: 2;
+  min-width: 720px;
+}
+
+/**
+ * Logs
+ */
+.flotilla-logs-container {
+  max-height: calc(
+    100vh - var(--blueprint-navbar-height) - (var(--spacing) * 4) - 54px
+  );
+  overflow-y: scroll;
+  padding: 0;
+}
+
+/**
+ * Pre
+ */
+.flotilla-pre {
+  opacity: 1;
+  white-space: pre-wrap;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/**
+ * Blueprint overrides
+ */
+.bp3-form-group input,
+.bp3-form-group textarea {
+  width: 100%;
+}
+
+.bp3-label {
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
