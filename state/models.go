@@ -112,6 +112,7 @@ type Definition struct {
 	User          string     `json:"user,omitempty"`
 	Alias         string     `json:"alias"`
 	Memory        *int64     `json:"memory"`
+	Gpu           *int64     `json:"gpu,omitempty"`
 	Command       string     `json:"command,omitempty"`
 	TaskType      string     `json:"-"`
 	Env           *EnvList   `json:"env"`
@@ -199,6 +200,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Memory != nil {
 		d.Memory = other.Memory
+	}
+	if other.Gpu != nil {
+		d.Gpu = other.Gpu
 	}
 	if len(other.Command) > 0 {
 		d.Command = other.Command
@@ -290,6 +294,7 @@ type Run struct {
 	Command         *string    `json:"command,omitempty"`
 	Memory          *int64     `json:"memory,omitempty"`
 	Cpu             *int64     `json:"cpu,omitempty"`
+	Gpu             *int64     `json:"gpu,omitempty"`
 	ExitReason      *string    `json:"exit_reason,omitempty"`
 }
 
@@ -361,6 +366,11 @@ func (d *Run) UpdateWith(other Run) {
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
 	}
+
+	if other.Gpu != nil {
+		d.Gpu = other.Gpu
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//

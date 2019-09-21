@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS task (
   -- Refactor these --
   command text,
   memory integer,
-  cpu integer
+  cpu integer,
+  gpu integer
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -186,7 +187,8 @@ select
   env::TEXT                                  as env,
   command,
   memory,
-  cpu
+  cpu,
+  gpu
 from task t
 `
 

@@ -7,7 +7,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.3
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 	github.com/Sirupsen/logrus v0.0.0-20170719154753-00386b3fbd63
-	github.com/aws/aws-sdk-go v0.0.0-20180104230034-d7d99e85e1cf
+	github.com/aws/aws-sdk-go v1.24.0 // indirect
 	github.com/docker/cli v0.0.0-20170719000837-7f684c751231
 	github.com/docker/distribution v0.0.0-20170718224900-5cfdfbdce59c
 	github.com/docker/docker v0.0.0-20170719201334-8299f1727884
@@ -23,7 +23,7 @@ require (
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/mux v0.0.0-20170704074345-ac112f7d75a0
 	github.com/hashicorp/hcl v0.0.0-20170509225359-392dba7d905e
-	github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7
+	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 	github.com/jmoiron/sqlx v0.0.0-20170430194603-d9bd385d68c0
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 	github.com/lib/pq v0.0.0-20170707053602-dd1fe2071026
