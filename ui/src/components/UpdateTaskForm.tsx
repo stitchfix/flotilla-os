@@ -36,30 +36,28 @@ export const UpdateTaskForm: React.FunctionComponent<Props> = ({
   error,
   isLoading,
   errors,
-}) => {
-  return (
-    <Form className="flotilla-form-container">
-      {requestStatus === RequestStatus.ERROR && error && (
-        <ErrorCallout error={error} />
-      )}
-      <BaseTaskForm
-        setFieldValue={setFieldValue}
-        values={values}
-        errors={errors}
-      />
-      <Button
-        id="submit-button"
-        type="submit"
-        disabled={isLoading || isValid === false}
-        intent={Intent.PRIMARY}
-      >
-        submit
-      </Button>
-    </Form>
-  )
-}
+}) => (
+  <Form className="flotilla-form-container">
+    {requestStatus === RequestStatus.ERROR && error && (
+      <ErrorCallout error={error} />
+    )}
+    <BaseTaskForm
+      setFieldValue={setFieldValue}
+      values={values}
+      errors={errors}
+    />
+    <Button
+      id="submitButton"
+      type="submit"
+      disabled={isLoading || isValid === false}
+      intent={Intent.PRIMARY}
+    >
+      Submit
+    </Button>
+  </Form>
+)
 
-type ConnectedProps = RouteComponentProps & {
+export type ConnectedProps = RouteComponentProps & {
   definitionID: string
 }
 

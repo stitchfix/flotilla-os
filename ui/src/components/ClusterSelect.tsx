@@ -6,6 +6,11 @@ import { ListClustersResponse, SelectOption, SelectProps } from "../types"
 import api from "../api"
 import * as helpers from "../helpers/selectHelpers"
 
+/**
+ * ClusterSelect allows users to select an ECS cluster on which to run a
+ * particular task. This component hits the `/clusters` endpoint and renders
+ * the results into a React Select component.
+ */
 export const ClusterSelect: React.FunctionComponent<
   SelectProps & { options: SelectOption[] }
 > = props => {

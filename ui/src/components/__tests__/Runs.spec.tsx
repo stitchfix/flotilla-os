@@ -1,11 +1,11 @@
 import React from "react"
 import { mount } from "enzyme"
 import { MemoryRouter } from "react-router-dom"
-import ConnectedTasks, {
-  Tasks as UnconnectedTasks,
+import ConnectedRuns, {
+  Runs as UnconnectedRuns,
   Props,
   initialQuery,
-} from "../Tasks"
+} from "../Runs"
 import { RequestStatus } from "../Request"
 import ListRequest from "../ListRequest"
 import { SortOrder } from "../../types"
@@ -13,24 +13,24 @@ import { Spinner } from "@blueprintjs/core"
 import Table from "../Table"
 import api from "../../api"
 import ErrorCallout from "../ErrorCallout"
-import { createMockTaskObject } from "../../helpers/testHelpers"
+import { createMockRunObject } from "../../helpers/testHelpers"
 
 jest.mock("../../helpers/FlotillaClient")
 
-describe("Tasks", () => {
+describe("Runs", () => {
   describe("Connected", () => {
-    it("renders ListRequest and provides api.listTasks as the requestFn", () => {
-      expect(api.listTasks).toHaveBeenCalledTimes(0)
+    it("renders ListRequest and provides api.listRun as the requestFn", () => {
+      expect(api.listRun).toHaveBeenCalledTimes(0)
 
       const wrapper = mount(
         <MemoryRouter>
-          <ConnectedTasks />
+          <ConnectedRuns />
         </MemoryRouter>
       )
 
       expect(wrapper.find(ListRequest)).toHaveLength(1)
-      expect(wrapper.find(ListRequest).prop("requestFn")).toEqual(api.listTasks)
-      expect(api.listTasks).toHaveBeenCalledTimes(1)
+      expect(wrapper.find(ListRequest).prop("requestFn")).toEqual(api.listRun)
+      expect(api.listRun).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -44,15 +44,15 @@ describe("Tasks", () => {
       updatePage: () => {},
       updateFilter: () => {},
       currentPage: 1,
-      currentSortKey: "alias",
-      currentSortOrder: SortOrder.ASC,
+      currentSortKey: "started_at",
+      currentSortOrder: SortOrder.DESC,
       query: initialQuery,
     }
 
     it("renders a Spinner props.requestStatus is `NOT_READY`", () => {
       const wrapper = mount(
         <MemoryRouter>
-          <UnconnectedTasks
+          <UnconnectedRuns
             {...defaultProps}
             requestStatus={RequestStatus.NOT_READY}
           />
@@ -66,17 +66,17 @@ describe("Tasks", () => {
     it("renders a Table props.requestStatus is `READY`", () => {
       const wrapper = mount(
         <MemoryRouter>
-          <UnconnectedTasks
+          <UnconnectedRuns
             {...defaultProps}
             requestStatus={RequestStatus.READY}
             data={{
               offset: 0,
               limit: 20,
-              total: 20,
-              definitions: [
-                createMockTaskObject({ definition_id: "a" }),
-                createMockTaskObject({ definition_id: "b" }),
-                createMockTaskObject({ definition_id: "c" }),
+              total: 3,
+              history: [
+                createMockRunObject({ run_id: "a" }),
+                createMockRunObject({ run_id: "b" }),
+                createMockRunObject({ run_id: "c" }),
               ],
             }}
           />
@@ -85,16 +85,16 @@ describe("Tasks", () => {
       expect(wrapper.find(ErrorCallout)).toHaveLength(0)
       expect(wrapper.find(Spinner)).toHaveLength(0)
       expect(wrapper.find(Table)).toHaveLength(1)
+      expect(wrapper.find(Table).prop("columns")).toHaveProperty("status")
+      expect(wrapper.find(Table).prop("columns")).toHaveProperty("started_at")
+      expect(wrapper.find(Table).prop("columns")).toHaveProperty("run_id")
       expect(wrapper.find(Table).prop("columns")).toHaveProperty("alias")
-      expect(wrapper.find(Table).prop("columns")).toHaveProperty("group_name")
-      expect(wrapper.find(Table).prop("columns")).toHaveProperty("image")
-      expect(wrapper.find(Table).prop("columns")).toHaveProperty("memory")
     })
 
     it("renders an ErrorCallout props.requestStatus is `ERROR`", () => {
       const wrapper = mount(
         <MemoryRouter>
-          <UnconnectedTasks
+          <UnconnectedRuns
             {...defaultProps}
             requestStatus={RequestStatus.ERROR}
           />

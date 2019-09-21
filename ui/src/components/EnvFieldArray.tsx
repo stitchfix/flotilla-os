@@ -1,7 +1,9 @@
 import * as React from "react"
 import { FieldArray, FastField } from "formik"
-import { Button, FormGroup, Classes, Intent } from "@blueprintjs/core"
+import { Button, FormGroup, Classes, Intent, Icon } from "@blueprintjs/core"
 import { Env } from "../types"
+import { IconNames } from "@blueprintjs/icons"
+import { envFieldSpec } from "../constants"
 
 export type Props = {
   values: Env[]
@@ -16,7 +18,7 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
 }) => (
   <div>
     <div className="flotilla-env-field-array-header">
-      <div className={Classes.LABEL}>Env</div>
+      <div className={Classes.LABEL}>{envFieldSpec.label}</div>
       <Button
         onClick={() => {
           push({ name: "", value: "" })
@@ -30,11 +32,17 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
     <div>
       {values.map((env: Env, i: number) => (
         <div key={i} className="flotilla-env-field-array-item">
-          <FormGroup label="Name">
-            <FastField name={`env[${i}].name`} className={Classes.INPUT} />
+          <FormGroup label={i === 0 ? "Name" : null}>
+            <FastField
+              name={`${envFieldSpec.name}[${i}].name`}
+              className={Classes.INPUT}
+            />
           </FormGroup>
-          <FormGroup label="Value">
-            <FastField name={`env[${i}].value`} className={Classes.INPUT} />
+          <FormGroup label={i === 0 ? "Value" : null}>
+            <FastField
+              name={`${envFieldSpec.name}[${i}].value`}
+              className={Classes.INPUT}
+            />
           </FormGroup>
           <Button
             onClick={() => {
@@ -42,9 +50,9 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
             }}
             type="button"
             intent={Intent.DANGER}
-          >
-            Remove
-          </Button>
+            style={i === 0 ? { transform: `translateY(8px)` } : {}}
+            icon={IconNames.CROSS}
+          ></Button>
         </div>
       ))}
     </div>
@@ -52,7 +60,7 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
 )
 
 const ConnectedEnvFieldArray: React.FunctionComponent<{}> = () => (
-  <FieldArray name="env">
+  <FieldArray name={envFieldSpec.name}>
     {({ form, push, remove }) => (
       <EnvFieldArray values={form.values.env} push={push} remove={remove} />
     )}

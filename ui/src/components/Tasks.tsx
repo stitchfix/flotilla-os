@@ -2,7 +2,7 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { get, omit } from "lodash"
 import { DebounceInput } from "react-debounce-input"
-import { FormGroup, Classes } from "@blueprintjs/core"
+import { FormGroup, Classes, Spinner } from "@blueprintjs/core"
 import ListRequest, { ChildProps as ListRequestChildProps } from "./ListRequest"
 import api from "../api"
 import { ListTaskParams, ListTaskResponse, SortOrder, Task } from "../types"
@@ -12,6 +12,9 @@ import Pagination from "./Pagination"
 import GroupNameSelect from "./GroupNameSelect"
 import ViewHeader from "./ViewHeader"
 import ListFiltersDropdown from "./ListFiltersDropdown"
+import { pageSize } from "../constants"
+import { RequestStatus } from "./Request"
+import ErrorCallout from "./ErrorCallout"
 
 export const initialQuery = {
   page: 1,
@@ -19,9 +22,12 @@ export const initialQuery = {
   order: SortOrder.ASC,
 }
 
-export const Tasks: React.FunctionComponent<
-  ListRequestChildProps<ListTaskResponse, { params: ListTaskParams }>
-> = props => {
+export type Props = ListRequestChildProps<
+  ListTaskResponse,
+  { params: ListTaskParams }
+>
+
+export const Tasks: React.FunctionComponent<Props> = props => {
   const {
     query,
     data,
@@ -31,7 +37,58 @@ export const Tasks: React.FunctionComponent<
     currentPage,
     currentSortKey,
     currentSortOrder,
+    isLoading,
+    requestStatus,
+    error,
   } = props
+
+  let content: React.ReactNode
+
+  switch (requestStatus) {
+    case RequestStatus.ERROR:
+      content = <ErrorCallout error={error} />
+      break
+    case RequestStatus.READY:
+      content = (
+        <Table<Task>
+          items={get(data, "definitions", [])}
+          getItemKey={(task: Task) => task.definition_id}
+          updateSort={updateSort}
+          currentSortKey={currentSortKey}
+          currentSortOrder={currentSortOrder}
+          columns={{
+            alias: {
+              displayName: "Alias",
+              render: (item: Task) => (
+                <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
+              ),
+              isSortable: true,
+            },
+            group_name: {
+              displayName: "Group Name",
+              render: (item: Task) => item.group_name,
+              isSortable: true,
+            },
+            image: {
+              displayName: "Image",
+              render: (item: Task) => item.image,
+              isSortable: true,
+            },
+            memory: {
+              displayName: "Memory (MB)",
+              render: (item: Task) => item.memory,
+              isSortable: true,
+            },
+          }}
+        />
+      )
+      break
+    case RequestStatus.NOT_READY:
+    default:
+      content = <Spinner />
+      break
+  }
+
   return (
     <>
       <ViewHeader
@@ -83,40 +140,12 @@ export const Tasks: React.FunctionComponent<
         <Pagination
           updatePage={updatePage}
           currentPage={currentPage}
-          totalPages={data ? data.total : 1}
+          isLoading={isLoading}
+          pageSize={pageSize}
+          numItems={data ? data.total : 0}
         />
       </div>
-      <Table<Task>
-        items={get(data, "definitions", [])}
-        getItemKey={(task: Task) => task.definition_id}
-        updateSort={updateSort}
-        currentSortKey={currentSortKey}
-        currentSortOrder={currentSortOrder}
-        columns={{
-          alias: {
-            displayName: "Alias",
-            render: (item: Task) => (
-              <Link to={`/tasks/${item.definition_id}`}>{item.alias}</Link>
-            ),
-            isSortable: true,
-          },
-          group_name: {
-            displayName: "Group Name",
-            render: (item: Task) => item.group_name,
-            isSortable: true,
-          },
-          image: {
-            displayName: "Image",
-            render: (item: Task) => item.image,
-            isSortable: true,
-          },
-          memory: {
-            displayName: "Memory (MB)",
-            render: (item: Task) => item.memory,
-            isSortable: true,
-          },
-        }}
-      />
+      {content}
     </>
   )
 }
@@ -128,7 +157,7 @@ const ConnectedTasks: React.FunctionComponent = () => (
     getRequestArgs={params => ({
       params: {
         ...omit(params, "page"),
-        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: 20 }),
+        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: pageSize }),
       },
     })}
   >

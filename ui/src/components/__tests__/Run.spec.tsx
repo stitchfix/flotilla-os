@@ -46,6 +46,10 @@ describe("Run", () => {
     Run.prototype.clearRequestInterval = realClear
   })
 
+  /**
+   * If the run is in a non-stopped state, the component should start an
+   * interval to continuously fetch the run.
+   */
   it("sets a request interval if the run isn't stopped on componentDidMount", () => {
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(0)
 
@@ -158,7 +162,7 @@ describe("Run", () => {
     expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(1)
   })
 
-  it("clears the request interval on componentWillUnmount", () => {
+  it("clears the request interval on componentWillUnmount", async () => {
     const wrapper = mount(
       <MemoryRouter>
         <Run

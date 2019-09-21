@@ -1,10 +1,5 @@
 import * as React from "react"
-import {
-  BrowserRouter as Router,
-  Route,
-  Switch,
-  Redirect,
-} from "react-router-dom"
+import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom"
 import Tasks from "./Tasks"
 import Task from "./Task"
 import CreateTaskForm from "./CreateTaskForm"
@@ -14,7 +9,7 @@ import Navigation from "./Navigation"
 
 const App: React.FunctionComponent = () => (
   <div className="flotilla-app-container">
-    <Router>
+    <BrowserRouter>
       <Navigation />
       <Switch>
         <Route exact path="/tasks" component={Tasks} />
@@ -25,7 +20,7 @@ const App: React.FunctionComponent = () => (
         <Route path="/runs/:runID" component={Run} />
         <Redirect from="/" to="/tasks" />
       </Switch>
-    </Router>
+    </BrowserRouter>
   </div>
 )
 

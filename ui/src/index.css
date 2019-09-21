@@ -88,12 +88,13 @@
   flex-flow: row nowrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: calc(var(--spacing) * 2);
+  margin-bottom: 8px;
 }
 
 .flotilla-env-field-array-item > .bp3-form-group {
   flex: 1;
   margin-right: var(--spacing);
+  margin-bottom: 0;
 }
 
 /**

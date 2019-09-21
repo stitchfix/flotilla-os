@@ -8,6 +8,8 @@ import TaskDetails from "./TaskDetails"
 import UpdateTaskForm from "./UpdateTaskForm"
 import RunForm from "./RunForm"
 import CreateTaskForm from "./CreateTaskForm"
+import ErrorCallout from "./ErrorCallout"
+import { Spinner } from "@blueprintjs/core"
 
 export type TaskCtx = ChildProps<TaskShape, { definitionID: string }> & {
   basePath: string
@@ -39,23 +41,34 @@ export const Task: React.FunctionComponent<TaskCtx> = props => {
           path={`${props.basePath}/copy`}
           render={routerProps => (
             <TaskContext.Consumer>
-              {ctx => (
-                <CreateTaskForm
-                  {...routerProps}
-                  onSuccess={(data: TaskTypeDef) => {
-                    ctx.request({ definitionID: data.definition_id })
-                  }}
-                  initialValues={{
-                    env: get(props, ["data", "env"], []),
-                    image: get(props, ["data", "image"], ""),
-                    group_name: get(props, ["data", "group_name"], ""),
-                    memory: get(props, ["data", "memory"], ""),
-                    command: get(props, ["data", "command"], ""),
-                    tags: get(props, ["data", "tags"], []),
-                    alias: "",
-                  }}
-                />
-              )}
+              {ctx => {
+                switch (ctx.requestStatus) {
+                  case RequestStatus.ERROR:
+                    return <ErrorCallout error={ctx.error} />
+                  case RequestStatus.READY:
+                    return (
+                      <CreateTaskForm
+                        {...routerProps}
+                        onSuccess={(data: TaskTypeDef) => {
+                          ctx.request({ definitionID: data.definition_id })
+                        }}
+                        initialValues={{
+                          env: get(props, ["data", "env"], []),
+                          image: get(props, ["data", "image"], ""),
+                          group_name: get(props, ["data", "group_name"], ""),
+                          memory: get(props, ["data", "memory"], ""),
+                          command: get(props, ["data", "command"], ""),
+                          tags: get(props, ["data", "tags"], []),
+                          alias: "",
+                        }}
+                      />
+                    )
+                  case RequestStatus.NOT_READY:
+                    return <Spinner />
+                  default:
+                    return null
+                }
+              }}
             </TaskContext.Consumer>
           )}
         />

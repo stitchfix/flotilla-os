@@ -1,80 +1,110 @@
-import React from "react"
+import * as React from "react"
+import flushPromiseQueue from "flush-promises"
 import { mount, ReactWrapper } from "enzyme"
-import { Formik, FastField } from "formik"
-import { AxiosError } from "axios"
-import { Button, Callout } from "@blueprintjs/core"
-import { CreateTaskForm } from "../CreateTaskForm"
+import CreateTaskForm, {
+  ConnectedProps as Props,
+  CreateTaskForm as UnconnectedCreateTaskForm,
+} from "../CreateTaskForm"
+import api from "../../api"
+import { Formik } from "formik"
+import {
+  createMockRouteComponentProps,
+  mockFormikActions,
+} from "../../helpers/testHelpers"
+import Request from "../Request"
 import BaseTaskForm from "../BaseTaskForm"
-import { RequestStatus } from "../Request"
+
+jest.mock("../../helpers/FlotillaClient")
 
 describe("CreateTaskForm", () => {
-  const onSubmit = jest.fn()
-  const initialValues = {
-    env: [],
-    image: "",
-    group_name: "",
-    memory: 1024,
-    command: "",
-    tags: [],
-    alias: "",
+  // Instantiate mock route component props object.
+  const mockRouteComponentProps = createMockRouteComponentProps({
+    path: "/tasks/create",
+    url: "/tasks/create",
+    params: {},
+  })
+
+  // Instantiate props object.
+  const props: Props = {
+    ...mockRouteComponentProps,
+    history: {
+      ...mockRouteComponentProps.history,
+      push: jest.fn(),
+    },
+    initialValues: {
+      env: [{ name: "foo", value: "bar" }],
+      image: "my_image",
+      group_name: "my_group",
+      alias: "my_alias",
+      memory: 1024,
+      command: "my_command",
+      tags: ["a", "b"],
+    },
+    onSuccess: jest.fn(),
   }
+
   let wrapper: ReactWrapper
 
   beforeEach(() => {
-    wrapper = mount(
-      <Formik initialValues={initialValues} onSubmit={onSubmit}>
-        {({ values, setFieldValue, isValid, errors }) => (
-          <CreateTaskForm
-            values={values}
-            isValid={isValid}
-            setFieldValue={setFieldValue}
-            requestStatus={RequestStatus.NOT_READY}
-            error={null}
-            isLoading={false}
-            errors={errors}
-          />
-        )}
-      </Formik>
-    )
+    jest.clearAllMocks()
+    wrapper = mount(<CreateTaskForm {...props} />)
   })
 
-  it("renders an error callout if there's an error", () => {
-    const e: AxiosError = {
-      config: {},
-      name: "error",
-      message: "error_message",
-    }
-    const errWrapper = mount(
-      <Formik initialValues={initialValues} onSubmit={onSubmit}>
-        {({ values, setFieldValue, isValid, errors }) => (
-          <CreateTaskForm
-            values={values}
-            isValid={isValid}
-            setFieldValue={setFieldValue}
-            requestStatus={RequestStatus.ERROR}
-            error={e}
-            isLoading={false}
-            errors={errors}
-          />
-        )}
-      </Formik>
-    )
-    expect(errWrapper.find(Callout).length).toBe(1)
+  it("renders the correct components", () => {
+    // Note: there will be more than 1 Request component due to those wrapping
+    // GroupNameSelect, etc.
+    expect(wrapper.find(Request).length).toBeGreaterThanOrEqual(1)
+    expect(
+      wrapper
+        .find(Request)
+        .at(0)
+        .props().requestFn
+    ).toBe(api.createTask)
+    expect(
+      wrapper
+        .find(Request)
+        .at(0)
+        .props().shouldRequestOnMount
+    ).toEqual(false)
+
+    expect(wrapper.find(Formik)).toHaveLength(1)
+    expect(wrapper.find(UnconnectedCreateTaskForm)).toHaveLength(1)
+    expect(wrapper.find(BaseTaskForm)).toHaveLength(1)
+    expect(wrapper.find('input[name="alias"]')).toHaveLength(1)
+    expect(wrapper.find("button#submitButton")).toHaveLength(1)
   })
 
-  it("renders an `alias` field", () => {
-    const fields = wrapper.find(FastField)
-    expect(fields.at(0).prop("name")).toEqual("alias")
-  })
+  it("calls api.createTask when submitted", async () => {
+    // At this point, we don't expect any functions to have been called.
+    expect(api.createTask).toHaveBeenCalledTimes(0)
+    expect(props.onSuccess).toHaveBeenCalledTimes(0)
+    expect(props.history.push).toHaveBeenCalledTimes(0)
 
-  it("renders a BaseTaskForm component", () => {
-    expect(wrapper.find(BaseTaskForm).length).toBe(1)
-  })
+    // Manually invoke Formik's onSubmit prop.
+    wrapper
+      .find(Formik)
+      .props()
+      .onSubmit(
+        {
+          env: [{ name: "foo", value: "bar" }],
+          image: "my_image",
+          group_name: "my_group",
+          alias: "my_alias",
+          memory: 1024,
+          command: "my_command",
+          tags: ["a", "b"],
+        },
+        mockFormikActions
+      )
 
-  it("renders a submit button", () => {
-    const btns = wrapper.find(Button)
-    expect(btns.length).toBeGreaterThanOrEqual(1)
-    const submitBtn = btns.at(btns.length - 1)
-    expect(submitBtn)
+    // Expect FlotillaClient's `createTask` method to be invoked once.
+    expect(api.createTask).toHaveBeenCalledTimes(1)
+
+    // Flush the promise queue.
+    await flushPromiseQueue()
+
+    // Expect `onSuccess` and `push` to be invoked once.
+    expect(props.onSuccess).toHaveBeenCalledTimes(1)
+    expect(props.history.push).toHaveBeenCalledTimes(1)
   })
 })

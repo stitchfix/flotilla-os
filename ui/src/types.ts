@@ -158,6 +158,6 @@ export type ListRunResponse = ListResponse & {
   status?: RunStatus
 }
 
-export type ListClustersResponse = ListResponse & { clusters: string[] }
-export type ListGroupsResponse = ListResponse & { groups: string[] }
-export type ListTagsResponse = ListResponse & { tags: string[] }
+export type ListClustersResponse = ListResponse & { clusters: string[] | null }
+export type ListGroupsResponse = ListResponse & { groups: string[] | null }
+export type ListTagsResponse = ListResponse & { tags: string[] | null }

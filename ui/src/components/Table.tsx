@@ -1,25 +1,25 @@
 import * as React from "react"
-import { HTMLTable } from "@blueprintjs/core"
+import { HTMLTable, Callout } from "@blueprintjs/core"
 import { isEmpty, isArray } from "lodash"
 import SortableTh from "./SortableTh"
 import { SortOrder } from "../types"
 
-type Column = {
+type Column<ItemType> = {
   displayName: string
-  render: (item: any) => React.ReactNode
+  render: (item: ItemType) => React.ReactNode
   isSortable: boolean
 }
 
-type Props<T> = {
-  items: T[]
-  columns: { [key: string]: Column }
-  getItemKey: (item: T, index: number) => any
+type Props<ItemType> = {
+  items: ItemType[]
+  columns: { [key: string]: Column<ItemType> }
+  getItemKey: (item: ItemType, index: number) => any
   updateSort: (sortKey: string) => void
   currentSortKey: string
   currentSortOrder: SortOrder
 }
 
-class Table<T> extends React.Component<Props<T>> {
+class Table<ItemType> extends React.Component<Props<ItemType>> {
   render() {
     const {
       columns,
@@ -30,36 +30,38 @@ class Table<T> extends React.Component<Props<T>> {
       currentSortOrder,
     } = this.props
 
-    return (
-      <HTMLTable striped bordered>
-        <thead>
-          <tr>
-            {Object.entries(columns).map(([k, v]) => (
-              <SortableTh
-                isSortable={v.isSortable}
-                isActive={currentSortKey === k}
-                order={currentSortOrder}
-                onClick={updateSort.bind(this, k)}
-                key={k}
-              >
-                {v.displayName}
-              </SortableTh>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {isArray(items) &&
-            !isEmpty(items) &&
-            items.map((item, i) => (
+    if (isArray(items) && items.length > 0) {
+      return (
+        <HTMLTable striped bordered>
+          <thead>
+            <tr>
+              {Object.entries(columns).map(([k, v]) => (
+                <SortableTh
+                  isSortable={v.isSortable}
+                  isActive={currentSortKey === k}
+                  order={currentSortOrder}
+                  onClick={updateSort.bind(this, k)}
+                  key={k}
+                >
+                  {v.displayName}
+                </SortableTh>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, i) => (
               <tr key={getItemKey(item, i)}>
                 {Object.entries(columns).map(([k, v]) => (
                   <td key={k}>{v.render(item)}</td>
                 ))}
               </tr>
             ))}
-        </tbody>
-      </HTMLTable>
-    )
+          </tbody>
+        </HTMLTable>
+      )
+    }
+
+    return <Callout>No items were found.</Callout>
   }
 }
 

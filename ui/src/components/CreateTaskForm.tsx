@@ -40,37 +40,39 @@ export const CreateTaskForm: React.FunctionComponent<Props> = ({
   error,
   isLoading,
   errors,
-}) => (
-  <>
-    {requestStatus === RequestStatus.ERROR && error && (
-      <ErrorCallout error={error} />
-    )}
-    <Form className="flotilla-form-container">
-      <FormGroup
-        label="Alias"
-        helperText="Choose a descriptive alias for this task."
-      >
-        <FastField className={Classes.INPUT} name="alias" />
-        {errors.alias && <FieldError>{errors.alias}</FieldError>}
-      </FormGroup>
-      <BaseTaskForm
-        setFieldValue={setFieldValue}
-        values={values}
-        errors={errors}
-      />
-      <Button
-        id="submit-button"
-        type="submit"
-        disabled={isLoading || isValid === false}
-        intent={Intent.PRIMARY}
-      >
-        Submit
-      </Button>
-    </Form>
-  </>
-)
+}) => {
+  return (
+    <>
+      {requestStatus === RequestStatus.ERROR && error && (
+        <ErrorCallout error={error} />
+      )}
+      <Form className="flotilla-form-container">
+        <FormGroup
+          label="Alias"
+          helperText="Choose a descriptive alias for this task."
+        >
+          <FastField className={Classes.INPUT} name="alias" />
+          {errors.alias && <FieldError>{errors.alias}</FieldError>}
+        </FormGroup>
+        <BaseTaskForm
+          setFieldValue={setFieldValue}
+          values={values}
+          errors={errors}
+        />
+        <Button
+          id="submitButton"
+          type="submit"
+          disabled={isLoading || isValid === false}
+          intent={Intent.PRIMARY}
+        >
+          Submit
+        </Button>
+      </Form>
+    </>
+  )
+}
 
-type ConnectedProps = RouteComponentProps & {
+export type ConnectedProps = RouteComponentProps & {
   initialValues: CreateTaskPayload
   onSuccess?: (data: Task) => void
 }

@@ -1,24 +1,31 @@
 import * as React from "react"
 import { Button, ButtonGroup } from "@blueprintjs/core"
 
-type Props = {
-  totalPages: number
+export type Props = {
   updatePage: (n: number) => void
   currentPage: number
+  numItems: number
+  pageSize: number
+  isLoading: boolean
 }
 
 const Pagination: React.FunctionComponent<Props> = ({
-  totalPages,
+  numItems,
+  pageSize,
   updatePage,
   currentPage,
+  isLoading,
 }) => {
+  const isFirstPage = currentPage === 1
+  const isLastPage = currentPage * pageSize >= numItems
   return (
     <ButtonGroup>
       <Button
         onClick={() => {
           updatePage(currentPage - 1)
         }}
-        disabled={currentPage === 1}
+        disabled={isFirstPage || isLoading}
+        loading={isLoading}
       >
         Previous Page
       </Button>
@@ -26,7 +33,8 @@ const Pagination: React.FunctionComponent<Props> = ({
         onClick={() => {
           updatePage(currentPage + 1)
         }}
-        disabled={currentPage === totalPages}
+        disabled={isLastPage || isLoading}
+        loading={isLoading}
       >
         Next Page
       </Button>

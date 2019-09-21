@@ -8,6 +8,8 @@ import ConnectedDeleteTaskButton, {
 import Request, { RequestStatus } from "../Request"
 import api from "../../api"
 
+jest.mock("../../helpers/FlotillaClient")
+
 const defaultProps: Props = {
   requestStatus: RequestStatus.NOT_READY,
   data: null,

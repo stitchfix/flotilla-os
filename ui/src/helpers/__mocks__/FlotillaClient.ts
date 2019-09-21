@@ -237,7 +237,7 @@ const stopRun = jest.fn(
     })
 )
 
-const listClusters = jest.fn(
+export const listClusters = jest.fn(
   (): Promise<ListClustersResponse> =>
     new Promise<ListClustersResponse>(resolve => {
       resolve({

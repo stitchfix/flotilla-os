@@ -1,7 +1,7 @@
 import * as React from "react"
 
 const Attribute: React.FunctionComponent<{
-  name: string
+  name: React.ReactNode
   value: React.ReactNode
 }> = ({ name, value }) => (
   <div className="flotilla-attribute-container">
