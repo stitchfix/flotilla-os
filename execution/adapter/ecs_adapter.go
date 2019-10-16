@@ -201,15 +201,50 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		overrides.TaskRoleArn = a.taskRoleArn
 	}
 
+	placementConstraints := []*ecs.PlacementConstraint{a.gpuPlacementConstraints(definition, run)}
+
+	placementStrategies := []*ecs.PlacementStrategy{
+		a.memoryPlacementStrategy(),
+		a.cpuPlacementStrategy(),
+	}
+
 	rti := ecs.RunTaskInput{
-		Cluster:        &run.ClusterName,
-		Count:          &n,
-		StartedBy:      aws.String("flotilla"),
-		TaskDefinition: &definition.Arn,
-		Overrides:      &overrides,
+		Cluster:              &run.ClusterName,
+		Count:                &n,
+		StartedBy:            aws.String("flotilla"),
+		TaskDefinition:       &definition.Arn,
+		Overrides:            &overrides,
+		PlacementConstraints: placementConstraints,
+		PlacementStrategy:    placementStrategies,
 	}
 
 	return rti
+}
+
+func (a *ecsAdapter) memoryPlacementStrategy() *ecs.PlacementStrategy {
+	return &ecs.PlacementStrategy{
+		Field: aws.String("binpack"),
+		Type:  aws.String("memory"),
+	}
+}
+
+func (a *ecsAdapter) cpuPlacementStrategy() *ecs.PlacementStrategy {
+	return &ecs.PlacementStrategy{
+		Field: aws.String("binpack"),
+		Type:  aws.String("cpu"),
+	}
+}
+
+func (a *ecsAdapter) gpuPlacementConstraints(definition state.Definition, run state.Run) *ecs.PlacementConstraint {
+	if definition.Gpu != nil {
+		// https://aws.amazon.com/ec2/instance-types/#Accelerated_Computing
+		expression := "attribute:ecs.instance-type =~ p.*"
+		return &ecs.PlacementConstraint{
+			Type:       aws.String("memberOf"),
+			Expression: &expression,
+		}
+	}
+	return nil
 }
 
 func (a *ecsAdapter) overrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
