@@ -237,10 +237,10 @@ func (a *ecsAdapter) cpuPlacementStrategy() *ecs.PlacementStrategy {
 
 func (a *ecsAdapter) gpuPlacementConstraints(definition state.Definition, run state.Run) *ecs.PlacementConstraint {
 	if definition.Gpu != nil {
-		// https://aws.amazon.com/ec2/instance-types/#Accelerated_Computing
 		return &ecs.PlacementConstraint{
 			Type:       aws.String("memberOf"),
-			Expression: aws.String("attribute:ecs.instance-type =~ p.*"),
+			// https://aws.amazon.com/ec2/instance-types/#Accelerated_Computing
+			Expression: aws.String("attribute:ecs.instance-type =~ (p[2,3]|g[3,4]|f[1]).*"),
 		}
 	}
 	return nil
