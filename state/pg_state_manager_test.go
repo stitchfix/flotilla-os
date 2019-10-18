@@ -41,8 +41,8 @@ func setUp() Manager {
 
 func insertDefinitions(db *sqlx.DB) {
 	defsql := `
-    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `
 
 	portsql := `
@@ -66,13 +66,13 @@ func insertDefinitions(db *sqlx.DB) {
     `
 
 	db.MustExec(defsql,
-		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`)
+		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true)
 	db.MustExec(defsql,
 		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
-		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`)
-	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil)
-	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil)
-	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil)
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil)
+	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil)
+	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false)
+	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true)
 
 	db.MustExec(portsql, "A", 10000)
 	db.MustExec(portsql, "C", 10001)
@@ -146,6 +146,10 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Listing returned incorrect definition, expected A but got %s", dA.DefinitionID)
 	}
 
+	if *(dA.Privileged) != true {
+		t.Errorf("Listing returned incorrect definition, expected true but got %s", *(dA.Privileged))
+	}
+
 	if len(*dA.Env) != 1 {
 		t.Errorf("Expected returned definitions to have correctly attached env vars, was %v", dA.Env)
 	}
@@ -156,6 +160,11 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 
 	if len(*dA.Tags) != 2 {
 		t.Errorf("Expected returned definitions to have correctly attached tags, was %v", dA.Tags)
+	}
+
+	dB := dl.Definitions[1]
+	if *(dB.Privileged) != true {
+		t.Errorf("Listing returned incorrect definition, expected true but got %s", *(dA.Privileged))
 	}
 
 	// Test ordering and offset
