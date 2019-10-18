@@ -372,8 +372,13 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		tagsList := strings.Join(*definition.Tags, ",")
 		containerDef.DockerLabels["tags"] = &tagsList
 	}
+	networkMode := "bridge"
+	if *(definition.Privileged) == true {
+		privilegedOverride := true
+		networkMode = "host"
+		containerDef.Privileged = &privilegedOverride
+	}
 
-	networkMode := "host"
 	return ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{containerDef},
 		Family:               &definition.DefinitionID,
@@ -444,7 +449,7 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 	essential := true
 	user := "root"
 	disableNetworking := false
-	privileged := true
+	privileged := false
 
 	logDriver := a.conf.GetString("log.driver.name")
 	if len(logDriver) == 0 {
