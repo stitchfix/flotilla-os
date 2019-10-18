@@ -247,7 +247,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       arn = $2, image = $3,
       container_name = $4, "user" = $5,
       alias = $6, memory = $7,
-      command = $8, env = $9, privileged = $10
+      command = $8, env = $9, privileged = $10, cpu = $11, gpu = $12
     WHERE definition_id = $1;
     `
 
@@ -288,7 +288,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		update, definitionID,
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
-		existing.Command, existing.Env, existing.Privileged); err != nil {
+		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -329,9 +329,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	insert := `
     INSERT INTO task_def(
       arn, definition_id, image, group_name,
-      container_name, "user", alias, memory, command, env, privileged
+      container_name, "user", alias, memory, command, env, privileged, cpu, gpu
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
     `
 
 	insertPorts := `
@@ -357,7 +357,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged); err != nil {
+		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)

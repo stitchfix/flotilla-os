@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS task_def (
   image character varying NOT NULL,
   group_name character varying NOT NULL,
   memory integer,
+  cpu integer,
+  gpu integer,
   command text,
   env jsonb,
   -- Refactor these
