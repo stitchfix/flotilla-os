@@ -162,11 +162,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Expected returned definitions to have correctly attached tags, was %v", dA.Tags)
 	}
 
-	dB := dl.Definitions[1]
-	if *dB.Privileged != false {
-		t.Errorf("Listing returned incorrect definition, expected false but got %v", dB.Privileged)
-	}
-
 	// Test ordering and offset
 	dl, _ = sm.ListDefinitions(1, 1, "group_name", "asc", nil, nil)
 	if dl.Definitions[0].GroupName != "groupW" {

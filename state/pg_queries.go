@@ -135,7 +135,9 @@ select
   env::TEXT                 as env,
   ports                     as ports,
   tags                      as tags,
-  td.privileged             as privileged
+  td.privileged             as privileged,
+  td.cpu                    as cpu,
+  td.gpu                    as gpu
   from (select * from task_def) td left outer join
     (select task_def_id,
       array_to_json(array_agg(port))::TEXT as ports
