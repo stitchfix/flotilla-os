@@ -134,7 +134,8 @@ select
   coalesce(td.task_type,'') as tasktype,
   env::TEXT                 as env,
   ports                     as ports,
-  tags                      as tags
+  tags                      as tags,
+  td.privileged             as privileged,
   from (select * from task_def) td left outer join
     (select task_def_id,
       array_to_json(array_agg(port))::TEXT as ports
