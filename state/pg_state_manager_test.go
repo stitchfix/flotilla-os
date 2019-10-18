@@ -146,8 +146,8 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Listing returned incorrect definition, expected A but got %s", dA.DefinitionID)
 	}
 
-	if *(dA.Privileged) != true {
-		t.Errorf("Listing returned incorrect definition, expected true but got %t", *(dA.Privileged))
+	if *dA.Privileged != true {
+		t.Errorf("Listing returned incorrect definition, expected true but got %v", dA.Privileged)
 	}
 
 	if len(*dA.Env) != 1 {
@@ -163,8 +163,8 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	}
 
 	dB := dl.Definitions[1]
-	if *(dB.Privileged) != false {
-		t.Errorf("Listing returned incorrect definition, expected false but got %t", *(dB.Privileged))
+	if *dB.Privileged != false {
+		t.Errorf("Listing returned incorrect definition, expected false but got %v", dB.Privileged)
 	}
 
 	// Test ordering and offset
