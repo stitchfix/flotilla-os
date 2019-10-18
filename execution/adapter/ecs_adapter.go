@@ -373,10 +373,10 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		containerDef.DockerLabels["tags"] = &tagsList
 	}
 	networkMode := "bridge"
-	if *(definition.Privileged) == true {
-		privilegedOverride := true
+
+	if definition.Privileged != nil && *(definition.Privileged) == true {
 		networkMode = "host"
-		containerDef.Privileged = &privilegedOverride
+		containerDef.Privileged = definition.Privileged
 	}
 
 	return ecs.RegisterTaskDefinitionInput{
