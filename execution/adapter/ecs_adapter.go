@@ -207,7 +207,6 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	}
 
 	placementStrategies := []*ecs.PlacementStrategy{
-		a.memoryPlacementStrategy(),
 		a.cpuPlacementStrategy(),
 	}
 
