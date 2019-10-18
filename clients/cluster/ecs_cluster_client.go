@@ -148,10 +148,9 @@ func (ecc *ECSClusterClient) getClusterNamesFromApi() ([]string, error) {
 }
 
 func (ecc *ECSClusterClient) validate(resources *instanceResources, definition state.Definition) bool {
-	if resources != nil &&
-		definition.Memory != nil &&
-		int64(*definition.Memory) < resources.memory {
-		// TODO - check cpu when available on the definition
+	if (resources != nil && definition.Memory != nil && int64(*definition.Memory) < resources.memory) ||
+		(resources != nil && definition.Cpu != nil && int64(*definition.Cpu) < resources.cpu) {
+
 		if definition.Gpu == nil {
 			return true
 		} else {

@@ -317,6 +317,10 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		"group.name": &definition.GroupName,
 	}
 
+	if definition.Cpu != nil {
+		containerDef.Cpu = definition.Cpu
+	}
+
 	if definition.Gpu != nil {
 		resourceValue := strconv.FormatInt(*(definition.Gpu), 10)
 		resourceType := ecs.ResourceTypeGpu
