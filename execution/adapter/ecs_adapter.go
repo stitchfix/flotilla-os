@@ -207,8 +207,8 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	}
 
 	placementStrategies := []*ecs.PlacementStrategy{
-		a.memoryPlacementStrategy(),
 		a.cpuPlacementStrategy(),
+		a.memoryPlacementStrategy(),
 	}
 
 	rti := ecs.RunTaskInput{
@@ -226,15 +226,15 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 
 func (a *ecsAdapter) memoryPlacementStrategy() *ecs.PlacementStrategy {
 	return &ecs.PlacementStrategy{
-		Field: aws.String("binpack"),
-		Type:  aws.String("memory"),
+		Field: aws.String("memory"),
+		Type:  aws.String("binpack"),
 	}
 }
 
 func (a *ecsAdapter) cpuPlacementStrategy() *ecs.PlacementStrategy {
 	return &ecs.PlacementStrategy{
-		Field: aws.String("binpack"),
-		Type:  aws.String("cpu"),
+		Field: aws.String("cpu"),
+		Type:  aws.String("binpack"),
 	}
 }
 
