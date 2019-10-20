@@ -119,6 +119,7 @@ type Definition struct {
 	Env           *EnvList   `json:"env"`
 	Ports         *PortsList `json:"ports,omitempty"`
 	Tags          *Tags      `json:"tags,omitempty"`
+	Privileged    *bool      `json:"privileged,omitempty"`
 }
 
 var commandWrapper = `
