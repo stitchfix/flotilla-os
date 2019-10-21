@@ -422,6 +422,14 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 		adapted.GroupName = *groupName
 		adapted.Alias = *alias
 
+		if container.Cpu != nil {
+			adapted.Cpu = container.Cpu
+		}
+
+		if container.Privileged != nil {
+			adapted.Privileged = container.Privileged
+		}
+
 		if len(container.PortMappings) > 0 {
 			ports := make([]int, len(container.PortMappings))
 			for i, pm := range container.PortMappings {
