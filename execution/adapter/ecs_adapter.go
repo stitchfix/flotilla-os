@@ -428,6 +428,9 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 
 		if container.Privileged != nil {
 			adapted.Privileged = container.Privileged
+		} else {
+			privileged := false
+			adapted.Privileged = &privileged
 		}
 
 		if len(container.PortMappings) > 0 {
