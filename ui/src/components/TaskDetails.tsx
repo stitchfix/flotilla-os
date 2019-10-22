@@ -70,6 +70,7 @@ const TaskDetails: React.FunctionComponent = () => (
                       }
                     />
                     <Attribute name="Memory" value={ctx.data.memory} />
+                    <Attribute name="CPU" value={ctx.data.cpu} />
                     <Attribute name="Arn" value={ctx.data.arn} />
                     <Attribute name="Tags" value={ctx.data.tags} />
                   </div>
