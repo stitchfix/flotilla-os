@@ -450,6 +450,10 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 		}
 		adaptedEnv := state.EnvList(env)
 		adapted.Env = &adaptedEnv
+
+		if container.Cpu != nil {
+			adapted.Cpu = container.Cpu
+		}
 	}
 
 	return adapted
