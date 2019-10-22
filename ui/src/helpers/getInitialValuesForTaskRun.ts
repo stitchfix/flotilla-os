@@ -13,7 +13,11 @@ const getInitialValuesForTaskRun = ({
 }): RunTaskPayload => {
   const cluster = routerState && routerState.cluster ? routerState.cluster : ""
   const env: Env[] = routerState && routerState.env ? routerState.env : task.env
-  return { cluster, env }
+  const cpu: number =
+    routerState && routerState.cpu ? routerState.cpu : task.cpu
+  const memory: number =
+    routerState && routerState.memory ? routerState.memory : task.memory
+  return { cluster, env, cpu, memory }
 }
 
 export default getInitialValuesForTaskRun
