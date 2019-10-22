@@ -383,6 +383,9 @@ func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definit
 	//
 	defined := ee.adapter.AdaptTaskDef(*result.TaskDefinition)
 	defined.Command = definition.Command
+	if definition.Gpu != nil {
+		defined.Gpu = definition.Gpu
+	}
 	return defined, nil
 }
 
