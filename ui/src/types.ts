@@ -17,6 +17,7 @@ export type Task = {
   cpu: number
   command: string
   tags: string[]
+  privileged: boolean
 }
 
 export type RunInstance = {
@@ -143,6 +144,8 @@ export type RunTaskPayload = {
   cluster: string
   env?: Env[]
   run_tags?: { [key: string]: any }
+  cpu?: number
+  memory?: number
 }
 
 export type ListRunParams = ListRequestArgs & {

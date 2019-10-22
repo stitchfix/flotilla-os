@@ -32,6 +32,7 @@ const getTask = jest.fn(
         cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
+        privileged: false,
       })
     })
 )
@@ -51,6 +52,7 @@ const getTaskByAlias = jest.fn(
         cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
+        privileged: false,
       })
     })
 )
@@ -110,6 +112,7 @@ const createTask = jest.fn(
         cpu: 512,
         command: data.command,
         tags: data.tags,
+        privileged: false,
       })
     })
 )
@@ -135,6 +138,7 @@ const updateTask = jest.fn(
         cpu: 512,
         command: data.command,
         tags: data.tags,
+        privileged: false,
       })
     })
 )
