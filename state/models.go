@@ -224,7 +224,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Tags != nil {
 		d.Tags = other.Tags
 	}
-
+	if other.Privileged != nil {
+		d.Privileged = other.Privileged
+	}
 }
 
 func (d Definition) MarshalJSON() ([]byte, error) {

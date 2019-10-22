@@ -372,10 +372,9 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		tagsList := strings.Join(*definition.Tags, ",")
 		containerDef.DockerLabels["tags"] = &tagsList
 	}
-	networkMode := "bridge"
+	networkMode := "host"
 
 	if definition.Privileged != nil && *(definition.Privileged) == true {
-		networkMode = "host"
 		containerDef.Privileged = definition.Privileged
 	}
 
@@ -421,6 +420,17 @@ func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 
 		adapted.GroupName = *groupName
 		adapted.Alias = *alias
+
+		if container.Cpu != nil {
+			adapted.Cpu = container.Cpu
+		}
+
+		if container.Privileged != nil {
+			adapted.Privileged = container.Privileged
+		} else {
+			privileged := false
+			adapted.Privileged = &privileged
+		}
 
 		if len(container.PortMappings) > 0 {
 			ports := make([]int, len(container.PortMappings))
