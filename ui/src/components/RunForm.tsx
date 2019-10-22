@@ -2,7 +2,7 @@ import * as React from "react"
 import { Formik, Form, FastField } from "formik"
 import * as Yup from "yup"
 import { RouteComponentProps } from "react-router-dom"
-import { FormGroup, Button, Intent } from "@blueprintjs/core"
+import { FormGroup, Button, Intent, Spinner, Classes } from "@blueprintjs/core"
 import api from "../api"
 import { RunTaskPayload, Run } from "../types"
 import getInitialValuesForTaskRun from "../helpers/getInitialValuesForTaskRun"
@@ -16,9 +16,16 @@ import { TaskContext, TaskCtx } from "./Task"
 import Toaster from "./Toaster"
 import ErrorCallout from "./ErrorCallout"
 import FieldError from "./FieldError"
+import { cpuFieldSpec, memoryFieldSpec } from "../constants"
 
 const validationSchema = Yup.object().shape({
   cluster: Yup.string().required("Required"),
+  memory: Yup.number()
+    .required("Required")
+    .min(0),
+  cpu: Yup.number()
+    .required("Required")
+    .min(0),
   env: Yup.array().of(
     Yup.object().shape({
       name: Yup.string().required(),
@@ -50,7 +57,7 @@ const RunForm: React.FunctionComponent<Props> = ({
       request({ definitionID, data })
     }}
   >
-    {formik => {
+    {({ errors, values, setFieldValue, isValid }) => {
       return (
         <Form className="flotilla-form-container">
           {requestStatus === RequestStatus.ERROR && error && (
@@ -63,20 +70,40 @@ const RunForm: React.FunctionComponent<Props> = ({
             <FastField
               name="cluster"
               component={ClusterSelect}
-              value={formik.values.cluster}
+              value={values.cluster}
               onChange={(value: string) => {
-                formik.setFieldValue("cluster", value)
+                setFieldValue("cluster", value)
               }}
             />
-            {formik.errors.cluster && (
-              <FieldError>{formik.errors.cluster}</FieldError>
-            )}
+            {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
+          </FormGroup>
+          <FormGroup
+            label={cpuFieldSpec.label}
+            helperText={cpuFieldSpec.description}
+          >
+            <FastField
+              type="number"
+              name={cpuFieldSpec.name}
+              className={Classes.INPUT}
+            />
+            {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
+          </FormGroup>
+          <FormGroup
+            label={memoryFieldSpec.label}
+            helperText={memoryFieldSpec.description}
+          >
+            <FastField
+              type="number"
+              name={memoryFieldSpec.name}
+              className={Classes.INPUT}
+            />
+            {errors.memory && <FieldError>{errors.memory}</FieldError>}
           </FormGroup>
           <EnvFieldArray />
           <Button
             intent={Intent.PRIMARY}
             type="submit"
-            disabled={isLoading || formik.isValid === false}
+            disabled={isLoading || isValid === false}
           >
             Submit
           </Button>
@@ -110,25 +137,30 @@ const Connected: React.FunctionComponent<RouteComponentProps> = ({
     {requestProps => (
       <TaskContext.Consumer>
         {(ctx: TaskCtx) => {
-          if (ctx.requestStatus === RequestStatus.READY && ctx.data) {
-            const initialValues: RunTaskPayload = getInitialValuesForTaskRun({
-              task: ctx.data,
-              routerState: location.state,
-            })
-            return (
-              <RunForm
-                definitionID={ctx.definitionID}
-                initialValues={initialValues}
-                {...requestProps}
-              />
-            )
+          switch (ctx.requestStatus) {
+            case RequestStatus.ERROR:
+              return <ErrorCallout error={ctx.error} />
+            case RequestStatus.READY:
+              if (ctx.data) {
+                const initialValues: RunTaskPayload = getInitialValuesForTaskRun(
+                  {
+                    task: ctx.data,
+                    routerState: location.state,
+                  }
+                )
+                return (
+                  <RunForm
+                    definitionID={ctx.definitionID}
+                    initialValues={initialValues}
+                    {...requestProps}
+                  />
+                )
+              }
+              break
+            case RequestStatus.NOT_READY:
+            default:
+              return <Spinner />
           }
-
-          if (ctx.requestStatus === RequestStatus.ERROR) {
-            return "error"
-          }
-
-          return "spinner"
         }}
       </TaskContext.Consumer>
     )}
