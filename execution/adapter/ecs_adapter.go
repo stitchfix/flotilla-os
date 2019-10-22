@@ -372,10 +372,9 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 		tagsList := strings.Join(*definition.Tags, ",")
 		containerDef.DockerLabels["tags"] = &tagsList
 	}
-	networkMode := "bridge"
+	networkMode := "host"
 
 	if definition.Privileged != nil && *(definition.Privileged) == true {
-		networkMode = "host"
 		containerDef.Privileged = definition.Privileged
 	}
 
