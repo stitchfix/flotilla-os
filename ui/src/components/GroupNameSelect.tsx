@@ -1,5 +1,5 @@
 import * as React from "react"
-import { get, isArray } from "lodash"
+import { get } from "lodash"
 import Creatable from "react-select/lib/Creatable"
 import Request, { RequestStatus } from "./Request"
 import { ListGroupsResponse, SelectOption, SelectProps } from "../types"

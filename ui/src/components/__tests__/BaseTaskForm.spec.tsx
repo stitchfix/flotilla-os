@@ -9,6 +9,7 @@ import {
   memoryFieldSpec,
   tagsFieldSpec,
   envFieldSpec,
+  cpuFieldSpec,
 } from "../../constants"
 import BaseTaskForm from "../BaseTaskForm"
 import EnvFieldArray from "../EnvFieldArray"
@@ -23,6 +24,7 @@ describe("BaseTaskForm", () => {
     const imageInitialValue = "my_image"
     const commandInitialValue = "my_command"
     const memoryInitialValue = 1024
+    const cpuInitialValue = 512
     const tagsInitialValue = ["a", "b", "c"]
     const envInitialValue: Env[] = []
     const wrapper = mount(
@@ -32,6 +34,7 @@ describe("BaseTaskForm", () => {
           [imageFieldSpec.name]: imageInitialValue,
           [commandFieldSpec.name]: commandInitialValue,
           [memoryFieldSpec.name]: memoryInitialValue,
+          [cpuFieldSpec.name]: cpuInitialValue,
           [tagsFieldSpec.name]: tagsInitialValue,
           [envFieldSpec.name]: envInitialValue,
         }}
@@ -53,64 +56,103 @@ describe("BaseTaskForm", () => {
     const fields = wrapper.find(FastField)
 
     // Ensure that components have the correct lengths.
-    expect(formGroups).toHaveLength(5)
-    expect(fields).toHaveLength(5)
+    expect(formGroups).toHaveLength(6)
+    expect(fields).toHaveLength(6)
     expect(wrapper.find(EnvFieldArray)).toHaveLength(1)
     expect(wrapper.find(FieldError)).toHaveLength(0)
 
     // Group name field.
-    expect(formGroups.at(0).props().label).toEqual(groupNameFieldSpec.label)
-    expect(formGroups.at(0).props().helperText).toEqual(
+    const groupNameFieldIndex = 0
+    expect(formGroups.at(groupNameFieldIndex).props().label).toEqual(
+      groupNameFieldSpec.label
+    )
+    expect(formGroups.at(groupNameFieldIndex).props().helperText).toEqual(
       groupNameFieldSpec.description
     )
-    expect(fields.at(0).props().name).toEqual(groupNameFieldSpec.name)
-    expect(fields.at(0).props().value).toEqual(groupNameInitialValue)
+    expect(fields.at(groupNameFieldIndex).props().name).toEqual(
+      groupNameFieldSpec.name
+    )
+    expect(fields.at(groupNameFieldIndex).props().value).toEqual(
+      groupNameInitialValue
+    )
 
     // Image field.
-    expect(formGroups.at(1).props().label).toEqual(imageFieldSpec.label)
-    expect(formGroups.at(1).props().helperText).toEqual(
+    const imageFieldIndex = 1
+    expect(formGroups.at(imageFieldIndex).props().label).toEqual(
+      imageFieldSpec.label
+    )
+    expect(formGroups.at(imageFieldIndex).props().helperText).toEqual(
       imageFieldSpec.description
     )
-    expect(fields.at(1).props().name).toEqual(imageFieldSpec.name)
+    expect(fields.at(imageFieldIndex).props().name).toEqual(imageFieldSpec.name)
     expect(
       fields
-        .at(1)
+        .at(imageFieldIndex)
         .find("input")
         .props().value
     ).toEqual(imageInitialValue)
 
     // Command field.
-    expect(formGroups.at(2).props().label).toEqual(commandFieldSpec.label)
-    expect(formGroups.at(2).props().helperText).toEqual(
+    const commandFieldIndex = 2
+    expect(formGroups.at(commandFieldIndex).props().label).toEqual(
+      commandFieldSpec.label
+    )
+    expect(formGroups.at(commandFieldIndex).props().helperText).toEqual(
       commandFieldSpec.description
     )
-    expect(fields.at(2).props().name).toEqual(commandFieldSpec.name)
+    expect(fields.at(commandFieldIndex).props().name).toEqual(
+      commandFieldSpec.name
+    )
     expect(
       fields
-        .at(2)
+        .at(commandFieldIndex)
         .find("textarea")
         .props().value
     ).toEqual(commandInitialValue)
 
-    // Memory field.
-    expect(formGroups.at(3).props().label).toEqual(memoryFieldSpec.label)
-    expect(formGroups.at(3).props().helperText).toEqual(
-      memoryFieldSpec.description
+    // CPU field.
+    const cpuFieldIndex = 3
+    expect(formGroups.at(cpuFieldIndex).props().label).toEqual(
+      cpuFieldSpec.label
     )
-    expect(fields.at(3).props().name).toEqual(memoryFieldSpec.name)
+    expect(formGroups.at(cpuFieldIndex).props().helperText).toEqual(
+      cpuFieldSpec.description
+    )
+    expect(fields.at(cpuFieldIndex).props().name).toEqual(cpuFieldSpec.name)
     expect(
       fields
-        .at(3)
+        .at(cpuFieldIndex)
+        .find("input")
+        .props().value
+    ).toEqual(cpuInitialValue)
+
+    // Memory field.
+    const memoryFieldIndex = 4
+    expect(formGroups.at(memoryFieldIndex).props().label).toEqual(
+      memoryFieldSpec.label
+    )
+    expect(formGroups.at(memoryFieldIndex).props().helperText).toEqual(
+      memoryFieldSpec.description
+    )
+    expect(fields.at(memoryFieldIndex).props().name).toEqual(
+      memoryFieldSpec.name
+    )
+    expect(
+      fields
+        .at(memoryFieldIndex)
         .find("input")
         .props().value
     ).toEqual(memoryInitialValue)
 
     // Tags field.
-    expect(formGroups.at(4).props().label).toEqual(tagsFieldSpec.label)
-    expect(formGroups.at(4).props().helperText).toEqual(
+    const tagsFieldIndex = 5
+    expect(formGroups.at(tagsFieldIndex).props().label).toEqual(
+      tagsFieldSpec.label
+    )
+    expect(formGroups.at(tagsFieldIndex).props().helperText).toEqual(
       tagsFieldSpec.description
     )
-    expect(fields.at(4).props().name).toEqual(tagsFieldSpec.name)
-    expect(fields.at(4).props().value).toEqual(tagsInitialValue)
+    expect(fields.at(tagsFieldIndex).props().name).toEqual(tagsFieldSpec.name)
+    expect(fields.at(tagsFieldIndex).props().value).toEqual(tagsInitialValue)
   })
 })

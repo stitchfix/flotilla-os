@@ -1,13 +1,6 @@
 import * as React from "react"
 import { Link, RouteComponentProps } from "react-router-dom"
-import {
-  Card,
-  Spinner,
-  Button,
-  ButtonGroup,
-  Intent,
-  Classes,
-} from "@blueprintjs/core"
+import { Card, Spinner, Classes } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
   RequestStatus,

@@ -29,6 +29,7 @@ const getTask = jest.fn(
         container_name: "container_name",
         alias: "alias",
         memory: 1024,
+        cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
       })
@@ -47,6 +48,7 @@ const getTaskByAlias = jest.fn(
         container_name: "container_name",
         alias: alias,
         memory: 1024,
+        cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
       })
@@ -105,6 +107,7 @@ const createTask = jest.fn(
         container_name: "container_name",
         alias: data.alias,
         memory: data.memory,
+        cpu: 512,
         command: data.command,
         tags: data.tags,
       })
@@ -129,6 +132,7 @@ const updateTask = jest.fn(
         container_name: "container_name",
         alias: "alias",
         memory: data.memory,
+        cpu: 512,
         command: data.command,
         tags: data.tags,
       })

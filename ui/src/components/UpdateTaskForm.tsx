@@ -71,6 +71,7 @@ const Connected: React.FunctionComponent<ConnectedProps> = props => (
           image: get(ctx.data, "image", ""),
           group_name: get(ctx.data, "group_name", ""),
           memory: get(ctx.data, "memory", 0),
+          cpu: get(ctx.data, "cpu", 0),
           command: get(ctx.data, "command", ""),
           tags: get(ctx.data, "tags", []),
         }

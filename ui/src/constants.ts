@@ -38,6 +38,12 @@ export const memoryFieldSpec: FieldSpec = {
   description: "The amount of memory (MB) this task needs.",
   initialValue: 1024,
 }
+export const cpuFieldSpec: FieldSpec = {
+  name: "cpu",
+  label: "CPU (Units)",
+  description: "The amount of CPU (units) this task needs.",
+  initialValue: 512,
+}
 export const tagsFieldSpec: FieldSpec = {
   name: "tags",
   label: "Tags",

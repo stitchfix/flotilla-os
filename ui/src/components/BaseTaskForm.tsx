@@ -12,6 +12,7 @@ import {
   commandFieldSpec,
   memoryFieldSpec,
   tagsFieldSpec,
+  cpuFieldSpec,
 } from "../constants"
 
 export const validationSchema = {
@@ -28,6 +29,9 @@ export const validationSchema = {
     .min(1)
     .required("Required"),
   memory: Yup.number()
+    .required("Required")
+    .min(0),
+  cpu: Yup.number()
     .required("Required")
     .min(0),
   command: Yup.string()
@@ -79,6 +83,14 @@ const BaseTaskForm: React.FunctionComponent<Props> = ({
         rows={14}
       />
       {errors.command && <FieldError>{errors.command}</FieldError>}
+    </FormGroup>
+    <FormGroup label={cpuFieldSpec.label} helperText={cpuFieldSpec.description}>
+      <FastField
+        type="number"
+        name={cpuFieldSpec.name}
+        className={Classes.INPUT}
+      />
+      {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
     </FormGroup>
     <FormGroup
       label={memoryFieldSpec.label}

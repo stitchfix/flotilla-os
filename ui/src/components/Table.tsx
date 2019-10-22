@@ -1,6 +1,6 @@
 import * as React from "react"
 import { HTMLTable, Callout } from "@blueprintjs/core"
-import { isEmpty, isArray } from "lodash"
+import { isArray } from "lodash"
 import SortableTh from "./SortableTh"
 import { SortOrder } from "../types"
 

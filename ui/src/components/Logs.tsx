@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Card, Spinner, Pre, Colors, Classes } from "@blueprintjs/core"
+import { Spinner, Pre, Colors, Classes } from "@blueprintjs/core"
 import { has, isEmpty } from "lodash"
 import { AxiosError } from "axios"
 import { RequestStatus } from "./Request"

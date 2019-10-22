@@ -14,6 +14,7 @@ export type Task = {
   container_name: string
   alias: string
   memory: number
+  cpu: number
   command: string
   tags: string[]
 }
@@ -133,6 +134,7 @@ export type UpdateTaskPayload = {
   image: string
   group_name: string
   memory: number
+  cpu: number
   command: string
   tags: string[]
 }
