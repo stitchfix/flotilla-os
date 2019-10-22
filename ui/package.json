@@ -13,7 +13,7 @@
     "react-dom": "^16.8.6",
     "react-router-dom": "^5.0.0",
     "react-scripts": "3.0.1",
-    "react-select": "^2.1.2",
+    "react-select": "^2.4.4",
     "yup": "^0.27.0"
   },
   "scripts": {
@@ -47,7 +47,7 @@
     "@types/react": "16.8.18",
     "@types/react-dom": "16.8.4",
     "@types/react-router-dom": "^4.3.3",
-    "@types/react-select": "^2.0.10",
+    "@types/react-select": "^2.0.9",
     "@types/yup": "^0.26.14",
     "axios-mock-adapter": "^1.16.0",
     "babel-core": "^6.26.3",
