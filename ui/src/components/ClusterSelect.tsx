@@ -1,6 +1,6 @@
 import * as React from "react"
 import { get, isArray } from "lodash"
-import Select from "react-select"
+import Creatable from "react-select/lib/Creatable"
 import Request from "./Request"
 import { ListClustersResponse, SelectOption, SelectProps } from "../types"
 import api from "../api"
@@ -15,9 +15,10 @@ export const ClusterSelect: React.FunctionComponent<
   SelectProps & { options: SelectOption[] }
 > = props => {
   return (
-    <Select<SelectOption>
+    <Creatable<SelectOption>
       value={helpers.stringToSelectOpt(props.value)}
       options={props.options}
+      isClearable
       onChange={option => {
         props.onChange(helpers.preprocessSelectOption(option))
       }}
@@ -29,6 +30,9 @@ const Connected: React.FunctionComponent<SelectProps> = props => (
   <Request<ListClustersResponse, {}> requestFn={api.listClusters}>
     {res => {
       let options = get(res, ["data", "clusters"], [])
+
+      // If there's an error fetching available clusters, set the options to
+      // an empty array.
       if (!isArray(options)) options = []
       return (
         <ClusterSelect
