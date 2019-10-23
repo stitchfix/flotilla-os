@@ -78,6 +78,7 @@ CREATE INDEX IF NOT EXISTS ix_task_group_name ON task(group_name);
 CREATE INDEX IF NOT EXISTS ix_task_env ON task USING gin (env jsonb_path_ops);
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_task_arn ON task(task_arn);
+CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_desc ON task(definition_id, started_at DESC NULLS LAST);
 --
 -- Status
 --
