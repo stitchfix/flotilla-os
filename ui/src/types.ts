@@ -71,6 +71,16 @@ export enum RunStatus {
   NEEDS_RETRY = "NEEDS_RETRY",
 }
 
+export enum EnhancedRunStatus {
+  PENDING = "PENDING",
+  QUEUED = "QUEUED",
+  RUNNING = "RUNNING",
+  STOPPED = "STOPPED",
+  NEEDS_RETRY = "NEEDS_RETRY",
+  SUCCESS = "SUCCESS",
+  FAILED = "FAILED",
+}
+
 // 3rd party
 
 export type SelectOption = { label: string; value: string }
