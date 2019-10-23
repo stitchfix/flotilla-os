@@ -72,5 +72,9 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   started_at: "started_at",
   group_name: "group_name",
   env: [],
+  cpu: 1,
+  memory: 1024,
+  command: "echo 'hi'",
+  queued_at: "queued_at",
   ...overrides,
 })

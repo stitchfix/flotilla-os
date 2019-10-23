@@ -12,6 +12,7 @@ type State = {
 }
 
 class Duration extends React.Component<Props, State> {
+  private intervalID: number | undefined
   constructor(props: Props) {
     super(props)
     this.process = this.process.bind(this)
@@ -27,8 +28,12 @@ class Duration extends React.Component<Props, State> {
 
     // If the end date is undefined, begin interval to process duration.
     if (!this.props.end) {
-      window.setInterval(this.process.bind(this), 1000)
+      this.intervalID = window.setInterval(this.process.bind(this), 1000)
     }
+  }
+
+  componentWillUnmount() {
+    window.clearInterval(this.intervalID)
   }
 
   process() {

@@ -12,7 +12,16 @@ const getInitialValuesForTaskRun = ({
   routerState: any
 }): RunTaskPayload => {
   const cluster = routerState && routerState.cluster ? routerState.cluster : ""
-  const env: Env[] = routerState && routerState.env ? routerState.env : task.env
+  let env: Env[] = routerState && routerState.env ? routerState.env : task.env
+
+  // Filter out invalid run env.
+  if (process.env.REACT_APP_INVALID_RUN_ENV !== undefined) {
+    const invalidEnvs = new Set(
+      process.env.REACT_APP_INVALID_RUN_ENV.split(",")
+    )
+    env = env.filter(e => !invalidEnvs.has(e.name))
+  }
+
   const cpu: number =
     routerState && routerState.cpu ? routerState.cpu : task.cpu
   const memory: number =

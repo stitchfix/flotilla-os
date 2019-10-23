@@ -26,20 +26,24 @@ export type RunInstance = {
 }
 
 export type Run = {
-  instance: RunInstance
-  task_arn: string
-  run_id: string
-  definition_id: string
   alias: string
-  image: string
   cluster: string
+  command: string
+  cpu: number
+  definition_id: string
+  env: Env[]
   exit_code?: number
   exit_reason?: string
-  status: RunStatus
-  started_at?: string
   finished_at?: string
   group_name: string
-  env: Env[]
+  image: string
+  instance: RunInstance
+  memory: number
+  queued_at: string | undefined
+  run_id: string
+  started_at?: string
+  status: RunStatus
+  task_arn: string
 }
 
 export type RunLog = {

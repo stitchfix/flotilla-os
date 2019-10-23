@@ -173,6 +173,10 @@ const runTask = jest.fn(
         status: RunStatus.PENDING,
         group_name: "group_name",
         env: data.env || [],
+        cpu: 1,
+        memory: 1024,
+        command: "echo 'hi'",
+        queued_at: "queued_at",
       })
     })
 )
@@ -212,6 +216,10 @@ const getRun = jest.fn(
         status: RunStatus.PENDING,
         group_name: "group_name",
         env: [],
+        cpu: 1,
+        memory: 1024,
+        command: "echo 'hi'",
+        queued_at: "queued_at",
       })
     })
 )
