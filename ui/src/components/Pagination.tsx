@@ -27,7 +27,7 @@ const Pagination: React.FunctionComponent<Props> = ({
         disabled={isFirstPage || isLoading}
         loading={isLoading}
       >
-        Previous Page
+        Prev
       </Button>
       <Button
         onClick={() => {
@@ -36,7 +36,7 @@ const Pagination: React.FunctionComponent<Props> = ({
         disabled={isLastPage || isLoading}
         loading={isLoading}
       >
-        Next Page
+        Next
       </Button>
     </ButtonGroup>
   )

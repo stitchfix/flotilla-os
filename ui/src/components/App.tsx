@@ -8,7 +8,7 @@ import Runs from "./Runs"
 import Navigation from "./Navigation"
 
 const App: React.FunctionComponent = () => (
-  <div className="flotilla-app-container">
+  <div className="flotilla-app-container bp3-dark">
     <BrowserRouter>
       <Navigation />
       <Switch>

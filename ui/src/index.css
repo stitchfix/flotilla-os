@@ -1,6 +1,12 @@
 :root {
   --spacing: 12px;
   --blueprint-navbar-height: 50px;
+  --default-border-color: #293742;
+  --default-border: 1px solid var(--default-border-color);
+}
+
+body {
+  background: #182026;
 }
 
 .flotilla-app-container {
@@ -16,9 +22,16 @@
   margin-bottom: calc(var(--spacing) * 2);
 }
 
+.flotilla-card-header-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing);
+}
+
 .flotilla-card-header {
   text-transform: uppercase;
-  margin-bottom: var(--spacing);
   font-weight: 700;
 }
 
@@ -63,13 +76,17 @@
 }
 
 .flotilla-attribute-name {
-  font-weight: bold;
-  margin-right: var(--spacing);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
 }
 
 .flotilla-attribute-value {
-  color: #5c7080;
+  color: #adbecc;
   flex: 1;
+  font-size: 0.85rem;
 }
 
 /**
@@ -142,7 +159,7 @@
  * Table
  */
 table {
-  border: 1px solid #d8e1e8;
+  border: var(--default-border);
   width: 100%;
 }
 
@@ -152,7 +169,7 @@ table {
 
 .flotilla-th-sortable:hover,
 .flotilla-th-sortable.active {
-  background: #ebf1f5;
+  background: #202b33;
 }
 
 .flotilla-th-sortable.active.active-asc::after {
@@ -180,12 +197,23 @@ table {
 .flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
   flex: 1;
   min-width: 450px;
-  margin-right: var(--spacing);
 }
 
 .flotilla-sidebar-view-container > .flotilla-sidebar-view-content {
   flex: 2;
   min-width: 720px;
+}
+
+@media screen and (max-width: 1230px) {
+  .flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
+    margin-bottom: var(--spacing);
+  }
+}
+
+@media screen and (min-width: 1230px) {
+  .flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
+    margin-right: var(--spacing);
+  }
 }
 
 /**
@@ -221,4 +249,9 @@ table {
   text-transform: uppercase;
   font-weight: 600;
   font-size: 0.8rem;
+}
+
+.bp3-card {
+  background: transparent !important;
+  border: 1px solid #293742;
 }

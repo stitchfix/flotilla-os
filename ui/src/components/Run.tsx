@@ -1,6 +1,13 @@
 import * as React from "react"
 import { Link, RouteComponentProps } from "react-router-dom"
-import { Card, Spinner, Classes } from "@blueprintjs/core"
+import {
+  Card,
+  Spinner,
+  Classes,
+  ButtonGroup,
+  Button,
+  Collapse,
+} from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
   RequestStatus,
@@ -13,10 +20,12 @@ import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
+import Toggler from "./Toggler"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
 }
+
 export class Run extends React.Component<Props> {
   requestIntervalID: number | undefined
 
@@ -107,26 +116,61 @@ export class Run extends React.Component<Props> {
           />
           <div className="flotilla-sidebar-view-container">
             <div className="flotilla-sidebar-view-sidebar">
-              <Card style={{ marginBottom: 12 }}>
-                <div className="flotilla-card-header">Attributes</div>
-                <div className="flotilla-attributes-container">
-                  <Attribute name="Run ID" value={data.run_id} />
-                  <Attribute name="Definition ID" value={data.definition_id} />
-                  <Attribute name="Cluster" value={data.cluster} />
-                  <Attribute name="Status" value={data.status} />
-                  <Attribute name="Exit Code" value={data.exit_code} />
-                  <Attribute name="Exit Reason" value={data.exit_reason} />
-                  <Attribute name="Started At" value={data.started_at} />
-                  <Attribute name="Finished At" value={data.finished_at} />
-                  <Attribute name="Image" value={data.image} />
-                </div>
-              </Card>
-              <Card>
-                <div className="flotilla-card-header">
-                  Environment Variables
-                </div>
-                <EnvList env={data.env} />
-              </Card>
+              <Toggler>
+                {({ isVisible, toggleVisibility }) => (
+                  <Card style={{ marginBottom: 12 }}>
+                    <div className="flotilla-card-header-container">
+                      <div className="flotilla-card-header">Attributes</div>
+                      <ButtonGroup>
+                        <Button small onClick={toggleVisibility}>
+                          {isVisible ? "Hide" : "Show"}
+                        </Button>
+                      </ButtonGroup>
+                    </div>
+                    <Collapse isOpen={isVisible}>
+                      <div className="flotilla-attributes-container">
+                        <Attribute name="Run ID" value={data.run_id} />
+                        <Attribute
+                          name="Definition ID"
+                          value={data.definition_id}
+                        />
+                        <Attribute name="Cluster" value={data.cluster} />
+                        <Attribute name="Status" value={data.status} />
+                        <Attribute name="Exit Code" value={data.exit_code} />
+                        <Attribute
+                          name="Exit Reason"
+                          value={data.exit_reason}
+                        />
+                        <Attribute name="Started At" value={data.started_at} />
+                        <Attribute
+                          name="Finished At"
+                          value={data.finished_at}
+                        />
+                        <Attribute name="Image" value={data.image} />
+                      </div>
+                    </Collapse>
+                  </Card>
+                )}
+              </Toggler>
+              <Toggler>
+                {({ isVisible, toggleVisibility }) => (
+                  <Card>
+                    <div className="flotilla-card-header-container">
+                      <div className="flotilla-card-header">
+                        Environment Variables
+                      </div>
+                      <ButtonGroup>
+                        <Button onClick={toggleVisibility}>
+                          {isVisible ? "Hide" : "Show"}
+                        </Button>
+                      </ButtonGroup>
+                    </div>
+                    <Collapse isOpen={isVisible}>
+                      <EnvList env={data.env} />
+                    </Collapse>
+                  </Card>
+                )}
+              </Toggler>
             </div>
             <div className="flotilla-sidebar-view-content">
               <Logs
