@@ -22,6 +22,8 @@ import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import LogRequester from "./LogRequester"
+import RunTag from "./RunTag"
+import Duration from "./Duration"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
@@ -73,6 +75,14 @@ export class Run extends React.Component<Props> {
 
   clearRequestInterval() {
     window.clearInterval(this.requestIntervalID)
+  }
+
+  getLogsHeight(): number {
+    if (window.innerWidth >= 1230) {
+      return window.innerHeight - 78 - 50 - 24
+    }
+
+    return 720
   }
 
   render() {
@@ -130,13 +140,26 @@ export class Run extends React.Component<Props> {
                     </div>
                     <Collapse isOpen={isVisible}>
                       <div className="flotilla-attributes-container">
+                        <Attribute name="Status" value={<RunTag {...data} />} />
+                        <Attribute
+                          name="Duration"
+                          value={
+                            <div>
+                              {data.started_at && (
+                                <Duration
+                                  start={data.started_at}
+                                  end={data.finished_at}
+                                />
+                              )}
+                            </div>
+                          }
+                        />
                         <Attribute name="Run ID" value={data.run_id} />
                         <Attribute
                           name="Definition ID"
                           value={data.definition_id}
                         />
                         <Attribute name="Cluster" value={data.cluster} />
-                        <Attribute name="Status" value={data.status} />
                         <Attribute name="Exit Code" value={data.exit_code} />
                         <Attribute
                           name="Exit Reason"
@@ -184,7 +207,7 @@ export class Run extends React.Component<Props> {
               <LogRequester
                 runID={data.run_id}
                 status={data.status}
-                height={720}
+                height={this.getLogsHeight()}
               />
             </div>
           </div>

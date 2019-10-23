@@ -268,6 +268,9 @@ table {
 /**
  * Blueprint overrides
  */
+.bp3-input {
+  height: 36px;
+}
 .bp3-form-group input,
 .bp3-form-group textarea {
   width: 100%;

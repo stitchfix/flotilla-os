@@ -9,6 +9,7 @@
     "formik": "^1.5.7",
     "lodash": "^4.17.14",
     "moment": "^2.24.0",
+    "pretty-ms": "^5.0.0",
     "qs": "^6.7.0",
     "react": "^16.8.6",
     "react-debounce-input": "^3.2.0",
