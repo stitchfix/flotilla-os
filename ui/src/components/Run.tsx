@@ -21,6 +21,7 @@ import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
@@ -141,10 +142,17 @@ export class Run extends React.Component<Props> {
                           name="Exit Reason"
                           value={data.exit_reason}
                         />
-                        <Attribute name="Started At" value={data.started_at} />
+                        <Attribute
+                          name="Started At"
+                          value={
+                            <ISO8601AttributeValue time={data.started_at} />
+                          }
+                        />
                         <Attribute
                           name="Finished At"
-                          value={data.finished_at}
+                          value={
+                            <ISO8601AttributeValue time={data.finished_at} />
+                          }
                         />
                         <Attribute name="Image" value={data.image} />
                       </div>

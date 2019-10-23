@@ -20,6 +20,8 @@ import Pagination from "./Pagination"
 import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
+import RunTag from "./RunTag"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
 
 export const initialQuery = {
   page: 1,
@@ -69,17 +71,25 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             },
             status: {
               displayName: "Status",
-              render: (r: Run) => r.status,
+              render: (r: Run) => <RunTag {...r}></RunTag>,
               isSortable: true,
             },
             started_at: {
               displayName: "Started At",
-              render: (r: Run) => r.started_at || "-",
+              render: (r: Run) => (
+                <ISO8601AttributeValue
+                  time={r.started_at}
+                ></ISO8601AttributeValue>
+              ),
               isSortable: true,
             },
             finished_at: {
               displayName: "Finished At",
-              render: (r: Run) => r.finished_at || "-",
+              render: (r: Run) => (
+                <ISO8601AttributeValue
+                  time={r.finished_at}
+                ></ISO8601AttributeValue>
+              ),
               isSortable: true,
             },
             cluster: {
