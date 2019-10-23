@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@blueprintjs/core": "^3.15.1",
+    "ansi-to-react": "^5.1.0",
     "axios": "^0.19.0",
     "formik": "^1.5.7",
     "lodash": "^4.17.14",

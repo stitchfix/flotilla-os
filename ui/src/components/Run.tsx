@@ -15,13 +15,13 @@ import Request, {
 import api from "../api"
 import { Run as RunShape, RunStatus } from "../types"
 import Attribute from "./Attribute"
-import Logs from "./Logs"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import LogRequester from "./LogRequester"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
@@ -181,10 +181,10 @@ export class Run extends React.Component<Props> {
               </Toggler>
             </div>
             <div className="flotilla-sidebar-view-content">
-              <Logs
-                runID={runID}
+              <LogRequester
+                runID={data.run_id}
                 status={data.status}
-                requestFn={api.getRunLog}
+                height={720}
               />
             </div>
           </div>

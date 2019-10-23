@@ -237,6 +237,34 @@ table {
   margin-bottom: 0;
 }
 
+.flotilla-logs-container {
+  overflow-y: scroll;
+  background: var(--color-dark-gray-1);
+  flex: 1;
+}
+
+.flotilla-ansi,
+.bp3-code-block {
+  font-family: "Roboto Mono", "Courier New", Courier, monospace !important;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.flotilla-pre {
+  opacity: 1;
+  white-space: pre-wrap;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 12px !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 12px;
+  opacity: 1;
+  background: transparent;
+  border-radius: 0 !important;
+}
+
 /**
  * Blueprint overrides
  */

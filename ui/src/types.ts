@@ -183,3 +183,8 @@ export type FieldSpec = {
   description: string
   initialValue: any
 }
+
+export type LogChunk = {
+  chunk: string
+  lastSeen?: string
+}
