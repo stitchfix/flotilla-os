@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios"
 import * as qs from "qs"
+import cookie from "cookie"
+import { get, has } from "lodash"
 import {
   HTTPMethod,
   CreateTaskPayload,
@@ -122,12 +124,32 @@ class FlotillaClient {
   }: {
     definitionID: string
     data: RunTaskPayload
-  }): Promise<Run> =>
-    this.request<Run>({
+  }): Promise<Run> => {
+    let d: RunTaskPayload = data
+
+    // Get owner ID.
+    let ownerID: string = "flotilla-ui"
+
+    if (process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH) {
+      const cookies = cookie.parse(document.cookie)
+      ownerID = get(
+        cookies,
+        process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
+        "flotilla-ui"
+      )
+    }
+
+    d.run_tags = {
+      ...d.run_tags,
+      OWNER_ID: ownerID,
+    }
+
+    return this.request<Run>({
       method: HTTPMethod.PUT,
-      url: `/v1/task/${definitionID}/execute`,
-      data,
+      url: `/v4/task/${definitionID}/execute`,
+      data: d,
     })
+  }
 
   /** Requests list of runs. */
   public listRun = ({
