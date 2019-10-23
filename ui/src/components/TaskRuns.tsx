@@ -17,7 +17,7 @@ import RunStatusSelect from "./RunStatusSelect"
 import ListFiltersDropdown from "./ListFiltersDropdown"
 import { DebounceInput } from "react-debounce-input"
 import Pagination from "./Pagination"
-import { pageSize } from "../constants"
+import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
 
@@ -178,7 +178,7 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
           updatePage={updatePage}
           currentPage={currentPage}
           isLoading={isLoading}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           numItems={data ? data.total : 0}
         />
       </div>
@@ -201,7 +201,10 @@ const ConnectedTaskRuns: React.FunctionComponent<{ definitionID: string }> = ({
       definitionID,
       params: {
         ...omit(params, "page"),
-        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: pageSize }),
+        ...pageToOffsetLimit({
+          page: get(params, "page", 1),
+          limit: PAGE_SIZE,
+        }),
       },
     })}
   >

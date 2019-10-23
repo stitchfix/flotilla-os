@@ -12,6 +12,7 @@ import Logs from "./Logs"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
+import { RUN_FETCH_INTERVAL_MS } from "../constants"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
@@ -54,7 +55,10 @@ export class Run extends React.Component<Props> {
   }
 
   setRequestInterval() {
-    this.requestIntervalID = window.setInterval(this.request, 5000)
+    this.requestIntervalID = window.setInterval(
+      this.request,
+      RUN_FETCH_INTERVAL_MS
+    )
   }
 
   clearRequestInterval() {

@@ -13,7 +13,7 @@ import {
   memoryFieldSpec,
   tagsFieldSpec,
   cpuFieldSpec,
-} from "../constants"
+} from "../helpers/taskFormHelpers"
 
 export const validationSchema = {
   env: Yup.array().of(

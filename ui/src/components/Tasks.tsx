@@ -12,7 +12,7 @@ import Pagination from "./Pagination"
 import GroupNameSelect from "./GroupNameSelect"
 import ViewHeader from "./ViewHeader"
 import ListFiltersDropdown from "./ListFiltersDropdown"
-import { pageSize } from "../constants"
+import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
 
@@ -141,7 +141,7 @@ export const Tasks: React.FunctionComponent<Props> = props => {
           updatePage={updatePage}
           currentPage={currentPage}
           isLoading={isLoading}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           numItems={data ? data.total : 0}
         />
       </div>
@@ -157,7 +157,10 @@ const ConnectedTasks: React.FunctionComponent = () => (
     getRequestArgs={params => ({
       params: {
         ...omit(params, "page"),
-        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: pageSize }),
+        ...pageToOffsetLimit({
+          page: get(params, "page", 1),
+          limit: PAGE_SIZE,
+        }),
       },
     })}
   >

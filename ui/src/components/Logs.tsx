@@ -4,8 +4,7 @@ import { has, isEmpty } from "lodash"
 import { AxiosError } from "axios"
 import { RequestStatus } from "./Request"
 import { RunLog, RunStatus } from "../types"
-
-const LOG_FETCH_INTERVAL_MS = 10000 // 10 sec
+import { LOG_FETCH_INTERVAL_MS } from "../constants"
 
 export type Props = {
   runID: string

@@ -3,7 +3,7 @@ import { FieldArray, FastField } from "formik"
 import { Button, FormGroup, Classes, Intent } from "@blueprintjs/core"
 import { Env } from "../types"
 import { IconNames } from "@blueprintjs/icons"
-import { envFieldSpec } from "../constants"
+import { envFieldSpec } from "../helpers/taskFormHelpers"
 
 export type Props = {
   values: Env[]

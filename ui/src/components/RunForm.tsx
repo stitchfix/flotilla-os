@@ -16,7 +16,7 @@ import { TaskContext, TaskCtx } from "./Task"
 import Toaster from "./Toaster"
 import ErrorCallout from "./ErrorCallout"
 import FieldError from "./FieldError"
-import { cpuFieldSpec, memoryFieldSpec } from "../constants"
+import * as helpers from "../helpers/runFormHelpers"
 
 const validationSchema = Yup.object().shape({
   cluster: Yup.string().required("Required"),
@@ -78,23 +78,23 @@ const RunForm: React.FunctionComponent<Props> = ({
             {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
           </FormGroup>
           <FormGroup
-            label={cpuFieldSpec.label}
-            helperText={cpuFieldSpec.description}
+            label={helpers.cpuFieldSpec.label}
+            helperText={helpers.cpuFieldSpec.description}
           >
             <FastField
               type="number"
-              name={cpuFieldSpec.name}
+              name={helpers.cpuFieldSpec.name}
               className={Classes.INPUT}
             />
             {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
           </FormGroup>
           <FormGroup
-            label={memoryFieldSpec.label}
-            helperText={memoryFieldSpec.description}
+            label={helpers.memoryFieldSpec.label}
+            helperText={helpers.memoryFieldSpec.description}
           >
             <FastField
               type="number"
-              name={memoryFieldSpec.name}
+              name={helpers.memoryFieldSpec.name}
               className={Classes.INPUT}
             />
             {errors.memory && <FieldError>{errors.memory}</FieldError>}

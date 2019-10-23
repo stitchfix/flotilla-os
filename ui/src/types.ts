@@ -166,3 +166,10 @@ export type ListRunResponse = ListResponse & {
 export type ListClustersResponse = ListResponse & { clusters: string[] | null }
 export type ListGroupsResponse = ListResponse & { groups: string[] | null }
 export type ListTagsResponse = ListResponse & { tags: string[] | null }
+
+export type FieldSpec = {
+  name: string
+  label: string
+  description: string
+  initialValue: any
+}
