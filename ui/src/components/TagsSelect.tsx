@@ -16,6 +16,9 @@ export const TagsSelect: React.FunctionComponent<
     onChange={options => {
       props.onChange(helpers.preprocessMultiSelectOption(options))
     }}
+    styles={helpers.selectStyles}
+    theme={helpers.selectTheme}
+    closeMenuOnSelect={false}
   />
 )
 

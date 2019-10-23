@@ -25,6 +25,8 @@ const RunStatusSelect: React.FunctionComponent<MultiSelectProps> = props => {
         props.onChange(helpers.preprocessMultiSelectOption(option))
       }}
       isMulti
+      styles={helpers.selectStyles}
+      theme={helpers.selectTheme}
     />
   )
 }

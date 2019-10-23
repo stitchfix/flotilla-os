@@ -25,6 +25,8 @@ export const GroupNameSelect: React.FunctionComponent<
       }}
       isClearable
       id="groupNameSelect"
+      styles={helpers.selectStyles}
+      theme={helpers.selectTheme}
     />
   )
 }

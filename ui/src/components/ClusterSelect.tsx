@@ -22,6 +22,8 @@ export const ClusterSelect: React.FunctionComponent<
       onChange={option => {
         props.onChange(helpers.preprocessSelectOption(option))
       }}
+      styles={helpers.selectStyles}
+      theme={helpers.selectTheme}
     />
   )
 }

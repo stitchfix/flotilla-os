@@ -13,6 +13,8 @@ const GenericMultiSelect: React.FunctionComponent<MultiSelectProps> = props => {
       }}
       isMulti
       isClearable
+      styles={helpers.selectStyles}
+      theme={helpers.selectTheme}
     />
   )
 }

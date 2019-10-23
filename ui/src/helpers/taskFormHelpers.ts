@@ -34,7 +34,8 @@ export const memoryFieldSpec: FieldSpec = {
 export const cpuFieldSpec: FieldSpec = {
   name: "cpu",
   label: "CPU (Units)",
-  description: "The amount of CPU (units) this task needs.",
+  description:
+    "The amount of CPU (units) this task needs. Note: 1 CPU unit is approximately equivalent to 1 MB.",
   initialValue: 512,
 }
 export const tagsFieldSpec: FieldSpec = {
