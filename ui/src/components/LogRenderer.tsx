@@ -42,18 +42,12 @@ class LogRenderer extends React.Component<Props> {
     }
   }
 
-  shouldRenderLoader(): boolean {
-    const { hasRunFinished, isLoading } = this.props
-    if (hasRunFinished === false || isLoading === true) return true
-    return false
-  }
-
   render() {
-    const { logs, height } = this.props
+    const { logs, height, hasRunFinished } = this.props
 
     let loader = <Tag>END OF LOGS</Tag>
 
-    if (this.shouldRenderLoader()) {
+    if (!hasRunFinished) {
       loader = <Spinner size={Spinner.SIZE_SMALL} />
     }
 

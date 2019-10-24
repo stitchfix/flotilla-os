@@ -4,6 +4,7 @@ import api from "../api"
 import LogRenderer from "./LogRenderer"
 import { LogChunk, RunStatus, RunLog } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
+import ErrorCallout from "./ErrorCallout"
 
 type Props = {
   status: RunStatus | undefined
@@ -92,6 +93,7 @@ class LogRequester extends React.PureComponent<Props, State> {
       .then(this.handleResponse)
       .catch(error => {
         this.clearRequestInterval()
+        this.setState({ error })
       })
   }
 
@@ -191,7 +193,9 @@ class LogRequester extends React.PureComponent<Props, State> {
 
   render() {
     const { height } = this.props
-    const { logs, isLoading } = this.state
+    const { logs, isLoading, error } = this.state
+
+    if (error) return <ErrorCallout error={error} />
 
     return (
       <LogRenderer
