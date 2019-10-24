@@ -176,7 +176,7 @@ const runTask = jest.fn(
         cpu: 1,
         memory: 1024,
         command: "echo 'hi'",
-        queued_at: "queued_at",
+        queued_at: "2019-10-24T05:21:51",
       })
     })
 )
@@ -219,7 +219,7 @@ const getRun = jest.fn(
         cpu: 1,
         memory: 1024,
         command: "echo 'hi'",
-        queued_at: "queued_at",
+        queued_at: "2019-10-24T05:21:51",
       })
     })
 )

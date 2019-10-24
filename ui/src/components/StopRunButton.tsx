@@ -41,7 +41,11 @@ export class StopRunButton extends React.Component<Props, State> {
     const { error, isLoading } = this.props
     return (
       <>
-        <Button intent={Intent.DANGER} onClick={this.openDialog}>
+        <Button
+          intent={Intent.DANGER}
+          onClick={this.openDialog}
+          rightIcon="stop"
+        >
           Stop
         </Button>
         <Dialog isOpen={this.state.isOpen}>

@@ -20,8 +20,8 @@ const MockRun: RunType = {
   cluster: "cluster",
   exit_code: 0,
   status: RunStatus.RUNNING,
-  started_at: "started_at",
-  finished_at: "finished_at",
+  started_at: "2019-10-24T05:21:51",
+  finished_at: "2019-10-25T05:21:51",
   group_name: "group_name",
   env: [],
 }

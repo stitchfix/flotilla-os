@@ -10,7 +10,7 @@ import {
   tagsFieldSpec,
   envFieldSpec,
   cpuFieldSpec,
-} from "../../constants"
+} from "../../helpers/taskFormHelpers"
 import BaseTaskForm from "../BaseTaskForm"
 import EnvFieldArray from "../EnvFieldArray"
 import { Env } from "../../types"

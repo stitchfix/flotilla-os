@@ -8,6 +8,7 @@ import {
   Button,
   Collapse,
   Pre,
+  Icon,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -104,7 +105,8 @@ export class Run extends React.Component<Props> {
               },
             }}
           >
-            Retry
+            <div className="bp3-button-text">Retry</div>
+            <Icon icon="repeat" />
           </Link>
         )
       } else {
@@ -136,7 +138,7 @@ export class Run extends React.Component<Props> {
                       <ButtonGroup>
                         <Button
                           onClick={toggleVisibility}
-                          rightIcon={isVisible ? "collapse-all" : "expand-all"}
+                          rightIcon={isVisible ? "minimize" : "maximize"}
                         >
                           {isVisible ? "Hide" : "Show"}
                         </Button>

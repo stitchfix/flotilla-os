@@ -69,7 +69,7 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   image: "my_image",
   cluster: "my_cluster",
   status: RunStatus.RUNNING,
-  started_at: "started_at",
+  started_at: "2019-10-24T05:21:51",
   group_name: "group_name",
   env: [],
   cpu: 1,
