@@ -42,12 +42,6 @@ class LogRenderer extends React.Component<Props> {
     }
   }
 
-  // shouldRenderLoader(): boolean {
-  //   const { hasRunFinished, isLoading } = this.props
-  //   if (hasRunFinished === false || isLoading === true) return true
-  //   return false
-  // }
-
   render() {
     const { logs, height, hasRunFinished } = this.props
 
