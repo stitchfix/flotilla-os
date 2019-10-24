@@ -1,12 +1,18 @@
 import * as React from "react"
+import { isArray } from "lodash"
 import Creatable from "react-select/lib/Creatable"
 import { SelectOption, MultiSelectProps } from "../types"
 import * as helpers from "../helpers/selectHelpers"
 
 const GenericMultiSelect: React.FunctionComponent<MultiSelectProps> = props => {
+  let value = props.value
+  if (!isArray(props.value)) {
+    value = [props.value]
+  }
+
   return (
     <Creatable<SelectOption>
-      value={props.value.map(helpers.stringToSelectOpt)}
+      value={value.map(helpers.stringToSelectOpt)}
       options={[]}
       onChange={option => {
         props.onChange(helpers.preprocessMultiSelectOption(option))

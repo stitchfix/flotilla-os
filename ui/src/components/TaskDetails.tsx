@@ -142,6 +142,7 @@ const TaskDetails: React.FC<{}> = () => (
               </>
             )
           }
+          return null
         case RequestStatus.NOT_READY:
         default:
           return <Spinner />

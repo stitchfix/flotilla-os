@@ -239,12 +239,14 @@ table {
 
 .flotilla-logs-container {
   overflow-y: scroll;
-  background: var(--color-dark-gray-1);
+  background: #10161a;
   flex: 1;
+  border: 1px solid #293742;
 }
 
 .flotilla-ansi,
-.bp3-code-block {
+.bp3-code-block,
+.bp3-code {
   font-family: "Roboto Mono", "Courier New", Courier, monospace !important;
   font-size: 0.9rem;
   white-space: pre-wrap;
@@ -252,17 +254,16 @@ table {
 }
 
 .flotilla-pre {
-  opacity: 1;
-  white-space: pre-wrap;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding: 12px !important;
+  background: transparent;
+  border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
   font-size: 12px;
+  margin-bottom: 0;
+  margin-top: 0;
   opacity: 1;
-  background: transparent;
-  border-radius: 0 !important;
+  padding: 12px !important;
+  white-space: pre-wrap;
 }
 
 /**
@@ -274,6 +275,7 @@ table {
 .bp3-form-group input,
 .bp3-form-group textarea {
   width: 100%;
+  border: 2px solid #293742;
 }
 
 .bp3-label {
@@ -285,4 +287,10 @@ table {
 .bp3-card {
   background: transparent !important;
   border: 1px solid #293742;
+}
+
+.bp3-navbar.bp3-dark {
+  background: #182026;
+  box-shadow: none !important;
+  border-bottom: 1px solid #293742;
 }

@@ -87,6 +87,11 @@ class EnvQueryFilter extends React.Component<Props, State> {
     })
   }
 
+  shouldDisableAddNewEnvButton(): boolean {
+    const { newEnvName, newEnvValue } = this.state
+    return newEnvName.length === 0 || newEnvValue.length === 0
+  }
+
   render() {
     const { value } = this.props
     const { newEnvName, newEnvValue } = this.state
@@ -148,6 +153,7 @@ class EnvQueryFilter extends React.Component<Props, State> {
             type="button"
             icon={IconNames.PLUS}
             style={{ transform: `translateY(8px)` }}
+            disabled={this.shouldDisableAddNewEnvButton()}
           />
         </div>
       </div>

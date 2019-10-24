@@ -10,7 +10,7 @@ const RunTag: React.FunctionComponent<Run> = run => {
   return (
     <Tag
       style={{
-        color: Colors.LIGHT_GRAY2,
+        color: Colors.WHITE,
         fontWeight: 500,
         background: RUN_STATUS_COLOR_MAP.get(enhancedStatus) || "",
       }}
