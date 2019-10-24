@@ -18,8 +18,6 @@ const RunStatusSelect: React.FunctionComponent<MultiSelectProps> = props => {
         { label: RunStatus.PENDING, value: RunStatus.PENDING },
         { label: RunStatus.QUEUED, value: RunStatus.QUEUED },
         { label: RunStatus.RUNNING, value: RunStatus.RUNNING },
-        { label: RunStatus.STOPPED, value: RunStatus.STOPPED },
-        { label: RunStatus.NEEDS_RETRY, value: RunStatus.NEEDS_RETRY },
       ]}
       onChange={option => {
         props.onChange(helpers.preprocessMultiSelectOption(option))
