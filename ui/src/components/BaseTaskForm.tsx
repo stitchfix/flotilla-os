@@ -33,7 +33,7 @@ export const validationSchema = {
     .min(0),
   cpu: Yup.number()
     .required("Required")
-    .min(0),
+    .min(512),
   command: Yup.string()
     .min(1)
     .required("Required"),
@@ -90,6 +90,7 @@ const BaseTaskForm: React.FunctionComponent<Props> = ({
         type="number"
         name={cpuFieldSpec.name}
         className={Classes.INPUT}
+        min="512"
       />
       {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
     </FormGroup>

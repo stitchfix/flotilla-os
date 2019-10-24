@@ -11,10 +11,13 @@ const getInitialValuesForTaskRun = ({
   task: Task
   routerState: any
 }): RunTaskPayload => {
+  // Set cluster value.
   const cluster = routerState && routerState.cluster ? routerState.cluster : ""
+
+  // Set env value.
   let env: Env[] = routerState && routerState.env ? routerState.env : task.env
 
-  // Filter out invalid run env.
+  // Filter out invalid run env if specified in dotenv file.
   if (process.env.REACT_APP_INVALID_RUN_ENV !== undefined) {
     const invalidEnvs = new Set(
       process.env.REACT_APP_INVALID_RUN_ENV.split(",")
@@ -22,8 +25,12 @@ const getInitialValuesForTaskRun = ({
     env = env.filter(e => !invalidEnvs.has(e.name))
   }
 
-  const cpu: number =
-    routerState && routerState.cpu ? routerState.cpu : task.cpu
+  // Set CPU value.
+  let cpu: number = routerState && routerState.cpu ? routerState.cpu : task.cpu
+
+  if (cpu < 512) cpu = 512
+
+  // Set memory value.
   const memory: number =
     routerState && routerState.memory ? routerState.memory : task.memory
   return { cluster, env, cpu, memory }

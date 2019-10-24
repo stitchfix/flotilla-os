@@ -25,7 +25,7 @@ const validationSchema = Yup.object().shape({
     .min(0),
   cpu: Yup.number()
     .required("Required")
-    .min(0),
+    .min(512),
   env: Yup.array().of(
     Yup.object().shape({
       name: Yup.string().required(),
@@ -85,6 +85,7 @@ const RunForm: React.FunctionComponent<Props> = ({
               type="number"
               name={helpers.cpuFieldSpec.name}
               className={Classes.INPUT}
+              min="512"
             />
             {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
           </FormGroup>
