@@ -218,7 +218,8 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		TaskDefinition:       &definition.Arn,
 		Overrides:            &overrides,
 		PlacementConstraints: placementConstraints,
-		PlacementStrategy:    placementStrategies,
+		// TODO
+		//PlacementStrategy:    placementStrategies,
 	}
 
 	return rti
