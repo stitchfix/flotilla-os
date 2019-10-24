@@ -57,7 +57,7 @@ const RunForm: React.FunctionComponent<Props> = ({
       request({ definitionID, data })
     }}
   >
-    {({ errors, values, setFieldValue, isValid }) => {
+    {({ errors, values, setFieldValue, isValid, ...rest }) => {
       return (
         <Form className="flotilla-form-container">
           {requestStatus === RequestStatus.ERROR && error && (
