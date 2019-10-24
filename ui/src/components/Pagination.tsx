@@ -26,18 +26,16 @@ const Pagination: React.FunctionComponent<Props> = ({
         }}
         disabled={isFirstPage || isLoading}
         loading={isLoading}
-      >
-        Prev
-      </Button>
+        icon="chevron-left"
+      />
       <Button
         onClick={() => {
           updatePage(currentPage + 1)
         }}
         disabled={isLastPage || isLoading}
         loading={isLoading}
-      >
-        Next
-      </Button>
+        icon="chevron-right"
+      />
     </ButtonGroup>
   )
 }

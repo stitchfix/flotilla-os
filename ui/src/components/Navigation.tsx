@@ -1,9 +1,8 @@
 import * as React from "react"
-import { NavLink } from "react-router-dom"
+import { Link, NavLink } from "react-router-dom"
 import {
   ButtonGroup,
   Navbar,
-  NavbarHeading,
   NavbarDivider,
   NavbarGroup,
   Alignment,
@@ -13,7 +12,9 @@ import {
 const Navigation: React.FunctionComponent = () => (
   <Navbar fixedToTop className="bp3-dark">
     <NavbarGroup align={Alignment.LEFT}>
-      <NavbarHeading>Flotilla</NavbarHeading>
+      <Link to="/tasks" className="bp3-button bp3-minimal">
+        Flotilla
+      </Link>
       <NavbarDivider />
       <ButtonGroup className={Classes.MINIMAL}>
         <NavLink exact to="/tasks" className={Classes.BUTTON}>

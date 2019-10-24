@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios"
 import * as qs from "qs"
 import cookie from "cookie"
-import { get, has } from "lodash"
+import { get } from "lodash"
 import {
   HTTPMethod,
   CreateTaskPayload,

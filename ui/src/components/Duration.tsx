@@ -42,7 +42,11 @@ class Duration extends React.Component<Props, State> {
   }
 
   render() {
-    return prettyMS(this.state.duration)
+    return (
+      <div className="flotilla-duration-container">
+        {prettyMS(this.state.duration)}
+      </div>
+    )
   }
 }
 

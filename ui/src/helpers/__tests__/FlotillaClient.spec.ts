@@ -15,39 +15,9 @@ import {
   ListRunResponse,
   RunLog,
 } from "../../types"
+import { createMockRunObject, createMockTaskObject } from "../testHelpers"
 
 const mock = new MockAdapter(axios)
-const MOCK_TASK: Task = {
-  env: [{ name: "foo", value: "bar" }],
-  arn: "my_arn",
-  definition_id: "my_definition_id",
-  image: "my_image",
-  group_name: "my_group_name",
-  container_name: "my_container_name",
-  alias: "my_alias",
-  memory: 512,
-  command: "my_command",
-  tags: ["tag_one", "tag_two"],
-}
-
-const MOCK_RUN: Run = {
-  instance: {
-    dns_name: "my_dns_name",
-    instance_id: "my_instance_id",
-  },
-  task_arn: "my_task_arn",
-  run_id: "my_run_id",
-  definition_id: "my_definition_id",
-  alias: "my_alias",
-  image: "my_image",
-  cluster: "my_cluster",
-  exit_code: 1,
-  status: RunStatus.STOPPED,
-  started_at: "2019-05-02T19:26:21.559Z",
-  finished_at: "2019-05-02T20:21:48.36Z",
-  group_name: "my_group_name",
-  env: [{ name: "foo", value: "bar" }],
-}
 
 describe("FlotillaClient", () => {
   let client: FlotillaClient
@@ -69,7 +39,7 @@ describe("FlotillaClient", () => {
   // ---------------------------------------------------------------------------
   it("getTasks", async () => {
     const res: ListTaskResponse = {
-      definitions: [MOCK_TASK],
+      definitions: [createMockTaskObject()],
       total: 1,
       offset: 0,
       limit: 20,
@@ -84,20 +54,24 @@ describe("FlotillaClient", () => {
 
   it("getTask", async () => {
     const id = "my_task"
-    mock.onGet(`/v1/task/${id}`).reply(200, MOCK_TASK)
-    expect(await client.getTask({ definitionID: id })).toEqual(MOCK_TASK)
+    mock.onGet(`/v1/task/${id}`).reply(200, createMockTaskObject())
+    expect(await client.getTask({ definitionID: id })).toEqual(
+      createMockTaskObject()
+    )
   })
 
   it("getTaskByAlias", async () => {
     const alias = "my_task_alias"
-    mock.onGet(`/v1/task/alias/${alias}`).reply(200, MOCK_TASK)
-    expect(await client.getTaskByAlias({ alias })).toEqual(MOCK_TASK)
+    mock.onGet(`/v1/task/alias/${alias}`).reply(200, createMockTaskObject())
+    expect(await client.getTaskByAlias({ alias })).toEqual(
+      createMockTaskObject()
+    )
   })
 
   it("getTaskHistory", async () => {
     const id = "my_task"
     const res: ListTaskRunsResponse = {
-      history: [MOCK_RUN],
+      history: [createMockRunObject()],
       total: 1,
       offset: 0,
       limit: 20,
@@ -120,6 +94,7 @@ describe("FlotillaClient", () => {
       group_name: "group_name",
       alias: "alias",
       memory: 1000,
+      cpu: 1000,
       command: "command",
       tags: ["tag_one"],
     }
@@ -128,6 +103,7 @@ describe("FlotillaClient", () => {
       arn: "arn",
       definition_id: "definition_id",
       container_name: "container_name",
+      privileged: false,
     }
     mock.onPost(`/v1/task`).reply(200, res)
     expect(await client.createTask({ data })).toEqual(res)
@@ -140,6 +116,7 @@ describe("FlotillaClient", () => {
       image: "image",
       group_name: "group_name",
       memory: 1000,
+      cpu: 1000,
       command: "command",
       tags: ["tag_one"],
     }
@@ -149,6 +126,7 @@ describe("FlotillaClient", () => {
       arn: "arn",
       definition_id: "definition_id",
       container_name: "container_name",
+      privileged: false,
     }
     mock.onPut(`/v1/task/${id}`).reply(200, res)
     expect(await client.updateTask({ definitionID: id, data })).toEqual(res)
@@ -169,8 +147,10 @@ describe("FlotillaClient", () => {
       run_tags: {},
     }
 
-    mock.onPut(`/v1/task/${id}/execute`).reply(200, MOCK_RUN)
-    expect(await client.runTask({ definitionID: id, data })).toEqual(MOCK_RUN)
+    mock.onPut(`/v4/task/${id}/execute`).reply(200, createMockRunObject())
+    expect(await client.runTask({ definitionID: id, data })).toEqual(
+      createMockRunObject()
+    )
   })
 
   // ---------------------------------------------------------------------------
@@ -182,7 +162,7 @@ describe("FlotillaClient", () => {
       limit: 20,
     }
     const res: ListRunResponse = {
-      history: [MOCK_RUN],
+      history: [createMockRunObject()],
       offset: 0,
       limit: 20,
       sort_by: "started_at",
@@ -196,8 +176,8 @@ describe("FlotillaClient", () => {
 
   it("getRun", async () => {
     const runID = "run_id"
-    mock.onGet(`/v1/task/history/${runID}`).reply(200, MOCK_RUN)
-    expect(await client.getRun({ runID })).toEqual(MOCK_RUN)
+    mock.onGet(`/v1/task/history/${runID}`).reply(200, createMockRunObject())
+    expect(await client.getRun({ runID })).toEqual(createMockRunObject())
   })
 
   it("getRunLogs", async () => {

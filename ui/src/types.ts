@@ -28,7 +28,7 @@ export type RunInstance = {
 export type Run = {
   alias: string
   cluster: string
-  command: string
+  command?: string
   cpu: number
   definition_id: string
   env: Env[]

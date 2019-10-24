@@ -81,6 +81,7 @@ const BaseTaskForm: React.FunctionComponent<Props> = ({
         component="textarea"
         name={commandFieldSpec.name}
         rows={14}
+        style={{ fontSize: "0.8rem" }}
       />
       {errors.command && <FieldError>{errors.command}</FieldError>}
     </FormGroup>

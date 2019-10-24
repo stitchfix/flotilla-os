@@ -7,6 +7,8 @@ import {
   ButtonGroup,
   Button,
   Collapse,
+  Pre,
+  Icon,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -103,7 +105,8 @@ export class Run extends React.Component<Props> {
               },
             }}
           >
-            Retry
+            <div className="bp3-button-text">Retry</div>
+            <Icon icon="repeat" />
           </Link>
         )
       } else {
@@ -133,7 +136,10 @@ export class Run extends React.Component<Props> {
                     <div className="flotilla-card-header-container">
                       <div className="flotilla-card-header">Attributes</div>
                       <ButtonGroup>
-                        <Button small onClick={toggleVisibility}>
+                        <Button
+                          onClick={toggleVisibility}
+                          rightIcon={isVisible ? "minimize" : "maximize"}
+                        >
                           {isVisible ? "Hide" : "Show"}
                         </Button>
                       </ButtonGroup>
@@ -144,14 +150,12 @@ export class Run extends React.Component<Props> {
                         <Attribute
                           name="Duration"
                           value={
-                            <div>
-                              {data.started_at && (
-                                <Duration
-                                  start={data.started_at}
-                                  end={data.finished_at}
-                                />
-                              )}
-                            </div>
+                            data.started_at && (
+                              <Duration
+                                start={data.started_at}
+                                end={data.finished_at}
+                              />
+                            )
                           }
                         />
                         <Attribute name="Run ID" value={data.run_id} />
@@ -178,6 +182,18 @@ export class Run extends React.Component<Props> {
                           }
                         />
                         <Attribute name="Image" value={data.image} />
+                        <Attribute
+                          name="Command"
+                          value={
+                            data.command ? (
+                              <Pre className="flotilla-pre">
+                                {data.command.replace(/\n(\s)+/g, "\n")}
+                              </Pre>
+                            ) : (
+                              "-"
+                            )
+                          }
+                        />
                       </div>
                     </Collapse>
                   </Card>
@@ -191,7 +207,10 @@ export class Run extends React.Component<Props> {
                         Environment Variables
                       </div>
                       <ButtonGroup>
-                        <Button onClick={toggleVisibility}>
+                        <Button
+                          onClick={toggleVisibility}
+                          rightIcon={isVisible ? "minimize" : "maximize"}
+                        >
                           {isVisible ? "Hide" : "Show"}
                         </Button>
                       </ButtonGroup>

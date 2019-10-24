@@ -8,6 +8,7 @@ import {
   Classes,
   Button,
   Spinner,
+  Icon,
 } from "@blueprintjs/core"
 import { TaskContext } from "./Task"
 import Attribute from "./Attribute"
@@ -44,13 +45,15 @@ const TaskDetails: React.FC<{}> = () => (
                         className={Classes.BUTTON}
                         to={`/tasks/${definitionID}/copy`}
                       >
-                        Copy
+                        <div className="bp3-button-text">Copy</div>
+                        <Icon icon="duplicate" />
                       </Link>
                       <Link
                         className={Classes.BUTTON}
                         to={`/tasks/${definitionID}/update`}
                       >
-                        Update
+                        <div className="bp3-button-text">Update</div>
+                        <Icon icon="edit" />
                       </Link>
                       <Link
                         className={Classes.BUTTON}
@@ -71,7 +74,11 @@ const TaskDetails: React.FC<{}> = () => (
                               Attributes
                             </div>
                             <ButtonGroup>
-                              <Button small onClick={toggleVisibility}>
+                              <Button
+                                small
+                                onClick={toggleVisibility}
+                                rightIcon={isVisible ? "minimize" : "maximize"}
+                              >
                                 {isVisible ? "Hide" : "Show"}
                               </Button>
                             </ButtonGroup>
@@ -113,7 +120,7 @@ const TaskDetails: React.FC<{}> = () => (
                         </Card>
                       )}
                     </Toggler>
-                    {data.env && data.env.length > 0 && (
+                    {data.env && (
                       <Toggler>
                         {({ isVisible, toggleVisibility }) => (
                           <Card>
@@ -122,7 +129,13 @@ const TaskDetails: React.FC<{}> = () => (
                                 Environment Variables
                               </div>
                               <ButtonGroup>
-                                <Button small onClick={toggleVisibility}>
+                                <Button
+                                  small
+                                  onClick={toggleVisibility}
+                                  rightIcon={
+                                    isVisible ? "minimize" : "maximize"
+                                  }
+                                >
                                   {isVisible ? "Hide" : "Show"}
                                 </Button>
                               </ButtonGroup>
@@ -142,6 +155,7 @@ const TaskDetails: React.FC<{}> = () => (
               </>
             )
           }
+          return null
         case RequestStatus.NOT_READY:
         default:
           return <Spinner />

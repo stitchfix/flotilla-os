@@ -76,19 +76,6 @@ export const Runs: React.FunctionComponent<Props> = ({
               render: (r: Run) => <ISO8601AttributeValue time={r.started_at} />,
               isSortable: true,
             },
-            duration: {
-              displayName: "Duration",
-              render: (r: Run) => (
-                <div>
-                  {r.started_at ? (
-                    <Duration start={r.started_at} end={r.finished_at} />
-                  ) : (
-                    "-"
-                  )}
-                </div>
-              ),
-              isSortable: false,
-            },
             run_id: {
               displayName: "Run ID",
               render: (r: Run) => (
