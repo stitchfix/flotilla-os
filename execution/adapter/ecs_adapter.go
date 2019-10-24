@@ -206,11 +206,6 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		placementConstraints = append(placementConstraints, a.gpuPlacementConstraints(definition, run))
 	}
 
-	placementStrategies := []*ecs.PlacementStrategy{
-		a.cpuPlacementStrategy(),
-		a.memoryPlacementStrategy(),
-	}
-
 	rti := ecs.RunTaskInput{
 		Cluster:              &run.ClusterName,
 		Count:                &n,
@@ -218,8 +213,6 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		TaskDefinition:       &definition.Arn,
 		Overrides:            &overrides,
 		PlacementConstraints: placementConstraints,
-		// TODO
-		//PlacementStrategy:    placementStrategies,
 	}
 
 	return rti
