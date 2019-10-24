@@ -107,8 +107,11 @@ const TaskDetails: React.FC<{}> = () => (
                                   </Pre>
                                 }
                               />
-                              <Attribute name="Memory" value={data.memory} />
-                              <Attribute name="CPU" value={data.cpu} />
+                              <Attribute name="CPU (Units)" value={data.cpu} />
+                              <Attribute
+                                name="Memory (MB)"
+                                value={data.memory}
+                              />
                               <Attribute name="Arn" value={data.arn} />
                               <Attribute
                                 name="Privileged"

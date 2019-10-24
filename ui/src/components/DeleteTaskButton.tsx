@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Button, Dialog, Intent, Classes, Icon } from "@blueprintjs/core"
+import { Button, Dialog, Intent, Classes } from "@blueprintjs/core"
 import { withRouter, RouteComponentProps } from "react-router-dom"
 import Request, { ChildProps } from "./Request"
 import api from "../api"

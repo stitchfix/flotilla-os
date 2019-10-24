@@ -163,6 +163,8 @@ export class Run extends React.Component<Props> {
                           name="Definition ID"
                           value={data.definition_id}
                         />
+                        <Attribute name="CPU (Units)" value={data.cpu} />
+                        <Attribute name="Memory (MB)" value={data.memory} />
                         <Attribute name="Cluster" value={data.cluster} />
                         <Attribute name="Exit Code" value={data.exit_code} />
                         <Attribute
