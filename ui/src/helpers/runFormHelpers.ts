@@ -17,6 +17,6 @@ export const memoryFieldSpec: FieldSpec = {
 export const cpuFieldSpec: FieldSpec = {
   name: "cpu",
   label: "CPU (Units)",
-  description: "The amount of CPU (units) this task needs.",
+  description: "The amount of CPU (units) this task needs. Note: 1024 CPU unit is 1 CPU core.",
   initialValue: 512,
 }
