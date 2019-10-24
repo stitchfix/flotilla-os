@@ -131,10 +131,26 @@ class FlotillaClient {
     let ownerID: string = "flotilla-ui"
 
     if (process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH) {
-      console.log("did set cookie env")
-      console.log(process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH)
       const cookies = cookie.parse(document.cookie)
-      console.log(cookies)
+      const cookiePath = process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH.split(
+        "."
+      )
+
+      if (cookiePath.length > 1) {
+        console.log("A")
+        let tmp = JSON.parse(get(cookies, cookiePath[0]))
+        console.log(tmp)
+        ownerID = get(tmp, cookiePath.slice(1), "flotilla-ui")
+        console.log(ownerID)
+      } else {
+        console.log("B")
+        ownerID = get(
+          cookies,
+          process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
+          "flotilla-ui"
+        )
+      }
+
       ownerID = get(
         cookies,
         process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
