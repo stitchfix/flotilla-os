@@ -51,13 +51,16 @@ const RunForm: React.FunctionComponent<Props> = ({
   definitionID,
 }) => (
   <Formik
+    isInitialValid={(values: any) =>
+      validationSchema.isValidSync(values.initialValues)
+    }
     initialValues={initialValues}
     validationSchema={validationSchema}
     onSubmit={data => {
       request({ definitionID, data })
     }}
   >
-    {({ errors, values, setFieldValue, isValid }) => {
+    {({ errors, values, setFieldValue, isValid, ...rest }) => {
       return (
         <Form className="flotilla-form-container">
           {requestStatus === RequestStatus.ERROR && error && (
