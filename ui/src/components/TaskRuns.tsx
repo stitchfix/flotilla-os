@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { get, omit } from "lodash"
+import { get, omit, isArray, isString } from "lodash"
 import ListRequest, { ChildProps as ListRequestChildProps } from "./ListRequest"
 import api from "../api"
 import {
@@ -17,9 +17,12 @@ import RunStatusSelect from "./RunStatusSelect"
 import ListFiltersDropdown from "./ListFiltersDropdown"
 import { DebounceInput } from "react-debounce-input"
 import Pagination from "./Pagination"
-import { pageSize } from "../constants"
+import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
+import RunTag from "./RunTag"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import EnvQueryFilter from "./EnvQueryFilter"
 
 export const initialQuery = {
   page: 1,
@@ -47,6 +50,10 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
 }) => {
   let content: React.ReactNode
 
+  // Preprocess `env` query to ensure that it's an array.
+  let env: string | string[] = get(query, "env", [])
+  if (!isArray(env) && isString(env)) env = [env]
+
   switch (requestStatus) {
     case RequestStatus.ERROR:
       content = <ErrorCallout error={error} />
@@ -69,17 +76,25 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             },
             status: {
               displayName: "Status",
-              render: (r: Run) => r.status,
+              render: (r: Run) => <RunTag {...r}></RunTag>,
               isSortable: true,
             },
             started_at: {
               displayName: "Started At",
-              render: (r: Run) => r.started_at || "-",
+              render: (r: Run) => (
+                <ISO8601AttributeValue
+                  time={r.started_at}
+                ></ISO8601AttributeValue>
+              ),
               isSortable: true,
             },
             finished_at: {
               displayName: "Finished At",
-              render: (r: Run) => r.finished_at || "-",
+              render: (r: Run) => (
+                <ISO8601AttributeValue
+                  time={r.finished_at}
+                ></ISO8601AttributeValue>
+              ),
               isSortable: true,
             },
             cluster: {
@@ -109,6 +124,12 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
           />
         </FormGroup>
         <ListFiltersDropdown>
+          <EnvQueryFilter
+            value={env}
+            onChange={value => {
+              updateFilter("env", value)
+            }}
+          />
           <FormGroup label="Cluster" helperText="Search by ECS cluster.">
             <GenericMultiSelect
               value={get(query, "cluster", [])}
@@ -178,7 +199,7 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
           updatePage={updatePage}
           currentPage={currentPage}
           isLoading={isLoading}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           numItems={data ? data.total : 0}
         />
       </div>
@@ -201,7 +222,10 @@ const ConnectedTaskRuns: React.FunctionComponent<{ definitionID: string }> = ({
       definitionID,
       params: {
         ...omit(params, "page"),
-        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: pageSize }),
+        ...pageToOffsetLimit({
+          page: get(params, "page", 1),
+          limit: PAGE_SIZE,
+        }),
       },
     })}
   >

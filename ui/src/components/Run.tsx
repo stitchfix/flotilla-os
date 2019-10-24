@@ -3,10 +3,10 @@ import { Link, RouteComponentProps } from "react-router-dom"
 import {
   Card,
   Spinner,
-  Button,
-  ButtonGroup,
-  Intent,
   Classes,
+  ButtonGroup,
+  Button,
+  Collapse,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -15,14 +15,20 @@ import Request, {
 import api from "../api"
 import { Run as RunShape, RunStatus } from "../types"
 import Attribute from "./Attribute"
-import Logs from "./Logs"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
+import { RUN_FETCH_INTERVAL_MS } from "../constants"
+import Toggler from "./Toggler"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import LogRequester from "./LogRequester"
+import RunTag from "./RunTag"
+import Duration from "./Duration"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
 }
+
 export class Run extends React.Component<Props> {
   requestIntervalID: number | undefined
 
@@ -61,11 +67,22 @@ export class Run extends React.Component<Props> {
   }
 
   setRequestInterval() {
-    this.requestIntervalID = window.setInterval(this.request, 5000)
+    this.requestIntervalID = window.setInterval(
+      this.request,
+      RUN_FETCH_INTERVAL_MS
+    )
   }
 
   clearRequestInterval() {
     window.clearInterval(this.requestIntervalID)
+  }
+
+  getLogsHeight(): number {
+    if (window.innerWidth >= 1230) {
+      return window.innerHeight - 78 - 50 - 24
+    }
+
+    return 720
   }
 
   render() {
@@ -110,32 +127,87 @@ export class Run extends React.Component<Props> {
           />
           <div className="flotilla-sidebar-view-container">
             <div className="flotilla-sidebar-view-sidebar">
-              <Card style={{ marginBottom: 12 }}>
-                <div className="flotilla-card-header">Attributes</div>
-                <div className="flotilla-attributes-container">
-                  <Attribute name="Run ID" value={data.run_id} />
-                  <Attribute name="Definition ID" value={data.definition_id} />
-                  <Attribute name="Cluster" value={data.cluster} />
-                  <Attribute name="Status" value={data.status} />
-                  <Attribute name="Exit Code" value={data.exit_code} />
-                  <Attribute name="Exit Reason" value={data.exit_reason} />
-                  <Attribute name="Started At" value={data.started_at} />
-                  <Attribute name="Finished At" value={data.finished_at} />
-                  <Attribute name="Image" value={data.image} />
-                </div>
-              </Card>
-              <Card>
-                <div className="flotilla-card-header">
-                  Environment Variables
-                </div>
-                <EnvList env={data.env} />
-              </Card>
+              <Toggler>
+                {({ isVisible, toggleVisibility }) => (
+                  <Card style={{ marginBottom: 12 }}>
+                    <div className="flotilla-card-header-container">
+                      <div className="flotilla-card-header">Attributes</div>
+                      <ButtonGroup>
+                        <Button small onClick={toggleVisibility}>
+                          {isVisible ? "Hide" : "Show"}
+                        </Button>
+                      </ButtonGroup>
+                    </div>
+                    <Collapse isOpen={isVisible}>
+                      <div className="flotilla-attributes-container">
+                        <Attribute name="Status" value={<RunTag {...data} />} />
+                        <Attribute
+                          name="Duration"
+                          value={
+                            <div>
+                              {data.started_at && (
+                                <Duration
+                                  start={data.started_at}
+                                  end={data.finished_at}
+                                />
+                              )}
+                            </div>
+                          }
+                        />
+                        <Attribute name="Run ID" value={data.run_id} />
+                        <Attribute
+                          name="Definition ID"
+                          value={data.definition_id}
+                        />
+                        <Attribute name="Cluster" value={data.cluster} />
+                        <Attribute name="Exit Code" value={data.exit_code} />
+                        <Attribute
+                          name="Exit Reason"
+                          value={data.exit_reason}
+                        />
+                        <Attribute
+                          name="Started At"
+                          value={
+                            <ISO8601AttributeValue time={data.started_at} />
+                          }
+                        />
+                        <Attribute
+                          name="Finished At"
+                          value={
+                            <ISO8601AttributeValue time={data.finished_at} />
+                          }
+                        />
+                        <Attribute name="Image" value={data.image} />
+                      </div>
+                    </Collapse>
+                  </Card>
+                )}
+              </Toggler>
+              <Toggler>
+                {({ isVisible, toggleVisibility }) => (
+                  <Card>
+                    <div className="flotilla-card-header-container">
+                      <div className="flotilla-card-header">
+                        Environment Variables
+                      </div>
+                      <ButtonGroup>
+                        <Button onClick={toggleVisibility}>
+                          {isVisible ? "Hide" : "Show"}
+                        </Button>
+                      </ButtonGroup>
+                    </div>
+                    <Collapse isOpen={isVisible}>
+                      <EnvList env={data.env} />
+                    </Collapse>
+                  </Card>
+                )}
+              </Toggler>
             </div>
             <div className="flotilla-sidebar-view-content">
-              <Logs
-                runID={runID}
+              <LogRequester
+                runID={data.run_id}
                 status={data.status}
-                requestFn={api.getRunLog}
+                height={this.getLogsHeight()}
               />
             </div>
           </div>

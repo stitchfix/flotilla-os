@@ -1,52 +1,18 @@
-export const pageSize = 20
+import { EnhancedRunStatus, RunStatus } from "./types"
+import { Colors } from "@blueprintjs/core"
 
-type FieldSpec = {
-  name: string
-  label: string
-  description: string
-  initialValue: any
-}
-
-export const aliasFieldSpec: FieldSpec = {
-  name: "alias",
-  label: "alias",
-  description: "alias",
-  initialValue: "",
-}
-export const groupNameFieldSpec: FieldSpec = {
-  name: "group_name",
-  label: "Group Name",
-  description:
-    "Create a new group name or select an existing one to help searching for this task in the future.",
-  initialValue: "",
-}
-export const imageFieldSpec: FieldSpec = {
-  name: "image",
-  label: "Docker Image",
-  description: "The full URL of the Docker image and tag.",
-  initialValue: "",
-}
-export const commandFieldSpec: FieldSpec = {
-  name: "command",
-  label: "Command",
-  description: "The command for this task to execute.",
-  initialValue: "",
-}
-export const memoryFieldSpec: FieldSpec = {
-  name: "memory",
-  label: "Memory (MB)",
-  description: "The amount of memory (MB) this task needs.",
-  initialValue: 1024,
-}
-export const tagsFieldSpec: FieldSpec = {
-  name: "tags",
-  label: "Tags",
-  description: "",
-  initialValue: [],
-}
-export const envFieldSpec: FieldSpec = {
-  name: "env",
-  label: "Environment Variables",
-  description: "",
-  initialValue: [],
-}
+export const PAGE_SIZE = 20
+export const RUN_FETCH_INTERVAL_MS = 5000 // 5 sec
+export const LOG_FETCH_INTERVAL_MS = 10000 // 10 sec
+export const RUN_STATUS_COLOR_MAP = new Map<
+  EnhancedRunStatus | RunStatus,
+  string
+>([
+  [EnhancedRunStatus.PENDING, Colors.GRAY3],
+  [EnhancedRunStatus.QUEUED, Colors.GOLD5],
+  [EnhancedRunStatus.RUNNING, Colors.COBALT4],
+  [EnhancedRunStatus.STOPPED, Colors.RED4],
+  [EnhancedRunStatus.NEEDS_RETRY, Colors.RED4],
+  [EnhancedRunStatus.SUCCESS, Colors.GREEN5],
+  [EnhancedRunStatus.FAILED, Colors.RED4],
+])

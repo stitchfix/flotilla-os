@@ -14,8 +14,10 @@ export type Task = {
   container_name: string
   alias: string
   memory: number
+  cpu: number
   command: string
   tags: string[]
+  privileged: boolean
 }
 
 export type RunInstance = {
@@ -24,20 +26,24 @@ export type RunInstance = {
 }
 
 export type Run = {
-  instance: RunInstance
-  task_arn: string
-  run_id: string
-  definition_id: string
   alias: string
-  image: string
   cluster: string
+  command: string
+  cpu: number
+  definition_id: string
+  env: Env[]
   exit_code?: number
   exit_reason?: string
-  status: RunStatus
-  started_at?: string
   finished_at?: string
   group_name: string
-  env: Env[]
+  image: string
+  instance: RunInstance
+  memory: number
+  queued_at: string | undefined
+  run_id: string
+  started_at?: string
+  status: RunStatus
+  task_arn: string
 }
 
 export type RunLog = {
@@ -67,6 +73,16 @@ export enum RunStatus {
   RUNNING = "RUNNING",
   STOPPED = "STOPPED",
   NEEDS_RETRY = "NEEDS_RETRY",
+}
+
+export enum EnhancedRunStatus {
+  PENDING = "PENDING",
+  QUEUED = "QUEUED",
+  RUNNING = "RUNNING",
+  STOPPED = "STOPPED",
+  NEEDS_RETRY = "NEEDS_RETRY",
+  SUCCESS = "SUCCESS",
+  FAILED = "FAILED",
 }
 
 // 3rd party
@@ -133,6 +149,7 @@ export type UpdateTaskPayload = {
   image: string
   group_name: string
   memory: number
+  cpu: number
   command: string
   tags: string[]
 }
@@ -141,6 +158,8 @@ export type RunTaskPayload = {
   cluster: string
   env?: Env[]
   run_tags?: { [key: string]: any }
+  cpu?: number
+  memory?: number
 }
 
 export type ListRunParams = ListRequestArgs & {
@@ -161,3 +180,15 @@ export type ListRunResponse = ListResponse & {
 export type ListClustersResponse = ListResponse & { clusters: string[] | null }
 export type ListGroupsResponse = ListResponse & { groups: string[] | null }
 export type ListTagsResponse = ListResponse & { tags: string[] | null }
+
+export type FieldSpec = {
+  name: string
+  label: string
+  description: string
+  initialValue: any
+}
+
+export type LogChunk = {
+  chunk: string
+  lastSeen?: string
+}

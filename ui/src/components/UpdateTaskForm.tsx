@@ -64,70 +64,72 @@ export type ConnectedProps = RouteComponentProps & {
 const Connected: React.FunctionComponent<ConnectedProps> = props => (
   <TaskContext.Consumer>
     {(ctx: TaskCtx) => {
-      // Render the form if everything is ready.
-      if (ctx.requestStatus === RequestStatus.READY && ctx.data) {
-        const initialValues: UpdateTaskPayload = {
-          env: get(ctx.data, "env", []),
-          image: get(ctx.data, "image", ""),
-          group_name: get(ctx.data, "group_name", ""),
-          memory: get(ctx.data, "memory", 0),
-          command: get(ctx.data, "command", ""),
-          tags: get(ctx.data, "tags", []),
-        }
-        return (
-          <Request<Task, { definitionID: string; data: UpdateTaskPayload }>
-            requestFn={api.updateTask}
-            shouldRequestOnMount={false}
-            onSuccess={(data: Task) => {
-              Toaster.show({
-                message: `Task ${data.alias} updated successfully!`,
-                intent: Intent.SUCCESS,
-              })
-              // Return to task page, re-request data.
-              ctx.request({ definitionID: ctx.definitionID })
-              props.history.push(`/tasks/${ctx.definitionID}`)
-            }}
-            onFailure={() => {
-              Toaster.show({
-                message: "An error occurred.",
-                intent: Intent.DANGER,
-              })
-            }}
-          >
-            {requestProps => (
-              <Formik
-                initialValues={initialValues}
-                validationSchema={validationSchema}
-                onSubmit={data => {
-                  requestProps.request({
-                    data,
-                    definitionID: ctx.definitionID,
+      switch (ctx.requestStatus) {
+        case RequestStatus.ERROR:
+          return <ErrorCallout error={ctx.error} />
+        case RequestStatus.READY:
+          if (ctx.data) {
+            const initialValues: UpdateTaskPayload = {
+              env: get(ctx.data, "env", []),
+              image: get(ctx.data, "image", ""),
+              group_name: get(ctx.data, "group_name", ""),
+              memory: get(ctx.data, "memory", 0),
+              cpu: get(ctx.data, "cpu", 0),
+              command: get(ctx.data, "command", ""),
+              tags: get(ctx.data, "tags", []),
+            }
+            return (
+              <Request<Task, { definitionID: string; data: UpdateTaskPayload }>
+                requestFn={api.updateTask}
+                shouldRequestOnMount={false}
+                onSuccess={(data: Task) => {
+                  Toaster.show({
+                    message: `Task ${data.alias} updated successfully!`,
+                    intent: Intent.SUCCESS,
+                  })
+                  // Return to task page, re-request data.
+                  ctx.request({ definitionID: ctx.definitionID })
+                  props.history.push(`/tasks/${ctx.definitionID}`)
+                }}
+                onFailure={() => {
+                  Toaster.show({
+                    message: "An error occurred.",
+                    intent: Intent.DANGER,
                   })
                 }}
               >
-                {({ values, setFieldValue, isValid, errors }) => (
-                  <UpdateTaskForm
-                    values={values}
-                    setFieldValue={setFieldValue}
-                    isValid={isValid}
-                    requestStatus={requestProps.requestStatus}
-                    isLoading={requestProps.isLoading}
-                    error={requestProps.error}
-                    errors={errors}
-                  />
+                {requestProps => (
+                  <Formik
+                    initialValues={initialValues}
+                    validationSchema={validationSchema}
+                    onSubmit={data => {
+                      requestProps.request({
+                        data,
+                        definitionID: ctx.definitionID,
+                      })
+                    }}
+                  >
+                    {({ values, setFieldValue, isValid, errors }) => (
+                      <UpdateTaskForm
+                        values={values}
+                        setFieldValue={setFieldValue}
+                        isValid={isValid}
+                        requestStatus={requestProps.requestStatus}
+                        isLoading={requestProps.isLoading}
+                        error={requestProps.error}
+                        errors={errors}
+                      />
+                    )}
+                  </Formik>
                 )}
-              </Formik>
-            )}
-          </Request>
-        )
+              </Request>
+            )
+          }
+          break
+        case RequestStatus.NOT_READY:
+        default:
+          return <Spinner />
       }
-
-      // If there's an issue fetching task data, render an error.
-      if (ctx.requestStatus === RequestStatus.ERROR && ctx.error) {
-        return <ErrorCallout error={ctx.error} />
-      }
-
-      return <Spinner />
     }}
   </TaskContext.Consumer>
 )

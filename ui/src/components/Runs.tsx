@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { get, omit } from "lodash"
+import { get, omit, isArray, isString } from "lodash"
 import { DebounceInput } from "react-debounce-input"
 import ListRequest, { ChildProps as ListRequestChildProps } from "./ListRequest"
 import api from "../api"
@@ -19,9 +19,13 @@ import Pagination from "./Pagination"
 import GenericMultiSelect from "./GenericMultiSelect"
 import RunStatusSelect from "./RunStatusSelect"
 import { FormGroup, Classes, Spinner } from "@blueprintjs/core"
-import { pageSize } from "../constants"
+import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import Duration from "./Duration"
+import RunTag from "./RunTag"
+import EnvQueryFilter from "./EnvQueryFilter"
 
 export const initialQuery = {
   page: 1,
@@ -64,13 +68,26 @@ export const Runs: React.FunctionComponent<Props> = ({
           columns={{
             status: {
               displayName: "Status",
-              render: (r: Run) => r.status,
+              render: (r: Run) => <RunTag {...r} />,
               isSortable: true,
             },
             started_at: {
               displayName: "Started At",
-              render: (r: Run) => r.started_at,
+              render: (r: Run) => <ISO8601AttributeValue time={r.started_at} />,
               isSortable: true,
+            },
+            duration: {
+              displayName: "Duration",
+              render: (r: Run) => (
+                <div>
+                  {r.started_at ? (
+                    <Duration start={r.started_at} end={r.finished_at} />
+                  ) : (
+                    "-"
+                  )}
+                </div>
+              ),
+              isSortable: false,
             },
             run_id: {
               displayName: "Run ID",
@@ -81,7 +98,9 @@ export const Runs: React.FunctionComponent<Props> = ({
             },
             alias: {
               displayName: "Alias",
-              render: (r: Run) => r.alias,
+              render: (r: Run) => (
+                <Link to={`/tasks/${r.definition_id}`}>{r.alias}</Link>
+              ),
               isSortable: false,
             },
           }}
@@ -93,6 +112,10 @@ export const Runs: React.FunctionComponent<Props> = ({
       content = <Spinner />
       break
   }
+
+  // Preprocess `env` query to ensure that it's an array.
+  let env: string | string[] = get(query, "env", [])
+  if (!isArray(env) && isString(env)) env = [env]
 
   return (
     <>
@@ -110,15 +133,21 @@ export const Runs: React.FunctionComponent<Props> = ({
             }}
           />
         </FormGroup>
-        <FormGroup label="Run Status" helperText="Search by run status.">
-          <RunStatusSelect
-            value={get(query, "status", [])}
-            onChange={(value: string[]) => {
-              updateFilter("status", value)
+        <ListFiltersDropdown>
+          <FormGroup label="Run Status" helperText="Search by run status.">
+            <RunStatusSelect
+              value={get(query, "status", [])}
+              onChange={(value: string[]) => {
+                updateFilter("status", value)
+              }}
+            />
+          </FormGroup>
+          <EnvQueryFilter
+            value={env}
+            onChange={value => {
+              updateFilter("env", value)
             }}
           />
-        </FormGroup>
-        <ListFiltersDropdown>
           <FormGroup label="Cluster" helperText="Search by ECS cluster.">
             <GenericMultiSelect
               value={get(query, "cluster", [])}
@@ -188,7 +217,7 @@ export const Runs: React.FunctionComponent<Props> = ({
           updatePage={updatePage}
           currentPage={currentPage}
           isLoading={isLoading}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           numItems={data ? data.total : 0}
         />
       </div>
@@ -204,7 +233,10 @@ const ConnectedRuns: React.FunctionComponent<{}> = () => (
     getRequestArgs={params => ({
       params: {
         ...omit(params, "page"),
-        ...pageToOffsetLimit({ page: get(params, "page", 1), limit: pageSize }),
+        ...pageToOffsetLimit({
+          page: get(params, "page", 1),
+          limit: PAGE_SIZE,
+        }),
       },
     })}
   >

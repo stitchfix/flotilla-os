@@ -1,6 +1,6 @@
 import * as React from "react"
 import { HTMLTable, Callout } from "@blueprintjs/core"
-import { isEmpty, isArray } from "lodash"
+import { isArray } from "lodash"
 import SortableTh from "./SortableTh"
 import { SortOrder } from "../types"
 
@@ -32,7 +32,7 @@ class Table<ItemType> extends React.Component<Props<ItemType>> {
 
     if (isArray(items) && items.length > 0) {
       return (
-        <HTMLTable striped bordered>
+        <HTMLTable interactive bordered>
           <thead>
             <tr>
               {Object.entries(columns).map(([k, v]) => (

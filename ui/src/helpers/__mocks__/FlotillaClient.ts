@@ -29,8 +29,10 @@ const getTask = jest.fn(
         container_name: "container_name",
         alias: "alias",
         memory: 1024,
+        cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
+        privileged: false,
       })
     })
 )
@@ -47,8 +49,10 @@ const getTaskByAlias = jest.fn(
         container_name: "container_name",
         alias: alias,
         memory: 1024,
+        cpu: 512,
         command: "command",
         tags: ["a", "b", "c"],
+        privileged: false,
       })
     })
 )
@@ -105,8 +109,10 @@ const createTask = jest.fn(
         container_name: "container_name",
         alias: data.alias,
         memory: data.memory,
+        cpu: 512,
         command: data.command,
         tags: data.tags,
+        privileged: false,
       })
     })
 )
@@ -129,8 +135,10 @@ const updateTask = jest.fn(
         container_name: "container_name",
         alias: "alias",
         memory: data.memory,
+        cpu: 512,
         command: data.command,
         tags: data.tags,
+        privileged: false,
       })
     })
 )
@@ -165,6 +173,10 @@ const runTask = jest.fn(
         status: RunStatus.PENDING,
         group_name: "group_name",
         env: data.env || [],
+        cpu: 1,
+        memory: 1024,
+        command: "echo 'hi'",
+        queued_at: "queued_at",
       })
     })
 )
@@ -204,6 +216,10 @@ const getRun = jest.fn(
         status: RunStatus.PENDING,
         group_name: "group_name",
         env: [],
+        cpu: 1,
+        memory: 1024,
+        command: "echo 'hi'",
+        queued_at: "queued_at",
       })
     })
 )

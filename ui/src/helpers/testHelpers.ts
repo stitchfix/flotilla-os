@@ -50,8 +50,10 @@ export const createMockTaskObject = (overrides?: Partial<Task>): Task => ({
   container_name: "container_name",
   alias: "alias",
   memory: 1024,
+  cpu: 512,
   command: "command",
   tags: ["a", "b", "c"],
+  privileged: false,
   ...overrides,
 })
 
@@ -70,5 +72,9 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   started_at: "started_at",
   group_name: "group_name",
   env: [],
+  cpu: 1,
+  memory: 1024,
+  command: "echo 'hi'",
+  queued_at: "queued_at",
   ...overrides,
 })

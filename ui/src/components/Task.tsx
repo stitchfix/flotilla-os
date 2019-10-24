@@ -56,6 +56,7 @@ export const Task: React.FunctionComponent<TaskCtx> = props => {
                           env: get(props, ["data", "env"], []),
                           image: get(props, ["data", "image"], ""),
                           group_name: get(props, ["data", "group_name"], ""),
+                          cpu: get(props, ["data", "cpu"], ""),
                           memory: get(props, ["data", "memory"], ""),
                           command: get(props, ["data", "command"], ""),
                           tags: get(props, ["data", "tags"], []),

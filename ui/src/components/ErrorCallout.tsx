@@ -9,18 +9,20 @@ const ErrorCallout: React.FunctionComponent<{ error: AxiosError | null }> = ({
 }) => {
   return (
     <Callout intent={Intent.DANGER}>
-      <Attribute
-        name="Code"
-        value={error ? error.code : "No Error Code Provided"}
-      />
-      <Attribute
-        name="Message"
-        value={error ? error.message : "No Error Message Provided"}
-      />
-      <Attribute
-        name="Response"
-        value={get(error, ["response", "data", "error"], "")}
-      />
+      <div className="flotilla-attributes-container">
+        <Attribute
+          name="Code"
+          value={error ? error.code : "No Error Code Provided"}
+        />
+        <Attribute
+          name="Message"
+          value={error ? error.message : "No Error Message Provided"}
+        />
+        <Attribute
+          name="Response"
+          value={get(error, ["response", "data", "error"], "")}
+        />
+      </div>
     </Callout>
   )
 }

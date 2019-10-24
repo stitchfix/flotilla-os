@@ -130,6 +130,7 @@ Connected.defaultProps = {
     group_name: "",
     alias: "",
     memory: 1024,
+    cpu: 512,
     command: "",
     tags: [],
   },

@@ -1,6 +1,6 @@
 import React from "react"
 import { mount } from "enzyme"
-import Select from "react-select"
+import Creatable from "react-select/lib/Creatable"
 import Connected, { ClusterSelect } from "../ClusterSelect"
 import api from "../../api"
 
@@ -8,7 +8,7 @@ jest.mock("../../helpers/FlotillaClient")
 
 describe("ClusterSelect", () => {
   describe("Unconnected", () => {
-    it("renders a Select component", () => {
+    it("renders a Creatable component", () => {
       const props = {
         options: [
           { label: "a", value: "a" },
@@ -19,7 +19,7 @@ describe("ClusterSelect", () => {
         onChange: jest.fn(),
       }
       const wrapper = mount(<ClusterSelect {...props} />)
-      const select = wrapper.find(Select)
+      const select = wrapper.find(Creatable)
 
       // Ensure <Select> component is rendered.
       expect(select).toHaveLength(1)
