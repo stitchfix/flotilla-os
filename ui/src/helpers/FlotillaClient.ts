@@ -130,6 +130,8 @@ class FlotillaClient {
     // Get owner ID.
     let ownerID: string = "flotilla-ui"
 
+    // Check if the `REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH` env var is set;
+    // proceed to extract it from the cookies if so.
     if (process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH) {
       const cookies = cookie.parse(document.cookie)
       const cookiePath = process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH.split(
