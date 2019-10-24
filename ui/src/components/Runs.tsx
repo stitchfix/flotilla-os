@@ -23,7 +23,6 @@ import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
-import Duration from "./Duration"
 import RunTag from "./RunTag"
 import EnvQueryFilter from "./EnvQueryFilter"
 
