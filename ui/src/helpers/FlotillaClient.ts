@@ -137,34 +137,24 @@ class FlotillaClient {
       )
 
       if (cookiePath.length > 1) {
-        console.log("A")
-        let tmp = JSON.parse(get(cookies, cookiePath[0]))
-        console.log(tmp)
-        ownerID = get(tmp, cookiePath.slice(1), "flotilla-ui")
-        console.log(ownerID)
+        ownerID = get(
+          JSON.parse(get(cookies, cookiePath[0])),
+          cookiePath.slice(1),
+          "flotilla-ui"
+        )
       } else {
-        console.log("B")
         ownerID = get(
           cookies,
           process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
           "flotilla-ui"
         )
       }
-
-      ownerID = get(
-        cookies,
-        process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
-        "flotilla-ui"
-      )
-      console.log(`ownerID: ${ownerID}`)
     }
 
     d.run_tags = {
       ...d.run_tags,
       OWNER_ID: ownerID,
     }
-
-    console.log(d.run_tags)
 
     return this.request<Run>({
       method: HTTPMethod.PUT,
