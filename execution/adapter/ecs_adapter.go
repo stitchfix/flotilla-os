@@ -302,7 +302,10 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 //
 func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput {
 	containerDef := a.defaultContainerDefinition()
-
+	linuxParameters := a.getLinuxParameters(&definition)
+	if linuxParameters != nil {
+		containerDef.LinuxParameters = linuxParameters
+	}
 	containerDef.Image = &definition.Image
 	containerDef.Memory = definition.Memory
 	containerDef.Name = &definition.DefinitionID
@@ -379,11 +382,20 @@ func (a *ecsAdapter) AdaptDefinition(definition state.Definition) ecs.RegisterTa
 	}
 }
 
+func (a *ecsAdapter) getLinuxParameters(definition *state.Definition) *ecs.LinuxParameters {
+	if definition.SharedMemorySize != nil {
+		return &ecs.LinuxParameters{SharedMemorySize: definition.SharedMemorySize}
+	} else {
+		return nil
+	}
+}
+
 func (a *ecsAdapter) constructCmdSlice(cmdString string) []string {
 	bashCmd := "bash"
 	optLogin := "-l"
 	optStr := "-c"
 	return []string{bashCmd, optLogin, optStr, cmdString}
+
 }
 
 //
