@@ -1,4 +1,6 @@
+import { get } from "lodash"
 import { RunTaskPayload, Task, Env } from "../types"
+import getOwnerIdRunTagFromCookies from "./getOwnerIdRunTagFromCookies"
 
 /**
  * Given a task definition and history.location.state, return the initial
@@ -11,6 +13,13 @@ const getInitialValuesForTaskRun = ({
   task: Task
   routerState: any
 }): RunTaskPayload => {
+  // Set ownerID value.
+  const ownerID = get(
+    routerState,
+    ["run_tags", "owner_id"],
+    getOwnerIdRunTagFromCookies()
+  )
+
   // Set cluster value.
   const cluster = routerState && routerState.cluster ? routerState.cluster : ""
 
@@ -33,7 +42,7 @@ const getInitialValuesForTaskRun = ({
   // Set memory value.
   const memory: number =
     routerState && routerState.memory ? routerState.memory : task.memory
-  return { cluster, env, cpu, memory }
+  return { cluster, env, cpu, memory, owner_id: ownerID }
 }
 
 export default getInitialValuesForTaskRun

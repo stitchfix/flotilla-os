@@ -19,6 +19,7 @@ import FieldError from "./FieldError"
 import * as helpers from "../helpers/runFormHelpers"
 
 const validationSchema = Yup.object().shape({
+  owner_id: Yup.string(),
   cluster: Yup.string().required("Required"),
   memory: Yup.number()
     .required("Required")
@@ -66,6 +67,17 @@ const RunForm: React.FunctionComponent<Props> = ({
           {requestStatus === RequestStatus.ERROR && error && (
             <ErrorCallout error={error} />
           )}
+          <FormGroup
+            label={helpers.ownerIdFieldSpec.label}
+            helperText={helpers.ownerIdFieldSpec.description}
+          >
+            <FastField
+              name={helpers.ownerIdFieldSpec.name}
+              value={values.owner_id}
+              className={Classes.INPUT}
+            />
+            {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
+          </FormGroup>
           <FormGroup
             label="Cluster"
             helperText="Select a cluster for this task to execute on."

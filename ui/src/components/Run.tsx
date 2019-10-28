@@ -99,10 +99,7 @@ export class Run extends React.Component<Props> {
             className={Classes.BUTTON}
             to={{
               pathname: `/tasks/${data.definition_id}/execute`,
-              state: {
-                cluster: data.cluster,
-                env: data.env,
-              },
+              state: data,
             }}
           >
             <div className="bp3-button-text">Retry</div>

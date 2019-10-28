@@ -160,6 +160,7 @@ export type RunTaskPayload = {
   run_tags?: { [key: string]: any }
   cpu?: number
   memory?: number
+  owner_id?: string
 }
 
 export type ListRunParams = ListRequestArgs & {

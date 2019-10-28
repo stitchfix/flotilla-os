@@ -35,6 +35,7 @@ export class StopRunButton extends React.Component<Props, State> {
       definitionID: this.props.definitionID,
       runID: this.props.runID,
     })
+    this.closeDialog()
   }
 
   render() {
@@ -89,7 +90,6 @@ const Connected: React.FunctionComponent<
         message: "Run stopped!",
         intent: Intent.SUCCESS,
       })
-      history.push(`/tasks/${definitionID}`)
     }}
     onFailure={() => {
       Toaster.show({

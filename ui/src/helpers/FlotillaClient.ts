@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios"
 import * as qs from "qs"
-import cookie from "cookie"
-import { get } from "lodash"
+import { has, omit, Omit } from "lodash"
 import {
   HTTPMethod,
   CreateTaskPayload,
@@ -125,37 +124,14 @@ class FlotillaClient {
     definitionID: string
     data: RunTaskPayload
   }): Promise<Run> => {
-    let d: RunTaskPayload = data
+    const d: Omit<RunTaskPayload, "owner_id"> = omit(data, "owner_id")
 
-    // Get owner ID.
-    let ownerID: string = "flotilla-ui"
-
-    // Check if the `REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH` env var is set;
-    // proceed to extract it from the cookies if so.
-    if (process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH) {
-      const cookies = cookie.parse(document.cookie)
-      const cookiePath = process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH.split(
-        "."
-      )
-
-      if (cookiePath.length > 1) {
-        ownerID = get(
-          JSON.parse(get(cookies, cookiePath[0])),
-          cookiePath.slice(1),
-          "flotilla-ui"
-        )
+    if (has(data, "owner_id")) {
+      if (d.run_tags) {
+        d.run_tags["OWNER_ID"] = data.owner_id
       } else {
-        ownerID = get(
-          cookies,
-          process.env.REACT_APP_RUN_TAG_OWNER_ID_COOKIE_PATH,
-          "flotilla-ui"
-        )
+        d.run_tags = { OWNER_ID: data.owner_id }
       }
-    }
-
-    d.run_tags = {
-      ...d.run_tags,
-      OWNER_ID: ownerID,
     }
 
     return this.request<Run>({
