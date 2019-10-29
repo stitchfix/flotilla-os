@@ -192,8 +192,6 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 //
 func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput {
 	n := int64(1)
-	var placementConstraints []*ecs.PlacementConstraint
-
 	overrides := ecs.TaskOverride{
 		ContainerOverrides: []*ecs.ContainerOverride{a.overrides(definition, run)},
 	}
@@ -202,17 +200,12 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 		overrides.TaskRoleArn = a.taskRoleArn
 	}
 
-	if definition.Gpu != nil {
-		placementConstraints = append(placementConstraints, a.gpuPlacementConstraints(definition, run))
-	}
-
 	rti := ecs.RunTaskInput{
 		Cluster:              &run.ClusterName,
 		Count:                &n,
 		StartedBy:            aws.String("flotilla"),
 		TaskDefinition:       &definition.Arn,
 		Overrides:            &overrides,
-		PlacementConstraints: placementConstraints,
 	}
 
 	return rti
