@@ -47,13 +47,14 @@ func NewApp(conf config.Config,
 	ee engine.Engine,
 	sm state.Manager,
 	cc cluster.Client,
-	rc registry.Client) (App, error) {
+	rc registry.Client,
+	se engine.Engine) (App, error) {
 
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc)
+	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc, se)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}

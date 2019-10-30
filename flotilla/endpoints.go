@@ -371,6 +371,26 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ep *endpoints) CreateRunV5(w http.ResponseWriter, r *http.Request) {
+	var lr state.StatelessRun
+	err := ep.decodeRequest(r, &lr)
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+	run, err := ep.executionService.ExecuteStateless(lr)
+
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating V5 run",
+			"operation", "CreateRunV5",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
 func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)

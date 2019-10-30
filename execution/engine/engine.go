@@ -16,6 +16,8 @@ type Engine interface {
 	// v0
 	Execute(definition state.Definition, run state.Run) (state.Run, bool, error)
 
+	ExecuteStateless(statelessRun state.StatelessRun) (state.Run, error)
+
 	// v1 - once runs contain a copy of relevant definition info
 	// Execute(run state.Run) error
 
@@ -39,9 +41,15 @@ type RunReceipt struct {
 //
 // NewExecutionEngine initializes and returns a new Engine
 //
-func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager, stateless bool) (Engine, error) {
 	name := "ecs"
-	if conf.IsSet("execution_engine") {
+	if stateless == true {
+		if conf.IsSet("experimental__stateless_execution_engine") {
+			name = conf.GetString("experimental__stateless_execution_engine")
+		} else {
+			return nil, fmt.Errorf("The experimental__stateless_execution_engine key must be set in the config to enable a stateless execution engine.")
+		}
+	} else if conf.IsSet("execution_engine") {
 		name = conf.GetString("execution_engine")
 	}
 
@@ -50,6 +58,12 @@ func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
 		eng := &ECSExecutionEngine{qm: qm}
 		if err := eng.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
+		}
+		return eng, nil
+	case "eks":
+		eng := &EKSExecutionEngine{}
+		if err := eng.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing EKSExecutionEngine")
 		}
 		return eng, nil
 	default:

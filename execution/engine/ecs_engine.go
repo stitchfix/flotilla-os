@@ -343,6 +343,14 @@ func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run
 }
 
 //
+// ExecuteStateless is not (currently) allowed on ECS.
+//
+func (ee *ECSExecutionEngine) ExecuteStateless(sr state.StatelessRun) (state.Run, error) {
+	run := state.Run{}
+	return run, errors.New("ECS engine does not allow stateless runs.")
+}
+
+//
 // Terminate takes a valid run and stops it
 //
 func (ee *ECSExecutionEngine) Terminate(run state.Run) error {

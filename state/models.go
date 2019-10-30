@@ -470,3 +470,10 @@ type WorkersList struct {
 	Total   int      `json:"total"`
 	Workers []Worker `json:"workers"`
 }
+
+// TODO: figure out what other params are needed.
+type StatelessRun struct {
+	Name     string     `json:"name"`
+	Image     string     `json:"image"`
+	Command     string     `json:"command"`
+}
