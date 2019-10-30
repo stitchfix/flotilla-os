@@ -18,8 +18,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error)
-	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error)
+	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error)
+	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -96,7 +96,7 @@ func (es *executionService) ReservedVariables() []string {
 //
 func (es *executionService) Create(
 	definitionID string, clusterName string, env *state.EnvList,
-	ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error) {
+	ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.sm.GetDefinition(definitionID)
@@ -105,14 +105,14 @@ func (es *executionService) Create(
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID,
-		command, memory, cpu, gpu)
+		command, memory, cpu)
 }
 
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
 func (es *executionService) CreateByAlias(
-	alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error) {
+	alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.sm.GetDefinitionByAlias(alias)
@@ -120,11 +120,11 @@ func (es *executionService) CreateByAlias(
 		return state.Run{}, err
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, gpu)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu)
 }
 
 func (es *executionService) createFromDefinition(
-	definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error) {
+	definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -136,7 +136,7 @@ func (es *executionService) createFromDefinition(
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, gpu)
+	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu)
 	if err != nil {
 		return run, err
 	}
@@ -164,7 +164,7 @@ func (es *executionService) createFromDefinition(
 }
 
 func (es *executionService) constructRun(
-	clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, gpu *int64) (state.Run, error) {
+	clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64) (state.Run, error) {
 
 	var (
 		run state.Run
@@ -188,7 +188,7 @@ func (es *executionService) constructRun(
 		Command:      command,
 		Memory:       memory,
 		Cpu:          cpu,
-		Gpu:          gpu,
+		Gpu:          definition.Gpu,
 		}
 
 	runEnv := es.constructEnviron(run, env)

@@ -42,7 +42,6 @@ type LaunchRequestV2 struct {
 	Command *string
 	Memory  *int64
 	Cpu     *int64
-	Gpu     *int64
 	*LaunchRequest
 }
 
@@ -305,7 +304,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil, nil)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run",
@@ -332,7 +331,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil, nil)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V2 run",
@@ -359,7 +358,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Gpu)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -386,7 +385,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Gpu)
+	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",
