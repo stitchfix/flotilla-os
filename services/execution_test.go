@@ -48,8 +48,7 @@ func TestExecutionService_Create(t *testing.T) {
 
 	cmd := "_test_cmd_"
 	cpu := int64(512)
-	gpu := int64(1)
-	run, err := es.Create("B", "clusta", env, "somebody", &cmd, nil, &cpu, &gpu)
+	run, err := es.Create("B", "clusta", env, "somebody", &cmd, nil, &cpu)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -114,13 +113,6 @@ func TestExecutionService_Create(t *testing.T) {
 		}
 	}
 
-	if run.Gpu == nil {
-		t.Errorf("Expected non-nil gpu")
-	} else {
-		if *run.Gpu != gpu {
-			t.Errorf("Unexpected gpu, found [%d], exptecting [%d]", *run.Gpu, gpu)
-		}
-	}
 
 	includesExpected := false
 	for _, e := range *run.Env {
@@ -149,7 +141,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		"Enqueue":              true,
 	}
 	mem := int64(1024)
-	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil, nil)
+	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -228,19 +220,19 @@ func TestExecutionService_Create2(t *testing.T) {
 	var err error
 
 	// Invalid environment
-	_, err = es.Create("A", "clusta", env, "somebody", nil, nil, nil, nil)
+	_, err = es.Create("A", "clusta", env, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
 	// Invalid image
-	_, err = es.Create("C", "clusta", nil, "somebody", nil, nil, nil, nil)
+	_, err = es.Create("C", "clusta", nil, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
 	// Invalid cluster
-	_, err = es.Create("A", "invalidcluster", nil, "somebody", nil, nil, nil, nil)
+	_, err = es.Create("A", "invalidcluster", nil, "somebody", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
 	}
