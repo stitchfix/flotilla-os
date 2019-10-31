@@ -36,6 +36,12 @@ func NewClusterClient(conf config.Config) (Client, error) {
 			return nil, errors.Wrap(err, "problem initializing ECSClusterClient")
 		}
 		return ecsc, nil
+	case "eks":
+		eksc := &EKSClusterClient{}
+		if err := eksc.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing ECSClusterClient")
+		}
+		return eksc, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
