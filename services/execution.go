@@ -32,7 +32,6 @@ type ExecutionService interface {
 	Terminate(runID string) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
-	ExecuteStateless(sr state.StatelessRun) (state.Run, error)
 }
 
 type executionService struct {
@@ -40,7 +39,6 @@ type executionService struct {
 	cc          cluster.Client
 	rc          registry.Client
 	ee          engine.Engine
-	se engine.Engine
 	reservedEnv map[string]func(run state.Run) string
 }
 
@@ -50,14 +48,12 @@ type executionService struct {
 func NewExecutionService(conf config.Config, ee engine.Engine,
 	sm state.Manager,
 	cc cluster.Client,
-	rc registry.Client,
-	se engine.Engine) (ExecutionService, error) {
+	rc registry.Client) (ExecutionService, error) {
 	es := executionService{
 		sm: sm,
 		cc: cc,
 		rc: rc,
 		ee: ee,
-		se: se,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -125,14 +121,6 @@ func (es *executionService) CreateByAlias(
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, gpu)
-}
-
-//
-// CreateStateless allows execution without persisting
-// run nor is a pre-existing task definition required.
-//
-func (es *executionService) ExecuteStateless(sr state.StatelessRun) (state.Run, error) {
-  return es.se.ExecuteStateless(sr)
 }
 
 func (es *executionService) createFromDefinition(
@@ -231,6 +219,7 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 }
 
 func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList) error {
+	// Validate environment variables.
 	if env != nil {
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
@@ -241,6 +230,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		}
 	}
 
+	// Validate image.
 	ok, err := es.rc.IsImageValid(definition.Image)
 	if err != nil {
 		return err
@@ -251,6 +241,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
+	// Validate cluster resources.
 	ok, err = es.cc.CanBeRun(clusterName, definition)
 	if err != nil {
 		return err

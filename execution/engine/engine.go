@@ -13,24 +13,12 @@ import (
 //
 type Engine interface {
 	Initialize(conf config.Config) error
-	// v0
 	Execute(definition state.Definition, run state.Run) (state.Run, bool, error)
-
-	ExecuteStateless(statelessRun state.StatelessRun) (state.Run, error)
-
-	// v1 - once runs contain a copy of relevant definition info
-	// Execute(run state.Run) error
-
 	Define(definition state.Definition) (state.Definition, error)
-
 	Deregister(definition state.Definition) error
-
 	Terminate(run state.Run) error
-
 	Enqueue(run state.Run) error
-
 	PollRuns() ([]RunReceipt, error)
-
 	PollStatus() (RunReceipt, error)
 }
 
@@ -41,15 +29,9 @@ type RunReceipt struct {
 //
 // NewExecutionEngine initializes and returns a new Engine
 //
-func NewExecutionEngine(conf config.Config, qm queue.Manager, stateless bool) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
 	name := "ecs"
-	if stateless == true {
-		if conf.IsSet("experimental__stateless_execution_engine") {
-			name = conf.GetString("experimental__stateless_execution_engine")
-		} else {
-			return nil, fmt.Errorf("The experimental__stateless_execution_engine key must be set in the config to enable a stateless execution engine.")
-		}
-	} else if conf.IsSet("execution_engine") {
+	if conf.IsSet("execution_engine") {
 		name = conf.GetString("execution_engine")
 	}
 

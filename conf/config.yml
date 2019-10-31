@@ -13,16 +13,11 @@ state_manager: postgres
 queue_manager: sqs
 cluster_client: ecs
 logs_client: cloudwatch
-execution_engine: ecs
+execution_engine: eks
 enabled_workers:
   - retry
   - submit
   - status
-
-#
-# Experimental
-#
-experimental__stateless_execution_engine: eks
 
 # Log namespace
 log:
@@ -73,6 +68,7 @@ http:
 # with ownership information set - "who -owns- this run?"
 #
 owner_id_var: FLOTILLA_RUN_OWNER_ID
+experimental__cluster_name: flotilla-eks-staging
 
 #
 # Execution engine specific variables

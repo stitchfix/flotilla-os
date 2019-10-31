@@ -7,7 +7,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.3
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 	github.com/Sirupsen/logrus v0.0.0-20170719154753-00386b3fbd63
-	github.com/aws/aws-sdk-go v1.24.0
+	github.com/aws/aws-sdk-go v1.25.24
 	github.com/docker/cli v0.0.0-20170719000837-7f684c751231
 	github.com/docker/distribution v0.0.0-20170718224900-5cfdfbdce59c
 	github.com/docker/docker v0.0.0-20170719201334-8299f1727884

@@ -42,6 +42,5 @@ func NewRouter(ep endpoints) *mux.Router {
 	v5.HandleFunc("/worker", ep.BatchUpdateWorkers).Methods("PUT")
 	v5.HandleFunc("/worker/{worker_type}", ep.GetWorker).Methods("GET")
 	v5.HandleFunc("/worker/{worker_type}", ep.UpdateWorker).Methods("PUT")
-	v5.HandleFunc("/execute", ep.CreateRunV5).Methods("POST")
 	return r
 }

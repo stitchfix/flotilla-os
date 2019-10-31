@@ -94,23 +94,13 @@ func main() {
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ee, err := engine.NewExecutionEngine(c, qm, false)
+	ee, err := engine.NewExecutionEngine(c, qm)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
 		os.Exit(1)
 	}
 
-	//
-	// Get stateless execution engine for interacting with
-	// backend execution management framework (eg. EKS)
-	//
-	se, err := engine.NewExecutionEngine(c, qm, true)
-	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
-		os.Exit(1)
-	}
-
-	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc, se)
+	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)
