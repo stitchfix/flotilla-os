@@ -160,6 +160,13 @@ class FlotillaClient {
       url: `/v1/task/history/${runID}`,
     })
 
+  /** Requests a single run. */
+  public getRunV2 = ({ runID }: { runID: string }): Promise<Run> =>
+    this.request<Run>({
+      method: HTTPMethod.GET,
+      url: `/v2/history/${runID}`,
+    })
+
   /** Requests the logs of a single run. */
   public getRunLog = ({
     runID,

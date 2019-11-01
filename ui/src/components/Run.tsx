@@ -26,6 +26,7 @@ import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import LogRequester from "./LogRequester"
 import RunTag from "./RunTag"
 import Duration from "./Duration"
+import ErrorCallout from "./ErrorCallout"
 
 export type Props = RequestChildProps<RunShape, { runID: string }> & {
   runID: string
@@ -88,7 +89,7 @@ export class Run extends React.Component<Props> {
   }
 
   render() {
-    const { data, requestStatus, runID } = this.props
+    const { data, requestStatus, runID, error } = this.props
 
     if (requestStatus === RequestStatus.READY && data) {
       let btn = null
@@ -233,7 +234,7 @@ export class Run extends React.Component<Props> {
       )
     }
 
-    if (requestStatus === RequestStatus.ERROR) return <div>errro</div>
+    if (requestStatus === RequestStatus.ERROR) return <ErrorCallout error={error} />
     return <Spinner />
   }
 }
@@ -242,7 +243,7 @@ const Connected: React.FunctionComponent<
   RouteComponentProps<{ runID: string }>
 > = ({ match }) => (
   <Request<RunShape, { runID: string }>
-    requestFn={api.getRun}
+    requestFn={api.getRunV2}
     initialRequestArgs={{ runID: match.params.runID }}
   >
     {props => <Run {...props} runID={match.params.runID} />}

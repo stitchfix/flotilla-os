@@ -8,6 +8,7 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
@@ -18,7 +19,7 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	eksClient  *kubernetes.Clientset
+	kClient    *kubernetes.Clientset
 	adapter    adapter.EKSAdapter
 	qm         queue.Manager
 	statusQurl string
@@ -43,12 +44,12 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		panic(err.Error())
 	}
 
-	eksClient, err := kubernetes.NewForConfig(kubeConf)
+	kClient, err := kubernetes.NewForConfig(kubeConf)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	ee.eksClient = eksClient
+	ee.kClient = kClient
 
 	adapt, err := adapter.NewEKSAdapter(conf)
 
@@ -57,18 +58,25 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	ee.adapter = adapt
+
+	statusQueue := conf.GetString("queue.status")
+	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
+	if err != nil {
+		return errors.Wrapf(err, "problem getting queue url for status queue with name [%s]", statusQueue)
+	}
+
 	return nil
 }
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
 
-	result, err := ee.eksClient.BatchV1().Jobs("default").Create(&job)
+	result, err := ee.kClient.BatchV1().Jobs("default").Create(&job)
 	if err != nil {
 		return state.Run{}, false, err
 	}
 
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result)
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
 		return state.Run{}, false, err
 	}
@@ -120,6 +128,10 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	return runs, nil
 }
 
+//
+// PollStatus is a dummy function as EKS does not emit task status
+// change events.
+//
 func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
@@ -128,7 +140,10 @@ func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
 // Define returns a blank task definition and an error for the EKS engine.
 //
 func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
-	return td, nil
+	updated := td
+	// TODO: how to deal w/ ARN?
+	updated.Arn = td.DefinitionID
+	return updated, nil
 }
 
 //
@@ -136,6 +151,22 @@ func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, err
 //
 func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
+}
+
+func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
+	job, err := ee.kClient.BatchV1().Jobs("default").Get(run.RunID, metav1.GetOptions{})
+
+	if err != nil {
+		return state.Run{}, errors.Errorf("error getting kubernetes job", err)
+	}
+
+	updates, err := ee.adapter.AdaptJobToFlotillaRun(job, run)
+
+	if err != nil {
+		return state.Run{}, errors.Errorf("error adapting kubernetes job to flotilla run", err)
+	}
+
+	return updates, nil
 }
 
 // TODO: this section should be set with whatever config is necessary to connect to EKS. This is currently used for local dev.

@@ -9,7 +9,7 @@ import (
 )
 
 type EKSAdapter interface {
-	AdaptJobToFlotillaRun(job *batchv1.Job) (state.Run, error)
+	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run) (batchv1.Job, error)
 }
 type eksAdapter struct{}
@@ -24,9 +24,22 @@ func NewEKSAdapter(conf config.Config) (EKSAdapter, error) {
 }
 
 // TODO: figure this out later.
-func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job) (state.Run, error) {
-	run := state.Run{}
-	return run, nil
+func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error) {
+	updated := run
+	if job.Status.Active == 1 {
+		updated.Status = "RUNNING"
+	} else if job.Status.Succeeded == 1 {
+		var exitCode int64 = 0
+		updated.Status = "STOPPED"
+		updated.ExitCode = &exitCode
+	} else if job.Status.Failed == 1 {
+		var exitCode int64 = 1
+		updated.Status = "STOPPED"
+		updated.ExitCode = &exitCode
+	}
+	updated.StartedAt = &job.Status.StartTime.Time
+	updated.FinishedAt = &job.Status.CompletionTime.Time
+	return updated, nil
 }
 
 // TODO: figure what other params are needed.

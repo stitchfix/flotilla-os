@@ -77,10 +77,8 @@ body {
 
 .flotilla-attribute-name {
   font-size: 0.85rem;
-  text-transform: uppercase;
   font-weight: 500;
   margin-bottom: 4px;
-  text-transform: uppercase;
 }
 
 .flotilla-attribute-value {

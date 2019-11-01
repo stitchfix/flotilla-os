@@ -296,6 +296,21 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ep *endpoints) GetRunV2(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	run, err := ep.executionService.GetV2(vars["run_id"])
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting run",
+			"operation", "GetRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequest
 	err := ep.decodeRequest(r, &lr)

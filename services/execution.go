@@ -28,6 +28,7 @@ type ExecutionService interface {
 		filters map[string][]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
+	GetV2(runID string) (state.Run, error)
 	UpdateStatus(runID string, status string, exitCode *int64) error
 	Terminate(runID string) error
 	ReservedVariables() []string
@@ -189,7 +190,7 @@ func (es *executionService) constructRun(
 		Memory:       memory,
 		Cpu:          cpu,
 		Gpu:          gpu,
-		}
+	}
 
 	runEnv := es.constructEnviron(run, env)
 	run.Env = &runEnv
@@ -294,6 +295,29 @@ func (es *executionService) List(
 //
 func (es *executionService) Get(runID string) (state.Run, error) {
 	return es.sm.GetRun(runID)
+}
+
+//
+// Get returns the run with the given runID
+//
+func (es *executionService) GetV2(runID string) (state.Run, error) {
+	run, err := es.sm.GetRun(runID)
+	if err != nil {
+		return state.Run{}, exceptions.MissingResource{err.Error()}
+	}
+
+	update, err := es.ee.Get(run)
+
+	if err != nil {
+		return state.Run{}, exceptions.MissingResource{err.Error()}
+	}
+
+	updated, err := es.sm.UpdateRun(runID, update)
+	if err != nil {
+		return state.Run{}, exceptions.MissingResource{err.Error()}
+	}
+
+	return updated, nil
 }
 
 //
