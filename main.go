@@ -94,7 +94,7 @@ func main() {
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ee, err := engine.NewExecutionEngine(c, qm)
+	ee, err := engine.NewExecutionEngine(c, qm, logger)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
 		os.Exit(1)

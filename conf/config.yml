@@ -11,7 +11,7 @@ create_database_schema: true
 #
 state_manager: postgres
 queue_manager: sqs
-cluster_client: ecs
+cluster_client: eks
 logs_client: cloudwatch
 execution_engine: eks
 enabled_workers:

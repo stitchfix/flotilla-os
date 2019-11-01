@@ -1,10 +1,12 @@
 package engine
 
 import (
-	"errors"
 	"flag"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -18,14 +20,16 @@ import (
 type EKSExecutionEngine struct {
 	eksClient  *kubernetes.Clientset
 	adapter    adapter.EKSAdapter
+	qm         queue.Manager
+	statusQurl string
+	log        flotillaLog.Logger
 }
 
 //
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	// @TODO: this section should be set with whatever config is necessary to
-	// connect to EKS. This is currently used for local dev.
+	// TODO: this section should be set with whatever config is necessary to connect to EKS.
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -39,12 +43,12 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		panic(err.Error())
 	}
 
-	clientset, err := kubernetes.NewForConfig(kubeConf)
+	eksClient, err := kubernetes.NewForConfig(kubeConf)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	ee.eksClient = clientset
+	ee.eksClient = eksClient
 
 	adapt, err := adapter.NewEKSAdapter(conf)
 
@@ -56,57 +60,82 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(_ state.Definition, run state.Run) (state.Run, bool, error) {
-	return state.Run{}, false, errors.New("EKSExecutionEngine is only allowed to execute stateless jobs. Please use the ExecuteStateless method.")
-}
+func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
 
-func (ee *EKSExecutionEngine) ExecuteStateless(sr state.StatelessRun) (state.Run, error) {
-	job, err := ee.adapter.AdaptFlotillaRunToJob(&sr)
-	submittedJob, err := ee.eksClient.BatchV1().Jobs("default").Create(&job)
-
+	result, err := ee.eksClient.BatchV1().Jobs("default").Create(&job)
 	if err != nil {
-		return state.Run{}, err
+		return state.Run{}, false, err
 	}
 
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(submittedJob)
-
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result)
 	if err != nil {
-		return state.Run{}, err
+		return state.Run{}, false, err
 	}
 
-	return adaptedRun, nil
+	return adaptedRun, false, nil
 }
 
-// @TODO: this is a placeholder. Remove later.
-func (ee *EKSExecutionEngine) Define(definition state.Definition) (state.Definition, error) {
-	return definition, nil
-}
-
-// @TODO: this is a placeholder. Remove later.
-func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
-	return nil
-}
-
-// @TODO: this is a placeholder. Remove later.
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	return nil
 }
 
-// @TODO: this is a placeholder. Remove later.
 func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
+	// Get qurl
+	qurl, err := ee.qm.QurlFor(run.ClusterName, true)
+	if err != nil {
+		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
+	}
+
+	// Queue run
+	if err = ee.qm.Enqueue(qurl, run); err != nil {
+		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
+	}
 	return nil
 }
 
-// @TODO: this is a placeholder. Remove later.
 func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
-	rr := []RunReceipt{}
-	return rr, nil
+	queues, err := ee.qm.List()
+	if err != nil {
+		return nil, errors.Wrap(err, "problem listing queues to poll")
+	}
+
+	var runs []RunReceipt
+	for _, qurl := range queues {
+		//
+		// Get new queued Run
+		//
+		runReceipt, err := ee.qm.ReceiveRun(qurl)
+
+		if err != nil {
+			return runs, errors.Wrapf(err, "problem receiving run from queue url [%s]", qurl)
+		}
+
+		if runReceipt.Run == nil {
+			continue
+		}
+
+		runs = append(runs, RunReceipt{runReceipt})
+	}
+	return runs, nil
 }
 
-// @TODO: this is a placeholder. Remove later.
 func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
-	rr := RunReceipt{}
-	return rr, nil
+	return RunReceipt{}, nil
+}
+
+//
+// Define returns a blank task definition and an error for the EKS engine.
+//
+func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
+	return td, nil
+}
+
+//
+// Deregister returns an error for the EKS engine.
+//
+func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
+	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
 }
 
 // TODO: this section should be set with whatever config is necessary to connect to EKS. This is currently used for local dev.

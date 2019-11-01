@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -29,7 +30,7 @@ type RunReceipt struct {
 //
 // NewExecutionEngine initializes and returns a new Engine
 //
-func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager, log flotillaLog.Logger) (Engine, error) {
 	name := "ecs"
 	if conf.IsSet("execution_engine") {
 		name = conf.GetString("execution_engine")
@@ -43,7 +44,7 @@ func NewExecutionEngine(conf config.Config, qm queue.Manager) (Engine, error) {
 		}
 		return eng, nil
 	case "eks":
-		eng := &EKSExecutionEngine{}
+		eng := &EKSExecutionEngine{qm: qm, log: log}
 		if err := eng.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing EKSExecutionEngine")
 		}

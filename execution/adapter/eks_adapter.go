@@ -6,12 +6,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td *state.Definition, run *state.Run) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -31,12 +30,12 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job) (state.Run, error) 
 }
 
 // TODO: figure what other params are needed.
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(td *state.Definition, run *state.Run) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
 	// Container spec.
 	container := corev1.Container{
-		Name:    td.DefinitionID,
+		Name:    run.DefinitionID,
 		Image:   run.Image,
-		Command: strings.Split(*run.Command, "\n"),
+		Command: a.constructCmdSlice(definition.Command),
 	}
 
 	// Job spec.
@@ -57,4 +56,11 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(td *state.Definition, ru
 	}
 
 	return eksJob, nil
+}
+
+func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
+	bashCmd := "bash"
+	optLogin := "-l"
+	optStr := "-c"
+	return []string{bashCmd, optLogin, optStr, cmdString}
 }
