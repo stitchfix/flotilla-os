@@ -18,15 +18,16 @@ type submitWorker struct {
 	log          flotillaLog.Logger
 	pollInterval time.Duration
 	t            tomb.Tomb
+	engine       *string
 }
 
-func (sw *submitWorker) Initialize(
-	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
+	sw.engine = engine
 	sw.log.Log("message", "initialized a submit worker")
 	return nil
 }

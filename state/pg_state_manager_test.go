@@ -368,7 +368,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 
 	var err error
 	expectedTotal := 6
-	rl, err := sm.ListRuns(1, 0, "started_at", "asc", nil, nil)
+	rl, err := sm.ListRuns(1, 0, "started_at", "asc", nil, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -396,29 +396,29 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 
 	// Test ordering and offset
 	// - there's only two, so offset 1 should return second one
-	rl, err = sm.ListRuns(1, 1, "cluster_name", "desc", nil, nil)
+	rl, err = sm.ListRuns(1, 1, "cluster_name", "desc", nil, nil, nil)
 	if rl.Runs[0].ClusterName != "clusta" {
 		t.Errorf("Error ordering with offset - expected clusta but got %s", rl.Runs[0].ClusterName)
 	}
 
 	// Test order validation
-	rl, err = sm.ListRuns(1, 0, "nonexistent_field", "asc", nil, nil)
+	rl, err = sm.ListRuns(1, 0, "nonexistent_field", "asc", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Sorting by [nonexistent_field] did not produce an error")
 	}
-	rl, err = sm.ListRuns(1, 0, "started_at", "nooop", nil, nil)
+	rl, err = sm.ListRuns(1, 0, "started_at", "nooop", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Sort order [nooop] is not valid but did not produce an error")
 	}
 
 	// Test filtering on fields
-	rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{"cluster_name": {"clustb"}}, nil)
+	rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{"cluster_name": {"clustb"}}, nil, nil)
 	if rl.Runs[0].ClusterName != "clustb" {
 		t.Errorf("Error filtering by field - expected clustb but got %s", rl.Runs[0].ClusterName)
 	}
 
 	// Test filtering on environment variables
-	rl, err = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"})
+	rl, err = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"}, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -444,7 +444,7 @@ func TestSQLStateManager_ListRuns2(t *testing.T) {
 		"started_at_until": {
 			"2017-07-04T00:03:01+00:00",
 		},
-	}, nil)
+	}, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -471,7 +471,7 @@ func TestSQLStateManager_ListRuns3(t *testing.T) {
 			StatusPending,
 			StatusQueued,
 		},
-	}, nil)
+	}, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -509,6 +509,7 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 func TestSQLStateManager_CreateRun(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
+	engine:= "ecs"
 
 	r1 := Run{
 		RunID:        "run:17",
@@ -521,11 +522,13 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
+		Engine: &engine,
 	}
 
 	ec := int64(137)
 	reason := "instance is ded."
 	cmd := "_test cmd__"
+
 	mem := int64(10)
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
@@ -549,6 +552,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 		Command: &cmd,
 		Memory:  &mem,
+		Engine: &engine,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)

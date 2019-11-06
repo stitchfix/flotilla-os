@@ -49,8 +49,9 @@ func IsValidStatus(status string) bool {
 }
 
 // NewRunID returns a new uuid for a Run
-func NewRunID() (string, error) {
-	return newUUIDv4()
+func NewRunID(engine *string) (string, error) {
+	uuid, err := newUUIDv4()
+	return *engine + uuid[3:], err
 }
 
 // NewDefinitionID returns a new uuid for a Definition
@@ -304,6 +305,7 @@ type Run struct {
 	Cpu             *int64     `json:"cpu,omitempty"`
 	Gpu             *int64     `json:"gpu,omitempty"`
 	ExitReason      *string    `json:"exit_reason,omitempty"`
+	Engine          *string    `json:"engine,omitempty"`
 }
 
 //
@@ -377,6 +379,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.Gpu != nil {
 		d.Gpu = other.Gpu
+	}
+
+	if other.Engine != nil {
+		d.Engine = other.Engine
 	}
 
 	//

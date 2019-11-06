@@ -79,7 +79,7 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeWorkers(conf, log, ee, sm); err != nil {
+	if err = app.initializeECSWorkers(conf, log, ee, sm); err != nil {
 		return app, errors.Wrap(err, "problem initializing workers")
 	}
 	return app, nil
@@ -122,12 +122,13 @@ func (app *App) configureRoutes(ep endpoints) {
 	}
 }
 
-func (app *App) initializeWorkers(
+func (app *App) initializeECSWorkers(
 	conf config.Config,
 	log flotillaLog.Logger,
 	ee engine.Engine,
 	sm state.Manager) error {
-	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm)
+	engine := "ecs"
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &engine)
 	app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")

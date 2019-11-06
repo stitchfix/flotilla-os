@@ -16,8 +16,7 @@ import (
 // Worker defines a background worker process
 //
 type Worker interface {
-	Initialize(
-		conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error
+	Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error
 	Run() error
 	GetTomb() *tomb.Tomb
 }
@@ -25,12 +24,7 @@ type Worker interface {
 //
 // NewWorker instantiates a new worker.
 //
-func NewWorker(
-	workerType string,
-	log flotillaLog.Logger,
-	conf config.Config,
-	ee engine.Engine,
-	sm state.Manager) (Worker, error) {
+func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee engine.Engine, sm state.Manager, engine *string) (Worker, error) {
 	var worker Worker
 
 	switch workerType {
@@ -47,7 +41,7 @@ func NewWorker(
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	if err = worker.Initialize(conf, sm, ee, log, pollInterval); err != nil {
+	if err = worker.Initialize(conf, sm, ee, log, pollInterval, nil); err != nil {
 		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
 	}
 	return worker, nil

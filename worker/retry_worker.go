@@ -18,16 +18,18 @@ type retryWorker struct {
 	log          flotillaLog.Logger
 	pollInterval time.Duration
 	t            tomb.Tomb
+	engine       *string
 }
 
-func (rw *retryWorker) Initialize(
-	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
 	rw.pollInterval = pollInterval
 	rw.conf = conf
 	rw.sm = sm
 	rw.ee = ee
 	rw.log = log
 	rw.log.Log("message", "initialized a retry worker")
+	rw.engine = engine
+
 	return nil
 }
 
@@ -53,10 +55,7 @@ func (rw *retryWorker) Run() error {
 
 func (rw *retryWorker) runOnce() {
 	// List runs in the StatusNeedsRetry state and requeue them
-	runList, err := rw.sm.ListRuns(
-		25, 0,
-		"started_at", "asc",
-		map[string][]string{"status": {state.StatusNeedsRetry}}, nil)
+	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, nil)
 
 	rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 
