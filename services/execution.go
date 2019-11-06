@@ -102,6 +102,10 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		return state.Run{}, err
 	}
 
+	if engine == nil {
+		engine = &state.DefaultEngine
+	}
+
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
 }
 
@@ -114,6 +118,10 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	definition, err := es.sm.GetDefinitionByAlias(alias)
 	if err != nil {
 		return state.Run{}, err
+	}
+
+	if engine == nil {
+		engine = &state.DefaultEngine
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
@@ -165,7 +173,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		err error
 	)
 
-	if engine == nil{
+	if engine == nil {
 		run.Engine = &state.DefaultEngine
 	}
 
@@ -188,7 +196,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		Cpu:          cpu,
 		Gpu:          definition.Gpu,
 		Engine:       run.Engine,
-		}
+	}
 
 	runEnv := es.constructEnviron(run, env)
 	run.Env = &runEnv
