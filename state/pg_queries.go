@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS task (
   command text,
   memory integer,
   cpu integer,
-  gpu integer
+  gpu integer,
+  engine text DEFAULT 'ecs' NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -79,6 +80,7 @@ CREATE INDEX IF NOT EXISTS ix_task_env ON task USING gin (env jsonb_path_ops);
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_task_arn ON task(task_arn);
 CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_desc ON task(definition_id, started_at DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_desc_engine ON task(definition_id, started_at DESC NULLS LAST, engine);
 --
 -- Status
 --
@@ -195,7 +197,8 @@ select
   command,
   memory,
   cpu,
-  gpu
+  gpu,
+  engine
 from task t
 `
 

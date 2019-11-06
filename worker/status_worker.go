@@ -19,15 +19,16 @@ type statusWorker struct {
 	log          flotillaLog.Logger
 	pollInterval time.Duration
 	t            tomb.Tomb
+	engine       *string
 }
 
-func (sw *statusWorker) Initialize(
-	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
 	sw.ee = ee
 	sw.log = log
+	sw.engine = engine
 	sw.log.Log("message", "initialized a status worker")
 	return nil
 }
@@ -162,7 +163,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 func (sw *statusWorker) findRun(taskArn string) (state.Run, error) {
 	runs, err := sw.sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{
 		"task_arn": {taskArn},
-	}, nil)
+	}, nil, nil)
 	if err != nil {
 		return state.Run{}, errors.Wrapf(err, "problem finding run by task arn [%s]", taskArn)
 	}

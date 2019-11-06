@@ -42,6 +42,7 @@ type LaunchRequestV2 struct {
 	Command *string
 	Memory  *int64
 	Cpu     *int64
+	Engine  *string
 	*LaunchRequest
 }
 
@@ -304,7 +305,8 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil)
+	engine := "ecs"
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil, &engine)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run",
@@ -331,7 +333,17 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil)
+	ecsEngine := "ecs"
+	if lr.Engine != nil {
+		if lr.Engine != &ecsEngine {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+			return
+		}
+	} else {
+		lr.Engine = &ecsEngine
+	}
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil, lr.Engine)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V2 run",
@@ -357,8 +369,19 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ecsEngine := "ecs"
+	if lr.Engine != nil {
+		if lr.Engine != &ecsEngine {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+			return
+		}
+	} else {
+		lr.Engine = &ecsEngine
+	}
+
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Engine)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -384,8 +407,19 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ecsEngine := "ecs"
+	if lr.Engine != nil {
+		if lr.Engine != &ecsEngine {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+			return
+		}
+	} else {
+		lr.Engine = &ecsEngine
+	}
+
 	vars := mux.Vars(r)
-	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu)
+	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Engine)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",

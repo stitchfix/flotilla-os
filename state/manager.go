@@ -23,9 +23,7 @@ type Manager interface {
 	CreateDefinition(d Definition) error
 	DeleteDefinition(definitionID string) error
 
-	ListRuns(limit int, offset int, sortBy string,
-		order string, filters map[string][]string,
-		envFilters map[string]string) (RunList, error)
+	ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engine *string) (RunList, error)
 
 	GetRun(runID string) (Run, error)
 	CreateRun(r Run) error

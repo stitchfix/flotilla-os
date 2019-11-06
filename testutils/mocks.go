@@ -108,9 +108,7 @@ func (iatt *ImplementsAllTheThings) DeleteDefinition(definitionID string) error 
 }
 
 // ListRuns - StateManager
-func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy string,
-	order string, filters map[string][]string,
-	envFilters map[string]string) (state.RunList, error) {
+func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engine *string) (state.RunList, error) {
 	iatt.Calls = append(iatt.Calls, "ListRuns")
 	rl := state.RunList{Total: len(iatt.Runs)}
 	for _, r := range iatt.Runs {

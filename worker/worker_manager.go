@@ -20,16 +20,16 @@ type workerManager struct {
 	pollInterval time.Duration
 	workers      map[string][]Worker
 	t            tomb.Tomb
+	engine       *string
 }
 
-func (wm *workerManager) Initialize(
-	conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration) error {
+func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
 	wm.conf = conf
 	wm.log = log
 	wm.ee = ee
 	wm.sm = sm
 	wm.pollInterval = pollInterval
-
+    wm.engine = engine
 	if err := wm.InitializeWorkers(); err != nil {
 		return errors.Errorf("WorkerManager unable to initialize workers.")
 	}
@@ -60,7 +60,7 @@ func (wm *workerManager) InitializeWorkers() error {
 		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
-			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm)
+			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, nil)
 
 			if err != nil {
 				return err
@@ -152,7 +152,7 @@ func (wm *workerManager) removeWorker(workerType string) error {
 }
 
 func (wm *workerManager) addWorker(workerType string) error {
-	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm)
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, nil)
 
 	if err != nil {
 		return err
