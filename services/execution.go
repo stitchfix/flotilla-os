@@ -165,9 +165,8 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		err error
 	)
 
-	defaultEngine := "ecs"
 	if engine == nil{
-		run.Engine = &defaultEngine
+		run.Engine = &state.DefaultEngine
 	}
 
 	runID, err := state.NewRunID(engine)

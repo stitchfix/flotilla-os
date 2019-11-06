@@ -48,7 +48,7 @@ func TestExecutionService_Create(t *testing.T) {
 
 	cmd := "_test_cmd_"
 	cpu := int64(512)
-	engine := "ecs"
+	engine := state.DefaultEngine
 	run, err := es.Create("B", "clusta", env, "somebody", &cmd, nil, &cpu, &engine)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -142,7 +142,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		"Enqueue":              true,
 	}
 	mem := int64(1024)
-	engine := "ecs"
+	engine := state.DefaultEngine
 	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil, &engine)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -222,7 +222,7 @@ func TestExecutionService_Create2(t *testing.T) {
 	var err error
 
 	// Invalid environment
-	engine := "ecs"
+	engine := state.DefaultEngine
 	_, err = es.Create("A", "clusta", env, "somebody", nil, nil, nil, &engine)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")

@@ -305,7 +305,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	engine := "ecs"
+	engine := state.DefaultEngine
 	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil, &engine)
 	if err != nil {
 		ep.logger.Log(
@@ -333,7 +333,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	ecsEngine := "ecs"
+	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
 		if lr.Engine != &ecsEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
@@ -369,7 +369,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ecsEngine := "ecs"
+	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
 		if lr.Engine != &ecsEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
@@ -407,7 +407,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ecsEngine := "ecs"
+	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
 		if lr.Engine != &ecsEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
