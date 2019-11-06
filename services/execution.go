@@ -290,7 +290,7 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, nil)
+	return es.sm.	ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, nil)
 }
 
 //
