@@ -516,7 +516,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.QueuedAt,
 			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
 			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
-			&existing.Cpu, &existing.Gpu)
+			&existing.Cpu, &existing.Gpu, &existing.Engine)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)

@@ -509,6 +509,7 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 func TestSQLStateManager_CreateRun(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
+	engine:= "ecs"
 
 	r1 := Run{
 		RunID:        "run:17",
@@ -521,11 +522,13 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
+		Engine: &engine,
 	}
 
 	ec := int64(137)
 	reason := "instance is ded."
 	cmd := "_test cmd__"
+
 	mem := int64(10)
 	t1, _ := time.Parse(time.RFC3339, "2017-07-04T00:01:00+00:00")
 	t2, _ := time.Parse(time.RFC3339, "2017-07-04T00:02:00+00:00")
@@ -549,6 +552,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 		Command: &cmd,
 		Memory:  &mem,
+		Engine: &engine,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
