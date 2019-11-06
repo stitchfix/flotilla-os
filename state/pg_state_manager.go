@@ -437,11 +437,14 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	var result RunList
 	var whereClause, orderQuery string
 
-	defaultEngine := "ecs"
+	if filters == nil{
+		filters = make(map[string][]string)
+	}
+
 	if engine != nil {
 		filters["engine"] = []string{*engine}
 	} else {
-		filters["engine"] = []string{defaultEngine}
+		filters["engine"] = []string{"ecs"}
 	}
 
 	where := append(sm.makeWhereClause(filters), sm.makeEnvWhereClause(envFilters)...)
