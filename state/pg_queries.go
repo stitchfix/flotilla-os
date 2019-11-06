@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS task (
   memory integer,
   cpu integer,
   gpu integer,
-  engine text DEFAULT 'ecs' NOT NULL
+  engine character varying DEFAULT 'ecs' NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
