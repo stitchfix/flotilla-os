@@ -436,7 +436,14 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	var err error
 	var result RunList
 	var whereClause, orderQuery string
-	filters["engine"] = []string{*engine}
+
+	defaultEngine := "ecs"
+	if engine != nil {
+		filters["engine"] = []string{*engine}
+	} else {
+		filters["engine"] = []string{defaultEngine}
+	}
+
 	where := append(sm.makeWhereClause(filters), sm.makeEnvWhereClause(envFilters)...)
 	if len(where) > 0 {
 		whereClause = fmt.Sprintf("where %s", strings.Join(where, " and "))
