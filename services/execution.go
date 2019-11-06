@@ -174,7 +174,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 	)
 
 	if engine == nil {
-		run.Engine = &state.DefaultEngine
+		engine = &state.DefaultEngine
 	}
 
 	runID, err := state.NewRunID(engine)
@@ -195,7 +195,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		Memory:       memory,
 		Cpu:          cpu,
 		Gpu:          definition.Gpu,
-		Engine:       run.Engine,
+		Engine:       engine,
 	}
 
 	runEnv := es.constructEnviron(run, env)
