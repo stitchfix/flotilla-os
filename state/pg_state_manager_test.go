@@ -552,7 +552,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 		Command: &cmd,
 		Memory:  &mem,
-		Engine: &engine,
+		Engine: &DefaultEngine,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
