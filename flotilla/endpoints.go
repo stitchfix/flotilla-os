@@ -487,28 +487,33 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, err)
 		return
 	}
-	 if *run.Engine == state.ECSEngine {
-		 logs, newLastSeen, err := ep.ecsLogService.Logs(vars["run_id"], &lastSeen)
-		 if err != nil {
-			 ep.logger.Log(
-				 "message", "problem getting logs",
-				 "operation", "GetLogs",
-				 "error", fmt.Sprintf("%+v", err),
-				 "run_id", vars["run_id"],
-				 "last_seen", lastSeen)
-			 ep.encodeError(w, err)
-			 return
-		 }
 
-		 res := map[string]string{
-			 "log": logs,
-		 }
-		 if newLastSeen != nil {
-			 res["last_seen"] = *newLastSeen
-		 }
-		 ep.encodeResponse(w, res)
+	if run.Engine == nil {
+		run.Engine = &state.DefaultEngine
+	}
 
-	 }
+	if *run.Engine == state.ECSEngine {
+		logs, newLastSeen, err := ep.ecsLogService.Logs(vars["run_id"], &lastSeen)
+		if err != nil {
+			ep.logger.Log(
+				"message", "problem getting logs",
+				"operation", "GetLogs",
+				"error", fmt.Sprintf("%+v", err),
+				"run_id", vars["run_id"],
+				"last_seen", lastSeen)
+			ep.encodeError(w, err)
+			return
+		}
+
+		res := map[string]string{
+			"log": logs,
+		}
+		if newLastSeen != nil {
+			res["last_seen"] = *newLastSeen
+		}
+		ep.encodeResponse(w, res)
+
+	}
 
 	if *run.Engine == state.EKSEngine {
 		// TODO
