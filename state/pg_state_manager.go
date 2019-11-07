@@ -431,7 +431,7 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
 //
-func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engine *string) (RunList, error) {
+func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
 
 	var err error
 	var result RunList
@@ -441,8 +441,8 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 		filters = make(map[string][]string)
 	}
 
-	if engine != nil {
-		filters["engine"] = []string{*engine}
+	if engines != nil {
+		filters["engine"] = engines
 	} else {
 		filters["engine"] = []string{DefaultEngine}
 	}

@@ -55,7 +55,7 @@ func (rw *retryWorker) Run() error {
 
 func (rw *retryWorker) runOnce() {
 	// List runs in the StatusNeedsRetry state and requeue them
-	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, rw.engine)
+	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{*rw.engine})
 
 	rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 
