@@ -47,14 +47,15 @@ func NewApp(conf config.Config,
 	ecsExecutionEngine engine.Engine,
 	eksExecutionEngine engine.Engine,
 	sm state.Manager,
-	cc cluster.Client,
+	ecsClusterClient cluster.Client,
+	eksClusterClient cluster.Client,
 	rc registry.Client) (App, error) {
 
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ecsExecutionEngine, eksExecutionEngine, sm, cc, rc)
+	executionService, err := services.NewExecutionService(conf, ecsExecutionEngine, eksExecutionEngine, sm, ecsClusterClient, eksClusterClient, rc)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}

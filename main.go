@@ -68,8 +68,14 @@ func main() {
 	//
 	ecsClusterClient, err := cluster.NewClusterClient(c, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize cluster client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS cluster client"))
 		os.Exit(1)
+	}
+
+	eksClusterClient, err := cluster.NewClusterClient(c, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS cluster client"))
+		//os.Exit(1)
 	}
 
 	//
@@ -107,7 +113,7 @@ func main() {
 		//os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, lc, ecsExecutionEngine, eksExecutionEngine, sm, ecsClusterClient, rc)
+	app, err := flotilla.NewApp(c, logger, lc, ecsExecutionEngine, eksExecutionEngine, sm, ecsClusterClient, eksClusterClient, rc)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

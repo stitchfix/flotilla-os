@@ -37,8 +37,8 @@ type definitionService struct {
 //
 // NewDefinitionService configures and returns a DefinitionService
 //
-func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, sm state.Manager) (DefinitionService, error) {
-	ds := definitionService{sm: sm, ecsExecutionEngine: ecsExecutionEngine}
+func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, stateManager state.Manager) (DefinitionService, error) {
+	ds := definitionService{sm: stateManager, ecsExecutionEngine: ecsExecutionEngine}
 	return &ds, nil
 }
 
