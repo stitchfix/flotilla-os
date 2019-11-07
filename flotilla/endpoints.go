@@ -18,7 +18,8 @@ import (
 type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
-	logService        services.LogService
+	ecsLogService     services.LogService
+	eksLogService     services.LogService
 	workerService     services.WorkerService
 	logger            flotillaLog.Logger
 }
@@ -474,7 +475,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
 	lastSeen := ep.getURLParam(params, "last_seen", "")
-	logs, newLastSeen, err := ep.logService.Logs(vars["run_id"], &lastSeen)
+	logs, newLastSeen, err := ep.ecsLogService.Logs(vars["run_id"], &lastSeen)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting logs",

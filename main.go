@@ -47,7 +47,7 @@ func main() {
 	// Get state manager for reading and writing
 	// state about definitions and runs
 	//
-	sm, err := state.NewStateManager(c)
+	stateManager, err := state.NewStateManager(c)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize state manager"))
 		os.Exit(1)
@@ -56,7 +56,7 @@ func main() {
 	//
 	// Get registry client for validating images
 	//
-	rc, err := registry.NewRegistryClient(c)
+	registryClient, err := registry.NewRegistryClient(c)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize registry client"))
 		os.Exit(1)
@@ -75,17 +75,26 @@ func main() {
 	eksClusterClient, err := cluster.NewClusterClient(c, state.EKSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS cluster client"))
+		//TODO
 		//os.Exit(1)
 	}
 
 	//
 	// Get logs client for reading run logs
 	//
-	lc, err := logs.NewLogsClient(c, logger)
+	ecsLogsClient, err := logs.NewLogsClient(c, logger, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize logs client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS logs client"))
 		os.Exit(1)
 	}
+
+	eksLogsClient, err := logs.NewLogsClient(c, logger, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS logs client"))
+		//TODO
+		//os.Exit(1)
+	}
+
 
 	//
 	// Get queue manager for queuing runs
@@ -113,7 +122,7 @@ func main() {
 		//os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, lc, ecsExecutionEngine, eksExecutionEngine, sm, ecsClusterClient, eksClusterClient, rc)
+	app, err := flotilla.NewApp(c, logger, ecsLogsClient, eksLogsClient, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)
