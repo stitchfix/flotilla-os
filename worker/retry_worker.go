@@ -28,6 +28,7 @@ func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engin
 	rw.ee = ee
 	rw.log = log
 	rw.log.Log("message", "initialized a retry worker")
+
 	rw.engine = engine
 
 	return nil
@@ -55,7 +56,14 @@ func (rw *retryWorker) Run() error {
 
 func (rw *retryWorker) runOnce() {
 	// List runs in the StatusNeedsRetry state and requeue them
-	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, rw.engine)
+	var engines []string
+	if rw.engine != nil {
+		engines = []string{*rw.engine}
+	} else {
+		engines = nil
+	}
+
+	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, engines)
 
 	rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 

@@ -56,8 +56,8 @@ func IsValidStatus(status string) bool {
 
 // NewRunID returns a new uuid for a Run
 func NewRunID(engine *string) (string, error) {
-	uuid, err := newUUIDv4()
-	return *engine + uuid[3:], err
+	s, err := newUUIDv4()
+	return fmt.Sprintf("%s-%s", *engine, s[4:]), err
 }
 
 // NewDefinitionID returns a new uuid for a Definition
