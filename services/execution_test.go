@@ -27,7 +27,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"B": "b/",
 		},
 	}
-	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp)
+	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp, &imp)
 	return es, &imp
 }
 

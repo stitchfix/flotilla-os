@@ -35,25 +35,29 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	sm          state.Manager
-	cc          cluster.Client
-	rc          registry.Client
-	ee          engine.Engine
-	reservedEnv map[string]func(run state.Run) string
+	sm                 state.Manager
+	cc                 cluster.Client
+	rc                 registry.Client
+	ecsExecutionEngine engine.Engine
+	eksExecutionEngine engine.Engine
+	reservedEnv        map[string]func(run state.Run) string
 }
 
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config, ee engine.Engine,
+func NewExecutionService(conf config.Config,
+	ecsExecutionEngine engine.Engine,
+	eksExecutionEngine engine.Engine,
 	sm state.Manager,
 	cc cluster.Client,
 	rc registry.Client) (ExecutionService, error) {
 	es := executionService{
-		sm: sm,
-		cc: cc,
-		rc: rc,
-		ee: ee,
+		sm:                 sm,
+		cc:                 cc,
+		rc:                 rc,
+		ecsExecutionEngine: ecsExecutionEngine,
+		eksExecutionEngine: eksExecutionEngine,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -151,7 +155,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	// Queue run
-	err = es.ee.Enqueue(run)
+	err = es.ecsExecutionEngine.Enqueue(run)
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -322,7 +326,7 @@ func (es *executionService) Terminate(runID string) error {
 
 	// If it's been submitted, let the status update workers handle setting it to stopped
 	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-		return es.ee.Terminate(run)
+		return es.ecsExecutionEngine.Terminate(run)
 	}
 
 	// If it's queued and not submitted, set status to stopped (checked by submit worker)

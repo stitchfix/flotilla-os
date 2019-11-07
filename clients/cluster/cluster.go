@@ -23,12 +23,7 @@ type Client interface {
 //
 // NewClusterClient returns a cluster client
 //
-func NewClusterClient(conf config.Config) (Client, error) {
-	name := "ecs"
-	if conf.IsSet("cluster_client") {
-		name = conf.GetString("cluster_client")
-	}
-
+func NewClusterClient(conf config.Config, name string) (Client, error) {
 	switch name {
 	case "ecs":
 		ecsc := &ECSClusterClient{}

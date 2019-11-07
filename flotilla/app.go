@@ -44,7 +44,8 @@ func (app *App) Run() error {
 func NewApp(conf config.Config,
 	log flotillaLog.Logger,
 	lc logs.Client,
-	ee engine.Engine,
+	ecsExecutionEngine engine.Engine,
+	eksExecutionEngine engine.Engine,
 	sm state.Manager,
 	cc cluster.Client,
 	rc registry.Client) (App, error) {
@@ -53,11 +54,11 @@ func NewApp(conf config.Config,
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc)
+	executionService, err := services.NewExecutionService(conf, ecsExecutionEngine, eksExecutionEngine, sm, cc, rc)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}
-	definitionService, err := services.NewDefinitionService(conf, ee, sm)
+	definitionService, err := services.NewDefinitionService(conf, ecsExecutionEngine, sm)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing definition service")
 	}
@@ -79,7 +80,7 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeECSWorkers(conf, log, ee, sm); err != nil {
+	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, sm); err != nil {
 		return app, errors.Wrap(err, "problem initializing workers")
 	}
 	return app, nil

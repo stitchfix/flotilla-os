@@ -66,7 +66,7 @@ func main() {
 	// Get cluster client for validating definitions
 	// against execution clusters
 	//
-	cc, err := cluster.NewClusterClient(c)
+	ecsClusterClient, err := cluster.NewClusterClient(c, state.ECSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize cluster client"))
 		os.Exit(1)
@@ -94,13 +94,20 @@ func main() {
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ee, err := engine.NewExecutionEngine(c, qm)
+	ecsExecutionEngine, err := engine.NewExecutionEngine(c, qm, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS execution engine"))
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc)
+	eksExecutionEngine, err := engine.NewExecutionEngine(c, qm, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
+		// TODO
+		//os.Exit(1)
+	}
+
+	app, err := flotilla.NewApp(c, logger, lc, ecsExecutionEngine, eksExecutionEngine, sm, ecsClusterClient, rc)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

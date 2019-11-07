@@ -30,15 +30,15 @@ type DefinitionService interface {
 }
 
 type definitionService struct {
-	sm state.Manager
-	ee engine.Engine
+	sm                 state.Manager
+	ecsExecutionEngine engine.Engine
 }
 
 //
 // NewDefinitionService configures and returns a DefinitionService
 //
-func NewDefinitionService(conf config.Config, ee engine.Engine, sm state.Manager) (DefinitionService, error) {
-	ds := definitionService{sm: sm, ee: ee}
+func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, sm state.Manager) (DefinitionService, error) {
+	ds := definitionService{sm: sm, ecsExecutionEngine: ecsExecutionEngine}
 	return &ds, nil
 }
 
@@ -69,7 +69,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, err
 	}
 	definition.DefinitionID = definitionID
-	defined, err := ds.ee.Define(*definition)
+	defined, err := ds.ecsExecutionEngine.Define(*definition)
 	if err != nil {
 		return state.Definition{}, err
 	}
@@ -119,7 +119,7 @@ func (ds *definitionService) Update(definitionID string, updates state.Definitio
 	}
 
 	definition.UpdateWith(updates)
-	defined, err := ds.ee.Define(definition)
+	defined, err := ds.ecsExecutionEngine.Define(definition)
 	if err != nil {
 		return definition, err
 	}
@@ -133,7 +133,7 @@ func (ds *definitionService) Delete(definitionID string) error {
 	if err != nil {
 		return err
 	}
-	if err = ds.ee.Deregister(definition); err != nil {
+	if err = ds.ecsExecutionEngine.Deregister(definition); err != nil {
 		return err
 	}
 	return ds.sm.DeleteDefinition(definitionID)
