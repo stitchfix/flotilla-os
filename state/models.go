@@ -11,6 +11,12 @@ import (
 	uuid "github.com/nu7hatch/gouuid"
 )
 
+var ECSEngine = "ecs"
+
+var EKSEngine = "eks"
+
+var DefaultEngine = ECSEngine
+
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
 

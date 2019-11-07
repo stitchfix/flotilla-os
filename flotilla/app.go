@@ -127,7 +127,7 @@ func (app *App) initializeECSWorkers(
 	log flotillaLog.Logger,
 	ee engine.Engine,
 	sm state.Manager) error {
-	engine := "ecs"
+	engine := state.DefaultEngine
 	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &engine)
 	app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {

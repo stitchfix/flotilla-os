@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
+
 )
 
 func getDB(conf config.Config) *sqlx.DB {
@@ -509,7 +510,6 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 func TestSQLStateManager_CreateRun(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
-	engine:= "ecs"
 
 	r1 := Run{
 		RunID:        "run:17",
@@ -522,7 +522,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
-		Engine: &engine,
+		Engine: &DefaultEngine,
 	}
 
 	ec := int64(137)
@@ -552,7 +552,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 		Command: &cmd,
 		Memory:  &mem,
-		Engine: &engine,
+		Engine: &DefaultEngine,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)

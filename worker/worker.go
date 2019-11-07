@@ -41,7 +41,7 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	if err = worker.Initialize(conf, sm, ee, log, pollInterval, nil); err != nil {
+	if err = worker.Initialize(conf, sm, ee, log, pollInterval, engine); err != nil {
 		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
 	}
 	return worker, nil
