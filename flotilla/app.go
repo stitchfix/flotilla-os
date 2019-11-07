@@ -69,7 +69,7 @@ func NewApp(conf config.Config,
 		return app, errors.Wrap(err, "problem initializing ecs log service")
 	}
 
-	eksLogService, err := services.NewLogService(conf, stateManager, ecsLogsClient)
+	eksLogService, err := services.NewLogService(conf, stateManager, eksLogsClient)
 	// TODO
 	//if err != nil {
 	//	return app, errors.Wrap(err, "problem initializing ecs log service")
