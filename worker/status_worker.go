@@ -163,7 +163,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 func (sw *statusWorker) findRun(taskArn string) (state.Run, error) {
 	runs, err := sw.sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{
 		"task_arn": {taskArn},
-	}, nil, nil)
+	}, nil, sw.engine)
 	if err != nil {
 		return state.Run{}, errors.Wrapf(err, "problem finding run by task arn [%s]", taskArn)
 	}
