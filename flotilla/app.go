@@ -43,29 +43,40 @@ func (app *App) Run() error {
 
 func NewApp(conf config.Config,
 	log flotillaLog.Logger,
-	lc logs.Client,
-	ee engine.Engine,
-	sm state.Manager,
-	cc cluster.Client,
-	rc registry.Client) (App, error) {
+	ecsLogsClient logs.Client,
+	eksLogsClient logs.Client,
+	ecsExecutionEngine engine.Engine,
+	eksExecutionEngine engine.Engine,
+	stateManager state.Manager,
+	ecsClusterClient cluster.Client,
+	eksClusterClient cluster.Client,
+	registryClient registry.Client) (App, error) {
 
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ee, sm, cc, rc)
+	executionService, err := services.NewExecutionService(conf, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}
-	definitionService, err := services.NewDefinitionService(conf, ee, sm)
+	definitionService, err := services.NewDefinitionService(conf, ecsExecutionEngine, stateManager)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing definition service")
 	}
-	logService, err := services.NewLogService(conf, sm, lc)
+	ecsLogService, err := services.NewLogService(conf, stateManager, ecsLogsClient)
 	if err != nil {
-		return app, errors.Wrap(err, "problem initializing log service")
+		return app, errors.Wrap(err, "problem initializing ecs log service")
 	}
-	workerService, err := services.NewWorkerService(conf, sm)
+
+	eksLogService, err := services.NewLogService(conf, stateManager, eksLogsClient)
+	// TODO
+	//if err != nil {
+	//	return app, errors.Wrap(err, "problem initializing ecs log service")
+	//}
+
+
+	workerService, err := services.NewWorkerService(conf, stateManager)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing worker service")
 	}
@@ -73,13 +84,14 @@ func NewApp(conf config.Config,
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
-		logService:        logService,
+		ecsLogService:     ecsLogService,
+		eksLogService:     eksLogService,
 		workerService:     workerService,
 		logger:            log,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeECSWorkers(conf, log, ee, sm); err != nil {
+	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager); err != nil {
 		return app, errors.Wrap(err, "problem initializing workers")
 	}
 	return app, nil

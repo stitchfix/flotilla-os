@@ -20,21 +20,19 @@ type Client interface {
 //
 // NewLogsClient creates and initializes a run logs client
 //
-func NewLogsClient(conf config.Config, logger flotillaLog.Logger) (Client, error) {
-	name := "awslogs"
-	if conf.IsSet("log.driver.name") {
-		name = conf.GetString("log.driver.name")
-	}
-
+func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (Client, error) {
 	logger.Log("message", "Initializing logs client", "client", name)
 	switch name {
-	case "awslogs":
+	case "ecs":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
-		cwlc := &CloudWatchLogsClient{}
+		cwlc := &ECSCloudWatchLogsClient{}
 		if err := cwlc.Initialize(conf); err != nil {
-			return nil, errors.Wrap(err, "problem initializing CloudWatchLogsClient")
+			return nil, errors.Wrap(err, "problem initializing ECSCloudWatchLogsClient")
 		}
 		return cwlc, nil
+	case "eks":
+		//TODO
+		return nil, errors.New("TODO - NOT IMPLEMENTED")
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
