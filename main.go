@@ -99,23 +99,30 @@ func main() {
 	//
 	// Get queue manager for queuing runs
 	//
-	qm, err := queue.NewQueueManager(c)
+	ecsQueueManager, err := queue.NewQueueManager(c, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize queue manager"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ecs queue manager"))
 		os.Exit(1)
+	}
+
+	eksQueueManager, err := queue.NewQueueManager(c, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
+		//TODO
+		//os.Exit(1)
 	}
 
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ecsExecutionEngine, err := engine.NewExecutionEngine(c, qm, state.ECSEngine)
+	ecsExecutionEngine, err := engine.NewExecutionEngine(c, ecsQueueManager, state.ECSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS execution engine"))
 		os.Exit(1)
 	}
 
-	eksExecutionEngine, err := engine.NewExecutionEngine(c, qm, state.EKSEngine)
+	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
 		// TODO

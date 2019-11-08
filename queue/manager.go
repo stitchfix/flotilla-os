@@ -41,19 +41,16 @@ type StatusReceipt struct {
 //
 // NewQueueManager returns the Manager configured via `queue_manager`
 //
-func NewQueueManager(conf config.Config) (Manager, error) {
-	name := "sqs"
-	if conf.IsSet("queue_manager") {
-		name = conf.GetString("queue_manager")
-	}
-
+func NewQueueManager(conf config.Config, name string) (Manager, error) {
 	switch name {
-	case "sqs":
+	case "ecs":
 		sqsm := &SQSManager{}
 		if err := sqsm.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing SQSManager")
 		}
 		return sqsm, nil
+	case "eks":
+		return nil, errors.New("TODO - NOT IMPLEMENTED")
 	default:
 		return nil, fmt.Errorf("No QueueManager named [%s] was found", name)
 	}
