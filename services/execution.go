@@ -164,7 +164,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	if run.Engine == &state.EKSEngine {
-		//err = es.eksExecutionEngine.Enqueue(run)
+		err = es.eksExecutionEngine.Enqueue(run)
 		err = errors.New("TODO - NOT IMPLEMENTED")
 	}
 
