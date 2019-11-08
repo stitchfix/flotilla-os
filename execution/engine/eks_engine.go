@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/base64"
 	"flag"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
@@ -8,11 +9,11 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	 metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
-	"path/filepath"
 )
 
 //
@@ -22,7 +23,6 @@ type EKSExecutionEngine struct {
 	kClient    *kubernetes.Clientset
 	adapter    adapter.EKSAdapter
 	qm         queue.Manager
-	statusQurl string
 	log        flotillaLog.Logger
 }
 
@@ -30,23 +30,30 @@ type EKSExecutionEngine struct {
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	// TODO: this section should be set with whatever config is necessary to connect to EKS.
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	kStr, err := base64.StdEncoding.DecodeString(conf.GetString("eks.kubeconfig"))
+	if err != nil {
+		return err
 	}
+
+	err = ioutil.WriteFile(conf.GetString("eks.kubeconfig_path"), kStr, 0644)
+	if err != nil {
+		return err
+	}
+
+	kubeconfig := flag.String("kubeconfig",
+		conf.GetString("eks.kubeconfig_path"),
+		"(optional) absolute tmpPath to the kubeconfig file")
+
 	flag.Parse()
 
-	kubeConf, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	clientConf, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
-	kClient, err := kubernetes.NewForConfig(kubeConf)
+	kClient, err := kubernetes.NewForConfig(clientConf)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	ee.kClient = kClient
@@ -58,13 +65,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	ee.adapter = adapt
-
-	statusQueue := conf.GetString("queue.status")
-	ee.statusQurl, err = ee.qm.QurlFor(statusQueue, false)
-	if err != nil {
-		return errors.Wrapf(err, "problem getting queue url for status queue with name [%s]", statusQueue)
-	}
-
 	return nil
 }
 

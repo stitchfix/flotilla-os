@@ -51,7 +51,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	// Job spec.
-	jobspec := batchv1.JobSpec{
+	jobSpec := batchv1.JobSpec{
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers:    []corev1.Container{container},
@@ -62,7 +62,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 	eksJob := batchv1.Job{
 
-		Spec: jobspec,
+		Spec: jobSpec,
 	}
 
 	return eksJob, nil
@@ -71,6 +71,6 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 	bashCmd := "bash"
 	optLogin := "-l"
-	optStr := "-c"
+	optStr := "-cex"
 	return []string{bashCmd, optLogin, optStr, cmdString}
 }

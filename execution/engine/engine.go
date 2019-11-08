@@ -48,7 +48,11 @@ func NewExecutionEngine(conf config.Config, qm queue.Manager, name string) (Engi
 		}
 		return eng, nil
 	case "eks":
-		return nil, errors.New("TODO - NOT IMPLEMENTED")
+		eng := &EKSExecutionEngine{qm: qm}
+		if err := eng.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
+		}
+		return eng, nil
 	default:
 		return nil, fmt.Errorf("no Engine named [%s] was found", name)
 	}
