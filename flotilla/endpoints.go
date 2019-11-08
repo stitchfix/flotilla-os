@@ -335,15 +335,14 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
-		if lr.Engine != &ecsEngine {
+		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
 		}
 	} else {
-		lr.Engine = &ecsEngine
+		lr.Engine = &state.DefaultEngine
 	}
 	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil, lr.Engine)
 	if err != nil {
@@ -371,15 +370,14 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
-		if lr.Engine != &ecsEngine {
+		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
 		}
 	} else {
-		lr.Engine = &ecsEngine
+		lr.Engine = &state.DefaultEngine
 	}
 
 	vars := mux.Vars(r)
@@ -409,15 +407,14 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ecsEngine := state.DefaultEngine
 	if lr.Engine != nil {
-		if lr.Engine != &ecsEngine {
+		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs]")})
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
 		}
 	} else {
-		lr.Engine = &ecsEngine
+		lr.Engine = &state.DefaultEngine
 	}
 
 	vars := mux.Vars(r)

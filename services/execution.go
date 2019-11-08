@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -141,7 +142,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	)
 
 	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(clusterName, definition, env); err != nil {
+	if err = es.canBeRun(clusterName, definition, env, *engine); err != nil {
 		return run, err
 	}
 
@@ -157,8 +158,16 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// Queue run
-	err = es.ecsExecutionEngine.Enqueue(run)
+	// ECS Queue run
+	if run.Engine == &state.ECSEngine {
+		err = es.ecsExecutionEngine.Enqueue(run)
+	}
+
+	if run.Engine == &state.EKSEngine {
+		//err = es.eksExecutionEngine.Enqueue(run)
+		err = errors.New("TODO - NOT IMPLEMENTED")
+	}
+
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -232,7 +241,7 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 	return state.EnvList(runEnv)
 }
 
-func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList) error {
+func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList, engine string) error {
 	if env != nil {
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
@@ -253,7 +262,17 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
-	ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
+	if engine == state.ECSEngine {
+		ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
+	}
+	if engine == state.EKSEngine {
+		if *definition.Privileged == true {
+			ok, err = false, errors.New("eks cannot run containers with privileged mode")
+		} else {
+			ok, err = true, nil
+		}
+	}
+
 	if err != nil {
 		return err
 	}
@@ -327,9 +346,16 @@ func (es *executionService) Terminate(runID string) error {
 		return err
 	}
 
-	// If it's been submitted, let the status update workers handle setting it to stopped
-	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-		return es.ecsExecutionEngine.Terminate(run)
+	if run.Engine == &state.ECSEngine {
+		// If it's been submitted, let the status update workers handle setting it to stopped
+		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
+			return es.ecsExecutionEngine.Terminate(run)
+		}
+	}
+
+	if run.Engine == &state.EKSEngine {
+		//TODO
+		return errors.New("TODO - NOT IMPLEMENTED")
 	}
 
 	// If it's queued and not submitted, set status to stopped (checked by submit worker)
