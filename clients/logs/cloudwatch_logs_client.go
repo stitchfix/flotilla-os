@@ -18,10 +18,10 @@ import (
 )
 
 //
-// CloudWatchLogsClient corresponds with the aws logs driver
+// ECSCloudWatchLogsClient corresponds with the aws logs driver
 // for ECS and returns logs for runs
 //
-type CloudWatchLogsClient struct {
+type ECSCloudWatchLogsClient struct {
 	logRetentionInDays int64
 	logNamespace       string
 	logStreamPrefix    string
@@ -45,14 +45,14 @@ func (events byTimestamp) Less(i, j int) bool { return *(events[i].Timestamp) < 
 //
 // Name returns the name of the logs client
 //
-func (cwl *CloudWatchLogsClient) Name() string {
+func (cwl *ECSCloudWatchLogsClient) Name() string {
 	return "cloudwatch"
 }
 
 //
-// Initialize sets up the CloudWatchLogsClient
+// Initialize sets up the ECSCloudWatchLogsClient
 //
-func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
+func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	confLogOptions := conf.GetStringMapString("log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
@@ -62,7 +62,7 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 
 	if len(awsRegion) == 0 {
 		return errors.Errorf(
-			"CloudWatchLogsClient needs one of [log.driver.options.awslogs-region] or [aws_default_region] set in config")
+			"ECSCloudWatchLogsClient needs one of [log.driver.options.awslogs-region] or [aws_default_region] set in config")
 	}
 
 	//
@@ -75,12 +75,12 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 
 	if len(cwl.logNamespace) == 0 {
 		return errors.Errorf(
-			"CloudWatchLogsClient needs one of [log.driver.options.awslogs-group] or [log.namespace] set in config")
+			"ECSCloudWatchLogsClient needs one of [log.driver.options.awslogs-group] or [log.namespace] set in config")
 	}
 
 	cwl.logStreamPrefix = confLogOptions["awslogs-stream-prefix"]
 	if len(cwl.logStreamPrefix) == 0 {
-		return errors.Errorf("CloudWatchLogsClient needs [log.driver.options.awslogs-stream-prefix] set in config")
+		return errors.Errorf("ECSCloudWatchLogsClient needs [log.driver.options.awslogs-stream-prefix] set in config")
 	}
 
 	cwl.logRetentionInDays = int64(conf.GetInt("log.retention_days"))
@@ -103,7 +103,7 @@ func (cwl *CloudWatchLogsClient) Initialize(conf config.Config) error {
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (cwl *ECSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 	handle := cwl.toStreamName(definition, run)
 	args := &cloudwatchlogs.GetLogEventsInput{
@@ -146,13 +146,13 @@ func (cwl *CloudWatchLogsClient) Logs(definition state.Definition, run state.Run
 	return message, result.NextForwardToken, nil
 }
 
-func (cwl *CloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
+func (cwl *ECSCloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
 	arnSplits := strings.Split(run.TaskArn, "/")
 	return fmt.Sprintf(
 		"%s/%s/%s", cwl.logStreamPrefix, definition.ContainerName, arnSplits[len(arnSplits)-1])
 }
 
-func (cwl *CloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
+func (cwl *ECSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
 	sort.Sort(byTimestamp(events))
 
 	messages := make([]string, len(events))
@@ -162,7 +162,7 @@ func (cwl *CloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLo
 	return strings.Join(messages, "\n")
 }
 
-func (cwl *CloudWatchLogsClient) createNamespaceIfNotExists() error {
+func (cwl *ECSCloudWatchLogsClient) createNamespaceIfNotExists() error {
 	exists, err := cwl.namespaceExists()
 	if err != nil {
 		return errors.Wrapf(err, "problem checking if log namespace [%s] exists", cwl.logNamespace)
@@ -173,7 +173,7 @@ func (cwl *CloudWatchLogsClient) createNamespaceIfNotExists() error {
 	return nil
 }
 
-func (cwl *CloudWatchLogsClient) namespaceExists() (bool, error) {
+func (cwl *ECSCloudWatchLogsClient) namespaceExists() (bool, error) {
 	result, err := cwl.logsClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{
 		LogGroupNamePrefix: &cwl.logNamespace,
 	})
@@ -192,7 +192,7 @@ func (cwl *CloudWatchLogsClient) namespaceExists() (bool, error) {
 	return false, nil
 }
 
-func (cwl *CloudWatchLogsClient) createNamespace() error {
+func (cwl *ECSCloudWatchLogsClient) createNamespace() error {
 	_, err := cwl.logsClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: &cwl.logNamespace,
 	})

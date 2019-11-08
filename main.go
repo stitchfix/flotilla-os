@@ -47,7 +47,7 @@ func main() {
 	// Get state manager for reading and writing
 	// state about definitions and runs
 	//
-	sm, err := state.NewStateManager(c)
+	stateManager, err := state.NewStateManager(c)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize state manager"))
 		os.Exit(1)
@@ -56,7 +56,7 @@ func main() {
 	//
 	// Get registry client for validating images
 	//
-	rc, err := registry.NewRegistryClient(c)
+	registryClient, err := registry.NewRegistryClient(c)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize registry client"))
 		os.Exit(1)
@@ -66,41 +66,70 @@ func main() {
 	// Get cluster client for validating definitions
 	// against execution clusters
 	//
-	cc, err := cluster.NewClusterClient(c)
+	ecsClusterClient, err := cluster.NewClusterClient(c, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize cluster client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS cluster client"))
 		os.Exit(1)
+	}
+
+	eksClusterClient, err := cluster.NewClusterClient(c, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS cluster client"))
+		//TODO
+		//os.Exit(1)
 	}
 
 	//
 	// Get logs client for reading run logs
 	//
-	lc, err := logs.NewLogsClient(c, logger)
+	ecsLogsClient, err := logs.NewLogsClient(c, logger, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize logs client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS logs client"))
 		os.Exit(1)
 	}
+
+	eksLogsClient, err := logs.NewLogsClient(c, logger, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS logs client"))
+		//TODO
+		//os.Exit(1)
+	}
+
 
 	//
 	// Get queue manager for queuing runs
 	//
-	qm, err := queue.NewQueueManager(c)
+	ecsQueueManager, err := queue.NewQueueManager(c, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize queue manager"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ecs queue manager"))
 		os.Exit(1)
+	}
+
+	eksQueueManager, err := queue.NewQueueManager(c, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
+		//TODO
+		//os.Exit(1)
 	}
 
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ee, err := engine.NewExecutionEngine(c, qm)
+	ecsExecutionEngine, err := engine.NewExecutionEngine(c, ecsQueueManager, state.ECSEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize execution engine"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS execution engine"))
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, lc, ee, sm, cc, rc)
+	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
+		// TODO
+		//os.Exit(1)
+	}
+
+	app, err := flotilla.NewApp(c, logger, ecsLogsClient, eksLogsClient, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

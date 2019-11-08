@@ -35,25 +35,32 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	sm          state.Manager
-	cc          cluster.Client
-	rc          registry.Client
-	ee          engine.Engine
-	reservedEnv map[string]func(run state.Run) string
+	stateManager       state.Manager
+	ecsClusterClient   cluster.Client
+	eksClusterClient   cluster.Client
+	registryClient     registry.Client
+	ecsExecutionEngine engine.Engine
+	eksExecutionEngine engine.Engine
+	reservedEnv        map[string]func(run state.Run) string
 }
 
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config, ee engine.Engine,
+func NewExecutionService(conf config.Config,
+	ecsExecutionEngine engine.Engine,
+	eksExecutionEngine engine.Engine,
 	sm state.Manager,
-	cc cluster.Client,
+	ecsClusterClient cluster.Client,
+	eksClusterClient cluster.Client,
 	rc registry.Client) (ExecutionService, error) {
 	es := executionService{
-		sm: sm,
-		cc: cc,
-		rc: rc,
-		ee: ee,
+		stateManager:       sm,
+		ecsClusterClient:   ecsClusterClient,
+		eksClusterClient:   eksClusterClient,
+		registryClient:     rc,
+		ecsExecutionEngine: ecsExecutionEngine,
+		eksExecutionEngine: eksExecutionEngine,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -75,7 +82,7 @@ func NewExecutionService(conf config.Config, ee engine.Engine,
 		},
 	}
 	// Warm cached cluster list
-	es.cc.ListClusters()
+	es.ecsClusterClient.ListClusters()
 	return &es, nil
 }
 
@@ -97,7 +104,7 @@ func (es *executionService) ReservedVariables() []string {
 func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
 
 	// Ensure definition exists
-	definition, err := es.sm.GetDefinition(definitionID)
+	definition, err := es.stateManager.GetDefinition(definitionID)
 	if err != nil {
 		return state.Run{}, err
 	}
@@ -115,7 +122,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
 
 	// Ensure definition exists
-	definition, err := es.sm.GetDefinitionByAlias(alias)
+	definition, err := es.stateManager.GetDefinitionByAlias(alias)
 	if err != nil {
 		return state.Run{}, err
 	}
@@ -146,12 +153,12 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 
 	// Save run to source of state - it is *CRITICAL* to do this
 	// -before- queuing to avoid processing unsaved runs
-	if err = es.sm.CreateRun(run); err != nil {
+	if err = es.stateManager.CreateRun(run); err != nil {
 		return run, err
 	}
 
 	// Queue run
-	err = es.ee.Enqueue(run)
+	err = es.ecsExecutionEngine.Enqueue(run)
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -159,7 +166,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	// Update the run's QueuedAt field
-	if run, err = es.sm.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
+	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
 
@@ -236,7 +243,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 		}
 	}
 
-	ok, err := es.rc.IsImageValid(definition.Image)
+	ok, err := es.registryClient.IsImageValid(definition.Image)
 	if err != nil {
 		return err
 	}
@@ -246,7 +253,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
-	ok, err = es.cc.CanBeRun(clusterName, definition)
+	ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
 	if err != nil {
 		return err
 	}
@@ -274,7 +281,7 @@ func (es *executionService) List(
 	// existence first
 	definitionID, ok := filters["definition_id"]
 	if ok {
-		_, err := es.sm.GetDefinition(definitionID[0])
+		_, err := es.stateManager.GetDefinition(definitionID[0])
 		if err != nil {
 			return state.RunList{}, err
 		}
@@ -290,14 +297,14 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.sm.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.ECSEngine, state.EKSEngine})
+	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.ECSEngine, state.EKSEngine})
 }
 
 //
 // Get returns the run with the given runID
 //
 func (es *executionService) Get(runID string) (state.Run, error) {
-	return es.sm.GetRun(runID)
+	return es.stateManager.GetRun(runID)
 }
 
 //
@@ -307,7 +314,7 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
-	_, err := es.sm.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
+	_, err := es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
 	return err
 }
 
@@ -315,19 +322,19 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 // Terminate stops the run with the given runID
 //
 func (es *executionService) Terminate(runID string) error {
-	run, err := es.sm.GetRun(runID)
+	run, err := es.stateManager.GetRun(runID)
 	if err != nil {
 		return err
 	}
 
 	// If it's been submitted, let the status update workers handle setting it to stopped
 	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-		return es.ee.Terminate(run)
+		return es.ecsExecutionEngine.Terminate(run)
 	}
 
 	// If it's queued and not submitted, set status to stopped (checked by submit worker)
 	if run.Status == state.StatusQueued {
-		_, err = es.sm.UpdateRun(runID, state.Run{Status: state.StatusStopped})
+		_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
 		return err
 	}
 
@@ -340,5 +347,5 @@ func (es *executionService) Terminate(runID string) error {
 // ListClusters returns a list of all execution clusters available
 //
 func (es *executionService) ListClusters() ([]string, error) {
-	return es.cc.ListClusters()
+	return es.ecsClusterClient.ListClusters()
 }

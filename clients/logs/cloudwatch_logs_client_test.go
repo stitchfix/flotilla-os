@@ -105,7 +105,7 @@ func (tlc *testLogsClient) GetLogEvents(input *cloudwatchlogs.GetLogEventsInput)
 func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	confDir := "../../conf"
 	c, _ := config.NewConfig(&confDir)
-	cwlc := CloudWatchLogsClient{}
+	cwlc := ECSCloudWatchLogsClient{}
 
 	tlc := testLogsClient{t: t}
 	cwlc.logsClient = &tlc
