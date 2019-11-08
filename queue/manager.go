@@ -13,7 +13,7 @@ import (
 type Manager interface {
 	Name() string
 	QurlFor(name string, prefixed bool) (string, error)
-	Initialize(config.Config) error
+	Initialize(config.Config, string) error
 	Enqueue(qURL string, run state.Run) error
 	ReceiveRun(qURL string) (RunReceipt, error)
 	ReceiveStatus(qURL string) (StatusReceipt, error)
@@ -43,15 +43,19 @@ type StatusReceipt struct {
 //
 func NewQueueManager(conf config.Config, name string) (Manager, error) {
 	switch name {
-	case "ecs":
+	case state.ECSEngine:
 		sqsm := &SQSManager{}
-		if err := sqsm.Initialize(conf); err != nil {
+		if err := sqsm.Initialize(conf, state.ECSEngine); err != nil {
 			return nil, errors.Wrap(err, "problem initializing SQSManager")
 		}
 		return sqsm, nil
-	case "eks":
-		return nil, errors.New("TODO - NOT IMPLEMENTED")
+	case state.EKSEngine:
+		sqsEKS := &SQSManager{}
+		if err := sqsEKS.Initialize(conf, state.EKSEngine); err != nil {
+			return nil, errors.Wrap(err, "problem initializing SQSManager")
+		}
+		return sqsEKS, nil
 	default:
-		return nil, fmt.Errorf("No QueueManager named [%s] was found", name)
+		return nil, fmt.Errorf("no QueueManager named [%s] was found", name)
 	}
 }

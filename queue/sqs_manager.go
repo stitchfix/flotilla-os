@@ -40,13 +40,9 @@ func (qm *SQSManager) Name() string {
 //
 // Initialize new sqs queue manager
 //
-func (qm *SQSManager) Initialize(conf config.Config) error {
+func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	if !conf.IsSet("aws_default_region") {
 		return errors.Errorf("SQSManager needs [aws_default_region] set in config")
-	}
-
-	if !conf.IsSet("queue.namespace") {
-		return errors.Errorf("SQSManager needs [queue.namespace] set in config")
 	}
 
 	qm.retentionSeconds = "604800"
@@ -59,7 +55,18 @@ func (qm *SQSManager) Initialize(conf config.Config) error {
 		qm.visibilityTimeout = conf.GetString("queue.process_time")
 	}
 
-	qm.namespace = conf.GetString("queue.namespace")
+	if engine == state.EKSEngine {
+		if !conf.IsSet("eks.job_queue") {
+			return errors.Errorf("SQSManager needs [eks.job_queue] set in config")
+		}
+		qm.namespace = conf.GetString("queue.namespace")
+	}
+	if engine == state.ECSEngine {
+		if !conf.IsSet("queue.namespace") {
+			return errors.Errorf("SQSManager needs [queue.namespace] set in config")
+		}
+		qm.namespace = conf.GetString("queue.namespace")
+	}
 
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {

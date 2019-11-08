@@ -108,8 +108,7 @@ func main() {
 	eksQueueManager, err := queue.NewQueueManager(c, state.EKSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
-		//TODO
-		//os.Exit(1)
+		os.Exit(1)
 	}
 
 	//
