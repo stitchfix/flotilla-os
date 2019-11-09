@@ -161,7 +161,7 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 }
 
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
-	job, err := ee.kClient.BatchV1().Jobs("default").Get(run.RunID, metav1.GetOptions{})
+	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job", err)
