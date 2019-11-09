@@ -345,6 +345,10 @@ func (es *executionService) Terminate(runID string) error {
 		return err
 	}
 
+	if run.Engine == nil {
+		run.Engine = &state.ECSEngine
+	}
+
 	if *run.Engine == state.ECSEngine {
 		// If it's been submitted, let the status update workers handle setting it to stopped
 		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
