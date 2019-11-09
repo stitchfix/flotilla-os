@@ -651,6 +651,12 @@
 			"revisionTime": "2019-10-23T00:48:41Z"
 		},
 		{
+			"checksumSHA1": "n4BSFd2oQSouPIWNJXaUeppDWC0=",
+			"path": "github.com/googleapis/gnostic/extensions",
+			"revision": "dde5565d98663c4c06e162ffd3fb829ec84a46d8",
+			"revisionTime": "2019-10-23T00:48:41Z"
+		},
+		{
 			"checksumSHA1": "2Iy16w6c+4oMD8TtobbO0qsCrDo=",
 			"path": "github.com/gorilla/mux",
 			"revision": "d83b6ffe499a29cc05fc977988d0392851779620",
@@ -999,6 +1005,12 @@
 			"revisionTime": "2019-11-05T15:52:03Z"
 		},
 		{
+			"checksumSHA1": "aFpql3G+Nw8zkzfqLWQJNZC8pu0=",
+			"path": "golang.org/x/net/context/ctxhttp",
+			"revision": "c7154b74f18f62a42612a96ebd5389bf9dea7a56",
+			"revisionTime": "2019-11-08T22:25:41Z"
+		},
+		{
 			"checksumSHA1": "pCY4YtdNKVBYRbNvODjx8hj0hIs=",
 			"path": "golang.org/x/net/http/httpguts",
 			"revision": "c7154b74f18f62a42612a96ebd5389bf9dea7a56",
@@ -1053,10 +1065,22 @@
 			"revisionTime": "2019-06-26T21:29:17Z"
 		},
 		{
+			"checksumSHA1": "CbpjEkkOeh0fdM/V8xKDdI0AA88=",
+			"path": "golang.org/x/text/secure/bidirule",
+			"revision": "4b67af870c6ffd08258ef1202f371aebccaf7b68",
+			"revisionTime": "2019-10-31T09:06:55Z"
+		},
+		{
 			"checksumSHA1": "R9iBDY+aPnT+8pyRcqGjXq5QixA=",
 			"path": "golang.org/x/text/transform",
 			"revision": "342b2e1fbaa52c93f31447ad2c6abc048c63e475",
 			"revisionTime": "2018-12-15T17:52:45Z"
+		},
+		{
+			"checksumSHA1": "r9jghh/t6+uE2xorGKxleAm8/dg=",
+			"path": "golang.org/x/text/unicode/bidi",
+			"revision": "4b67af870c6ffd08258ef1202f371aebccaf7b68",
+			"revisionTime": "2019-10-31T09:06:55Z"
 		},
 		{
 			"checksumSHA1": "8fzd6fnxrstdNSVg+Srhf1nKgek=",
