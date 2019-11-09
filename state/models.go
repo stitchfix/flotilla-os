@@ -17,6 +17,8 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
+var Engines = []string{ECSEngine, EKSEngine}
+
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
 

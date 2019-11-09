@@ -336,7 +336,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if lr.Engine != nil {
-		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
+		if !stringInSlice(*lr.Engine, state.Engines) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
@@ -355,7 +355,14 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, run)
 	}
 }
-
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -371,9 +378,9 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
+		if !stringInSlice(*lr.Engine, state.Engines) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *lr.Engine)})
 			return
 		}
 	} else {
@@ -408,7 +415,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if lr.Engine != &state.ECSEngine || lr.Engine != &state.EKSEngine {
+		if !stringInSlice(*lr.Engine, state.Engines) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return

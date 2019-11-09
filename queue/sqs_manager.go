@@ -55,19 +55,11 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 		qm.visibilityTimeout = conf.GetString("queue.process_time")
 	}
 
-	if engine == state.EKSEngine {
-		if !conf.IsSet("eks.job_queue") {
-			return errors.Errorf("SQSManager needs [eks.job_queue] set in config")
-		}
-		qm.namespace = conf.GetString("queue.namespace")
-	}
-	if engine == state.ECSEngine {
-		if !conf.IsSet("queue.namespace") {
-			return errors.Errorf("SQSManager needs [queue.namespace] set in config")
-		}
-		qm.namespace = conf.GetString("queue.namespace")
+	if !conf.IsSet("queue.namespace") {
+		return errors.Errorf("SQSManager needs [queue.namespace] set in config")
 	}
 
+	qm.namespace = conf.GetString("queue.namespace")
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {
 		sess := session.Must(session.NewSession(&aws.Config{

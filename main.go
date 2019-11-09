@@ -29,7 +29,7 @@ func main() {
 	// Use go-kit for structured logging
 	//
 	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
-	l = gklog.With(l, "ts", gklog.DefaultTimestampUTC, "caller", gklog.DefaultCaller)
+	l = gklog.With(l, "ts", gklog.DefaultTimestampUTC)
 	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
 	logger := flotillaLog.NewLogger(l, eventSinks)
 
@@ -95,7 +95,6 @@ func main() {
 		//os.Exit(1)
 	}
 
-
 	//
 	// Get queue manager for queuing runs
 	//
@@ -115,17 +114,16 @@ func main() {
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. ECS)
 	//
-	ecsExecutionEngine, err := engine.NewExecutionEngine(c, ecsQueueManager, state.ECSEngine)
+	ecsExecutionEngine, err := engine.NewExecutionEngine(c, ecsQueueManager, state.ECSEngine, logger)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize ECS execution engine"))
 		os.Exit(1)
 	}
 
-	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine)
+	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine, logger)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
-		// TODO
-		//os.Exit(1)
+		os.Exit(1)
 	}
 
 	app, err := flotilla.NewApp(c, logger, ecsLogsClient, eksLogsClient, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient)

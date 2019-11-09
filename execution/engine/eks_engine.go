@@ -20,10 +20,13 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	kClient    *kubernetes.Clientset
-	adapter    adapter.EKSAdapter
-	qm         queue.Manager
-	log        flotillaLog.Logger
+	kClient      *kubernetes.Clientset
+	adapter      adapter.EKSAdapter
+	qm           queue.Manager
+	log          flotillaLog.Logger
+	jobQueue     string
+	jobNamespace string
+	jobTtl       int
 }
 
 //
@@ -56,6 +59,10 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		return err
 	}
 
+	ee.jobQueue = conf.GetString("eks.job_queue")
+	ee.jobNamespace = conf.GetString("eks.job_namespace")
+	ee.jobTtl = conf.GetInt("eks.job_ttl")
+
 	ee.kClient = kClient
 
 	adapt, err := adapter.NewEKSAdapter(conf)
@@ -71,7 +78,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
 
-	result, err := ee.kClient.BatchV1().Jobs("default").Create(&job)
+	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		return state.Run{}, false, err
 	}
@@ -90,7 +97,7 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 
 func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
-	qurl, err := ee.qm.QurlFor(run.ClusterName, true)
+	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}

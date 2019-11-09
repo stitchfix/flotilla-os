@@ -158,14 +158,13 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
+	fmt.Println(*engine)
 	// ECS Queue run
-	if run.Engine == &state.ECSEngine {
+	if *engine == state.ECSEngine {
 		err = es.ecsExecutionEngine.Enqueue(run)
 	}
-
-	if run.Engine == &state.EKSEngine {
+	if *engine == state.EKSEngine {
 		err = es.eksExecutionEngine.Enqueue(run)
-		err = errors.New("TODO - NOT IMPLEMENTED")
 	}
 
 	queuedAt := time.Now()
