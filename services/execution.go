@@ -345,14 +345,14 @@ func (es *executionService) Terminate(runID string) error {
 		return err
 	}
 
-	if run.Engine == &state.ECSEngine {
+	if *run.Engine == state.ECSEngine {
 		// If it's been submitted, let the status update workers handle setting it to stopped
 		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
 			return es.ecsExecutionEngine.Terminate(run)
 		}
 	}
 
-	if run.Engine == &state.EKSEngine {
+	if *run.Engine == state.EKSEngine {
 		//TODO
 		return errors.New("TODO - NOT IMPLEMENTED")
 	}
