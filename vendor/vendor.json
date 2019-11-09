@@ -267,6 +267,12 @@
 			"revisionTime": "2019-04-26T06:22:06Z"
 		},
 		{
+			"checksumSHA1": "CSPbwbyzqA6sfORicn4HFtIhF/c=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "d8f796af33cc11cb798c1aaeb27a4ebc5099927d",
+			"revisionTime": "2018-08-30T19:11:22Z"
+		},
+		{
 			"checksumSHA1": "/bqitU7csSAMsmgBTYG3WsUcgOU=",
 			"path": "github.com/docker/cli/cli/config",
 			"revision": "39e22d9db677384df4b72f136103e47a8dfe8d5d",
@@ -591,6 +597,12 @@
 			"revisionTime": "2019-06-11T06:18:53Z"
 		},
 		{
+			"checksumSHA1": "HPVQZu059/Rfw2bAWM538bVTcUc=",
+			"path": "github.com/gogo/protobuf/sortkeys",
+			"revision": "5628607bb4c51c3157aacc3a50f0ab707582b805",
+			"revisionTime": "2019-10-14T06:15:17Z"
+		},
+		{
 			"checksumSHA1": "CGj8VcI/CpzxaNqlqpEVM7qElD4=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "6c65a5562fc06764971b7c5d05c76c75e84bdbf7",
@@ -619,6 +631,18 @@
 			"path": "github.com/golang/protobuf/ptypes/timestamp",
 			"revision": "6c65a5562fc06764971b7c5d05c76c75e84bdbf7",
 			"revisionTime": "2019-07-01T18:22:01Z"
+		},
+		{
+			"checksumSHA1": "GWiIQPrRmpmcJJDgyqvmoXuyj6E=",
+			"path": "github.com/google/gofuzz",
+			"revision": "db92cf7ae75e4a7a28abc005addab2b394362888",
+			"revisionTime": "2019-10-28T17:48:53Z"
+		},
+		{
+			"checksumSHA1": "Fi3jI3hMZspTZ/AcWWbm32aAdY8=",
+			"path": "github.com/googleapis/gnostic/OpenAPIv2",
+			"revision": "dde5565d98663c4c06e162ffd3fb829ec84a46d8",
+			"revisionTime": "2019-10-23T00:48:41Z"
 		},
 		{
 			"checksumSHA1": "2Iy16w6c+4oMD8TtobbO0qsCrDo=",
@@ -693,6 +717,12 @@
 			"revisionTime": "2019-06-11T12:32:18Z"
 		},
 		{
+			"checksumSHA1": "Krmcp9xkjW8RL0WOF+2ECVllrHw=",
+			"path": "github.com/imdario/mergo",
+			"revision": "1afb36080aec31e0d1528973ebe6721b191b0369",
+			"revisionTime": "2019-10-03T07:39:17Z"
+		},
+		{
 			"checksumSHA1": "blwbl9vPvRLtL5QlZgfpLvsFiZ4=",
 			"path": "github.com/jmespath/go-jmespath",
 			"revision": "c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5",
@@ -709,6 +739,12 @@
 			"path": "github.com/jmoiron/sqlx/reflectx",
 			"revision": "38398a30ed8516ffda617a04c822de09df8a3ec5",
 			"revisionTime": "2019-04-26T15:48:59Z"
+		},
+		{
+			"checksumSHA1": "GuTwAvlDC2G7a06PufWJpcL4Tvk=",
+			"path": "github.com/json-iterator/go",
+			"revision": "dc11f49689fd1c9a6de20749def70bd889bf0d42",
+			"revisionTime": "2019-10-30T00:35:33Z"
 		},
 		{
 			"checksumSHA1": "Aulh7C5SVOA4Jzt5eHNH6197Mbk=",
@@ -769,6 +805,12 @@
 			"path": "github.com/moby/moby/registry",
 			"revision": "a43a2ed746540ee31056047d89ae91ff07a350a1",
 			"revisionTime": "2019-07-02T17:02:47Z"
+		},
+		{
+			"checksumSHA1": "qvH48wzTIV3QKSDqI0dLFtVjaDI=",
+			"path": "github.com/modern-go/reflect2",
+			"revision": "94122c33edd36123c84d5368cfb2b69df93a0ec8",
+			"revisionTime": "2018-07-18T01:23:57Z"
 		},
 		{
 			"checksumSHA1": "OfTtsGbmK3BBWGvGfXJ1BV3fzmY=",
@@ -939,6 +981,24 @@
 			"revisionTime": "2018-06-05T02:01:30Z"
 		},
 		{
+			"checksumSHA1": "Zsm3tvgRFJOt3afwwhrGymcSZgg=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "bd318be0434a57050ed475e0f45c3dbb16c09c2e",
+			"revisionTime": "2019-11-05T15:52:03Z"
+		},
+		{
+			"checksumSHA1": "LooJdZp54CvQO30IWQDHlmZ2GIo=",
+			"path": "golang.org/x/net/http2",
+			"revision": "c7154b74f18f62a42612a96ebd5389bf9dea7a56",
+			"revisionTime": "2019-11-08T22:25:41Z"
+		},
+		{
+			"checksumSHA1": "uRlaEkyMCxyjj57KBa81GEfvCwg=",
+			"path": "golang.org/x/oauth2",
+			"revision": "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33",
+			"revisionTime": "2019-05-07T23:52:07Z"
+		},
+		{
 			"checksumSHA1": "oxQzknCJtgckDEKh+zp99Ph3Qkg=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "04f50cda93cbb67f2afa353c52f342100e80e625",
@@ -967,6 +1027,12 @@
 			"path": "golang.org/x/text/unicode/norm",
 			"revision": "342b2e1fbaa52c93f31447ad2c6abc048c63e475",
 			"revisionTime": "2018-12-15T17:52:45Z"
+		},
+		{
+			"checksumSHA1": "MpBvKi+rNRB9eV6zc1MJyeK87ew=",
+			"path": "golang.org/x/time/rate",
+			"revision": "555d28b269f0569763d25dbe1a237ae74c6bcc82",
+			"revisionTime": "2019-10-23T19:31:36Z"
 		},
 		{
 			"checksumSHA1": "dU5fToNngC22+3DsebkdYv+T3jE=",
@@ -1003,6 +1069,12 @@
 			"path": "google.golang.org/grpc/status",
 			"revision": "73b304d882a0822aaeb3c982c747563777e79586",
 			"revisionTime": "2019-06-27T22:18:59Z"
+		},
+		{
+			"checksumSHA1": "COfXAfInbcFT/YRsvLUQnNKHzF0=",
+			"path": "gopkg.in/inf.v0",
+			"revision": "d2d2541c53f18d2a059457998ce2876cc8e67cbf",
+			"revisionTime": "2018-03-26T17:23:32Z"
 		},
 		{
 			"checksumSHA1": "t95/FNK2nGCx3e6IARbO7OrcCuY=",
@@ -1931,6 +2003,12 @@
 			"path": "k8s.io/utils/integer",
 			"revision": "2b95a09bc58df43d4032504619706b6a38293a47",
 			"revisionTime": "2019-10-30T22:21:37Z"
+		},
+		{
+			"checksumSHA1": "ZExWoMcqJ9WKc9KMJQUtIST3nTc=",
+			"path": "sigs.k8s.io/yaml",
+			"revision": "4cd0c284b15f1735b8cc247df097d262b8903f9f",
+			"revisionTime": "2019-07-04T18:38:35Z"
 		}
 	],
 	"rootPath": "github.com/stitchfix/flotilla-os"
