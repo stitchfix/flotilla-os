@@ -350,6 +350,12 @@ func (es *executionService) Terminate(runID string) error {
 		run.Engine = &state.ECSEngine
 	}
 
+	// If it's queued and not submitted, set status to stopped (checked by submit worker)
+	if run.Status == state.StatusQueued {
+		_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
+		return err
+	}
+
 	if *run.Engine == state.ECSEngine {
 		// If it's been submitted, let the status update workers handle setting it to stopped
 		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
@@ -358,16 +364,11 @@ func (es *executionService) Terminate(runID string) error {
 	}
 
 	if *run.Engine == state.EKSEngine {
-		//TODO
-		return errors.New("TODO - NOT IMPLEMENTED")
+		if run.Status != state.StatusStopped && len(run.ClusterName) > 0 {
+			return es.eksExecutionEngine.Terminate(run)
+		}
 	}
-
-	// If it's queued and not submitted, set status to stopped (checked by submit worker)
-	if run.Status == state.StatusQueued {
-		_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
-		return err
-	}
-
+	
 	return exceptions.MalformedInput{
 		ErrorString: fmt.Sprintf(
 			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
