@@ -45,31 +45,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 
 // TODO: figure what other params are needed.
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
-	limits := make(corev1.ResourceList)
-	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Cpu))
-	if run.Cpu != nil {
-		cpuQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Cpu))
-	}
-
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Memory))
-	if run.Memory != nil {
-		memoryQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Memory))
-	}
-
-	if definition.Gpu != nil {
-		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", definition.Gpu))
-	}
-
-	if run.EphemeralStorage != nil {
-		limits[corev1.ResourceEphemeralStorage] =
-			resource.MustParse(fmt.Sprintf("%dGi", run.EphemeralStorage))
-	}
-
-	limits[corev1.ResourceCPU] = cpuQuantity
-	limits[corev1.ResourceMemory] = memoryQuantity
-	resourceRequirements := corev1.ResourceRequirements{
-		Limits: limits,
-	}
+	resourceRequirements := a.constructResourceRequirements(definition, run)
 
 	container := corev1.Container{
 		Name:      run.DefinitionID,
@@ -100,6 +76,31 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	return eksJob, nil
+}
+
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+	limits := make(corev1.ResourceList)
+	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Cpu))
+	if run.Cpu != nil {
+		cpuQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Cpu))
+	}
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Memory))
+	if run.Memory != nil {
+		memoryQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Memory))
+	}
+	if definition.Gpu != nil {
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", definition.Gpu))
+	}
+	if run.EphemeralStorage != nil {
+		limits[corev1.ResourceEphemeralStorage] =
+			resource.MustParse(fmt.Sprintf("%dGi", run.EphemeralStorage))
+	}
+	limits[corev1.ResourceCPU] = cpuQuantity
+	limits[corev1.ResourceMemory] = memoryQuantity
+	resourceRequirements := corev1.ResourceRequirements{
+		Limits: limits,
+	}
+	return resourceRequirements
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
