@@ -571,9 +571,9 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type, command, memory, cpu, gpu, engine
+      env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23
     );
     `
 
@@ -588,7 +588,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.ExitCode, r.ExitReason, r.Status,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.InstanceID, r.InstanceDNSName, r.GroupName,
-		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine); err != nil {
+		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle, r.EphemeralStorage); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
