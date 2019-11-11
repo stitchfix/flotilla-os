@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 )
 
 //
@@ -92,7 +91,8 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
-	return nil
+	deleteOptions := &metav1.DeleteOptions{}
+	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 }
 
 func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
@@ -174,12 +174,4 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	}
 
 	return updates, nil
-}
-
-// TODO: this section should be set with whatever config is necessary to connect to EKS. This is currently used for local dev.
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
