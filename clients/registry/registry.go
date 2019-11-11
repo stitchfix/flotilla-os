@@ -85,10 +85,7 @@ func NewRegistryClient(c config.Config) (Client, error) {
 		tf  imageTagFetcher
 	)
 
-	tf.registryService, err = registry.NewService(registry.ServiceOptions{})
-	if err != nil {
-		return &rc, errors.Wrap(err, "problem creating registry service")
-	}
+	tf.registryService = registry.NewService(registry.ServiceOptions{})
 	tf.authConfigs, err = loadAuthConfigs(c)
 	if err != nil {
 		return &rc, errors.Wrap(err, "error loading docker authentication configuration")
@@ -111,7 +108,7 @@ func (rc *registryClient) IsImageValid(imageRef string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrapf(err, "issue fetching tags for image reference [%s]", imageRef)
 	}
-	
+
 	tag := taggedRef.Tag()
 	for _, t := range tags {
 		if tag == t {
@@ -217,7 +214,7 @@ func (tf *imageTagFetcher) newV2Repository(
 		base.Dial = proxyDialer.Dial
 	}
 
-	modifiers := registry.Headers(dockerversion.DockerUserAgent(ctx), metaHeaders)
+	modifiers := registry.DockerHeaders(dockerversion.DockerUserAgent(ctx), metaHeaders)
 	authTransport := transport.NewTransport(base, modifiers...)
 
 	challengeManager, _, err := registry.PingV2Registry(endpoint.URL, authTransport)
@@ -253,7 +250,7 @@ func (tf *imageTagFetcher) newV2Repository(
 		return nil, errors.Wrapf(err, "issue getting repository reference for repository name [%s]", repoName)
 	}
 
-	repo, err := client.NewRepository(repoNameRef, endpoint.URL.String(), tr)
+	repo, err := client.NewRepository(ctx, repoNameRef, endpoint.URL.String(), tr)
 	if err != nil {
 		return repo, errors.Wrap(err, "issue creating new repository")
 	}
