@@ -879,10 +879,10 @@
 			"revisionTime": "2019-05-30T03:55:49Z"
 		},
 		{
-			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
+			"checksumSHA1": "SVinfxcBSupb3+HEKpSBYFZ4Bh4=",
 			"path": "github.com/pkg/errors",
-			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
-			"revisionTime": "2019-02-27T00:00:51Z"
+			"revision": "7f95ac13edff643b8ce5398b6ccab125f8a20c1a",
+			"revisionTime": "2019-11-09T10:23:16Z"
 		},
 		{
 			"checksumSHA1": "x5CuZuHwidIOrzy/g2NQMDJMIxQ=",
