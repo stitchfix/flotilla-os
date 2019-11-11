@@ -79,7 +79,11 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	lifecycle := "kubernetes.io/lifecycle"
+	ttlSecondsAfterFinished := int32(1800)
+	activeDeadlineSeconds := int64(86400)
 	jobSpec := batchv1.JobSpec{
+		TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
+		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers:    []corev1.Container{container},
