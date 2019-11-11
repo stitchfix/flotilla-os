@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS task (
   memory integer,
   cpu integer,
   gpu integer,
+  ephemeral_storage integer,
+  node_lifecycle character varying,
   engine character varying DEFAULT 'ecs' NOT NULL
 );
 
@@ -198,7 +200,9 @@ select
   memory,
   cpu,
   gpu,
-  engine
+  engine,
+  ephemeral_storage,
+  node_lifecycle
 from task t
 `
 
