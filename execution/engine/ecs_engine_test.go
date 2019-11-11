@@ -25,7 +25,7 @@ func (mqm *mockQueueManager) QurlFor(name string, prefixed bool) (string, error)
 	return "", nil
 }
 
-func (mqm *mockQueueManager) Initialize(config.Config) error {
+func (mqm *mockQueueManager) Initialize(config.Config, string) error {
 	return nil
 }
 

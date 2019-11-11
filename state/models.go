@@ -17,6 +17,16 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
+var SpotLifecycle = "spot"
+
+var OndemandLifecycle = "normal"
+
+var DefaultLifecycle = SpotLifecycle
+
+var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
+
+var Engines = []string{ECSEngine, EKSEngine}
+
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
 
@@ -289,29 +299,31 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn         string     `json:"task_arn"`
-	RunID           string     `json:"run_id"`
-	DefinitionID    string     `json:"definition_id"`
-	Alias           string     `json:"alias"`
-	Image           string     `json:"image"`
-	ClusterName     string     `json:"cluster"`
-	ExitCode        *int64     `json:"exit_code,omitempty"`
-	Status          string     `json:"status"`
-	QueuedAt        *time.Time `json:"queued_at,omitempty"`
-	StartedAt       *time.Time `json:"started_at,omitempty"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
-	InstanceID      string     `json:"-"`
-	InstanceDNSName string     `json:"-"`
-	GroupName       string     `json:"group_name"`
-	User            string     `json:"user,omitempty"`
-	TaskType        string     `json:"-"`
-	Env             *EnvList   `json:"env,omitempty"`
-	Command         *string    `json:"command,omitempty"`
-	Memory          *int64     `json:"memory,omitempty"`
-	Cpu             *int64     `json:"cpu,omitempty"`
-	Gpu             *int64     `json:"gpu,omitempty"`
-	ExitReason      *string    `json:"exit_reason,omitempty"`
-	Engine          *string    `json:"engine,omitempty"`
+	TaskArn          string     `json:"task_arn"`
+	RunID            string     `json:"run_id"`
+	DefinitionID     string     `json:"definition_id"`
+	Alias            string     `json:"alias"`
+	Image            string     `json:"image"`
+	ClusterName      string     `json:"cluster"`
+	ExitCode         *int64     `json:"exit_code,omitempty"`
+	Status           string     `json:"status"`
+	QueuedAt         *time.Time `json:"queued_at,omitempty"`
+	StartedAt        *time.Time `json:"started_at,omitempty"`
+	FinishedAt       *time.Time `json:"finished_at,omitempty"`
+	InstanceID       string     `json:"-"`
+	InstanceDNSName  string     `json:"-"`
+	GroupName        string     `json:"group_name"`
+	User             string     `json:"user,omitempty"`
+	TaskType         string     `json:"-"`
+	Env              *EnvList   `json:"env,omitempty"`
+	Command          *string    `json:"command,omitempty"`
+	Memory           *int64     `json:"memory,omitempty"`
+	Cpu              *int64     `json:"cpu,omitempty"`
+	Gpu              *int64     `json:"gpu,omitempty"`
+	ExitReason       *string    `json:"exit_reason,omitempty"`
+	Engine           *string    `json:"engine,omitempty"`
+	NodeLifecycle    *string    `json:"node_lifecycle,omitempty"`
+	EphemeralStorage *int64     `json:"ephemeral_storage,omitempty"`
 }
 
 //
@@ -389,6 +401,14 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.Engine != nil {
 		d.Engine = other.Engine
+	}
+
+	if other.EphemeralStorage != nil {
+		d.EphemeralStorage = other.EphemeralStorage
+	}
+
+	if other.NodeLifecycle != nil {
+		d.NodeLifecycle = other.NodeLifecycle
 	}
 
 	//

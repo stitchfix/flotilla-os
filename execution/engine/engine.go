@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
@@ -39,7 +40,7 @@ type RunReceipt struct {
 //
 // NewExecutionEngine initializes and returns a new Engine
 //
-func NewExecutionEngine(conf config.Config, qm queue.Manager, name string) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logger log.Logger) (Engine, error) {
 	switch name {
 	case "ecs":
 		eng := &ECSExecutionEngine{qm: qm}
@@ -48,7 +49,11 @@ func NewExecutionEngine(conf config.Config, qm queue.Manager, name string) (Engi
 		}
 		return eng, nil
 	case "eks":
-		return nil, errors.New("TODO - NOT IMPLEMENTED")
+		eksEng := &EKSExecutionEngine{qm: qm, log:logger}
+		if err := eksEng.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
+		}
+		return eksEng, nil
 	default:
 		return nil, fmt.Errorf("no Engine named [%s] was found", name)
 	}

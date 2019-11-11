@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,8 +19,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error)
-	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error)
+	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
+	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -101,7 +102,7 @@ func (es *executionService) ReservedVariables() []string {
 //
 // Create constructs and queues a new Run on the cluster specified
 //
-func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
@@ -113,13 +114,13 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
-func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
@@ -131,22 +132,22 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
-func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
 	var (
 		run state.Run
 		err error
 	)
 
 	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(clusterName, definition, env); err != nil {
+	if err = es.canBeRun(clusterName, definition, env, *engine); err != nil {
 		return run, err
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine)
+	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {
 		return run, err
 	}
@@ -157,8 +158,14 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// Queue run
-	err = es.ecsExecutionEngine.Enqueue(run)
+	// ECS Queue run
+	if *engine == state.ECSEngine {
+		err = es.ecsExecutionEngine.Enqueue(run)
+	}
+	if *engine == state.EKSEngine {
+		err = es.eksExecutionEngine.Enqueue(run)
+	}
+
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -173,7 +180,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	return run, nil
 }
 
-func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
 
 	var (
 		run state.Run
@@ -190,19 +197,21 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 	}
 
 	run = state.Run{
-		RunID:        runID,
-		ClusterName:  clusterName,
-		GroupName:    definition.GroupName,
-		DefinitionID: definition.DefinitionID,
-		Alias:        definition.Alias,
-		Image:        definition.Image,
-		Status:       state.StatusQueued,
-		User:         ownerID,
-		Command:      command,
-		Memory:       memory,
-		Cpu:          cpu,
-		Gpu:          definition.Gpu,
-		Engine:       engine,
+		RunID:            runID,
+		ClusterName:      clusterName,
+		GroupName:        definition.GroupName,
+		DefinitionID:     definition.DefinitionID,
+		Alias:            definition.Alias,
+		Image:            definition.Image,
+		Status:           state.StatusQueued,
+		User:             ownerID,
+		Command:          command,
+		Memory:           memory,
+		Cpu:              cpu,
+		Gpu:              definition.Gpu,
+		Engine:           engine,
+		NodeLifecycle:    nodeLifecycle,
+		EphemeralStorage: ephemeralStorage,
 	}
 
 	runEnv := es.constructEnviron(run, env)
@@ -232,7 +241,7 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 	return state.EnvList(runEnv)
 }
 
-func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList) error {
+func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList, engine string) error {
 	if env != nil {
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
@@ -253,7 +262,17 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 				"image [%s] was not found in any of the configured repositories", definition.Image)}
 	}
 
-	ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
+	if engine == state.ECSEngine {
+		ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
+	}
+	if engine == state.EKSEngine {
+		if *definition.Privileged == true {
+			ok, err = false, errors.New("eks cannot run containers with privileged mode")
+		} else {
+			ok, err = true, nil
+		}
+	}
+
 	if err != nil {
 		return err
 	}
@@ -327,9 +346,20 @@ func (es *executionService) Terminate(runID string) error {
 		return err
 	}
 
-	// If it's been submitted, let the status update workers handle setting it to stopped
-	if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-		return es.ecsExecutionEngine.Terminate(run)
+	if run.Engine == nil {
+		run.Engine = &state.ECSEngine
+	}
+
+	if *run.Engine == state.ECSEngine {
+		// If it's been submitted, let the status update workers handle setting it to stopped
+		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
+			return es.ecsExecutionEngine.Terminate(run)
+		}
+	}
+
+	if *run.Engine == state.EKSEngine {
+		//TODO
+		return errors.New("TODO - NOT IMPLEMENTED")
 	}
 
 	// If it's queued and not submitted, set status to stopped (checked by submit worker)
