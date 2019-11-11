@@ -40,11 +40,13 @@ type LaunchRequest struct {
 }
 
 type LaunchRequestV2 struct {
-	RunTags RunTags `json:"run_tags"`
-	Command *string
-	Memory  *int64
-	Cpu     *int64
-	Engine  *string
+	RunTags          RunTags `json:"run_tags"`
+	Command          *string
+	Memory           *int64
+	Cpu              *int64
+	Engine           *string
+	NodeLifecycle    *string
+	EphemeralStorage *int64
 	*LaunchRequest
 }
 
@@ -308,7 +310,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	engine := state.DefaultEngine
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil, &engine)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, "v1-unknown", nil, nil, nil, &engine, nil, nil)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run",
@@ -344,7 +346,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	} else {
 		lr.Engine = &state.DefaultEngine
 	}
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil, lr.Engine)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerEmail, nil, nil, nil, lr.Engine, nil, nil)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V2 run",
@@ -387,8 +389,17 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		lr.Engine = &state.DefaultEngine
 	}
 
+	if lr.NodeLifecycle != nil {
+		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
+			return
+		}
+	} else {
+		lr.NodeLifecycle = &state.DefaultLifecycle
+	}
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Engine)
+	run, err := ep.executionService.Create(vars["definition_id"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Engine, lr.EphemeralStorage, lr.NodeLifecycle)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -424,8 +435,28 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		lr.Engine = &state.DefaultEngine
 	}
 
+	if lr.NodeLifecycle != nil {
+		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
+			return
+		}
+	} else {
+		lr.NodeLifecycle = &state.DefaultLifecycle
+	}
+
 	vars := mux.Vars(r)
-	run, err := ep.executionService.CreateByAlias(vars["alias"], lr.ClusterName, lr.Env, lr.RunTags.OwnerID, lr.Command, lr.Memory, lr.Cpu, lr.Engine)
+	run, err := ep.executionService.CreateByAlias(
+		vars["alias"],
+		lr.ClusterName,
+		lr.Env,
+		lr.RunTags.OwnerID,
+		lr.Command,
+		lr.Memory,
+		lr.Cpu,
+		lr.Engine,
+		lr.EphemeralStorage,
+		lr.NodeLifecycle)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",

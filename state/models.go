@@ -17,6 +17,14 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
+var SpotLifecycle = "spot"
+
+var OndemandLifecycle = "normal"
+
+var DefaultLifecycle = SpotLifecycle
+
+var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
+
 var Engines = []string{ECSEngine, EKSEngine}
 
 // StatusRunning indicates the run is running
@@ -402,7 +410,7 @@ func (d *Run) UpdateWith(other Run) {
 	if other.NodeLifecycle != nil {
 		d.NodeLifecycle = other.NodeLifecycle
 	}
-	
+
 	//
 	// Runs have a deterministic lifecycle
 	//

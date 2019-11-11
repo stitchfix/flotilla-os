@@ -19,8 +19,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error)
-	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error)
+	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
+	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -102,7 +102,7 @@ func (es *executionService) ReservedVariables() []string {
 //
 // Create constructs and queues a new Run on the cluster specified
 //
-func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
@@ -114,13 +114,13 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
-func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
@@ -132,10 +132,10 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
-func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -147,7 +147,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine)
+	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {
 		return run, err
 	}
@@ -158,7 +158,6 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	fmt.Println(*engine)
 	// ECS Queue run
 	if *engine == state.ECSEngine {
 		err = es.ecsExecutionEngine.Enqueue(run)
@@ -181,7 +180,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	return run, nil
 }
 
-func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string) (state.Run, error) {
+func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
 
 	var (
 		run state.Run
@@ -198,19 +197,21 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 	}
 
 	run = state.Run{
-		RunID:        runID,
-		ClusterName:  clusterName,
-		GroupName:    definition.GroupName,
-		DefinitionID: definition.DefinitionID,
-		Alias:        definition.Alias,
-		Image:        definition.Image,
-		Status:       state.StatusQueued,
-		User:         ownerID,
-		Command:      command,
-		Memory:       memory,
-		Cpu:          cpu,
-		Gpu:          definition.Gpu,
-		Engine:       engine,
+		RunID:            runID,
+		ClusterName:      clusterName,
+		GroupName:        definition.GroupName,
+		DefinitionID:     definition.DefinitionID,
+		Alias:            definition.Alias,
+		Image:            definition.Image,
+		Status:           state.StatusQueued,
+		User:             ownerID,
+		Command:          command,
+		Memory:           memory,
+		Cpu:              cpu,
+		Gpu:              definition.Gpu,
+		Engine:           engine,
+		NodeLifecycle:    nodeLifecycle,
+		EphemeralStorage: ephemeralStorage,
 	}
 
 	runEnv := es.constructEnviron(run, env)
