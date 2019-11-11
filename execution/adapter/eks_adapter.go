@@ -1,10 +1,12 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type EKSAdapter interface {
@@ -43,25 +45,53 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 
 // TODO: figure what other params are needed.
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
-	// Container spec.
-	container := corev1.Container{
-		Name:    run.DefinitionID,
-		Image:   run.Image,
-		Command: a.constructCmdSlice(definition.Command),
+	limits := make(corev1.ResourceList)
+	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Cpu))
+	if run.Cpu != nil {
+		cpuQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Cpu))
 	}
 
-	// Job spec.
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Memory))
+	if run.Memory != nil {
+		memoryQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Memory))
+	}
+
+	if definition.Gpu != nil {
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", definition.Gpu))
+	}
+
+	if run.EphemeralStorage != nil {
+		limits[corev1.ResourceEphemeralStorage] =
+			resource.MustParse(fmt.Sprintf("%dGi", run.EphemeralStorage))
+	}
+
+	limits[corev1.ResourceCPU] = cpuQuantity
+	limits[corev1.ResourceMemory] = memoryQuantity
+	resourceRequirements := corev1.ResourceRequirements{
+		Limits: limits,
+	}
+
+	container := corev1.Container{
+		Name:      run.DefinitionID,
+		Image:     run.Image,
+		Command:   a.constructCmdSlice(definition.Command),
+		Resources: resourceRequirements,
+	}
+
+	lifecycle := "kubernetes.io/lifecycle"
 	jobSpec := batchv1.JobSpec{
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers:    []corev1.Container{container},
-				RestartPolicy: "Never",
+				RestartPolicy: corev1.RestartPolicyNever,
+				NodeSelector: map[string]string{
+					lifecycle: *run.NodeLifecycle,
+				},
 			},
 		},
 	}
 
 	eksJob := batchv1.Job{
-
 		Spec: jobSpec,
 	}
 
