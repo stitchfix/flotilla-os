@@ -201,8 +201,8 @@ select
   cpu,
   gpu,
   engine,
-  ephemeral_storage,
-  node_lifecycle
+  ephemeral_storage as ephemeralstorage,
+  node_lifecycle as nodelifecycle
 from task t
 `
 
