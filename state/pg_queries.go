@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS task (
   cpu integer,
   gpu integer,
   ephemeral_storage integer,
-  node_lifecycle character varying,
+  node_lifecycle text,
   engine character varying DEFAULT 'ecs' NOT NULL
 );
 
