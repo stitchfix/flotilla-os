@@ -43,7 +43,6 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 	return updated, nil
 }
 
-// TODO: figure what other params are needed.
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
