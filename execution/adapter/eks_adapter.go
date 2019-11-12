@@ -158,12 +158,14 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 		pairs[name] = value
 	}
 
-	res := make([]corev1.EnvVar, len(pairs))
-	for name, value := range pairs {
-		res = append(res, corev1.EnvVar{
-			Name:  name,
-			Value: value,
-		})
+	var res []corev1.EnvVar
+	for key := range pairs {
+		if len(key) > 0{
+			res = append(res, corev1.EnvVar{
+				Name:  key,
+				Value: pairs[key],
+			})
+		}
 	}
 	return res
 }
