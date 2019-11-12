@@ -61,7 +61,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobQueue = conf.GetString("eks.job_queue")
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
-
 	ee.kClient = kClient
 
 	adapt, err := adapter.NewEKSAdapter(conf)
@@ -76,11 +75,12 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
-
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		return state.Run{}, false, err
 	}
+
+	_ = ee.log.Log("submitted job", run.RunID)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
@@ -91,7 +91,9 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
-	deleteOptions := &metav1.DeleteOptions{}
+	gracePeriod := int64(0)
+	_ = ee.log.Log("terminating run=", run.RunID)
+	deleteOptions := &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod}
 	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 }
 
@@ -110,11 +112,11 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 }
 
 func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
-	queues, err := ee.qm.List()
+	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
 	}
-
+	queues := []string{qurl}
 	var runs []RunReceipt
 	for _, qurl := range queues {
 		//
@@ -147,10 +149,7 @@ func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
 // Define returns a blank task definition and an error for the EKS engine.
 //
 func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
-	updated := td
-	// TODO: how to deal w/ ARN?
-	updated.Arn = td.DefinitionID
-	return updated, nil
+	return td, errors.New("Definition of tasks are only for ECSs.")
 }
 
 //
@@ -163,10 +162,10 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 
+
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
 	}
-
 	updates, err := ee.adapter.AdaptJobToFlotillaRun(job, run)
 
 	if err != nil {

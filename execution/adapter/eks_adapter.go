@@ -1,10 +1,13 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type EKSAdapter interface {
@@ -36,36 +39,102 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		updated.Status = "STOPPED"
 		updated.ExitCode = &exitCode
 	}
-	updated.StartedAt = &job.Status.StartTime.Time
-	updated.FinishedAt = &job.Status.CompletionTime.Time
+	if job != nil && job.Status.StartTime != nil {
+		updated.StartedAt = &job.Status.StartTime.Time
+	}
+
+	if job != nil && job.Status.CompletionTime != nil {
+		updated.FinishedAt = &job.Status.CompletionTime.Time
+	}
+
 	return updated, nil
 }
 
-// TODO: figure what other params are needed.
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
-	// Container spec.
-	container := corev1.Container{
-		Name:    run.DefinitionID,
-		Image:   run.Image,
-		Command: a.constructCmdSlice(definition.Command),
+	resourceRequirements := a.constructResourceRequirements(definition, run)
+
+	cmd := definition.Command
+	if run.Command != nil {
+		cmd = *run.Command
 	}
 
-	// Job spec.
+	container := corev1.Container{
+		Name:      run.RunID,
+		Image:     run.Image,
+		Command:   a.constructCmdSlice(cmd),
+		Resources: resourceRequirements,
+		Env:       a.envOverrides(definition, run),
+	}
+
+	nodeLifecycle := state.SpotLifecycle
+
+	if run.NodeLifecycle != nil {
+		nodeLifecycle = *run.NodeLifecycle
+	}
+
+	lifecycle := "kubernetes.io/lifecycle"
+	ttlSecondsAfterFinished := int32(1800)
+	activeDeadlineSeconds := int64(86400)
 	jobSpec := batchv1.JobSpec{
+		TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
+		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
+
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers:    []corev1.Container{container},
-				RestartPolicy: "Never",
+				RestartPolicy: corev1.RestartPolicyNever,
+				NodeSelector: map[string]string{
+					lifecycle: nodeLifecycle,
+				},
 			},
 		},
 	}
 
 	eksJob := batchv1.Job{
-
 		Spec: jobSpec,
+		ObjectMeta: v1.ObjectMeta{
+			Name: run.RunID,
+		},
 	}
 
 	return eksJob, nil
+}
+
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+	limits := make(corev1.ResourceList)
+	cpu := *definition.Cpu
+
+	if run.Cpu != nil {
+		cpu = *run.Cpu
+	}
+	if cpu < state.MinCPU {
+		cpu = state.MinCPU
+	}
+
+	mem := *definition.Memory
+	if run.Memory != nil {
+		mem = *run.Memory
+	}
+	if mem < state.MinMem {
+		mem = state.MinMem
+	}
+
+	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dMi", mem))
+
+	if definition.Gpu != nil {
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
+	}
+	if run.EphemeralStorage != nil {
+		limits[corev1.ResourceEphemeralStorage] =
+			resource.MustParse(fmt.Sprintf("%dGi", *run.EphemeralStorage))
+	}
+	limits[corev1.ResourceCPU] = cpuQuantity
+	limits[corev1.ResourceMemory] = memoryQuantity
+	resourceRequirements := corev1.ResourceRequirements{
+		Limits: limits,
+	}
+	return resourceRequirements
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
@@ -73,4 +142,30 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 	optLogin := "-l"
 	optStr := "-cex"
 	return []string{bashCmd, optLogin, optStr, cmdString}
+}
+
+func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []corev1.EnvVar {
+	pairs := make(map[string]string)
+	for _, ev := range *definition.Env {
+		name := ev.Name
+		value := ev.Value
+		pairs[name] = value
+	}
+
+	for _, ev := range *run.Env {
+		name := ev.Name
+		value := ev.Value
+		pairs[name] = value
+	}
+
+	var res []corev1.EnvVar
+	for key := range pairs {
+		if len(key) > 0{
+			res = append(res, corev1.EnvVar{
+				Name:  key,
+				Value: pairs[key],
+			})
+		}
+	}
+	return res
 }
