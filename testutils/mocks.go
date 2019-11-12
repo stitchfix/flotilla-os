@@ -31,6 +31,16 @@ type ImplementsAllTheThings struct {
 	Tags                    []string
 }
 
+func (iatt *ImplementsAllTheThings) Log(keyvals ...interface{}) error {
+	iatt.Calls = append(iatt.Calls, "Name")
+	return nil
+}
+
+func (iatt *ImplementsAllTheThings) Event(keyvals ...interface{}) error {
+	iatt.Calls = append(iatt.Calls, "Name")
+	return nil
+}
+
 // Name - general
 func (iatt *ImplementsAllTheThings) Name() string {
 	iatt.Calls = append(iatt.Calls, "Name")

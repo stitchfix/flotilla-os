@@ -29,13 +29,13 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee
 
 	switch workerType {
 	case "submit":
-		worker = &submitWorker{}
+		worker = &submitWorker{engine: engine}
 	case "retry":
-		worker = &retryWorker{}
+		worker = &retryWorker{engine: engine}
 	case "status":
-		worker = &statusWorker{}
+		worker = &statusWorker{engine: engine}
 	case "worker_manager":
-		worker = &workerManager{}
+		worker = &workerManager{engine: engine}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}

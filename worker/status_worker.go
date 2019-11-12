@@ -29,7 +29,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a status worker")
+	sw.log.Log("message", "initialized a status worker", "engine" , *engine)
 	return nil
 }
 

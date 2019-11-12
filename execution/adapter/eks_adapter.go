@@ -7,6 +7,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type EKSAdapter interface {
@@ -38,8 +39,14 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		updated.Status = "STOPPED"
 		updated.ExitCode = &exitCode
 	}
-	updated.StartedAt = &job.Status.StartTime.Time
-	updated.FinishedAt = &job.Status.CompletionTime.Time
+	if job != nil && job.Status.StartTime != nil {
+		updated.StartedAt = &job.Status.StartTime.Time
+	}
+
+	if job != nil && job.Status.CompletionTime != nil {
+		updated.FinishedAt = &job.Status.CompletionTime.Time
+	}
+
 	return updated, nil
 }
 
@@ -47,10 +54,16 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
 	container := corev1.Container{
-		Name:      run.DefinitionID,
+		Name:      run.RunID,
 		Image:     run.Image,
 		Command:   a.constructCmdSlice(definition.Command),
 		Resources: resourceRequirements,
+	}
+
+	nodeLifecycle := state.SpotLifecycle
+
+	if run.NodeLifecycle != nil {
+		nodeLifecycle = *run.NodeLifecycle
 	}
 
 	lifecycle := "kubernetes.io/lifecycle"
@@ -59,12 +72,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
 		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
+
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers:    []corev1.Container{container},
 				RestartPolicy: corev1.RestartPolicyNever,
 				NodeSelector: map[string]string{
-					lifecycle: *run.NodeLifecycle,
+					lifecycle: nodeLifecycle,
 				},
 			},
 		},
@@ -72,6 +86,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 	eksJob := batchv1.Job{
 		Spec: jobSpec,
+		ObjectMeta: v1.ObjectMeta{
+			Name: run.RunID,
+		},
 	}
 
 	return eksJob, nil
@@ -79,20 +96,32 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
 	limits := make(corev1.ResourceList)
-	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Cpu))
+	cpu := *definition.Cpu
+
 	if run.Cpu != nil {
-		cpuQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Cpu))
+		cpu = *run.Cpu
 	}
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dm", definition.Memory))
+	if cpu < state.MinCPU {
+		cpu = state.MinCPU
+	}
+
+	mem := *definition.Memory
 	if run.Memory != nil {
-		memoryQuantity = resource.MustParse(fmt.Sprintf("%dm", run.Memory))
+		mem = *run.Memory
 	}
+	if mem < state.MinMem {
+		mem = state.MinMem
+	}
+
+	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dMi", mem))
+
 	if definition.Gpu != nil {
-		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", definition.Gpu))
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
 	}
 	if run.EphemeralStorage != nil {
 		limits[corev1.ResourceEphemeralStorage] =
-			resource.MustParse(fmt.Sprintf("%dGi", run.EphemeralStorage))
+			resource.MustParse(fmt.Sprintf("%dGi", *run.EphemeralStorage))
 	}
 	limits[corev1.ResourceCPU] = cpuQuantity
 	limits[corev1.ResourceMemory] = memoryQuantity

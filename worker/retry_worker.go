@@ -27,7 +27,8 @@ func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engin
 	rw.sm = sm
 	rw.ee = ee
 	rw.log = log
-	rw.log.Log("message", "initialized a retry worker")
+	rw.engine = engine
+	rw.log.Log("message", "initialized a retry worker", "engine", *engine)
 
 	rw.engine = engine
 
