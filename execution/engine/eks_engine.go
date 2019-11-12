@@ -97,7 +97,6 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
-			container.
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
 		}
 	}
