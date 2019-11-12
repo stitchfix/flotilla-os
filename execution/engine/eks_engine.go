@@ -11,6 +11,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -88,7 +89,14 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
 		pod := podList.Items[0]
 		run.TaskArn = pod.Name
-		_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn)
+		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
+			container := pod.Spec.Containers[0]
+			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
+			run.Cpu = &cpu
+			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+			run.Memory = &mem
+			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
+		}
 	}
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
