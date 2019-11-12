@@ -53,10 +53,15 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
+	cmd := definition.Command
+	if run.Command != nil {
+		cmd = *run.Command
+	}
+
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
-		Command:   a.constructCmdSlice(definition.Command),
+		Command:   a.constructCmdSlice(cmd),
 		Resources: resourceRequirements,
 	}
 

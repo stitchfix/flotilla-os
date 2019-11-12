@@ -93,7 +93,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(0)
-	ee.log.Log("terminating run=", run.RunID)
+	_ = ee.log.Log("terminating run=", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod}
 	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 }
