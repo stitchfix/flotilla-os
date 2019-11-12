@@ -71,7 +71,10 @@ CREATE TABLE IF NOT EXISTS task (
   gpu integer,
   ephemeral_storage integer,
   node_lifecycle text,
-  engine character varying DEFAULT 'ecs' NOT NULL
+  engine character varying DEFAULT 'ecs' NOT NULL,
+  container_name text,
+  pod_name text,
+  namespace text
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -202,7 +205,10 @@ select
   gpu,
   engine,
   ephemeral_storage as ephemeralstorage,
-  node_lifecycle as nodelifecycle
+  node_lifecycle as nodelifecycle,
+  container_name as containername,
+  pod_name as podname,
+  namespace
 from task t
 `
 

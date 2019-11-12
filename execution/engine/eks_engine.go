@@ -88,13 +88,16 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 
 	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
 		pod := podList.Items[0]
-		run.TaskArn = pod.Name
+		run.PodName = &pod.Name
+		run.Namespace = &pod.Namespace
 		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
 			container := pod.Spec.Containers[0]
+			run.ContainerName = &container.Name
 			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
+			container.
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
 		}
 	}

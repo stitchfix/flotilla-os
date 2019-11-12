@@ -328,6 +328,9 @@ type Run struct {
 	Engine           *string    `json:"engine,omitempty"`
 	NodeLifecycle    *string    `json:"node_lifecycle,omitempty"`
 	EphemeralStorage *int64     `json:"ephemeral_storage,omitempty"`
+	PodName          *string    `json:"pod_name,omitempty"`
+	Namespace        *string    `json:"namespace,omitempty"`
+	ContainerName    *string    `json:"container_name,omitempty"`
 }
 
 //
@@ -413,6 +416,18 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.NodeLifecycle != nil {
 		d.NodeLifecycle = other.NodeLifecycle
+	}
+
+	if other.PodName != nil {
+		d.PodName = other.PodName
+	}
+
+	if other.ContainerName != nil {
+		d.ContainerName = other.ContainerName
+	}
+
+	if other.Namespace != nil {
+		d.Namespace = other.Namespace
 	}
 
 	//
