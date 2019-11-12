@@ -63,6 +63,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		Image:     run.Image,
 		Command:   a.constructCmdSlice(cmd),
 		Resources: resourceRequirements,
+		Env:       a.envOverrides(definition, run),
 	}
 
 	nodeLifecycle := state.SpotLifecycle
@@ -141,4 +142,28 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 	optLogin := "-l"
 	optStr := "-cex"
 	return []string{bashCmd, optLogin, optStr, cmdString}
+}
+
+func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []corev1.EnvVar {
+	pairs := make(map[string]string)
+	for _, ev := range *definition.Env {
+		name := ev.Name
+		value := ev.Value
+		pairs[name] = value
+	}
+
+	for _, ev := range *run.Env {
+		name := ev.Name
+		value := ev.Value
+		pairs[name] = value
+	}
+
+	res := make([]corev1.EnvVar, len(pairs))
+	for name, value := range pairs {
+		res = append(res, corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		})
+	}
+	return res
 }
