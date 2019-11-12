@@ -7,7 +7,7 @@ require (
 	github.com/Bowery/prompt v0.0.0-20190916142128-fa8279994f75 // indirect
 	github.com/Microsoft/go-winio v0.4.13-0.20190625174015-d2ef9cfdac5d
 	github.com/Microsoft/hcsshim v0.0.0-20190627211051-c6f98528dede
-	github.com/aws/aws-sdk-go v1.15.11
+	github.com/aws/aws-sdk-go v1.23.7
 	github.com/beorn7/perks v1.0.0
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
 	github.com/davecgh/go-spew v1.1.1
@@ -20,6 +20,7 @@ require (
 	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82
 	github.com/docker/go-units v0.4.0
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/go-ini/ini v1.25.4 // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/go-logfmt/logfmt v0.4.0
 	github.com/gogo/protobuf v1.3.1
