@@ -117,6 +117,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	}
 	if mem < state.MinMem {
 		mem = state.MinMem
+
 	}
 
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
@@ -160,7 +161,7 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 
 	var res []corev1.EnvVar
 	for key := range pairs {
-		if len(key) > 0{
+		if len(key) > 0 {
 			res = append(res, corev1.EnvVar{
 				Name:  key,
 				Value: pairs[key],
