@@ -78,6 +78,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
 		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
+		BackoffLimit:            &state.EKSBackoffLimit,
 
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
