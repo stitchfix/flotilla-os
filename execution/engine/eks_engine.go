@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
@@ -80,7 +81,15 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 		return state.Run{}, false, err
 	}
 
-	_ = ee.log.Log("submitted job", run.RunID)
+	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
+	})
+
+	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
+		pod := podList.Items[0]
+		run.TaskArn = pod.Name
+		_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn)
+	}
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
@@ -161,7 +170,6 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
-
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
