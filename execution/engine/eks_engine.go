@@ -76,11 +76,12 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
-
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		return state.Run{}, false, err
 	}
+
+	ee.log.Log("submitted job", run.RunID)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
@@ -91,7 +92,9 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
-	deleteOptions := &metav1.DeleteOptions{}
+	gracePeriod := int64(0)
+	_ = ee.log.Log("terminating run=", run.RunID)
+	deleteOptions := &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod}
 	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 }
 
@@ -110,11 +113,11 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 }
 
 func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
-	queues, err := ee.qm.List()
+	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
 	}
-
+	queues := []string{qurl}
 	var runs []RunReceipt
 	for _, qurl := range queues {
 		//

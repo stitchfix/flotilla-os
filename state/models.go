@@ -17,6 +17,10 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
+var MinCPU = int64(125)
+
+var MinMem = int64(125)
+
 var SpotLifecycle = "spot"
 
 var OndemandLifecycle = "normal"

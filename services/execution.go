@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/log"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -54,7 +55,8 @@ func NewExecutionService(conf config.Config,
 	sm state.Manager,
 	ecsClusterClient cluster.Client,
 	eksClusterClient cluster.Client,
-	rc registry.Client) (ExecutionService, error) {
+	rc registry.Client,
+	log log.Logger) (ExecutionService, error) {
 	es := executionService{
 		stateManager:       sm,
 		ecsClusterClient:   ecsClusterClient,
@@ -363,12 +365,10 @@ func (es *executionService) Terminate(runID string) error {
 		}
 	}
 
-	if *run.Engine == state.EKSEngine {
-		if run.Status != state.StatusStopped && len(run.ClusterName) > 0 {
-			return es.eksExecutionEngine.Terminate(run)
-		}
+	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
+		return es.eksExecutionEngine.Terminate(run)
 	}
-	
+
 	return exceptions.MalformedInput{
 		ErrorString: fmt.Sprintf(
 			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}

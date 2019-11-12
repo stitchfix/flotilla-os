@@ -31,7 +31,7 @@ func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee eng
 	wm.pollInterval = pollInterval
     wm.engine = engine
 	if err := wm.InitializeWorkers(); err != nil {
-		return errors.Errorf("WorkerManager unable to initialize workers.")
+		return errors.Errorf("WorkerManager unable to initialize workers. engine %s", *wm.engine)
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func (wm *workerManager) InitializeWorkers() error {
 		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
-			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, nil)
+			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine)
 
 			if err != nil {
 				return err
@@ -152,7 +152,7 @@ func (wm *workerManager) removeWorker(workerType string) error {
 }
 
 func (wm *workerManager) addWorker(workerType string) error {
-	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, nil)
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine)
 
 	if err != nil {
 		return err

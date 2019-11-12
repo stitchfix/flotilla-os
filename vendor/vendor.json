@@ -33,6 +33,12 @@
 			"revisionTime": "2019-06-27T21:10:51Z"
 		},
 		{
+			"checksumSHA1": "/eaWNQvL9y5+HOWK0eWANm1zCzM=",
+			"path": "github.com/aws/aws-sdk-go",
+			"revision": "1337b9a1a013a0abfa237ee66ca1fa0b35622d10",
+			"revisionTime": "2019-11-11T19:38:15Z"
+		},
+		{
 			"checksumSHA1": "q+3va5M56x55suc2QjGzUsGzDx4=",
 			"path": "github.com/aws/aws-sdk-go/aws",
 			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
@@ -51,16 +57,16 @@
 			"revisionTime": "2019-07-02T19:20:17Z"
 		},
 		{
-			"checksumSHA1": "KpW2B6W3J1yB/7QJWjjtsKz1Xbc=",
+			"checksumSHA1": "ss9Rg5wjfIqP9xkYuWSNQCyv7oI=",
 			"path": "github.com/aws/aws-sdk-go/aws/client",
-			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
-			"revisionTime": "2019-07-02T19:20:17Z"
+			"revision": "1337b9a1a013a0abfa237ee66ca1fa0b35622d10",
+			"revisionTime": "2019-11-11T19:38:15Z"
 		},
 		{
-			"checksumSHA1": "uEJU4I6dTKaraQKvrljlYKUZwoc=",
+			"checksumSHA1": "3w8kEXpxp3dpt6sEZ+DMWMTb2/M=",
 			"path": "github.com/aws/aws-sdk-go/aws/client/metadata",
-			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
-			"revisionTime": "2019-07-02T19:20:17Z"
+			"revision": "1337b9a1a013a0abfa237ee66ca1fa0b35622d10",
+			"revisionTime": "2019-11-11T19:38:15Z"
 		},
 		{
 			"checksumSHA1": "GvmthjOyNZGOKmXK4XVrbT5+K9I=",
@@ -219,6 +225,12 @@
 			"revisionTime": "2019-07-02T19:20:17Z"
 		},
 		{
+			"checksumSHA1": "ncBwU6A58F6w+d3YzuaJNmIy2oY=",
+			"path": "github.com/aws/aws-sdk-go/service",
+			"revision": "1337b9a1a013a0abfa237ee66ca1fa0b35622d10",
+			"revisionTime": "2019-11-11T19:38:15Z"
+		},
+		{
 			"checksumSHA1": "WhB7uCK79oS39kEbrmhCDxZ4wao=",
 			"path": "github.com/aws/aws-sdk-go/service/cloudwatchevents",
 			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
@@ -243,10 +255,10 @@
 			"revisionTime": "2019-08-21T19:24:36Z"
 		},
 		{
-			"checksumSHA1": "RpW0v9zRFRtPX+t49J72fsBQIno=",
+			"checksumSHA1": "BHv7qdHPd3qEz0ETq1br4FEyqrE=",
 			"path": "github.com/aws/aws-sdk-go/service/sqs",
-			"revision": "e1b61fed9fc039afdef1a3ef6720e0d9b628ab84",
-			"revisionTime": "2019-07-02T19:20:17Z"
+			"revision": "1337b9a1a013a0abfa237ee66ca1fa0b35622d10",
+			"revisionTime": "2019-11-11T19:38:15Z"
 		},
 		{
 			"checksumSHA1": "ksdS1/NNWHczp0DnuEc+q+jPSQ8=",
@@ -879,10 +891,10 @@
 			"revisionTime": "2019-05-30T03:55:49Z"
 		},
 		{
-			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
+			"checksumSHA1": "SVinfxcBSupb3+HEKpSBYFZ4Bh4=",
 			"path": "github.com/pkg/errors",
-			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
-			"revisionTime": "2019-02-27T00:00:51Z"
+			"revision": "7f95ac13edff643b8ce5398b6ccab125f8a20c1a",
+			"revisionTime": "2019-11-09T10:23:16Z"
 		},
 		{
 			"checksumSHA1": "x5CuZuHwidIOrzy/g2NQMDJMIxQ=",

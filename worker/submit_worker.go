@@ -28,7 +28,7 @@ func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a submit worker")
+	sw.log.Log("message", "initialized a submit worker","engine",  *engine)
 	return nil
 }
 
