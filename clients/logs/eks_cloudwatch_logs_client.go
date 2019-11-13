@@ -123,7 +123,7 @@ func (cwl *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.
 
 func (cwl *EKSCloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
 	return fmt.Sprintf(
-		"%s", run.PodName)
+		"%s", *run.PodName)
 }
 
 func (cwl *EKSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
