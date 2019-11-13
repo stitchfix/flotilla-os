@@ -84,9 +84,24 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 		return state.Run{}, false, err
 	}
 
+	run, _ = ee.getPodName(run)
+
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
+	if err != nil {
+		return state.Run{}, false, err
+	}
+
+	return adaptedRun, false, nil
+}
+
+func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
 	})
+
+	if err != nil {
+		return run, err
+	}
 
 	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
 		pod := podList.Items[0]
@@ -102,13 +117,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
 		}
 	}
-
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
-	if err != nil {
-		return state.Run{}, false, err
-	}
-
-	return adaptedRun, false, nil
+	return run, nil
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
@@ -203,6 +212,9 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 }
 
 func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
+	if run.PodName == nil {
+		return state.RunEventList{}, nil
+	}
 	eventList, err := ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
 	if err != nil {
 		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
@@ -234,6 +246,10 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 	if err != nil {
 		return run, err
+	}
+
+	if run.PodName == nil {
+		run, _ = ee.getPodName(run)
 	}
 
 	return ee.adapter.AdaptJobToFlotillaRun(job, run)

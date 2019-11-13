@@ -92,6 +92,9 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 
+	if run.PodName == nil {
+		return "", nil, errors.New("problem getting logs")
+	}
 	handle := lc.toStreamName(run)
 	args := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  &lc.logNamespace,
@@ -134,6 +137,7 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 }
 
 func (lc *EKSCloudWatchLogsClient) toStreamName(run state.Run) string {
+
 	return fmt.Sprintf("%s", *run.PodName)
 }
 
