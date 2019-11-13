@@ -2,7 +2,6 @@ package flotilla
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -45,8 +44,8 @@ type LaunchRequestV2 struct {
 	Memory           *int64
 	Cpu              *int64
 	Engine           *string
-	NodeLifecycle    *string
-	EphemeralStorage *int64
+	NodeLifecycle    *string `json:"node_lifecycle"`
+	EphemeralStorage *int64 `json:"ephemeral_storage"`
 	*LaunchRequest
 }
 
@@ -573,13 +572,28 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 			res["last_seen"] = *newLastSeen
 		}
 		ep.encodeResponse(w, res)
-
 	}
 
 	if *run.Engine == state.EKSEngine {
-		// TODO
-		ep.encodeError(w, errors.New("TODO - NOT IMPLEMENTED"))
-		return
+		logs, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
+		if err != nil {
+			ep.logger.Log(
+				"message", "problem getting logs",
+				"operation", "GetLogs",
+				"error", fmt.Sprintf("%+v", err),
+				"run_id", vars["run_id"],
+				"last_seen", lastSeen)
+			ep.encodeError(w, err)
+			return
+		}
+
+		res := map[string]string{
+			"log": logs,
+		}
+		if newLastSeen != nil {
+			res["last_seen"] = *newLastSeen
+		}
+		ep.encodeResponse(w, res)
 	}
 
 }
