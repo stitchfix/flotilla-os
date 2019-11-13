@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
 );
 
 CREATE TABLE IF NOT EXISTS worker (
-  worker_type character,
+  worker_type character varying,
   engine character varying,
   count_per_instance integer
 );
