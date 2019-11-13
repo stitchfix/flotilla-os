@@ -137,7 +137,7 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 }
 
 func (lc *EKSCloudWatchLogsClient) toStreamName(run state.Run) string {
-	return fmt.Sprintf("%s", run.PodName)
+	return fmt.Sprintf("%s", *run.PodName)
 }
 
 func (lc *EKSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
