@@ -163,6 +163,13 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 // change events.
 //
 func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
+	//eventList, err:= ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{
+	//	LabelSelector:       "",
+	//})
+	//
+	//if err != nil {
+	//	return RunReceipt{}, errors.Wrapf(err, "problem receiving events from eks")
+	//}
 	return RunReceipt{}, nil
 }
 
@@ -193,4 +200,32 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	}
 
 	return updates, nil
+}
+
+func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
+	eventList, err := ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
+	if err != nil {
+		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
+	}
+
+	ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
+	var runEvents []state.RunEvent
+	for _, e := range eventList.Items {
+		eTime := e.FirstTimestamp.Time
+		runEvent := state.RunEvent{
+			Message:      e.Message,
+			Timestamp:    &eTime,
+			EventType:    e.Type,
+			Reason:       e.Reason,
+			SourceObject: e.ObjectMeta.Name,
+		}
+		runEvents = append(runEvents, runEvent)
+	}
+
+	runEventList := state.RunEventList{
+		Total:     len(runEvents),
+		RunEvents: runEvents,
+	}
+
+	return runEventList, nil
 }

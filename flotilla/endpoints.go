@@ -506,6 +506,32 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Get(vars["run_id"])
+
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting run",
+			"operation", "GetRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
+		ep.encodeError(w, err)
+		return
+	}
+
+	if *run.Engine == state.EKSEngine {
+		events, err := ep.executionService.GetEvents(run)
+
+		if err != nil {
+			_ = ep.logger.Log("message", "problem getting events")
+			ep.encodeError(w, err)
+			return
+		}
+		ep.encodeResponse(w, events)
+	}
+}
+
 func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	params := r.URL.Query()

@@ -408,3 +408,7 @@ func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run st
 func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {
 	return ee.adapter.AdaptTask(task)
 }
+
+func (ee *ECSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
+	return state.RunEventList{}, nil
+}

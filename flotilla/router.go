@@ -27,6 +27,7 @@ func NewRouter(ep endpoints) *mux.Router {
 
 	v1.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
 	v1.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
+	v1.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
 	v1.HandleFunc("/groups", ep.GetGroups).Methods("GET")
 	v1.HandleFunc("/tags", ep.GetTags).Methods("GET")
 	v1.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
@@ -42,5 +43,29 @@ func NewRouter(ep endpoints) *mux.Router {
 	v5.HandleFunc("/worker", ep.BatchUpdateWorkers).Methods("PUT")
 	v5.HandleFunc("/worker/{worker_type}", ep.GetWorker).Methods("GET")
 	v5.HandleFunc("/worker/{worker_type}", ep.UpdateWorker).Methods("PUT")
+
+	v6 := r.PathPrefix("/api/v6").Subrouter()
+	v6.HandleFunc("/task", ep.ListDefinitions).Methods("GET")
+	v6.HandleFunc("/task", ep.CreateDefinition).Methods("POST")
+	v6.HandleFunc("/task/{definition_id}", ep.GetDefinition).Methods("GET")
+	v6.HandleFunc("/task/{definition_id}", ep.UpdateDefinition).Methods("PUT")
+	v6.HandleFunc("/task/{definition_id}", ep.DeleteDefinition).Methods("DELETE")
+	v6.HandleFunc("/task/{definition_id}/execute", ep.CreateRunV4).Methods("PUT")
+	v6.HandleFunc("/task/alias/{alias}", ep.GetDefinitionByAlias).Methods("GET")
+	v6.HandleFunc("/task/alias/{alias}/execute", ep.CreateRunByAlias).Methods("PUT")
+
+	v6.HandleFunc("/history", ep.ListRuns).Methods("GET")
+	v6.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
+	v6.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
+	v6.HandleFunc("/task/{definition_id}/history", ep.ListRuns).Methods("GET")
+	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
+	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
+
+	v6.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
+	v6.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
+	v6.HandleFunc("/groups", ep.GetGroups).Methods("GET")
+	v6.HandleFunc("/tags", ep.GetTags).Methods("GET")
+	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
+	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
 	return r
 }
