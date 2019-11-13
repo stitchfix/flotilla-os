@@ -46,6 +46,8 @@ var StatusPending = "PENDING"
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
 
+var EKSBackoffLimit = int32(0)
+
 var WorkerTypes = map[string]bool{
 	"retry":  true,
 	"submit": true,
