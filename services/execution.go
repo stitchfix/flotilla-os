@@ -34,6 +34,7 @@ type ExecutionService interface {
 	Terminate(runID string) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
+	GetEvents(run state.Run) (state.RunEventList, error)
 }
 
 type executionService struct {
@@ -44,6 +45,10 @@ type executionService struct {
 	ecsExecutionEngine engine.Engine
 	eksExecutionEngine engine.Engine
 	reservedEnv        map[string]func(run state.Run) string
+}
+
+func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error) {
+	return es.eksExecutionEngine.GetEvents(run)
 }
 
 //

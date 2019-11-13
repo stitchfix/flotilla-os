@@ -31,6 +31,8 @@ type Engine interface {
 	PollRuns() ([]RunReceipt, error)
 
 	PollStatus() (RunReceipt, error)
+
+	GetEvents(run state.Run) (state.RunEventList, error)
 }
 
 type RunReceipt struct {
@@ -49,7 +51,7 @@ func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logge
 		}
 		return eng, nil
 	case "eks":
-		eksEng := &EKSExecutionEngine{qm: qm, log:logger}
+		eksEng := &EKSExecutionEngine{qm: qm, log: logger}
 		if err := eksEng.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
 		}
