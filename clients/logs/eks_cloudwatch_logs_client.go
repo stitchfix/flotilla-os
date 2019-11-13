@@ -92,8 +92,9 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 
+	//Pod isn't there yet - dont return a 404
 	if run.PodName == nil {
-		return "", nil, errors.New("problem getting logs")
+		return "", nil, nil
 	}
 	handle := lc.toStreamName(run)
 	args := &cloudwatchlogs.GetLogEventsInput{
