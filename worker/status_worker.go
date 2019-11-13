@@ -29,7 +29,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a status worker", "engine" , *engine)
+	sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
 }
 
@@ -47,13 +47,47 @@ func (sw *statusWorker) Run() error {
 			sw.log.Log("message", "A status worker was terminated")
 			return nil
 		default:
-			sw.runOnce()
-			time.Sleep(sw.pollInterval)
+			if *sw.engine == state.ECSEngine {
+				sw.runOnceECS()
+				time.Sleep(sw.pollInterval)
+			}
+
+			if *sw.engine == state.EKSEngine {
+				sw.runOnceEKS()
+				time.Sleep(time.Second * 15)
+			}
 		}
 	}
 }
 
-func (sw *statusWorker) runOnce() {
+func (sw *statusWorker) runOnceEKS() {
+	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
+		"queued_at_since": {
+			time.Now().AddDate(0, 0, -1).Format(time.RFC3339),
+		},
+		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
+	}, nil, []string{state.EKSEngine})
+
+	if err != nil {
+		sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		return
+	}
+
+	for _, run := range rl.Runs {
+		updatedRun, err := sw.ee.FetchUpdateStatus(run)
+		if err != nil {
+			sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		} else {
+			sw.log.Log("message", "updating run", "run", run.RunID)
+			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			if err != nil {
+				sw.log.Log("message", "unable to save runs", "error", fmt.Sprintf("%+v", err))
+			}
+		}
+	}
+}
+
+func (sw *statusWorker) runOnceECS() {
 	runReceipt, err := sw.ee.PollStatus()
 	if err != nil {
 		sw.log.Log("message", "unable to receive status message", "error", fmt.Sprintf("%+v", err))

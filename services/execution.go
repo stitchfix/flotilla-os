@@ -51,6 +51,8 @@ func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error)
 	return es.eksExecutionEngine.GetEvents(run)
 }
 
+
+
 //
 // NewExecutionService configures and returns an ExecutionService
 //
@@ -179,7 +181,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// Update the run's QueuedAt field
+	// UpdateStatus the run's QueuedAt field
 	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}

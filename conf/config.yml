@@ -1,103 +1,58 @@
 flotilla_mode: dev
-# aws region - relevant for aws related components (sqs,ecs)
 aws_default_region: us-east-1
-
-# Database url - relevant for database oriented state managers
-database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable'
 create_database_schema: true
-
-#
-# Configure which managers and clients to use
-#
 state_manager: postgres
 queue_manager: sqs
 cluster_client: ecs
 logs_client: cloudwatch
 execution_engine: ecs
 enabled_workers:
-  - retry
-  - submit
-  - status
-
-# Log namespace
-log:
-  namespace: flotilla-os-logs
-  retention_days: 90
-  driver:
-    name: awslogs
-    options:
-      awslogs-group: flotilla-os-logs
-      awslogs-stream-prefix: flotilla
-      awslogs-region: us-east-1
-
-# Queue namespace
+    - retry
+    - submit
+    - status
 queue:
-  namespace: dev-flotilla
-  # 7 day retention
-  retention_seconds: 604800
-  # 45 seconds allowed processing time before re-queueing
-  process_time: 45
-  # main status update queue name
-  status: flotilla-status-updates-dev
-  # rule name for routing status change events to the status queue
-  status_rule: flotilla-task-status
-
-#
-# Intervals are duration strings. Eg. "300ms", "1.5h" or "2h45m".
-# Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-#
+    namespace: dev-flotilla
+    retention_seconds: 604800
+    process_time: 45
+    status: flotilla-status-updates-dev
+    status_rule: flotilla-task-status
 worker:
-  retry_interval: 30s
-  submit_interval: 5s
-  status_interval: 300ms
-  worker_manager_interval: 10000ms
-  retry_worker_count_per_instance: 1
-  submit_worker_count_per_instance: 2
-  status_worker_count_per_instance: 2
-
+    ecs:
+        retry_interval: 30s
+        submit_interval: 5s
+        status_interval: 300ms
+        worker_manager_interval: 10000ms
+        retry_worker_count_per_instance: 1
+        submit_worker_count_per_instance: 2
+        status_worker_count_per_instance: 2
+    eks:
+        retry_interval: 30s
+        submit_interval: 5s
+        status_interval: 300ms
+        worker_manager_interval: 10000ms
+        retry_worker_count_per_instance: 1
+        submit_worker_count_per_instance: 2
+        status_worker_count_per_instance: 2
 http:
-  server:
-    read_timeout_seconds: 5
-    write_timeout_seconds: 10
-    listen_address: :3000
-    cors_allowed_origins:
-      - http://localhost:3001
-
-#
-# Environment variable name to inject into every run
-# with ownership information set - "who -owns- this run?"
-#
+    server:
+        read_timeout_seconds: 5
+        write_timeout_seconds: 10
+        listen_address: ':3000'
+        cors_allowed_origins:
+            - 'http://localhost:3001'
 owner_id_var: FLOTILLA_RUN_OWNER_ID
-
-#
-# Execution engine specific variables
-#
-#
-# ECS Engine
-#
-# ecs.engine.task_role_arn
-#
-# To use a specific task role ARN (which means all
-# tasks will use this role to make requests to AWS, if any)
-#
-# 1. The AWS user that is running flotilla must have the
-#    iam:PassRole permission for the role you specify
-# 2. Add the following entity to the "trust relationships"
-#    of your task role
-#   {
-#      "Sid": "",
-#      "Effect": "Allow",
-#      "Principal": {
-#        "Service": "ecs-tasks.amazonaws.com"
-#      },
-#      "Action": "sts:AssumeRole"
-#    }
-#  which will allow ecs tasks to assume the role you provide
-#  in the `ecs.engine.task_role_arn` config var.
-#
-#
-#
-#ecs:
-#  engine:
-#    task_role_arn: arn:aws:iam::123456789:role/example
-
+ecs:
+    log:
+        namespace: flotilla-os-logs
+        retention_days: 90
+        driver:
+            name: awslogs
+            options: {awslogs-group: flotilla-os-logs, awslogs-stream-prefix: flotilla, awslogs-region: us-east-1}
+eks:
+    log:
+        namespace: flotilla-eks-namespace
+        retention_days: 90
+        driver:
+            name: awslogs
+            options: {awslogs-group: flotilla-eks-namespace, awslogs-region: us-east-1}

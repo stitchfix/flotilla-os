@@ -518,6 +518,7 @@ type TagsList struct {
 type Worker struct {
 	WorkerType       string `json:"worker_type"`
 	CountPerInstance int    `json:"count_per_instance"`
+	Engine           string `json:"engine"`
 }
 
 //

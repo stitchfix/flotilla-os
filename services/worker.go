@@ -11,10 +11,10 @@ import (
 // WorkerService defines an interface for operations involving workers
 //
 type WorkerService interface {
-	List() (state.WorkersList, error)
-	Get(workerType string) (state.Worker, error)
+	List(engine string) (state.WorkersList, error)
+	Get(workerType string, engine string) (state.Worker, error)
 	Update(workerType string, updates state.Worker) (state.Worker, error)
-	BatchUpdate(updates []state.Worker) (state.WorkersList, error)
+	BatchUpdate(updates []state.Worker, ) (state.WorkersList, error)
 }
 
 type workerService struct {
@@ -29,16 +29,16 @@ func NewWorkerService(conf config.Config, sm state.Manager) (WorkerService, erro
 	return &ws, nil
 }
 
-func (ws *workerService) List() (state.WorkersList, error) {
-	return ws.sm.ListWorkers()
+func (ws *workerService) List(engine string) (state.WorkersList, error) {
+	return ws.sm.ListWorkers(engine)
 }
 
-func (ws *workerService) Get(workerType string) (state.Worker, error) {
+func (ws *workerService) Get(workerType string, engine string) (state.Worker, error) {
 	var w state.Worker
 	if err := ws.validate(workerType); err != nil {
 		return w, err
 	}
-	return ws.sm.GetWorker(workerType)
+	return ws.sm.GetWorker(workerType, engine)
 }
 
 func (ws *workerService) Update(workerType string, updates state.Worker) (state.Worker, error) {

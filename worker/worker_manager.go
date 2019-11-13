@@ -47,7 +47,7 @@ func (wm *workerManager) GetTomb() *tomb.Tomb {
 // goroutine via tomb, then append the worker to the appropriate slice.
 //
 func (wm *workerManager) InitializeWorkers() error {
-	workerList, err := wm.sm.ListWorkers()
+	workerList, err := wm.sm.ListWorkers(*wm.engine)
 
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (wm *workerManager) Run() error {
 
 func (wm *workerManager) runOnce() error {
 	// Check worker count via state manager.
-	workerList, err := wm.sm.ListWorkers()
+	workerList, err := wm.sm.ListWorkers(*wm.engine)
 
 	if err != nil {
 		return err
