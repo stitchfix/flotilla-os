@@ -173,13 +173,13 @@ func (iatt *ImplementsAllTheThings) initWorkerTable(c config.Config) error {
 }
 
 // ListWorkers - StateManager
-func (iatt *ImplementsAllTheThings) ListWorkers() (state.WorkersList, error) {
+func (iatt *ImplementsAllTheThings) ListWorkers(engine string) (state.WorkersList, error) {
 	iatt.Calls = append(iatt.Calls, "ListWorkers")
 	return state.WorkersList{Total: len(iatt.Workers), Workers: iatt.Workers}, nil
 }
 
 // GetWorker - StateManager
-func (iatt *ImplementsAllTheThings) GetWorker(workerType string) (state.Worker, error) {
+func (iatt *ImplementsAllTheThings) GetWorker(workerType string, engine string) (state.Worker, error) {
 	iatt.Calls = append(iatt.Calls, "GetWorker")
 	return state.Worker{WorkerType: workerType, CountPerInstance: 2}, nil
 }
