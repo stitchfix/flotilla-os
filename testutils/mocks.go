@@ -262,6 +262,15 @@ func (iatt *ImplementsAllTheThings) List() ([]string, error) {
 	return res, nil
 }
 
+func (iatt *ImplementsAllTheThings) GetEvents(run state.Run) (state.RunEventList, error) {
+	iatt.Calls = append(iatt.Calls, "GetEvents")
+
+	return state.RunEventList{
+		Total:     0,
+		RunEvents: nil,
+	}, nil
+}
+
 // CanBeRun - Cluster Client
 func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, definition state.Definition) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "CanBeRun")

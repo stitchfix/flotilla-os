@@ -483,6 +483,19 @@ type RunList struct {
 	Runs  []Run `json:"history"`
 }
 
+type RunEventList struct {
+	Total     int        `json:"total"`
+	RunEvents []RunEvent `json:"run_events"`
+}
+
+type RunEvent struct {
+	Timestamp    *time.Time `json:"timestamp,omitempty"`
+	EventType    string     `json:"event_type"`
+	Reason       string     `json:"reason"`
+	SourceObject string     `json:"source_object"`
+	Message      string     `json:"message"`
+}
+
 //
 // GroupsList wraps a list of group names
 //
