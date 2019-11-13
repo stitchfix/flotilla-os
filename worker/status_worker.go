@@ -54,7 +54,7 @@ func (sw *statusWorker) Run() error {
 
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
-				time.Sleep(time.Minute)
+				time.Sleep(time.Second * 15)
 			}
 		}
 	}
@@ -78,6 +78,7 @@ func (sw *statusWorker) runOnceEKS() {
 		if err != nil {
 			sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		} else {
+			sw.log.Log("message", "updating run", "run", run.RunID)
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			if err != nil {
 				sw.log.Log("message", "unable to save runs", "error", fmt.Sprintf("%+v", err))
