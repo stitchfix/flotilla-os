@@ -15,6 +15,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"encoding/json"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 )
 
@@ -28,6 +29,10 @@ type EKSCloudWatchLogsClient struct {
 	logsClient         logsClient
 	logger             *log.Logger
 	appLogger flotillaLog.Logger
+}
+
+type EKSCloudWatchLog struct {
+	Log string `json:"log"`
 }
 
 //
@@ -90,7 +95,7 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flot
 func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 
-	handle := lc.toStreamName(definition, run)
+	handle := lc.toStreamName(run)
 	args := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  &lc.logNamespace,
 		LogStreamName: &handle,
@@ -134,7 +139,7 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 	return message, result.NextForwardToken, nil
 }
 
-func (lc *EKSCloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
+func (lc *EKSCloudWatchLogsClient) toStreamName(run state.Run) string {
 	return fmt.Sprintf("%s", run.PodName)
 }
 
@@ -143,9 +148,14 @@ func (lc *EKSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.Output
 
 	messages := make([]string, len(events))
 	for i, event := range events {
-		messages[i] = *event.Message
+		var l EKSCloudWatchLog
+		err := json.Unmarshal([]byte(*event.Message), &l)
+		if err != nil {
+			messages[i] = *event.Message
+		}
+		messages[i] = l.Log
 	}
-	return strings.Join(messages, "\n")
+	return strings.Join(messages, "")
 }
 
 func (lc *EKSCloudWatchLogsClient) createNamespaceIfNotExists() error {
