@@ -15,6 +15,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 )
 
 //
@@ -27,6 +28,7 @@ type ECSCloudWatchLogsClient struct {
 	logStreamPrefix    string
 	logsClient         logsClient
 	logger             *log.Logger
+	appLogger flotillaLog.Logger
 }
 
 type logsClient interface {
@@ -52,8 +54,8 @@ func (cwl *ECSCloudWatchLogsClient) Name() string {
 //
 // Initialize sets up the ECSCloudWatchLogsClient
 //
-func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("log.driver.options")
+func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flotillaLog.Logger) error {
+	confLogOptions := conf.GetStringMapString("ecs.log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
 	if len(awsRegion) == 0 {
@@ -62,28 +64,28 @@ func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
 
 	if len(awsRegion) == 0 {
 		return errors.Errorf(
-			"ECSCloudWatchLogsClient needs one of [log.driver.options.awslogs-region] or [aws_default_region] set in config")
+			"ECSCloudWatchLogsClient needs one of [ecs.log.driver.options.awslogs-region] or [aws_default_region] set in config")
 	}
 
 	//
 	// log.namespace in conf takes precedence over log.driver.options.awslogs-group
 	//
-	cwl.logNamespace = conf.GetString("log.namespace")
+	cwl.logNamespace = conf.GetString("ecs.log.namespace")
 	if _, ok := confLogOptions["awslogs-group"]; ok && len(cwl.logNamespace) == 0 {
 		cwl.logNamespace = confLogOptions["awslogs-group"]
 	}
 
 	if len(cwl.logNamespace) == 0 {
 		return errors.Errorf(
-			"ECSCloudWatchLogsClient needs one of [log.driver.options.awslogs-group] or [log.namespace] set in config")
+			"ECSCloudWatchLogsClient needs one of [ecs.log.driver.options.awslogs-group] or [ecs.log.namespace] set in config")
 	}
 
 	cwl.logStreamPrefix = confLogOptions["awslogs-stream-prefix"]
 	if len(cwl.logStreamPrefix) == 0 {
-		return errors.Errorf("ECSCloudWatchLogsClient needs [log.driver.options.awslogs-stream-prefix] set in config")
+		return errors.Errorf("ECSCloudWatchLogsClient needs [ecs.log.driver.options.awslogs-stream-prefix] set in config")
 	}
 
-	cwl.logRetentionInDays = int64(conf.GetInt("log.retention_days"))
+	cwl.logRetentionInDays = int64(conf.GetInt("ecs.log.retention_days"))
 	if cwl.logRetentionInDays == 0 {
 		cwl.logRetentionInDays = int64(30)
 	}
@@ -95,8 +97,9 @@ func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
 
 		cwl.logsClient = cloudwatchlogs.New(sess)
 	}
-	cwl.logger = log.New(os.Stderr, "[cloudwatchlogs] ",
+	cwl.logger = log.New(os.Stderr, "[ecscloudwatchlogs] ",
 		log.Ldate|log.Ltime|log.Lshortfile)
+	cwl.appLogger = appLogger
 	return cwl.createNamespaceIfNotExists()
 }
 

@@ -13,7 +13,7 @@ import (
 //
 type Client interface {
 	Name() string
-	Initialize(config config.Config) error
+	Initialize(config config.Config, appLogger flotillaLog.Logger) error
 	Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error)
 }
 
@@ -26,13 +26,17 @@ func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (
 	case "ecs":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
 		cwlc := &ECSCloudWatchLogsClient{}
-		if err := cwlc.Initialize(conf); err != nil {
+		if err := cwlc.Initialize(conf, logger); err != nil {
 			return nil, errors.Wrap(err, "problem initializing ECSCloudWatchLogsClient")
 		}
 		return cwlc, nil
 	case "eks":
-		//TODO
-		return nil, errors.New("TODO - NOT IMPLEMENTED")
+		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
+		ekscw := &EKSCloudWatchLogsClient{}
+		if err := ekscw.Initialize(conf, logger); err != nil {
+			return nil, errors.Wrap(err, "problem initializing EKSCloudWatchLogsClient")
+		}
+		return ekscw, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
