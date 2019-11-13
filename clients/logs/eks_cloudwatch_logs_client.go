@@ -18,8 +18,8 @@ import (
 )
 
 //
-// ECSCloudWatchLogsClient corresponds with the aws logs driver
-// for ECS and returns logs for runs
+// eksCloudWatchLogsClient corresponds with the aws logs driver
+// for eks and returns logs for runs
 //
 type EKSCloudWatchLogsClient struct {
 	logRetentionInDays int64
@@ -36,7 +36,7 @@ func (cwl *EKSCloudWatchLogsClient) Name() string {
 }
 
 //
-// Initialize sets up the ECSCloudWatchLogsClient
+// Initialize sets up the eksCloudWatchLogsClient
 //
 func (cwl *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	confLogOptions := conf.GetStringMapString("log.driver.options")
