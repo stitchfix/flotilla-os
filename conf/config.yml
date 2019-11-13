@@ -60,14 +60,14 @@ owner_id_var: FLOTILLA_RUN_OWNER_ID
 
 ecs:
   log:
-  namespace: flotilla-os-logs
-  retention_days: 90
-  driver:
-    name: awslogs
-    options:
-      awslogs-group: flotilla-os-logs
-      awslogs-stream-prefix: flotilla
-      awslogs-region: us-east-1
+    namespace: flotilla-os-logs
+    retention_days: 90
+    driver:
+      name: awslogs
+      options:
+        awslogs-group: flotilla-os-logs
+        awslogs-stream-prefix: flotilla
+        awslogs-region: us-east-1
 
 eks:
   log:
