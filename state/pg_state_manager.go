@@ -687,7 +687,7 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 		var err error
 		insert := `
 		INSERT INTO worker (worker_type, count_per_instance, engine)
-		VALUES ('retry', $1, $4), ('submit', $3, $4), ('status', $3, $4)
+		VALUES ('retry', $1, $4), ('submit', $2, $4), ('status', $3, $4)
 		ON CONFLICT (worker_type) DO NOTHING;
 	`
 
