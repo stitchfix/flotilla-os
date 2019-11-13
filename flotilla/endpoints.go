@@ -650,25 +650,30 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
-	wl, err := ep.workerService.List()
+	wl, err := ep.workerService.List(state.ECSEngine)
+	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
 
 	if wl.Workers == nil {
 		wl.Workers = []state.Worker{}
 	}
+	
+	if wlEKS.Workers == nil {
+		wlEKS.Workers = []state.Worker{}
+	}
 
-	if err != nil {
+	if err != nil || errEKS != nil {
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
-		response["total"] = wl.Total
-		response["workers"] = wl.Workers
+		response["total"] = wl.Total + wlEKS.Total
+		response["workers"] = append(wl.Workers, wlEKS.Workers...)
 		ep.encodeResponse(w, response)
 	}
 }
 
 func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	worker, err := ep.workerService.Get(vars["worker_type"])
+	worker, err := ep.workerService.Get(vars["worker_type"], state.DefaultEngine)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {

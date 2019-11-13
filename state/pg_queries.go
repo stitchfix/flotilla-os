@@ -122,7 +122,8 @@ CREATE TABLE IF NOT EXISTS task_def_tags (
 );
 
 CREATE TABLE IF NOT EXISTS worker (
-  worker_type character varying PRIMARY KEY,
+  worker_type character,
+  engine character varying,
   count_per_instance integer
 );
 `
@@ -259,7 +260,8 @@ const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"
 const WorkerSelect = `
   select
     worker_type        as workertype,
-    count_per_instance as countperinstance
+    count_per_instance as countperinstance,
+    engine
   from worker
 `
 
@@ -268,11 +270,14 @@ const WorkerSelect = `
 //
 const ListWorkersSQL = WorkerSelect
 
+const GetWorkerEngine = WorkerSelect + "\nwhere engine = $1"
+
+
 //
 // GetWorkerSQL postgres specific query for retrieving data for a specific
 // worker type.
 //
-const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1"
+const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 
 //
 // GetWorkerSQLForUpdate postgres specific query for retrieving data for a specific

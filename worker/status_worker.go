@@ -54,15 +54,15 @@ func (sw *statusWorker) Run() error {
 
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
-				time.Sleep(time.Duration(time.Minute))
+				time.Sleep(time.Minute)
 			}
 		}
 	}
 }
 
 func (sw *statusWorker) runOnceEKS() {
-	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
-		"started_at_since": {
+	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
+		"queued_at_since": {
 			time.Now().AddDate(0, 0, -1).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
@@ -74,7 +74,15 @@ func (sw *statusWorker) runOnceEKS() {
 	}
 
 	for _, run := range rl.Runs {
-		sw.ee.FetchUpdateStatus(run)
+		updatedRun, err := sw.ee.FetchUpdateStatus(run)
+		if err != nil {
+			sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		} else {
+			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			if err != nil {
+				sw.log.Log("message", "unable to save runs", "error", fmt.Sprintf("%+v", err))
+			}
+		}
 	}
 }
 

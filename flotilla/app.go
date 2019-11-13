@@ -91,9 +91,9 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager); err != nil {
-		return app, errors.Wrap(err, "problem ecs initializing workers")
-	}
+	//if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager); err != nil {
+	//	return app, errors.Wrap(err, "problem ecs initializing workers")
+	//}
 
 	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
