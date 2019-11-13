@@ -229,3 +229,11 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 
 	return runEventList, nil
 }
+
+func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
+	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	if err != nil {
+		return run, err
+	}
+	return ee.adapter.AdaptJobToFlotillaRun(job, run)
+}

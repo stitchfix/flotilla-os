@@ -51,6 +51,8 @@ func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error)
 	return es.eksExecutionEngine.GetEvents(run)
 }
 
+
+
 //
 // NewExecutionService configures and returns an ExecutionService
 //
@@ -179,7 +181,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// Update the run's QueuedAt field
+	// FetchUpdateStatus the run's QueuedAt field
 	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
@@ -334,7 +336,7 @@ func (es *executionService) Get(runID string) (state.Run, error) {
 }
 
 //
-// UpdateStatus is for supporting some legacy runs that still manually update their status
+// FetchUpdateStatus is for supporting some legacy runs that still manually update their status
 //
 func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
 	if !state.IsValidStatus(status) {

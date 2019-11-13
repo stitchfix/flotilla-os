@@ -122,7 +122,7 @@ func (sw *submitWorker) runOnce() {
 			}
 
 			//
-			// Update the status and information of the run;
+			// FetchUpdateStatus the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
 			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
