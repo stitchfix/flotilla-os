@@ -33,6 +33,8 @@ type Engine interface {
 	PollStatus() (RunReceipt, error)
 
 	GetEvents(run state.Run) (state.RunEventList, error)
+
+	FetchUpdateStatus(run state.Run)(state.Run, error)
 }
 
 type RunReceipt struct {

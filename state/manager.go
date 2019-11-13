@@ -32,9 +32,9 @@ type Manager interface {
 	ListGroups(limit int, offset int, name *string) (GroupsList, error)
 	ListTags(limit int, offset int, name *string) (TagsList, error)
 
-	ListWorkers() (WorkersList, error)
+	ListWorkers(engine string) (WorkersList, error)
 	BatchUpdateWorkers(updates []Worker) (WorkersList, error)
-	GetWorker(workerType string) (Worker, error)
+	GetWorker(workerType string, engine string) (Worker, error)
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
 }
 

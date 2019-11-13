@@ -669,54 +669,57 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 //
 func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration (set to 1 as default)
-	retryCount := int64(1)
-	if c.IsSet("worker.retry_worker_count_per_instance") {
-		retryCount = int64(c.GetInt("worker.retry_worker_count_per_instance"))
-	}
-	submitCount := int64(1)
-	if c.IsSet("worker.submit_worker_count_per_instance") {
-		submitCount = int64(c.GetInt("worker.submit_worker_count_per_instance"))
-	}
-	statusCount := int64(1)
-	if c.IsSet("worker.status_worker_count_per_instance") {
-		statusCount = int64(c.GetInt("worker.status_worker_count_per_instance"))
-	}
 
-	var err error
-	insert := `
-		INSERT INTO worker (worker_type, count_per_instance)
-		VALUES ('retry', $1), ('submit', $2), ('status', $3)
-		ON CONFLICT (worker_type) DO NOTHING;
+	for _, engine := range Engines {
+		retryCount := int64(1)
+		if c.IsSet(fmt.Sprintf("worker.%s.retry_worker_count_per_instance", engine)) {
+			retryCount = int64(c.GetInt("worker.ecs.retry_worker_count_per_instance"))
+		}
+		submitCount := int64(1)
+		if c.IsSet(fmt.Sprintf("worker.%s.submit_worker_count_per_instance", engine)) {
+			submitCount = int64(c.GetInt("worker.ecs.submit_worker_count_per_instance"))
+		}
+		statusCount := int64(1)
+		if c.IsSet(fmt.Sprintf("worker.%s.status_worker_count_per_instance", engine)) {
+			statusCount = int64(c.GetInt("worker.ecs.status_worker_count_per_instance"))
+		}
+
+		var err error
+		insert := `
+		INSERT INTO worker (worker_type, count_per_instance, engine)
+		VALUES ('retry', $1, $4), ('submit', $2, $4), ('status', $3, $4);
 	`
 
-	tx, err := sm.db.Begin()
-	if err != nil {
-		return errors.WithStack(err)
+		tx, err := sm.db.Begin()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if _, err = tx.Exec(insert, retryCount, submitCount, statusCount, engine); err != nil {
+			tx.Rollback()
+			return errors.Wrapf(err, "issue populating worker table")
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
-	if _, err = tx.Exec(insert, retryCount, submitCount, statusCount); err != nil {
-		tx.Rollback()
-		return errors.Wrapf(err, "issue populating worker table")
-	}
-
-	err = tx.Commit()
-
-	if err != nil {
-		return errors.WithStack(err)
-	}
 	return nil
 }
 
 //
 // ListWorkers returns list of workers
 //
-func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
+func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 	var err error
 	var result WorkersList
 
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListWorkersSQL)
 
-	err = sm.db.Select(&result.Workers, ListWorkersSQL)
+	err = sm.db.Select(&result.Workers, GetWorkerEngine, engine)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers sql")
 	}
@@ -732,8 +735,8 @@ func (sm *SQLStateManager) ListWorkers() (WorkersList, error) {
 //
 // GetWorker returns data for a single worker.
 //
-func (sm *SQLStateManager) GetWorker(workerType string) (w Worker, err error) {
-	if err := sm.db.Get(&w, GetWorkerSQL, workerType); err != nil {
+func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker, err error) {
+	if err := sm.db.Get(&w, GetWorkerSQL, workerType, engine); err != nil {
 		if err == sql.ErrNoRows {
 			err = exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Worker of type %s not found", workerType)}
@@ -753,12 +756,13 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 		existing Worker
 	)
 
+	engine:= DefaultEngine
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return existing, errors.WithStack(err)
 	}
 
-	rows, err := tx.Query(GetWorkerSQLForUpdate, workerType)
+	rows, err := tx.Query(GetWorkerSQLForUpdate, workerType, engine)
 	if err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
@@ -804,7 +808,7 @@ func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, er
 		}
 	}
 
-	return sm.ListWorkers()
+	return sm.ListWorkers(DefaultEngine)
 }
 
 //

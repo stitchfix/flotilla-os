@@ -412,3 +412,6 @@ func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {
 func (ee *ECSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
 	return state.RunEventList{}, nil
 }
+func (ee *ECSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
+	return run, nil
+}
