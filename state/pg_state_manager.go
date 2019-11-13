@@ -673,15 +673,15 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	for _, engine := range Engines {
 		retryCount := int64(1)
 		if c.IsSet(fmt.Sprintf("worker.%s.retry_worker_count_per_instance", engine)) {
-			retryCount = int64(c.GetInt("worker.retry_worker_count_per_instance"))
+			retryCount = int64(c.GetInt("worker.ecs.retry_worker_count_per_instance"))
 		}
 		submitCount := int64(1)
 		if c.IsSet(fmt.Sprintf("worker.%s.submit_worker_count_per_instance", engine)) {
-			submitCount = int64(c.GetInt("worker.submit_worker_count_per_instance"))
+			submitCount = int64(c.GetInt("worker.ecs.submit_worker_count_per_instance"))
 		}
 		statusCount := int64(1)
 		if c.IsSet(fmt.Sprintf("worker.%s.status_worker_count_per_instance", engine)) {
-			statusCount = int64(c.GetInt("worker.status_worker_count_per_instance"))
+			statusCount = int64(c.GetInt("worker.ecs.status_worker_count_per_instance"))
 		}
 
 		var err error
