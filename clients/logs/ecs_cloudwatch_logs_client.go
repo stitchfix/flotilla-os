@@ -15,7 +15,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 )
 
 //
@@ -28,33 +27,19 @@ type ECSCloudWatchLogsClient struct {
 	logStreamPrefix    string
 	logsClient         logsClient
 	logger             *log.Logger
-	appLogger flotillaLog.Logger
 }
-
-type logsClient interface {
-	DescribeLogGroups(input *cloudwatchlogs.DescribeLogGroupsInput) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
-	CreateLogGroup(input *cloudwatchlogs.CreateLogGroupInput) (*cloudwatchlogs.CreateLogGroupOutput, error)
-	PutRetentionPolicy(input *cloudwatchlogs.PutRetentionPolicyInput) (*cloudwatchlogs.PutRetentionPolicyOutput, error)
-	GetLogEvents(input *cloudwatchlogs.GetLogEventsInput) (*cloudwatchlogs.GetLogEventsOutput, error)
-}
-
-type byTimestamp []*cloudwatchlogs.OutputLogEvent
-
-func (events byTimestamp) Len() int           { return len(events) }
-func (events byTimestamp) Swap(i, j int)      { events[i], events[j] = events[j], events[i] }
-func (events byTimestamp) Less(i, j int) bool { return *(events[i].Timestamp) < *(events[j].Timestamp) }
 
 //
 // Name returns the name of the logs client
 //
 func (cwl *ECSCloudWatchLogsClient) Name() string {
-	return "cloudwatch"
+	return "ecs-cloudwatch"
 }
 
 //
 // Initialize sets up the ECSCloudWatchLogsClient
 //
-func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flotillaLog.Logger) error {
+func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	confLogOptions := conf.GetStringMapString("ecs.log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
@@ -99,7 +84,6 @@ func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flo
 	}
 	cwl.logger = log.New(os.Stderr, "[ecscloudwatchlogs] ",
 		log.Ldate|log.Ltime|log.Lshortfile)
-	cwl.appLogger = appLogger
 	return cwl.createNamespaceIfNotExists()
 }
 

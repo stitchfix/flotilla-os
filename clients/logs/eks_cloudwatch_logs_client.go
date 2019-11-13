@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"os"
@@ -28,7 +27,6 @@ type EKSCloudWatchLogsClient struct {
 	logNamespace       string
 	logsClient         logsClient
 	logger             *log.Logger
-	appLogger          flotillaLog.Logger
 }
 
 type EKSCloudWatchLog struct {
@@ -45,7 +43,7 @@ func (lc *EKSCloudWatchLogsClient) Name() string {
 //
 // Initialize sets up the EKSCloudWatchLogsClient
 //
-func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flotillaLog.Logger) error {
+func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	confLogOptions := conf.GetStringMapString("eks.log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
@@ -85,7 +83,6 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config, appLogger flot
 	}
 	lc.logger = log.New(os.Stderr, "[cloudwatchlogs] ",
 		log.Ldate|log.Ltime|log.Lshortfile)
-	lc.appLogger = appLogger
 	return lc.createNamespaceIfNotExists()
 }
 
