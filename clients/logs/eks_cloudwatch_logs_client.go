@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -10,13 +11,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"os"
 	"sort"
 	"strings"
-	"encoding/json"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 )
 
 //
@@ -28,7 +28,7 @@ type EKSCloudWatchLogsClient struct {
 	logNamespace       string
 	logsClient         logsClient
 	logger             *log.Logger
-	appLogger flotillaLog.Logger
+	appLogger          flotillaLog.Logger
 }
 
 type EKSCloudWatchLog struct {
@@ -102,7 +102,6 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 		StartFromHead: &startFromHead,
 	}
 
-
 	if lastSeen != nil && len(*lastSeen) > 0 {
 		args.NextToken = lastSeen
 	}
@@ -129,11 +128,9 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 		return "", nil, errors.Wrap(err, "problem getting logs")
 	}
 
-
 	if len(result.Events) == 0 {
 		return "", result.NextForwardToken, nil
 	}
-
 
 	message := lc.logsToMessage(result.Events)
 	return message, result.NextForwardToken, nil
