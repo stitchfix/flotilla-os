@@ -109,7 +109,7 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 
 	tlc := testLogsClient{t: t}
 	cwlc.logsClient = &tlc
-	os.Setenv("LOG_NAMESPACE", "non-existing")
+	os.Setenv("ECS_LOG_NAMESPACE", "non-existing")
 	err := cwlc.Initialize(c)
 	if err != nil {
 		t.Errorf("Failed to initialize logs client %v", err)
@@ -136,7 +136,7 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 
 	tlc = testLogsClient{t: t}
 	cwlc.logsClient = &tlc
-	os.Setenv("LOG_NAMESPACE", "existing")
+	os.Setenv("ECS_LOG_NAMESPACE", "existing")
 	cwlc.Initialize(c)
 	expectedInitializeCalls = map[string]bool{
 		"DescribeLogGroups": true,
