@@ -47,6 +47,8 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		updated.FinishedAt = &job.Status.CompletionTime.Time
 	}
 
+
+
 	return updated, nil
 }
 
