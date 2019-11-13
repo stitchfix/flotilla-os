@@ -11,15 +11,6 @@ enabled_workers:
     - retry
     - submit
     - status
-log:
-    namespace: flotilla-os-logs
-    retention_days: 90
-    driver:
-        name: awslogs
-        options:
-            awslogs-group: flotilla-os-logs
-            awslogs-stream-prefix: flotilla
-            awslogs-region: us-east-1
 queue:
     namespace: dev-flotilla
     retention_seconds: 604800
@@ -51,3 +42,17 @@ http:
         cors_allowed_origins:
             - 'http://localhost:3001'
 owner_id_var: FLOTILLA_RUN_OWNER_ID
+ecs:
+    log:
+        namespace: flotilla-os-logs
+        retention_days: 90
+        driver:
+            name: awslogs
+            options: {awslogs-group: flotilla-os-logs, awslogs-stream-prefix: flotilla, awslogs-region: us-east-1}
+eks:
+    log:
+        namespace: flotilla-eks-namespace
+        retention_days: 90
+        driver:
+            name: awslogs
+            options: {awslogs-group: flotilla-eks-namespace, awslogs-region: us-east-1}
