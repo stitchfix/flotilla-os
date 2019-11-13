@@ -54,7 +54,7 @@ func (sw *statusWorker) Run() error {
 
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
-				time.Sleep(time.Second * 15)
+				time.Sleep(time.Second * 30)
 			}
 		}
 	}
@@ -69,19 +69,21 @@ func (sw *statusWorker) runOnceEKS() {
 	}, nil, []string{state.EKSEngine})
 
 	if err != nil {
-		sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 
 	for _, run := range rl.Runs {
 		updatedRun, err := sw.ee.FetchUpdateStatus(run)
 		if err != nil {
-			sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+			_ = sw.log.Log("message", "unable to receive eks runs", "error", fmt.Sprintf("%+v", err))
 		} else {
-			sw.log.Log("message", "updating run", "run", run.RunID)
-			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
-			if err != nil {
-				sw.log.Log("message", "unable to save runs", "error", fmt.Sprintf("%+v", err))
+			if run.Status != updatedRun.Status {
+				_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
+				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+				if err != nil {
+					_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
+				}
 			}
 		}
 	}
