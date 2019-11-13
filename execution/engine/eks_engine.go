@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
@@ -10,6 +11,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -26,6 +28,7 @@ type EKSExecutionEngine struct {
 	jobQueue     string
 	jobNamespace string
 	jobTtl       int
+	jobSA        string
 }
 
 //
@@ -62,8 +65,9 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
+	ee.jobSA = conf.GetString("eks.service_account")
 
-	adapt, err := adapter.NewEKSAdapter(conf)
+	adapt, err := adapter.NewEKSAdapter()
 
 	if err != nil {
 		return err
@@ -74,13 +78,30 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		return state.Run{}, false, err
 	}
 
-	_ = ee.log.Log("submitted job", run.RunID)
+	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
+	})
+
+	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
+		pod := podList.Items[0]
+		run.PodName = &pod.Name
+		run.Namespace = &pod.Namespace
+		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
+			container := pod.Spec.Containers[0]
+			run.ContainerName = &container.Name
+			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
+			run.Cpu = &cpu
+			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+			run.Memory = &mem
+			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
+		}
+	}
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
@@ -161,7 +182,6 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
-
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
