@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"fmt"
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,7 +11,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -20,8 +19,9 @@ type eksAdapter struct{}
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
 //
-func NewEKSAdapter(conf config.Config) (EKSAdapter, error) {
+func NewEKSAdapter() (EKSAdapter, error) {
 	adapter := eksAdapter{}
+
 	return &adapter, nil
 }
 
@@ -50,7 +50,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string) (batchv1.Job, error) {
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
 	cmd := definition.Command
@@ -82,8 +82,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 		Template: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
-				Containers:    []corev1.Container{container},
-				RestartPolicy: corev1.RestartPolicyNever,
+				Containers:         []corev1.Container{container},
+				RestartPolicy:      corev1.RestartPolicyNever,
+				ServiceAccountName: sa,
 				NodeSelector: map[string]string{
 					lifecycle: nodeLifecycle,
 				},
