@@ -181,7 +181,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// FetchUpdateStatus the run's QueuedAt field
+	// UpdateStatus the run's QueuedAt field
 	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
@@ -336,7 +336,7 @@ func (es *executionService) Get(runID string) (state.Run, error) {
 }
 
 //
-// FetchUpdateStatus is for supporting some legacy runs that still manually update their status
+// UpdateStatus is for supporting some legacy runs that still manually update their status
 //
 func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
 	if !state.IsValidStatus(status) {

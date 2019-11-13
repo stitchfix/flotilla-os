@@ -111,7 +111,7 @@ func (ds *definitionService) List(limit int, offset int, sortBy string,
 	return ds.sm.ListDefinitions(limit, offset, sortBy, order, filters, envFilters)
 }
 
-// FetchUpdateStatus updates the definition specified by definitionID with the given updates
+// UpdateStatus updates the definition specified by definitionID with the given updates
 func (ds *definitionService) Update(definitionID string, updates state.Definition) (state.Definition, error) {
 	definition, err := ds.sm.GetDefinition(definitionID)
 	if err != nil {
