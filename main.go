@@ -91,8 +91,7 @@ func main() {
 	eksLogsClient, err := logs.NewLogsClient(c, logger, state.EKSEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS logs client"))
-		//TODO
-		//os.Exit(1)
+		os.Exit(1)
 	}
 
 	//
