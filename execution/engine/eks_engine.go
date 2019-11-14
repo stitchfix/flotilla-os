@@ -81,14 +81,13 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
-		return state.Run{}, false, err
+		return run, true, err
 	}
-
 	run, _ = ee.getPodName(run)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
 	if err != nil {
-		return state.Run{}, false, err
+		return run, false, err
 	}
 
 	return adaptedRun, false, nil
@@ -104,11 +103,11 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	}
 
 	if podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-		pod := podList.Items[0]
+		pod := podList.Items[len(podList.Items)-1]
 		run.PodName = &pod.Name
 		run.Namespace = &pod.Namespace
 		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
-			container := pod.Spec.Containers[0]
+			container := pod.Spec.Containers[len(pod.Spec.Containers)-1]
 			run.ContainerName = &container.Name
 			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
@@ -248,7 +247,6 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
-
 
 	if err != nil {
 		return run, err
