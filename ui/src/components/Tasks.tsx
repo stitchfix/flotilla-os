@@ -123,6 +123,7 @@ export const Tasks: React.FunctionComponent<Props> = props => {
               onChange={value => {
                 updateFilter("group_name", value)
               }}
+              isDisabled={false}
             />
           </FormGroup>
           <FormGroup label="Image" helperText="Search by Docker image.">

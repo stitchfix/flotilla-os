@@ -1,24 +1,28 @@
 import * as React from "react"
-import { FieldArray, FastField } from "formik"
+import { FieldArray, FastField, FormikErrors } from "formik"
+import { get } from "lodash"
 import { Button, FormGroup, Classes, Intent } from "@blueprintjs/core"
 import { Env } from "../types"
 import { IconNames } from "@blueprintjs/icons"
 import { envFieldSpec } from "../helpers/taskFormHelpers"
+import FieldError from "./FieldError"
 
 export type Props = {
   values: Env[]
   push: (env: Env) => void
   remove: (index: number) => void
+  errors: string | FormikErrors<any> | undefined
 }
 
 export const EnvFieldArray: React.FunctionComponent<Props> = ({
   values,
   push,
   remove,
+  errors,
 }) => (
   <div>
-    <div className="flotilla-env-field-array-header">
-      <div className={Classes.LABEL}>{envFieldSpec.label}</div>
+    <div className="flotilla-form-section-header-container">
+      <div>{envFieldSpec.label}</div>
       <Button
         onClick={() => {
           push({ name: "", value: "" })
@@ -37,12 +41,14 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
               name={`${envFieldSpec.name}[${i}].name`}
               className={Classes.INPUT}
             />
+            <FieldError>{get(errors, [i, "name"], null)}</FieldError>
           </FormGroup>
           <FormGroup label={i === 0 ? "Value" : null}>
             <FastField
               name={`${envFieldSpec.name}[${i}].value`}
               className={Classes.INPUT}
             />
+            <FieldError>{get(errors, [i, "value"], null)}</FieldError>
           </FormGroup>
           <Button
             onClick={() => {
@@ -62,7 +68,12 @@ export const EnvFieldArray: React.FunctionComponent<Props> = ({
 const ConnectedEnvFieldArray: React.FunctionComponent<{}> = () => (
   <FieldArray name={envFieldSpec.name}>
     {({ form, push, remove }) => (
-      <EnvFieldArray values={form.values.env} push={push} remove={remove} />
+      <EnvFieldArray
+        values={form.values.env}
+        push={push}
+        remove={remove}
+        errors={form.errors.env}
+      />
     )}
   </FieldArray>
 )

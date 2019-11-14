@@ -13,9 +13,9 @@ import { Classes, Spinner } from "@blueprintjs/core"
  * component. If there are no existing groups, it will render an `<input>`
  * element as a fallback.
  */
-export const GroupNameSelect: React.FunctionComponent<
-  SelectProps & { options: SelectOption[] }
-> = props => {
+export const GroupNameSelect: React.FunctionComponent<SelectProps & {
+  options: SelectOption[]
+}> = props => {
   return (
     <Creatable<SelectOption>
       value={helpers.stringToSelectOpt(props.value)}
@@ -27,13 +27,12 @@ export const GroupNameSelect: React.FunctionComponent<
       id="groupNameSelect"
       styles={helpers.selectStyles}
       theme={helpers.selectTheme}
+      isDisabled={props.isDisabled}
     />
   )
 }
 
-const ConnectedGroupNameSelect: React.FunctionComponent<
-  SelectProps
-> = props => (
+const ConnectedGroupNameSelect: React.FunctionComponent<SelectProps> = props => (
   <Request<ListGroupsResponse, {}> requestFn={api.listGroups}>
     {({ data, requestStatus }) => {
       switch (requestStatus) {
@@ -56,6 +55,7 @@ const ConnectedGroupNameSelect: React.FunctionComponent<
               options={options.map(helpers.stringToSelectOpt)}
               value={props.value}
               onChange={props.onChange}
+              isDisabled={props.isDisabled}
             />
           )
         case RequestStatus.NOT_READY:

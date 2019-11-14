@@ -1,5 +1,11 @@
 import { get } from "lodash"
-import { RunTaskPayload, Task, Env } from "../types"
+import {
+  LaunchRequestV2,
+  Task,
+  Env,
+  ExecutionEngine,
+  NodeLifecycle,
+} from "../types"
 import getOwnerIdRunTagFromCookies from "./getOwnerIdRunTagFromCookies"
 
 /**
@@ -12,16 +18,13 @@ const getInitialValuesForTaskRun = ({
 }: {
   task: Task
   routerState: any
-}): RunTaskPayload => {
+}): LaunchRequestV2 => {
   // Set ownerID value.
   const ownerID = get(
     routerState,
     ["run_tags", "owner_id"],
     getOwnerIdRunTagFromCookies()
   )
-
-  // Set cluster value.
-  const cluster = routerState && routerState.cluster ? routerState.cluster : ""
 
   // Set env value.
   let env: Env[] = routerState && routerState.env ? routerState.env : task.env
@@ -36,13 +39,50 @@ const getInitialValuesForTaskRun = ({
 
   // Set CPU value.
   let cpu: number = routerState && routerState.cpu ? routerState.cpu : task.cpu
-
   if (cpu < 512) cpu = 512
 
   // Set memory value.
   const memory: number =
     routerState && routerState.memory ? routerState.memory : task.memory
-  return { cluster, env, cpu, memory, owner_id: ownerID }
+
+  // Set engine.
+  const engine: ExecutionEngine = get(
+    routerState,
+    "engine",
+    process.env.REACT_APP_DEFAULT_EXECUTION_ENGINE
+  )
+
+  switch (engine) {
+    case ExecutionEngine.ECS:
+      return {
+        cluster: get(routerState, "cluster", ""),
+        env,
+        cpu,
+        memory,
+        owner_id: ownerID,
+        engine,
+      }
+    case ExecutionEngine.EKS:
+    default:
+      return {
+        cluster: get(
+          routerState,
+          "cluster",
+          process.env.REACT_APP_EKS_CLUSTER_NAME
+        ),
+        node_lifecycle: get(
+          routerState,
+          "node_lifecycle",
+          process.env.REACT_APP_DEFAULT_NODE_LIFECYCLE
+        ),
+        ephemeral_storage: get(routerState, "ephemeral_storage", null),
+        env,
+        cpu,
+        memory,
+        owner_id: ownerID,
+        engine,
+      }
+  }
 }
 
 export default getInitialValuesForTaskRun

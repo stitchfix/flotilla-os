@@ -9,6 +9,7 @@ import {
   Collapse,
   Pre,
   Icon,
+  Tag,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -145,6 +146,11 @@ export class Run extends React.Component<Props> {
                       <div className="flotilla-attributes-container">
                         <Attribute name="Status" value={<RunTag {...data} />} />
                         <Attribute
+                          name="Engine Type"
+                          value={<Tag>{data.engine}</Tag>}
+                          isExperimental
+                        />
+                        <Attribute
                           name="Duration"
                           value={
                             data.started_at && (
@@ -162,6 +168,20 @@ export class Run extends React.Component<Props> {
                         />
                         <Attribute name="CPU (Units)" value={data.cpu} />
                         <Attribute name="Memory (MB)" value={data.memory} />
+                        {data.ephemeral_storage && (
+                          <Attribute
+                            name="Disk Size (GB)"
+                            value={<Tag>{data.ephemeral_storage}</Tag>}
+                            isExperimental
+                          />
+                        )}
+                        {data.node_lifecycle && (
+                          <Attribute
+                            name="Node Lifecycle"
+                            value={<Tag>{data.node_lifecycle}</Tag>}
+                            isExperimental
+                          />
+                        )}
                         <Attribute name="Cluster" value={data.cluster} />
                         <Attribute name="Exit Code" value={data.exit_code} />
                         <Attribute
@@ -238,9 +258,9 @@ export class Run extends React.Component<Props> {
   }
 }
 
-const Connected: React.FunctionComponent<
-  RouteComponentProps<{ runID: string }>
-> = ({ match }) => (
+const Connected: React.FunctionComponent<RouteComponentProps<{
+  runID: string
+}>> = ({ match }) => (
   <Request<RunShape, { runID: string }>
     requestFn={api.getRun}
     initialRequestArgs={{ runID: match.params.runID }}

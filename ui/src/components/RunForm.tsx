@@ -1,10 +1,22 @@
 import * as React from "react"
-import { Formik, Form, FastField } from "formik"
+import { Formik, Form, FastField, Field } from "formik"
 import * as Yup from "yup"
 import { RouteComponentProps } from "react-router-dom"
-import { FormGroup, Button, Intent, Spinner, Classes } from "@blueprintjs/core"
+import {
+  FormGroup,
+  Button,
+  Intent,
+  Spinner,
+  Classes,
+  RadioGroup,
+  Radio,
+  Collapse,
+  Divider,
+  H2,
+  Tag,
+} from "@blueprintjs/core"
 import api from "../api"
-import { RunTaskPayload, Run } from "../types"
+import { LaunchRequestV2, Run, ExecutionEngine, NodeLifecycle } from "../types"
 import getInitialValuesForTaskRun from "../helpers/getInitialValuesForTaskRun"
 import Request, {
   ChildProps as RequestChildProps,
@@ -16,6 +28,7 @@ import { TaskContext, TaskCtx } from "./Task"
 import Toaster from "./Toaster"
 import ErrorCallout from "./ErrorCallout"
 import FieldError from "./FieldError"
+import NodeLifecycleSelect from "./NodeLifecycleSelect"
 import * as helpers from "../helpers/runFormHelpers"
 
 const validationSchema = Yup.object().shape({
@@ -33,107 +46,220 @@ const validationSchema = Yup.object().shape({
       value: Yup.string().required(),
     })
   ),
+  engine: Yup.string()
+    .matches(/(eks|ecs)/)
+    .required("A valid engine type of ecs or eks must be set."),
+  node_lifecycle: Yup.string().matches(/(spot|normal)/),
+  ephemeral_storage: Yup.number().nullable(),
 })
 
 type Props = RequestChildProps<
   Run,
-  { definitionID: string; data: RunTaskPayload }
+  { definitionID: string; data: LaunchRequestV2 }
 > & {
   definitionID: string
-  initialValues: RunTaskPayload
+  initialValues: LaunchRequestV2
 }
 
-const RunForm: React.FunctionComponent<Props> = ({
-  initialValues,
-  request,
-  requestStatus,
-  isLoading,
-  error,
-  definitionID,
-}) => (
-  <Formik
-    isInitialValid={(values: any) =>
-      validationSchema.isValidSync(values.initialValues)
-    }
-    initialValues={initialValues}
-    validationSchema={validationSchema}
-    onSubmit={data => {
-      request({ definitionID, data })
-    }}
-  >
-    {({ errors, values, setFieldValue, isValid, ...rest }) => {
-      return (
-        <Form className="flotilla-form-container">
-          {requestStatus === RequestStatus.ERROR && error && (
-            <ErrorCallout error={error} />
-          )}
-          <FormGroup
-            label={helpers.ownerIdFieldSpec.label}
-            helperText={helpers.ownerIdFieldSpec.description}
-          >
-            <FastField
-              name={helpers.ownerIdFieldSpec.name}
-              value={values.owner_id}
-              className={Classes.INPUT}
-            />
-            {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
-          </FormGroup>
-          <FormGroup
-            label="Cluster"
-            helperText="Select a cluster for this task to execute on."
-          >
-            <FastField
-              name="cluster"
-              component={ClusterSelect}
-              value={values.cluster}
-              onChange={(value: string) => {
-                setFieldValue("cluster", value)
-              }}
-            />
-            {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
-          </FormGroup>
-          <FormGroup
-            label={helpers.cpuFieldSpec.label}
-            helperText={helpers.cpuFieldSpec.description}
-          >
-            <FastField
-              type="number"
-              name={helpers.cpuFieldSpec.name}
-              className={Classes.INPUT}
-              min="512"
-            />
-            {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
-          </FormGroup>
-          <FormGroup
-            label={helpers.memoryFieldSpec.label}
-            helperText={helpers.memoryFieldSpec.description}
-          >
-            <FastField
-              type="number"
-              name={helpers.memoryFieldSpec.name}
-              className={Classes.INPUT}
-            />
-            {errors.memory && <FieldError>{errors.memory}</FieldError>}
-          </FormGroup>
-          <EnvFieldArray />
-          <Button
-            intent={Intent.PRIMARY}
-            type="submit"
-            disabled={isLoading || isValid === false}
-          >
-            Submit
-          </Button>
-        </Form>
-      )
-    }}
-  </Formik>
-)
+type State = {
+  areAdvancedOptionsVisible: boolean
+}
+
+class RunForm extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props)
+    this.toggleAdvancedOptionsVisibility = this.toggleAdvancedOptionsVisibility.bind(
+      this
+    )
+  }
+  state = {
+    areAdvancedOptionsVisible: false,
+  }
+
+  toggleAdvancedOptionsVisibility() {
+    this.setState(prev => ({
+      areAdvancedOptionsVisible: !prev.areAdvancedOptionsVisible,
+    }))
+  }
+
+  render() {
+    const {
+      initialValues,
+      request,
+      requestStatus,
+      isLoading,
+      error,
+      definitionID,
+    } = this.props
+    const { areAdvancedOptionsVisible } = this.state
+    return (
+      <Formik
+        isInitialValid={(values: any) =>
+          validationSchema.isValidSync(values.initialValues)
+        }
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={data => {
+          request({ definitionID, data })
+        }}
+      >
+        {({ errors, values, setFieldValue, isValid, ...rest }) => {
+          const getEngine = (): ExecutionEngine => values.engine
+          return (
+            <Form className="flotilla-form-container">
+              {requestStatus === RequestStatus.ERROR && error && (
+                <ErrorCallout error={error} />
+              )}
+              {/* Owner ID Field */}
+              <FormGroup
+                label={helpers.ownerIdFieldSpec.label}
+                helperText={helpers.ownerIdFieldSpec.description}
+              >
+                <FastField
+                  name={helpers.ownerIdFieldSpec.name}
+                  value={values.owner_id}
+                  className={Classes.INPUT}
+                />
+                {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
+              </FormGroup>
+              <div className="flotilla-form-section-divider" />
+              {/* Engine Type Field */}
+              <RadioGroup
+                inline
+                label="Engine Type (Experimental)"
+                onChange={(evt: React.FormEvent<HTMLInputElement>) => {
+                  setFieldValue("engine", evt.currentTarget.value)
+
+                  if (evt.currentTarget.value === ExecutionEngine.EKS) {
+                    setFieldValue(
+                      "cluster",
+                      process.env.REACT_APP_EKS_CLUSTER_NAME || ""
+                    )
+                  }
+                }}
+                selectedValue={values.engine}
+              >
+                <Radio label="EKS (Experimental)" value={ExecutionEngine.EKS} />
+                <Radio label="ECS" value={ExecutionEngine.ECS} />
+              </RadioGroup>
+              <div className="flotilla-form-section-divider" />
+
+              {/*
+                Cluster Field. Note: this is a "Field" rather than a
+                "FastField" as it needs to re-render when value.engine is
+                updated.
+              */}
+              <FormGroup
+                label="Cluster"
+                helperText="Select a cluster for this task to execute on."
+              >
+                <Field
+                  name="cluster"
+                  component={ClusterSelect}
+                  value={values.cluster}
+                  onChange={(value: string) => {
+                    setFieldValue("cluster", value)
+                  }}
+                  isDisabled={getEngine() === ExecutionEngine.EKS}
+                />
+                {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
+              </FormGroup>
+
+              {/* CPU Field */}
+              <FormGroup
+                label={helpers.cpuFieldSpec.label}
+                helperText={helpers.cpuFieldSpec.description}
+              >
+                <FastField
+                  type="number"
+                  name={helpers.cpuFieldSpec.name}
+                  className={Classes.INPUT}
+                  min="512"
+                />
+                {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
+              </FormGroup>
+
+              {/* Memory Field */}
+              <FormGroup
+                label={helpers.memoryFieldSpec.label}
+                helperText={helpers.memoryFieldSpec.description}
+              >
+                <FastField
+                  type="number"
+                  name={helpers.memoryFieldSpec.name}
+                  className={Classes.INPUT}
+                />
+                {errors.memory && <FieldError>{errors.memory}</FieldError>}
+              </FormGroup>
+              <div className="flotilla-form-section-divider" />
+
+              {/* Advanced Options */}
+              <div className="flotilla-form-section-header-container">
+                <div>
+                  Advanced Options <Tag intent={Intent.DANGER}>BETA</Tag>
+                </div>
+                <Button onClick={this.toggleAdvancedOptionsVisibility}>
+                  {areAdvancedOptionsVisible ? "Hide" : "Show"}
+                </Button>
+              </div>
+              <Collapse isOpen={areAdvancedOptionsVisible} keepChildrenMounted>
+                {/* Node Lifecycle Field */}
+                <FormGroup
+                  label="Node Lifecycle"
+                  helperText="This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
+                >
+                  <Field
+                    name="node_lifecycle"
+                    component={NodeLifecycleSelect}
+                    value={values.node_lifecycle}
+                    onChange={(value: string) => {
+                      setFieldValue("node_lifecycle", value)
+                    }}
+                    isDisabled={getEngine() !== ExecutionEngine.EKS}
+                  />
+                  {errors.node_lifecycle && (
+                    <FieldError>{errors.node_lifecycle}</FieldError>
+                  )}
+                </FormGroup>
+
+                {/* Ephemeral Storage Field */}
+                <FormGroup
+                  label="Disk Size (GB)"
+                  helperText="This field is only applicable to tasks running on EKS."
+                >
+                  <Field
+                    type="number"
+                    name="ephemeral_storage"
+                    className={Classes.INPUT}
+                    isDisabled={getEngine() !== ExecutionEngine.EKS}
+                  />
+                  {errors.ephemeral_storage && (
+                    <FieldError>{errors.ephemeral_storage}</FieldError>
+                  )}
+                </FormGroup>
+              </Collapse>
+              <div className="flotilla-form-section-divider" />
+              <EnvFieldArray />
+              <Button
+                intent={Intent.PRIMARY}
+                type="submit"
+                disabled={isLoading || isValid === false}
+              >
+                Submit
+              </Button>
+            </Form>
+          )
+        }}
+      </Formik>
+    )
+  }
+}
 
 const Connected: React.FunctionComponent<RouteComponentProps> = ({
   location,
   history,
 }) => (
-  <Request<Run, { definitionID: string; data: RunTaskPayload }>
+  <Request<Run, { definitionID: string; data: LaunchRequestV2 }>
     requestFn={api.runTask}
     shouldRequestOnMount={false}
     onSuccess={(data: Run) => {
@@ -158,7 +284,7 @@ const Connected: React.FunctionComponent<RouteComponentProps> = ({
               return <ErrorCallout error={ctx.error} />
             case RequestStatus.READY:
               if (ctx.data) {
-                const initialValues: RunTaskPayload = getInitialValuesForTaskRun(
+                const initialValues: LaunchRequestV2 = getInitialValuesForTaskRun(
                   {
                     task: ctx.data,
                     routerState: location.state,

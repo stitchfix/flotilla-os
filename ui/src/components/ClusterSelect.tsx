@@ -11,9 +11,9 @@ import * as helpers from "../helpers/selectHelpers"
  * particular task. This component hits the `/clusters` endpoint and renders
  * the results into a React Select component.
  */
-export const ClusterSelect: React.FunctionComponent<
-  SelectProps & { options: SelectOption[] }
-> = props => {
+export const ClusterSelect: React.FunctionComponent<SelectProps & {
+  options: SelectOption[]
+}> = props => {
   return (
     <Creatable<SelectOption>
       value={helpers.stringToSelectOpt(props.value)}
@@ -24,6 +24,7 @@ export const ClusterSelect: React.FunctionComponent<
       }}
       styles={helpers.selectStyles}
       theme={helpers.selectTheme}
+      isDisabled={props.isDisabled}
     />
   )
 }
@@ -41,6 +42,7 @@ const Connected: React.FunctionComponent<SelectProps> = props => (
           options={options.map(helpers.stringToSelectOpt)}
           value={props.value}
           onChange={props.onChange}
+          isDisabled={props.isDisabled}
         />
       )
     }}
