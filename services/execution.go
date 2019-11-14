@@ -51,8 +51,6 @@ func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error)
 	return es.eksExecutionEngine.GetEvents(run)
 }
 
-
-
 //
 // NewExecutionService configures and returns an ExecutionService
 //
@@ -374,10 +372,11 @@ func (es *executionService) Terminate(runID string) error {
 
 	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
 		err = es.eksExecutionEngine.Terminate(run)
-		if err != nil{
+		if err == nil {
 			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{Status: state.StatusStopped})
 			return err
 		}
+		return nil
 	}
 
 	return exceptions.MalformedInput{
