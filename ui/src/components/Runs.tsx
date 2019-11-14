@@ -18,7 +18,7 @@ import ListFiltersDropdown from "./ListFiltersDropdown"
 import Pagination from "./Pagination"
 import GenericMultiSelect from "./GenericMultiSelect"
 import RunStatusSelect from "./RunStatusSelect"
-import { FormGroup, Classes, Spinner } from "@blueprintjs/core"
+import { FormGroup, Classes, Spinner, Tag } from "@blueprintjs/core"
 import { PAGE_SIZE } from "../constants"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
@@ -87,6 +87,11 @@ export const Runs: React.FunctionComponent<Props> = ({
               render: (r: Run) => (
                 <Link to={`/tasks/${r.definition_id}`}>{r.alias}</Link>
               ),
+              isSortable: false,
+            },
+            engine: {
+              displayName: "Engine",
+              render: (r: Run) => <Tag>{r.engine}</Tag>,
               isSortable: false,
             },
           }}
