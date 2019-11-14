@@ -47,8 +47,6 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		updated.FinishedAt = &job.Status.CompletionTime.Time
 	}
 
-
-
 	return updated, nil
 }
 
@@ -75,11 +73,10 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	lifecycle := "kubernetes.io/lifecycle"
-	ttlSecondsAfterFinished := int32(1800)
-	activeDeadlineSeconds := int64(86400)
+
 	jobSpec := batchv1.JobSpec{
-		TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
-		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
+		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
+		ActiveDeadlineSeconds:   &state.ActiveDeadlineSeconds,
 		BackoffLimit:            &state.EKSBackoffLimit,
 
 		Template: corev1.PodTemplateSpec{
