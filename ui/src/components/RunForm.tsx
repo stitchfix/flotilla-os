@@ -31,6 +31,7 @@ import ErrorCallout from "./ErrorCallout"
 import FieldError from "./FieldError"
 import NodeLifecycleSelect from "./NodeLifecycleSelect"
 import * as helpers from "../helpers/runFormHelpers"
+import { commandFieldSpec } from "../helpers/taskFormHelpers"
 
 const validationSchema = Yup.object().shape({
   owner_id: Yup.string(),
@@ -52,6 +53,9 @@ const validationSchema = Yup.object().shape({
     .required("A valid engine type of ecs or eks must be set."),
   node_lifecycle: Yup.string().matches(/(spot|normal)/),
   ephemeral_storage: Yup.number()
+    .min(1)
+    .nullable(),
+  command: Yup.string()
     .min(1)
     .nullable(),
 })
@@ -251,6 +255,19 @@ class RunForm extends React.Component<Props, State> {
                   {errors.ephemeral_storage && (
                     <FieldError>{errors.ephemeral_storage}</FieldError>
                   )}
+                </FormGroup>
+                <FormGroup
+                  label={commandFieldSpec.label}
+                  helperText="Override your task definition command."
+                >
+                  <FastField
+                    className={`${Classes.INPUT} ${Classes.CODE}`}
+                    component="textarea"
+                    name={commandFieldSpec.name}
+                    rows={14}
+                    style={{ fontSize: "0.8rem" }}
+                  />
+                  {errors.command && <FieldError>{errors.command}</FieldError>}
                 </FormGroup>
               </Collapse>
               <div className="flotilla-form-section-divider" />
