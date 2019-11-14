@@ -19,6 +19,7 @@ import {
   ListClustersResponse,
   ListGroupsResponse,
   ListTagsResponse,
+  ListRunEventsResponse,
 } from "../types"
 
 interface IInitOpts {
@@ -208,6 +209,13 @@ class FlotillaClient {
       method: HTTPMethod.GET,
       url: `/v6/tags`,
       params: { offset: 0, limit: 10000 },
+    })
+
+  /** Requests available tags. */
+  public listRunEvents = (runID: string): Promise<ListRunEventsResponse> =>
+    this.request<ListRunEventsResponse>({
+      method: HTTPMethod.GET,
+      url: `/v6/${runID}/events`,
     })
 
   /** Returns a new Promise that sends an HTTP request when invoked. */
