@@ -121,6 +121,7 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             onChange={(value: string[]) => {
               updateFilter("status", value)
             }}
+            isDisabled={false}
           />
         </FormGroup>
         <ListFiltersDropdown>
@@ -132,10 +133,11 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
           />
           <FormGroup label="Cluster" helperText="Search by ECS cluster.">
             <GenericMultiSelect
-              value={get(query, "cluster", [])}
+              value={get(query, "cluster_name", [])}
               onChange={(value: string[]) => {
-                updateFilter("cluster", value)
+                updateFilter("cluster_name", value)
               }}
+              isDisabled={false}
             />
           </FormGroup>
           <FormGroup

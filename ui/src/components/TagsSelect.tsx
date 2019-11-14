@@ -6,9 +6,9 @@ import { ListTagsResponse, SelectOption, MultiSelectProps } from "../types"
 import api from "../api"
 import * as helpers from "../helpers/selectHelpers"
 
-export const TagsSelect: React.FunctionComponent<
-  MultiSelectProps & { options: SelectOption[] }
-> = props => (
+export const TagsSelect: React.FunctionComponent<MultiSelectProps & {
+  options: SelectOption[]
+}> = props => (
   <Creatable<SelectOption>
     isMulti
     value={props.value.map(helpers.stringToSelectOpt)}
@@ -19,12 +19,11 @@ export const TagsSelect: React.FunctionComponent<
     styles={helpers.selectStyles}
     theme={helpers.selectTheme}
     closeMenuOnSelect={false}
+    isDisabled={props.isDisabled}
   />
 )
 
-const ConnectedTagsSelect: React.FunctionComponent<
-  MultiSelectProps
-> = props => (
+const ConnectedTagsSelect: React.FunctionComponent<MultiSelectProps> = props => (
   <Request<ListTagsResponse, {}> requestFn={api.listTags}>
     {res => {
       let options = get(res, ["data", "tags"], [])
@@ -34,6 +33,7 @@ const ConnectedTagsSelect: React.FunctionComponent<
           value={props.value || []}
           options={options.map(helpers.stringToSelectOpt)}
           onChange={props.onChange}
+          isDisabled={props.isDisabled}
         />
       )
     }}

@@ -9,7 +9,7 @@ import {
   ListRunParams,
   ListRunResponse,
   RunLog,
-  RunTaskPayload,
+  LaunchRequestV2,
   Task,
   ListTaskResponse,
   ListTaskRunsResponse,
@@ -122,9 +122,9 @@ class FlotillaClient {
     data,
   }: {
     definitionID: string
-    data: RunTaskPayload
+    data: LaunchRequestV2
   }): Promise<Run> => {
-    const d: Omit<RunTaskPayload, "owner_id"> = omit(data, "owner_id")
+    const d: Omit<LaunchRequestV2, "owner_id"> = omit(data, "owner_id")
 
     if (has(data, "owner_id")) {
       if (d.run_tags) {

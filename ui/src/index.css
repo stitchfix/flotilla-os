@@ -51,6 +51,21 @@ body {
   max-width: 600px;
 }
 
+.flotilla-form-section-header-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: var(--spacing) 0;
+}
+
+.flotilla-form-section-divider {
+  width: 100%;
+  border-top: var(--default-border);
+  margin: var(--spacing) 0;
+}
+
 /**
  * Attribute
  */

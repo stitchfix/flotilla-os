@@ -12,7 +12,7 @@ import {
   Run,
   RunLog,
   RunStatus,
-  RunTaskPayload,
+  LaunchRequestV2,
   Task,
   UpdateTaskPayload,
 } from "../../types"
@@ -156,7 +156,7 @@ const runTask = jest.fn(
     data,
   }: {
     definitionID: string
-    data: RunTaskPayload
+    data: LaunchRequestV2
   }): Promise<Run> =>
     new Promise<Run>(resolve => {
       resolve({

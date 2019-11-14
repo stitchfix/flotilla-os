@@ -25,6 +25,7 @@ const RunStatusSelect: React.FunctionComponent<MultiSelectProps> = props => {
       isMulti
       styles={helpers.selectStyles}
       theme={helpers.selectTheme}
+      isDisabled={props.isDisabled}
     />
   )
 }

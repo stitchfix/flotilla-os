@@ -10,7 +10,7 @@ import {
   CreateTaskPayload,
   UpdateTaskPayload,
   ListTaskRunsResponse,
-  RunTaskPayload,
+  LaunchRequestV2,
   ListRunParams,
   ListRunResponse,
   RunLog,
@@ -141,7 +141,7 @@ describe("FlotillaClient", () => {
 
   it("runTask", async () => {
     const id = "my_task"
-    const data: RunTaskPayload = {
+    const data: LaunchRequestV2 = {
       cluster: "cluster",
       env: [],
       run_tags: {},
