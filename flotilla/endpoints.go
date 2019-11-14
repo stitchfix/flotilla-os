@@ -45,7 +45,7 @@ type LaunchRequestV2 struct {
 	Cpu              *int64
 	Engine           *string
 	NodeLifecycle    *string `json:"node_lifecycle"`
-	EphemeralStorage *int64 `json:"ephemeral_storage"`
+	EphemeralStorage *int64  `json:"ephemeral_storage"`
 	*LaunchRequest
 }
 
@@ -577,14 +577,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	if *run.Engine == state.EKSEngine {
 		logs, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
 		if err != nil {
-			ep.logger.Log(
-				"message", "problem getting logs",
-				"operation", "GetLogs",
-				"error", fmt.Sprintf("%+v", err),
-				"run_id", vars["run_id"],
-				"last_seen", lastSeen)
-			ep.encodeError(w, err)
-			return
+			logs = ""
 		}
 
 		res := map[string]string{
@@ -670,7 +663,7 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 	if wl.Workers == nil {
 		wl.Workers = []state.Worker{}
 	}
-	
+
 	if wlEKS.Workers == nil {
 		wlEKS.Workers = []state.Worker{}
 	}
