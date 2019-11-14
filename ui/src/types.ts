@@ -179,6 +179,7 @@ export type LaunchRequestV2 = {
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
   ephemeral_storage?: number | null
+  command?: string | null
 }
 
 export type ListRunParams = ListRequestArgs & {
