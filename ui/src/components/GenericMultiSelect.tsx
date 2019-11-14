@@ -21,6 +21,7 @@ const GenericMultiSelect: React.FunctionComponent<MultiSelectProps> = props => {
       isClearable
       styles={helpers.selectStyles}
       theme={helpers.selectTheme}
+      isDisabled={props.isDisabled}
     />
   )
 }

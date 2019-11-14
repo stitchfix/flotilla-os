@@ -44,6 +44,9 @@ export type Run = {
   started_at?: string
   status: RunStatus
   task_arn: string
+  engine: ExecutionEngine
+  node_lifecycle?: NodeLifecycle
+  ephemeral_storage?: number | null
 }
 
 export type RunLog = {
@@ -92,11 +95,13 @@ export type SelectOption = { label: string; value: string }
 export type SelectProps = {
   value: string
   onChange: (value: string) => void
+  isDisabled: boolean
 }
 
 export type MultiSelectProps = {
   value: string[]
   onChange: (value: string[]) => void
+  isDisabled: boolean
 }
 
 //
@@ -154,13 +159,26 @@ export type UpdateTaskPayload = {
   tags: string[]
 }
 
-export type RunTaskPayload = {
+export enum ExecutionEngine {
+  ECS = "ecs",
+  EKS = "eks",
+}
+
+export enum NodeLifecycle {
+  SPOT = "spot",
+  ON_DEMAND = "normal",
+}
+
+export type LaunchRequestV2 = {
   cluster: string
   env?: Env[]
   run_tags?: { [key: string]: any }
   cpu?: number
   memory?: number
   owner_id?: string
+  engine: ExecutionEngine
+  node_lifecycle?: NodeLifecycle
+  ephemeral_storage?: number | null
 }
 
 export type ListRunParams = ListRequestArgs & {

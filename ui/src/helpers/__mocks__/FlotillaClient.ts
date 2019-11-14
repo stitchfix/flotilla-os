@@ -12,9 +12,11 @@ import {
   Run,
   RunLog,
   RunStatus,
-  RunTaskPayload,
+  LaunchRequestV2,
   Task,
   UpdateTaskPayload,
+  ExecutionEngine,
+  NodeLifecycle,
 } from "../../types"
 
 const getTask = jest.fn(
@@ -156,7 +158,7 @@ const runTask = jest.fn(
     data,
   }: {
     definitionID: string
-    data: RunTaskPayload
+    data: LaunchRequestV2
   }): Promise<Run> =>
     new Promise<Run>(resolve => {
       resolve({
@@ -177,6 +179,9 @@ const runTask = jest.fn(
         memory: 1024,
         command: "echo 'hi'",
         queued_at: "2019-10-24T05:21:51",
+        engine: ExecutionEngine.ECS,
+        node_lifecycle: NodeLifecycle.SPOT,
+        ephemeral_storage: null,
       })
     })
 )
@@ -220,6 +225,9 @@ const getRun = jest.fn(
         memory: 1024,
         command: "echo 'hi'",
         queued_at: "2019-10-24T05:21:51",
+        engine: ExecutionEngine.ECS,
+        node_lifecycle: NodeLifecycle.SPOT,
+        ephemeral_storage: null,
       })
     })
 )

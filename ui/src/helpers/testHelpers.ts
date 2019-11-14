@@ -1,7 +1,7 @@
 import { FormikActions } from "formik"
 import { createMemoryHistory, createLocation } from "history"
 import { RouteComponentProps } from "react-router-dom"
-import { Task, Run, RunStatus } from "../types"
+import { Task, Run, RunStatus, ExecutionEngine, NodeLifecycle } from "../types"
 
 export function createMockRouteComponentProps<MatchParams>({
   path,
@@ -76,5 +76,8 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   memory: 1024,
   command: "echo 'hi'",
   queued_at: "queued_at",
+  engine: ExecutionEngine.ECS,
+  node_lifecycle: NodeLifecycle.SPOT,
+  ephemeral_storage: null,
   ...overrides,
 })

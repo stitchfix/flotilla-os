@@ -10,10 +10,11 @@ import {
   CreateTaskPayload,
   UpdateTaskPayload,
   ListTaskRunsResponse,
-  RunTaskPayload,
+  LaunchRequestV2,
   ListRunParams,
   ListRunResponse,
   RunLog,
+  ExecutionEngine,
 } from "../../types"
 import { createMockRunObject, createMockTaskObject } from "../testHelpers"
 
@@ -46,7 +47,7 @@ describe("FlotillaClient", () => {
       sort_by: "alias",
       order: SortOrder.ASC,
     }
-    mock.onGet(`/v1/task`).reply(200, res)
+    mock.onGet(`/v6/task`).reply(200, res)
     expect(
       await client.listTasks({ params: { offset: 0, limit: 20 } })
     ).toEqual(res)
@@ -54,7 +55,7 @@ describe("FlotillaClient", () => {
 
   it("getTask", async () => {
     const id = "my_task"
-    mock.onGet(`/v1/task/${id}`).reply(200, createMockTaskObject())
+    mock.onGet(`/v6/task/${id}`).reply(200, createMockTaskObject())
     expect(await client.getTask({ definitionID: id })).toEqual(
       createMockTaskObject()
     )
@@ -62,7 +63,7 @@ describe("FlotillaClient", () => {
 
   it("getTaskByAlias", async () => {
     const alias = "my_task_alias"
-    mock.onGet(`/v1/task/alias/${alias}`).reply(200, createMockTaskObject())
+    mock.onGet(`/v6/task/alias/${alias}`).reply(200, createMockTaskObject())
     expect(await client.getTaskByAlias({ alias })).toEqual(
       createMockTaskObject()
     )
@@ -78,7 +79,7 @@ describe("FlotillaClient", () => {
       sort_by: "alias",
       order: SortOrder.ASC,
     }
-    mock.onGet(`/v1/task/${id}/history`).reply(200, res)
+    mock.onGet(`/v6/task/${id}/history`).reply(200, res)
     expect(
       await client.listTaskRuns({
         definitionID: id,
@@ -105,7 +106,7 @@ describe("FlotillaClient", () => {
       container_name: "container_name",
       privileged: false,
     }
-    mock.onPost(`/v1/task`).reply(200, res)
+    mock.onPost(`/v6/task`).reply(200, res)
     expect(await client.createTask({ data })).toEqual(res)
   })
 
@@ -128,26 +129,27 @@ describe("FlotillaClient", () => {
       container_name: "container_name",
       privileged: false,
     }
-    mock.onPut(`/v1/task/${id}`).reply(200, res)
+    mock.onPut(`/v6/task/${id}`).reply(200, res)
     expect(await client.updateTask({ definitionID: id, data })).toEqual(res)
   })
 
   it("deleteTask", async () => {
     const id = "my_task"
     const res = {}
-    mock.onDelete(`/v1/task/${id}`).reply(200, res)
+    mock.onDelete(`/v6/task/${id}`).reply(200, res)
     expect(await client.deleteTask({ definitionID: id })).toEqual(res)
   })
 
   it("runTask", async () => {
     const id = "my_task"
-    const data: RunTaskPayload = {
+    const data: LaunchRequestV2 = {
       cluster: "cluster",
       env: [],
       run_tags: {},
+      engine: ExecutionEngine.ECS,
     }
 
-    mock.onPut(`/v4/task/${id}/execute`).reply(200, createMockRunObject())
+    mock.onPut(`/v6/task/${id}/execute`).reply(200, createMockRunObject())
     expect(await client.runTask({ definitionID: id, data })).toEqual(
       createMockRunObject()
     )
@@ -170,13 +172,13 @@ describe("FlotillaClient", () => {
       total: 1,
     }
 
-    mock.onGet(`/v1/history`).reply(200, res)
+    mock.onGet(`/v6/history`).reply(200, res)
     expect(await client.listRun({ params })).toEqual(res)
   })
 
   it("getRun", async () => {
     const runID = "run_id"
-    mock.onGet(`/v1/task/history/${runID}`).reply(200, createMockRunObject())
+    mock.onGet(`/v6/task/history/${runID}`).reply(200, createMockRunObject())
     expect(await client.getRun({ runID })).toEqual(createMockRunObject())
   })
 
@@ -187,7 +189,7 @@ describe("FlotillaClient", () => {
       log: "log",
       last_seen: "last_seen",
     }
-    mock.onGet(`/v1/${runID}/logs`).reply(200, res)
+    mock.onGet(`/v6/${runID}/logs`).reply(200, res)
     expect(await client.getRunLog({ runID, lastSeen })).toEqual(res)
   })
 
@@ -195,7 +197,7 @@ describe("FlotillaClient", () => {
     const definitionID = "definition_id"
     const runID = "run_id"
 
-    mock.onDelete(`/v1/task/${definitionID}/history/${runID}`).reply(200, {})
+    mock.onDelete(`/v6/task/${definitionID}/history/${runID}`).reply(200, {})
     expect(await client.stopRun({ runID, definitionID })).toEqual({})
   })
 
@@ -204,19 +206,19 @@ describe("FlotillaClient", () => {
   // ---------------------------------------------------------------------------
   it("getClusters", async () => {
     const res = { clusters: [] }
-    mock.onGet(`/v1/clusters`).reply(200, res)
+    mock.onGet(`/v6/clusters`).reply(200, res)
     expect(await client.listClusters()).toEqual(res)
   })
 
   it("getTags", async () => {
     const res = { tags: [], offset: 0, limit: 20, total: 0 }
-    mock.onGet(`/v1/tags`).reply(200, res)
+    mock.onGet(`/v6/tags`).reply(200, res)
     expect(await client.listTags()).toEqual(res)
   })
 
   it("getGroups", async () => {
     const res = { groups: [], offset: 0, limit: 20, total: 0 }
-    mock.onGet(`/v1/groups`).reply(200, res)
+    mock.onGet(`/v6/groups`).reply(200, res)
     expect(await client.listGroups()).toEqual(res)
   })
 })
