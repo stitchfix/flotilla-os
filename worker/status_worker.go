@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -76,7 +77,17 @@ func (sw *statusWorker) runOnceEKS() {
 	for _, run := range rl.Runs {
 		updatedRun, err := sw.ee.FetchUpdateStatus(run)
 		if err != nil {
-			_ = sw.log.Log("message", "unable to receive eks runs", "error", fmt.Sprintf("%+v", err))
+			message := fmt.Sprintf("%+v", err)
+			_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
+
+			minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
+			if strings.Contains(message, "not found") && minutesInQueue > float64(15) {
+				reason := "Job either timed/deleted out or not found on the EKS cluster."
+				updatedRun.Status = state.StatusStopped
+				updatedRun.ExitReason = &reason
+				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			}
+
 		} else {
 			if run.Status != updatedRun.Status {
 				_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
