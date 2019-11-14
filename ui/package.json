@@ -1,6 +1,6 @@
 {
   "name": "flotilla",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "dependencies": {
     "@blueprintjs/core": "^3.15.1",
     "ansi-to-react": "^5.1.0",
