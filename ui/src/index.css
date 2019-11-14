@@ -309,3 +309,8 @@ table {
   box-shadow: none !important;
   border-bottom: 1px solid #293742;
 }
+
+.bp3-tag {
+  font-weight: 500;
+  text-transform: uppercase;
+}

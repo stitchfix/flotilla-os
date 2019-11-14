@@ -44,6 +44,9 @@ export type Run = {
   started_at?: string
   status: RunStatus
   task_arn: string
+  engine: ExecutionEngine
+  node_lifecycle?: NodeLifecycle
+  ephemeral_storage?: number | null
 }
 
 export type RunLog = {

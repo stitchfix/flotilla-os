@@ -105,7 +105,6 @@ class RunForm extends React.Component<Props, State> {
       >
         {({ errors, values, setFieldValue, isValid, ...rest }) => {
           const getEngine = (): ExecutionEngine => values.engine
-          console.log("RERENDER")
           return (
             <Form className="flotilla-form-container">
               {requestStatus === RequestStatus.ERROR && error && (

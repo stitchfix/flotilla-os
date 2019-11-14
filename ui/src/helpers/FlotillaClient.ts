@@ -47,14 +47,14 @@ class FlotillaClient {
   }): Promise<Task> =>
     this.request<Task>({
       method: HTTPMethod.GET,
-      url: `/v1/task/${definitionID}`,
+      url: `/v6/task/${definitionID}`,
     })
 
   /** Requests a task definition by its alias. */
   public getTaskByAlias = ({ alias }: { alias: string }): Promise<Task> =>
     this.request<Task>({
       method: HTTPMethod.GET,
-      url: `/v1/task/alias/${alias}`,
+      url: `/v6/task/alias/${alias}`,
     })
 
   /** Requests a task definition's history. */
@@ -67,7 +67,7 @@ class FlotillaClient {
   }): Promise<ListTaskRunsResponse> =>
     this.request<ListTaskRunsResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/task/${definitionID}/history`,
+      url: `/v6/task/${definitionID}/history`,
       params,
     })
 
@@ -79,7 +79,7 @@ class FlotillaClient {
   }): Promise<ListTaskResponse> =>
     this.request<ListTaskResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/task`,
+      url: `/v6/task`,
       params,
     })
 
@@ -87,7 +87,7 @@ class FlotillaClient {
   public createTask = ({ data }: { data: CreateTaskPayload }): Promise<Task> =>
     this.request<Task>({
       method: HTTPMethod.POST,
-      url: `/v1/task`,
+      url: `/v6/task`,
       data,
     })
 
@@ -101,7 +101,7 @@ class FlotillaClient {
   }): Promise<Task> =>
     this.request<Task>({
       method: HTTPMethod.PUT,
-      url: `/v1/task/${definitionID}`,
+      url: `/v6/task/${definitionID}`,
       data,
     })
 
@@ -113,7 +113,7 @@ class FlotillaClient {
   }): Promise<any> =>
     this.request<any>({
       method: HTTPMethod.DELETE,
-      url: `/v1/task/${definitionID}`,
+      url: `/v6/task/${definitionID}`,
     })
 
   /** Runs a task. */
@@ -136,7 +136,7 @@ class FlotillaClient {
 
     return this.request<Run>({
       method: HTTPMethod.PUT,
-      url: `/v4/task/${definitionID}/execute`,
+      url: `/v6/task/${definitionID}/execute`,
       data: d,
     })
   }
@@ -149,7 +149,7 @@ class FlotillaClient {
   }): Promise<ListRunResponse> =>
     this.request<ListRunResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/history`,
+      url: `/v6/history`,
       params,
     })
 
@@ -157,7 +157,7 @@ class FlotillaClient {
   public getRun = ({ runID }: { runID: string }): Promise<Run> =>
     this.request<Run>({
       method: HTTPMethod.GET,
-      url: `/v1/task/history/${runID}`,
+      url: `/v6/task/history/${runID}`,
     })
 
   /** Requests the logs of a single run. */
@@ -170,7 +170,7 @@ class FlotillaClient {
   }): Promise<RunLog> =>
     this.request<RunLog>({
       method: HTTPMethod.GET,
-      url: `/v1/${runID}/logs`,
+      url: `/v6/${runID}/logs`,
       params: { last_seen: lastSeen },
     })
 
@@ -184,21 +184,21 @@ class FlotillaClient {
   }): Promise<any> =>
     this.request<any>({
       method: HTTPMethod.DELETE,
-      url: `/v1/task/${definitionID}/history/${runID}`,
+      url: `/v6/task/${definitionID}/history/${runID}`,
     })
 
   /** Requests available clusters. */
   public listClusters = (): Promise<ListClustersResponse> =>
     this.request<ListClustersResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/clusters`,
+      url: `/v6/clusters`,
     })
 
   /** Requests available groups. */
   public listGroups = (): Promise<ListGroupsResponse> =>
     this.request<ListGroupsResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/groups`,
+      url: `/v6/groups`,
       params: { offset: 0, limit: 10000 },
     })
 
@@ -206,7 +206,7 @@ class FlotillaClient {
   public listTags = (): Promise<ListTagsResponse> =>
     this.request<ListTagsResponse>({
       method: HTTPMethod.GET,
-      url: `/v1/tags`,
+      url: `/v6/tags`,
       params: { offset: 0, limit: 10000 },
     })
 
