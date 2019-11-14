@@ -373,7 +373,11 @@ func (es *executionService) Terminate(runID string) error {
 	}
 
 	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
-		return es.eksExecutionEngine.Terminate(run)
+		err = es.eksExecutionEngine.Terminate(run)
+		if err != nil{
+			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{Status: state.StatusStopped})
+			return err
+		}
 	}
 
 	return exceptions.MalformedInput{
