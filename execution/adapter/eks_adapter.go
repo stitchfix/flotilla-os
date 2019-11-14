@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 type EKSAdapter interface {
@@ -39,14 +40,19 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		updated.Status = state.StatusStopped
 		updated.ExitCode = &exitCode
 	}
+
 	if job != nil && job.Status.StartTime != nil {
 		updated.StartedAt = &job.Status.StartTime.Time
 	}
 
-	if job != nil && job.Status.CompletionTime != nil {
-		updated.FinishedAt = &job.Status.CompletionTime.Time
+	if updated.Status == state.StatusStopped {
+		if job != nil && job.Status.CompletionTime != nil {
+			updated.FinishedAt = &job.Status.CompletionTime.Time
+		} else {
+			finishedAt := time.Now()
+			updated.FinishedAt = &finishedAt
+		}
 	}
-
 	return updated, nil
 }
 
