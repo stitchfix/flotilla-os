@@ -122,8 +122,12 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(0)
+	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
-	deleteOptions := &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod}
+	deleteOptions := &metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriod,
+		PropagationPolicy:  &deletionPropagation,
+	}
 	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 }
 
@@ -244,6 +248,8 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+
+
 	if err != nil {
 		return run, err
 	}
