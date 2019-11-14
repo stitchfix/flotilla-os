@@ -13,6 +13,7 @@ import (
 // times - the case that the requested resources will -never- become
 // available on the user's chosen cluster
 //
+
 type Client interface {
 	Name() string
 	Initialize(conf config.Config) error
@@ -32,7 +33,11 @@ func NewClusterClient(conf config.Config, name string) (Client, error) {
 		}
 		return ecsc, nil
 	case "eks":
-		return nil, errors.New("TODO - NOT IMPLEMENTED")
+		eksc := &EKSClusterClient{}
+		if err := eksc.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing EKSClusterClient")
+		}
+		return eksc, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
