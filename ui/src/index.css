@@ -314,3 +314,7 @@ table {
   font-weight: 500;
   text-transform: uppercase;
 }
+
+.bp3-tab-panel.bp3-tab-panel-no-margin-top {
+  margin-top: 0;
+}

@@ -40,7 +40,11 @@ class Table<ItemType> extends React.Component<Props<ItemType>> {
                   isSortable={v.isSortable}
                   isActive={currentSortKey === k}
                   order={currentSortOrder}
-                  onClick={updateSort.bind(this, k)}
+                  onClick={() => {
+                    if (v.isSortable === true) {
+                      updateSort(k)
+                    }
+                  }}
                   key={k}
                 >
                   {v.displayName}

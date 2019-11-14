@@ -14,6 +14,7 @@ import {
   Divider,
   H2,
   Tag,
+  Callout,
 } from "@blueprintjs/core"
 import api from "../api"
 import { LaunchRequestV2, Run, ExecutionEngine, NodeLifecycle } from "../types"
@@ -50,7 +51,9 @@ const validationSchema = Yup.object().shape({
     .matches(/(eks|ecs)/)
     .required("A valid engine type of ecs or eks must be set."),
   node_lifecycle: Yup.string().matches(/(spot|normal)/),
-  ephemeral_storage: Yup.number().nullable(),
+  ephemeral_storage: Yup.number()
+    .min(1)
+    .nullable(),
 })
 
 type Props = RequestChildProps<
@@ -124,6 +127,18 @@ class RunForm extends React.Component<Props, State> {
               </FormGroup>
               <div className="flotilla-form-section-divider" />
               {/* Engine Type Field */}
+              <Callout
+                title="Experimental Feature"
+                icon="clean"
+                intent={Intent.PRIMARY}
+                style={{ marginBottom: 12 }}
+              >
+                The EKS execution engine is an experimental feature we're
+                currently testing, which will allow you to run your task on
+                Kubernetes and will NOT need to select a cluster to run on.
+                Alternatively, you can still choose to run your task on the
+                classic ECS execution engine.
+              </Callout>
               <RadioGroup
                 inline
                 label="Engine Type (Experimental)"
