@@ -8,17 +8,17 @@ import (
 type EKSClusterClient struct{}
 
 func (EKSClusterClient) Name() string {
-return ""
+	return ""
 }
 
 func (EKSClusterClient) Initialize(conf config.Config) error {
-return nil
+	return nil
 }
 
 func (EKSClusterClient) CanBeRun(clusterName string, definition state.Definition) (bool, error) {
-return true, nil
+	return true, nil
 }
 
 func (EKSClusterClient) ListClusters() ([]string, error) {
-return []string{}, nil
+	return []string{}, nil
 }
