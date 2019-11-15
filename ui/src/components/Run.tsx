@@ -235,6 +235,9 @@ export class Run extends React.Component<Props, State> {
                                     <Duration
                                       start={data.started_at}
                                       end={data.finished_at}
+                                      isActive={
+                                        data.status !== RunStatus.STOPPED
+                                      }
                                     />
                                   )
                                 }

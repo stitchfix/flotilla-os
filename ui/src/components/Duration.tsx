@@ -5,6 +5,7 @@ import calculateDuration from "../helpers/calculateDuration"
 type Props = {
   start: string
   end: string | undefined | null
+  isActive: boolean
 }
 
 type State = {
@@ -27,7 +28,7 @@ class Duration extends React.Component<Props, State> {
     this.process()
 
     // If the end date is undefined, begin interval to process duration.
-    if (!this.props.end) {
+    if (this.props.end === undefined && this.props.isActive === true) {
       this.intervalID = window.setInterval(this.process.bind(this), 1000)
     }
   }
@@ -44,7 +45,7 @@ class Duration extends React.Component<Props, State> {
   render() {
     return (
       <div className="flotilla-duration-container">
-        {prettyMS(this.state.duration)}
+        {prettyMS(this.state.duration, { secondsDecimalDigits: 0 })}
       </div>
     )
   }
