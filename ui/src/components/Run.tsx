@@ -339,7 +339,7 @@ export class Run extends React.Component<Props, State> {
                   >
                     <Tab
                       id={RunTabId.LOGS}
-                      title="Logs"
+                      title="Container Logs"
                       panel={
                         <LogRequester
                           runID={data.run_id}
@@ -354,10 +354,10 @@ export class Run extends React.Component<Props, State> {
                       title={
                         data.engine !== ExecutionEngine.EKS ? (
                           <Tooltip content="Run events are only available for tasks run on EKS.">
-                            Events
+                            EKS Pod Events
                           </Tooltip>
                         ) : (
-                          "Events"
+                          "EKS Pod Events"
                         )
                       }
                       panel={
