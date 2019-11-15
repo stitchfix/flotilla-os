@@ -72,13 +72,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		Env:       a.envOverrides(definition, run),
 	}
 
-	nodeLifecycle := state.SpotLifecycle
+	//nodeLifecycle := state.SpotLifecycle
 
-	if run.NodeLifecycle != nil {
-		nodeLifecycle = *run.NodeLifecycle
-	}
+	//if run.NodeLifecycle != nil {
+	//	nodeLifecycle = *run.NodeLifecycle
+	//}
 
-	lifecycle := "kubernetes.io/lifecycle"
+	//lifecycle := "kubernetes.io/lifecycle"
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
@@ -90,9 +90,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 				Containers:         []corev1.Container{container},
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
-				NodeSelector: map[string]string{
-					lifecycle: nodeLifecycle,
-				},
+				//NodeSelector: map[string]string{
+				//	lifecycle: nodeLifecycle,
+				//},
 			},
 		},
 	}
