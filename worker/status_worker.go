@@ -82,8 +82,10 @@ func (sw *statusWorker) runOnceEKS() {
 
 			minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
 			if strings.Contains(message, "not found") && minutesInQueue > float64(15) {
-				reason := "Job either timed/deleted out or not found on the EKS cluster."
+				stoppedAt := time.Now()
+				reason := "Job either timed out or not found on the EKS cluster."
 				updatedRun.Status = state.StatusStopped
+				updatedRun.FinishedAt = &stoppedAt
 				updatedRun.ExitReason = &reason
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
