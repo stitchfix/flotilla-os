@@ -10,6 +10,7 @@ type Props = {
   status: RunStatus | undefined
   runID: string
   height: number
+  setHasLogs: () => void
 }
 
 type State = {
@@ -17,6 +18,7 @@ type State = {
   lastSeen: string | undefined
   isLoading: boolean
   error: any
+  hasLogs: boolean
 }
 
 const initialState: State = {
@@ -24,6 +26,7 @@ const initialState: State = {
   lastSeen: undefined,
   isLoading: false,
   error: false,
+  hasLogs: false,
 }
 
 class LogRequester extends React.PureComponent<Props, State> {
@@ -34,7 +37,7 @@ class LogRequester extends React.PureComponent<Props, State> {
     this.initialize()
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     if (prevProps.runID !== this.props.runID) {
       this.handleRunIDChange()
       return
@@ -45,6 +48,10 @@ class LogRequester extends React.PureComponent<Props, State> {
       this.props.status === RunStatus.STOPPED
     ) {
       this.clearRequestInterval()
+    }
+
+    if (prevState.hasLogs === false && this.state.hasLogs === true) {
+      this.props.setHasLogs()
     }
   }
 
@@ -130,9 +137,12 @@ class LogRequester extends React.PureComponent<Props, State> {
   /**
    * Returns a Promise that resolves with whether logs should be appended to
    * the component's state.
+   *
+   * Note: this probably should just return a boolean but I haven't had time
+   * to test what that would look like on long running jobs.
    */
   shouldAppendLogsToState = (response: RunLog): Promise<boolean> =>
-    new Promise((resolve, reject) => {
+    new Promise(resolve => {
       const { lastSeen } = this.state
 
       if (response.last_seen === lastSeen) {
@@ -161,10 +171,12 @@ class LogRequester extends React.PureComponent<Props, State> {
       // Append it to state.logs
       this.setState(
         prevState => {
+          const prevHasLogs = prevState.hasLogs
           prevLastSeen = prevState.lastSeen
           return {
             logs: [...prevState.logs, chunk],
             lastSeen: response.last_seen,
+            hasLogs: prevHasLogs === true ? true : response.log.length > 0,
           }
         },
         () => {
