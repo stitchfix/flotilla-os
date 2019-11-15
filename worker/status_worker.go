@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -61,6 +62,16 @@ func (sw *statusWorker) Run() error {
 	}
 }
 
+func Shuffle(runs []state.Run) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	for len(runs) > 0 {
+		n := len(runs)
+		randIndex := r.Intn(n)
+		runs[n-1], runs[randIndex] = runs[randIndex], runs[n-1]
+		runs = runs[:n-1]
+	}
+}
+
 func (sw *statusWorker) runOnceEKS() {
 	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
 		"queued_at_since": {
@@ -73,7 +84,7 @@ func (sw *statusWorker) runOnceEKS() {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-
+	Shuffle(rl.Runs)
 	for _, run := range rl.Runs {
 		updatedRun, err := sw.ee.FetchUpdateStatus(run)
 		if err != nil {

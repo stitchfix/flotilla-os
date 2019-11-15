@@ -21,7 +21,7 @@ var MinCPU = int64(125)
 
 var MinMem = int64(125)
 
-var TTLSecondsAfterFinished = int32(300)
+var TTLSecondsAfterFinished = int32(3600)
 
 var ActiveDeadlineSeconds = int64(86400)
 
