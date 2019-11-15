@@ -464,11 +464,11 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 	disableNetworking := false
 	privileged := false
 
-	logDriver := a.conf.GetString("log.driver.name")
+	logDriver := a.conf.GetString("ecs.log.driver.name")
 	if len(logDriver) == 0 {
 		logDriver = "awslogs"
 	}
-	confLogOptions := a.conf.GetStringMapString("log.driver.options")
+	confLogOptions := a.conf.GetStringMapString("ecs.log.driver.options")
 	logOptions := make(map[string]*string, len(confLogOptions))
 	for k, v := range confLogOptions {
 		val := v
@@ -481,7 +481,7 @@ func (a *ecsAdapter) defaultContainerDefinition() *ecs.ContainerDefinition {
 	//
 	_, ok := logOptions["awslogs-group"]
 	if !ok {
-		logGroup := a.conf.GetString("log.namespace")
+		logGroup := a.conf.GetString("ecs.log.namespace")
 		logOptions["awslogs-group"] = &logGroup
 	}
 
