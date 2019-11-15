@@ -77,7 +77,7 @@ func (sw *statusWorker) runOnceEKS() {
 	jobs := make(chan state.Run, 1000)
 
 	for w := 1; w <= 5; w++ {
-		go sw.processRuns(jobs)
+		go sw.processRuns(w, jobs)
 	}
 	for _, run := range rl.Runs {
 		jobs <- run
@@ -85,8 +85,10 @@ func (sw *statusWorker) runOnceEKS() {
 	close(jobs)
 }
 
-func (sw *statusWorker) processRuns(runs <-chan state.Run) {
+func (sw *statusWorker) processRuns(worker int, runs <-chan state.Run) {
+
 	for run := range runs {
+		_ = sw.log.Log("message", "processEKSRuns", "worker", worker, "run", run.RunID)
 		sw.processRun(run)
 	}
 }
