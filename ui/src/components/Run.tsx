@@ -1,4 +1,5 @@
 import * as React from "react"
+import { get } from "lodash"
 import { Link, RouteComponentProps } from "react-router-dom"
 import {
   Card,
@@ -19,7 +20,7 @@ import Request, {
   RequestStatus,
 } from "./Request"
 import api from "../api"
-import { Run as RunShape, RunStatus, ExecutionEngine } from "../types"
+import { Run as RunShape, RunStatus, ExecutionEngine, RunTabId } from "../types"
 import Attribute from "./Attribute"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
@@ -31,26 +32,35 @@ import LogRequester from "./LogRequester"
 import RunTag from "./RunTag"
 import Duration from "./Duration"
 import RunEvents from "./RunEvents"
+import QueryParams, { ChildProps as QPChildProps } from "./QueryParams"
+import { RUN_TAB_ID_QUERY_KEY } from "../constants"
 
-export enum RunTabIds {
-  LOGS = "logs",
-  EVENTS = "events",
+export type Props = QPChildProps &
+  RequestChildProps<RunShape, { runID: string }> & {
+    runID: string
+  }
+
+type State = {
+  hasLogs: boolean
 }
 
-export type Props = RequestChildProps<RunShape, { runID: string }> & {
-  runID: string
-}
-
-export class Run extends React.Component<Props> {
+export class Run extends React.Component<Props, State> {
   requestIntervalID: number | undefined
 
   constructor(props: Props) {
     super(props)
     this.request = this.request.bind(this)
+    this.setHasLogs = this.setHasLogs.bind(this)
+  }
+
+  state = {
+    hasLogs: false,
   }
 
   componentDidMount() {
     const { data } = this.props
+
+    // If data has been fetched and the run hasn't stopped, start polling.
     if (data && data.status !== RunStatus.STOPPED) this.setRequestInterval()
   }
 
@@ -61,9 +71,13 @@ export class Run extends React.Component<Props> {
       this.props.data &&
       this.props.data.status !== RunStatus.STOPPED
     ) {
+      // If the RequestStatus transitions from NOT_READY to READY and the run
+      // isn't stopped, start polling.
       this.setRequestInterval()
     }
+
     if (this.props.data && this.props.data.status === RunStatus.STOPPED) {
+      // If the Run transitions to a STOPPED state, stop polling.
       this.clearRequestInterval()
     }
   }
@@ -95,6 +109,40 @@ export class Run extends React.Component<Props> {
     }
 
     return 720
+  }
+
+  getActiveTabId(): RunTabId {
+    const { data, query } = this.props
+    const { hasLogs } = this.state
+    const queryTabId: RunTabId | null = get(query, RUN_TAB_ID_QUERY_KEY, null)
+
+    if (queryTabId === null) {
+      if (hasLogs === true) {
+        return RunTabId.LOGS
+      }
+
+      if (
+        data &&
+        data.engine === ExecutionEngine.EKS &&
+        data.status !== RunStatus.STOPPED
+      ) {
+        return RunTabId.EVENTS
+      }
+
+      return RunTabId.LOGS
+    }
+
+    return queryTabId
+  }
+
+  setActiveTabId(id: RunTabId): void {
+    this.props.setQuery({ [RUN_TAB_ID_QUERY_KEY]: id })
+  }
+
+  setHasLogs() {
+    if (this.state.hasLogs === false) {
+      this.setState({ hasLogs: true })
+    }
   }
 
   render() {
@@ -283,20 +331,26 @@ export class Run extends React.Component<Props> {
                   </div>
                 )}
                 <div className="flotilla-sidebar-view-content">
-                  <Tabs>
+                  <Tabs
+                    selectedTabId={this.getActiveTabId()}
+                    onChange={id => {
+                      this.setActiveTabId(id as RunTabId)
+                    }}
+                  >
                     <Tab
-                      id={RunTabIds.LOGS}
+                      id={RunTabId.LOGS}
                       title="Logs"
                       panel={
                         <LogRequester
                           runID={data.run_id}
                           status={data.status}
                           height={this.getLogsHeight()}
+                          setHasLogs={this.setHasLogs}
                         />
                       }
                     />
                     <Tab
-                      id={RunTabIds.EVENTS}
+                      id={RunTabId.EVENTS}
                       title={
                         data.engine !== ExecutionEngine.EKS ? (
                           <Tooltip content="Run events are only available for tasks run on EKS.">
@@ -307,7 +361,11 @@ export class Run extends React.Component<Props> {
                         )
                       }
                       panel={
-                        <RunEvents runID={data.run_id} status={data.status} />
+                        <RunEvents
+                          runID={data.run_id}
+                          status={data.status}
+                          hasLogs={this.state.hasLogs}
+                        />
                       }
                       disabled={data.engine !== ExecutionEngine.EKS}
                     />
@@ -328,12 +386,23 @@ export class Run extends React.Component<Props> {
 const Connected: React.FunctionComponent<RouteComponentProps<{
   runID: string
 }>> = ({ match }) => (
-  <Request<RunShape, { runID: string }>
-    requestFn={api.getRun}
-    initialRequestArgs={{ runID: match.params.runID }}
-  >
-    {props => <Run {...props} runID={match.params.runID} />}
-  </Request>
+  <QueryParams>
+    {({ query, setQuery }) => (
+      <Request<RunShape, { runID: string }>
+        requestFn={api.getRun}
+        initialRequestArgs={{ runID: match.params.runID }}
+      >
+        {props => (
+          <Run
+            {...props}
+            runID={match.params.runID}
+            query={query}
+            setQuery={setQuery}
+          />
+        )}
+      </Request>
+    )}
+  </QueryParams>
 )
 
 export default Connected
