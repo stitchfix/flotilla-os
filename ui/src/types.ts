@@ -225,3 +225,8 @@ export type ListRunEventsResponse = {
   total: number
   run_events: RunEvent[] | null
 }
+
+export enum RunTabId {
+  LOGS = "l",
+  EVENTS = "e",
+}

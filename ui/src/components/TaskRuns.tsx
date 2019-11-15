@@ -8,6 +8,7 @@ import {
   ListTaskRunsResponse,
   SortOrder,
   Run,
+  RunStatus,
 } from "../types"
 import pageToOffsetLimit from "../helpers/pageToOffsetLimit"
 import Table from "./Table"
@@ -23,6 +24,7 @@ import ErrorCallout from "./ErrorCallout"
 import RunTag from "./RunTag"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import EnvQueryFilter from "./EnvQueryFilter"
+import Duration from "./Duration"
 
 export const initialQuery = {
   page: 1,
@@ -82,6 +84,20 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             engine: {
               displayName: "Engine",
               render: (r: Run) => <Tag>{r.engine}</Tag>,
+              isSortable: false,
+            },
+            duration: {
+              displayName: "Duration",
+              render: (r: Run) =>
+                r.started_at ? (
+                  <Duration
+                    start={r.started_at}
+                    end={r.finished_at}
+                    isActive={r.status !== RunStatus.STOPPED}
+                  />
+                ) : (
+                  "-"
+                ),
               isSortable: false,
             },
             started_at: {
