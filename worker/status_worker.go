@@ -74,35 +74,52 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 
+	jobs := make(chan state.Run, 1000)
+
+	for w := 1; w <= 5; w++ {
+		go sw.processRuns(w, jobs)
+	}
 	for _, run := range rl.Runs {
-		reloadRun, err := sw.sm.GetRun(run.RunID)
-		if err == nil && reloadRun.Status == state.StatusStopped {
-			// Run was updated by another worker process.
-			continue
+		jobs <- run
+	}
+	close(jobs)
+}
+
+func (sw *statusWorker) processRuns(worker int, runs <-chan state.Run) {
+
+	for run := range runs {
+		_ = sw.log.Log("message", "processEKSRuns", "worker", worker, "run", run.RunID)
+		sw.processRun(run)
+	}
+}
+
+func (sw *statusWorker) processRun(run state.Run) {
+	reloadRun, err := sw.sm.GetRun(run.RunID)
+	if err == nil && reloadRun.Status == state.StatusStopped {
+		// Run was updated by another worker process.
+		return
+	}
+	updatedRun, err := sw.ee.FetchUpdateStatus(run)
+	if err != nil {
+		message := fmt.Sprintf("%+v", err)
+		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
+
+		minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
+		if strings.Contains(message, "not found") && minutesInQueue > float64(15) {
+			stoppedAt := time.Now()
+			reason := "Job either timed out or not found on the EKS cluster."
+			updatedRun.Status = state.StatusStopped
+			updatedRun.FinishedAt = &stoppedAt
+			updatedRun.ExitReason = &reason
+			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 		}
 
-		updatedRun, err := sw.ee.FetchUpdateStatus(run)
-		if err != nil {
-			message := fmt.Sprintf("%+v", err)
-			_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
-
-			minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
-			if strings.Contains(message, "not found") && minutesInQueue > float64(15) {
-				stoppedAt := time.Now()
-				reason := "Job either timed out or not found on the EKS cluster."
-				updatedRun.Status = state.StatusStopped
-				updatedRun.FinishedAt = &stoppedAt
-				updatedRun.ExitReason = &reason
-				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
-			}
-
-		} else {
-			if run.Status != updatedRun.Status {
-				_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
-				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
-				if err != nil {
-					_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
-				}
+	} else {
+		if run.Status != updatedRun.Status {
+			_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
+			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			if err != nil {
+				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
 			}
 		}
 	}
