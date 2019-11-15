@@ -273,6 +273,14 @@ export class Run extends React.Component<Props, State> {
                                 value={data.exit_reason}
                               />
                               <Attribute
+                                name="Queued At"
+                                value={
+                                  <ISO8601AttributeValue
+                                    time={data.queued_at}
+                                  />
+                                }
+                              />
+                              <Attribute
                                 name="Started At"
                                 value={
                                   <ISO8601AttributeValue
