@@ -11,7 +11,7 @@ import {
 } from "../types"
 import pageToOffsetLimit from "../helpers/pageToOffsetLimit"
 import Table from "./Table"
-import { FormGroup, Classes, Spinner } from "@blueprintjs/core"
+import { FormGroup, Classes, Spinner, Tag } from "@blueprintjs/core"
 import GenericMultiSelect from "./GenericMultiSelect"
 import RunStatusSelect from "./RunStatusSelect"
 import ListFiltersDropdown from "./ListFiltersDropdown"
@@ -78,6 +78,11 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
               displayName: "Status",
               render: (r: Run) => <RunTag {...r}></RunTag>,
               isSortable: true,
+            },
+            engine: {
+              displayName: "Engine",
+              render: (r: Run) => <Tag>{r.engine}</Tag>,
+              isSortable: false,
             },
             started_at: {
               displayName: "Started At",

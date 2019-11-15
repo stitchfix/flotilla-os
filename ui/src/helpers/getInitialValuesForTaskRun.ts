@@ -45,6 +45,10 @@ const getInitialValuesForTaskRun = ({
   const memory: number =
     routerState && routerState.memory ? routerState.memory : task.memory
 
+  // Set command value.
+  const command: string =
+    routerState && routerState.command ? routerState.command : task.command
+
   // Set engine.
   const engine: ExecutionEngine = get(
     routerState,
@@ -81,6 +85,7 @@ const getInitialValuesForTaskRun = ({
         memory,
         owner_id: ownerID,
         engine,
+        command,
       }
   }
 }

@@ -179,6 +179,7 @@ export type LaunchRequestV2 = {
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
   ephemeral_storage?: number | null
+  command?: string | null
 }
 
 export type ListRunParams = ListRequestArgs & {
@@ -210,4 +211,17 @@ export type FieldSpec = {
 export type LogChunk = {
   chunk: string
   lastSeen?: string
+}
+
+export type RunEvent = {
+  timestamp: string
+  event_type: string
+  reason: string
+  source_object: string
+  message: string
+}
+
+export type ListRunEventsResponse = {
+  total: number
+  run_events: RunEvent[] | null
 }
