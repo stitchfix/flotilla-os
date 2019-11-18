@@ -29,7 +29,7 @@ func NewEKSAdapter() (EKSAdapter, error) {
 // TODO: figure this out later.
 func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error) {
 	updated := run
-	if job.Status.Active == 1 {
+	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
 		updated.Status = state.StatusRunning
 	} else if job.Status.Succeeded == 1 {
 		var exitCode int64 = 0
