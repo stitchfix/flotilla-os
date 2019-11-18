@@ -11,6 +11,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"io/ioutil"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -85,7 +86,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	}
 	run, _ = ee.getPodName(run)
 
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run)
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 	if err != nil {
 		return run, false, err
 	}
@@ -94,9 +95,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 }
 
 func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
-	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
-	})
+	podList, err := ee.getPodList(run)
 
 	if err != nil {
 		return run, err
@@ -117,6 +116,13 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 		}
 	}
 	return run, nil
+}
+
+func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
+	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
+	})
+	return podList, err
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
@@ -205,7 +211,7 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
 	}
-	updates, err := ee.adapter.AdaptJobToFlotillaRun(job, run)
+	updates, err := ee.adapter.AdaptJobToFlotillaRun(job, run, nil)
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error adapting kubernetes job to flotilla run %s", err)
@@ -252,9 +258,19 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		return run, err
 	}
 
-	if run.PodName == nil {
-		run, _ = ee.getPodName(run)
+	var podList *v1.PodList
+	var pod *v1.Pod
+	// Only fetch associated Pod if the the run doesn't have a podName or if the job exited.
+	if job.Status.Failed == 1 || run.PodName == nil {
+		podList, err = ee.getPodList(run)
+		if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
+			pod = &podList.Items[len(podList.Items)-1]
+
+			if run.PodName == nil && pod != nil {
+				run.PodName = &pod.Name
+			}
+		}
 	}
 
-	return ee.adapter.AdaptJobToFlotillaRun(job, run)
+	return ee.adapter.AdaptJobToFlotillaRun(job, run, pod)
 }
