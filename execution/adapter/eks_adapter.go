@@ -11,7 +11,7 @@ import (
 )
 
 type EKSAdapter interface {
-	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error)
+	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string) (batchv1.Job, error)
 }
 type eksAdapter struct{}
@@ -27,7 +27,7 @@ func NewEKSAdapter() (EKSAdapter, error) {
 }
 
 // TODO: figure this out later.
-func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (state.Run, error) {
+func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
 	updated := run
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
 		updated.Status = state.StatusRunning
@@ -39,6 +39,9 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run) (sta
 		var exitCode int64 = 1
 		updated.Status = state.StatusStopped
 		updated.ExitCode = &exitCode
+		if pod != nil {
+			updated.ExitReason = &pod.Status.Reason
+		}
 	}
 
 	if job != nil && job.Status.StartTime != nil {
