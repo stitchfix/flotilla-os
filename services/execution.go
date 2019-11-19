@@ -128,6 +128,15 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
+	// Added to facilitate migration of ECS jobs to EKS.
+	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
+		modulo := 100 / es.eksOverridePercent
+		if rand.Int()%modulo == 0 {
+			clusterName = es.eksClusterOverride
+			engine = &state.EKSEngine
+		}
+	}
+
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
