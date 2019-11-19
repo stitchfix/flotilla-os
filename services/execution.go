@@ -147,7 +147,7 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	}
 
 	// Added to facilitate migration of ECS jobs to EKS.
-	if engine != &state.EKSEngine && *definition.Privileged == false && es.eksOverridePercent > 0 {
+	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
 			clusterName = es.eksClusterOverride
