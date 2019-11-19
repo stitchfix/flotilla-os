@@ -4,22 +4,37 @@ import (
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	"sync"
 )
 
-type DatadogMetricsClient struct {
+type DatadogStatsdClient struct {
 	client *statsd.Client
 }
 
-//
-// Initialize DatadogMetricsClient.
-//
-func (dmc *DatadogMetricsClient) Initialize(conf config.Config) error {
-	statsd, err := statsd.New("127.0.0.1:8125")
+var instance *DatadogStatsdClient
+var once sync.Once
+
+func GetInstance(conf config.Config) (*DatadogStatsdClient, error) {
+	var err error = nil
+	once.Do(func() {
+		instance = &DatadogStatsdClient{}
+
+		if !conf.IsSet("metrics.datadog.address") {
+			err = errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.datadog.address must be set in the config.")
+		}
+
+		addr := conf.GetString("metrics.datadog.address")
+		statsd, err := statsd.New(addr)
+		if err != nil {
+			err = errors.Errorf("Unable to initialize DatadogMetricsClient.")
+		}
+
+		instance.client = statsd
+	})
+
 	if err != nil {
-		return errors.Errorf("unabled to initialize DatadogMetricsClient")
+		return nil, err
 	}
 
-	dmc.client = statsd
-
-	return nil
+	return instance, nil
 }
