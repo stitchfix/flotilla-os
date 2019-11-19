@@ -1,12 +1,16 @@
 import * as React from "react"
-import { Tag, Intent, Colors } from "@blueprintjs/core"
+import { Tag, Colors } from "@blueprintjs/core"
 
 const Attribute: React.FunctionComponent<{
   name: React.ReactNode
   value: React.ReactNode
   isExperimental?: boolean
-}> = ({ name, value, isExperimental }) => (
-  <div className="flotilla-attribute-container">
+  containerStyle?: object
+}> = ({ name, value, isExperimental, containerStyle }) => (
+  <div
+    className="flotilla-attribute-container"
+    style={containerStyle ? containerStyle : {}}
+  >
     <div className="flotilla-attribute-name">
       {name}{" "}
       {isExperimental && isExperimental === true && (

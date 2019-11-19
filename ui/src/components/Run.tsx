@@ -174,17 +174,15 @@ export class Run extends React.Component<Props, State> {
             <>
               <ViewHeader
                 leftButton={
-                  <Tooltip content="Toggle sidebar visibility.">
-                    <Button
-                      onClick={metadataVisibility.toggleVisibility}
-                      icon={
-                        metadataVisibility.isVisible
-                          ? "menu-closed"
-                          : "menu-open"
-                      }
-                      style={{ marginRight: 12 }}
-                    />
-                  </Tooltip>
+                  <Button
+                    onClick={metadataVisibility.toggleVisibility}
+                    icon={
+                      metadataVisibility.isVisible ? "menu-closed" : "menu-open"
+                    }
+                    style={{ marginRight: 12 }}
+                  >
+                    {metadataVisibility.isVisible ? "Hide" : "Show"}
+                  </Button>
                 }
                 breadcrumbs={[
                   {
@@ -201,144 +199,121 @@ export class Run extends React.Component<Props, State> {
               <div className="flotilla-sidebar-view-container">
                 {metadataVisibility.isVisible && (
                   <div className="flotilla-sidebar-view-sidebar">
-                    <Toggler>
-                      {({ isVisible, toggleVisibility }) => (
-                        <Card style={{ marginBottom: 12 }}>
-                          <div className="flotilla-card-header-container">
-                            <div className="flotilla-card-header">
-                              Attributes
-                            </div>
-                            <ButtonGroup>
-                              <Button
-                                onClick={toggleVisibility}
-                                rightIcon={isVisible ? "minimize" : "maximize"}
-                              >
-                                {isVisible ? "Hide" : "Show"}
-                              </Button>
-                            </ButtonGroup>
-                          </div>
-                          <Collapse isOpen={isVisible}>
-                            <div className="flotilla-attributes-container">
-                              <Attribute
-                                name="Status"
-                                value={<RunTag {...data} />}
+                    <Card style={{ marginBottom: 12 }}>
+                      <div
+                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Attribute name="Status" value={<RunTag {...data} />} />
+                        <Attribute
+                          name="Duration"
+                          value={
+                            data.started_at && (
+                              <Duration
+                                start={data.started_at}
+                                end={data.finished_at}
+                                isActive={data.status !== RunStatus.STOPPED}
                               />
-                              <Attribute
-                                name="Engine Type"
-                                value={<Tag>{data.engine}</Tag>}
-                                isExperimental
-                              />
-                              <Attribute
-                                name="Duration"
-                                value={
-                                  data.started_at && (
-                                    <Duration
-                                      start={data.started_at}
-                                      end={data.finished_at}
-                                      isActive={
-                                        data.status !== RunStatus.STOPPED
-                                      }
-                                    />
-                                  )
-                                }
-                              />
-                              <Attribute name="Run ID" value={data.run_id} />
-                              <Attribute
-                                name="Definition ID"
-                                value={data.definition_id}
-                              />
-                              <Attribute name="CPU (Units)" value={data.cpu} />
-                              <Attribute
-                                name="Memory (MB)"
-                                value={data.memory}
-                              />
-                              {data.ephemeral_storage && (
-                                <Attribute
-                                  name="Disk Size (GB)"
-                                  value={<Tag>{data.ephemeral_storage}</Tag>}
-                                  isExperimental
-                                />
-                              )}
-                              {data.node_lifecycle && (
-                                <Attribute
-                                  name="Node Lifecycle"
-                                  value={<Tag>{data.node_lifecycle}</Tag>}
-                                  isExperimental
-                                />
-                              )}
-                              <Attribute name="Cluster" value={data.cluster} />
-                              <Attribute
-                                name="Exit Code"
-                                value={data.exit_code}
-                              />
-                              <Attribute
-                                name="Exit Reason"
-                                value={data.exit_reason}
-                              />
-                              <Attribute
-                                name="Queued At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.queued_at}
-                                  />
-                                }
-                              />
-                              <Attribute
-                                name="Started At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.started_at}
-                                  />
-                                }
-                              />
-                              <Attribute
-                                name="Finished At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.finished_at}
-                                  />
-                                }
-                              />
-                              <Attribute name="Image" value={data.image} />
-                              <Attribute
-                                name="Command"
-                                value={
-                                  data.command ? (
-                                    <Pre className="flotilla-pre">
-                                      {data.command.replace(/\n(\s)+/g, "\n")}
-                                    </Pre>
-                                  ) : (
-                                    "-"
-                                  )
-                                }
-                              />
-                            </div>
-                          </Collapse>
-                        </Card>
-                      )}
-                    </Toggler>
-                    <Toggler>
-                      {({ isVisible, toggleVisibility }) => (
-                        <Card>
-                          <div className="flotilla-card-header-container">
-                            <div className="flotilla-card-header">
-                              Environment Variables
-                            </div>
-                            <ButtonGroup>
-                              <Button
-                                onClick={toggleVisibility}
-                                rightIcon={isVisible ? "minimize" : "maximize"}
-                              >
-                                {isVisible ? "Hide" : "Show"}
-                              </Button>
-                            </ButtonGroup>
-                          </div>
-                          <Collapse isOpen={isVisible}>
-                            <EnvList env={data.env} />
-                          </Collapse>
-                        </Card>
-                      )}
-                    </Toggler>
+                            )
+                          }
+                        />
+                        <Attribute name="" value="" />
+                      </div>
+                      <div className="flotilla-form-section-divider" />
+                      <div
+                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Attribute name="Exit Code" value={data.exit_code} />
+                        <Attribute
+                          name="Exit Reason"
+                          value={data.exit_reason}
+                          containerStyle={{ flex: "2 2" }}
+                        />
+                      </div>
+                      <div className="flotilla-form-section-divider" />
+                      <div
+                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Attribute
+                          name="Engine Type"
+                          value={<Tag>{data.engine}</Tag>}
+                        />
+                        <Attribute name="Cluster" value={data.cluster} />
+
+                        <Attribute
+                          name="Node Lifecycle"
+                          value={<Tag>{data.node_lifecycle || "-"}</Tag>}
+                        />
+                      </div>
+                      <div className="flotilla-form-section-divider" />
+                      <div
+                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Attribute name="CPU (Units)" value={data.cpu} />
+                        <Attribute name="Memory (MB)" value={data.memory} />
+                        <Attribute
+                          name="Disk Size (GB)"
+                          value={data.ephemeral_storage || "-"}
+                        />
+                        <Attribute name="GPU Count" value={data.gpu || 0} />
+                      </div>
+                      <div className="flotilla-form-section-divider" />
+                      <div
+                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Attribute
+                          name="Queued At"
+                          value={
+                            <ISO8601AttributeValue time={data.queued_at} />
+                          }
+                        />
+                        <Attribute
+                          name="Started At"
+                          value={
+                            <ISO8601AttributeValue time={data.started_at} />
+                          }
+                        />
+                        <Attribute
+                          name="Finished At"
+                          value={
+                            <ISO8601AttributeValue time={data.finished_at} />
+                          }
+                        />
+                      </div>
+                      <div className="flotilla-form-section-divider" />
+                      <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
+                        <Attribute name="Run ID" value={data.run_id} />
+                        <Attribute
+                          name="Definition ID"
+                          value={data.definition_id}
+                        />
+                        <Attribute name="Image" value={data.image} />
+                        <Attribute
+                          name="Command"
+                          value={
+                            data.command ? (
+                              <Pre className="flotilla-pre">
+                                {data.command.replace(/\n(\s)+/g, "\n")}
+                              </Pre>
+                            ) : (
+                              "-"
+                            )
+                          }
+                        />
+                      </div>
+                    </Card>
+                    <Card>
+                      <div className="flotilla-card-header-container">
+                        <div className="flotilla-card-header">
+                          Environment Variables
+                        </div>
+                      </div>
+                      <EnvList env={data.env} />
+                    </Card>
                   </div>
                 )}
                 <div className="flotilla-sidebar-view-content">

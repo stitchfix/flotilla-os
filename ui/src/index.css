@@ -69,19 +69,39 @@ body {
 /**
  * Attribute
  */
-.flotilla-attributes-container {
+.flotilla-attributes-container.flotilla-attributes-container-vertical {
   display: flex;
   flex-flow: column nowrap;
 }
 
-.flotilla-attributes-container .flotilla-attribute-container {
+.flotilla-attributes-container.flotilla-attributes-container-vertical
+  .flotilla-attribute-container {
   display: flex;
   flex-flow: column nowrap;
   margin-bottom: var(--spacing);
 }
 
-.flotilla-attributes-container .flotilla-attribute-container:last-child {
+.flotilla-attributes-container.flotilla-attributes-container-vertical
+  .flotilla-attribute-container:last-child {
   margin-bottom: 0;
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal
+  .flotilla-attribute-container {
+  display: flex;
+  flex-flow: column nowrap;
+  margin-right: calc(var(--spacing) * 2);
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal
+  .flotilla-attribute-container:last-child {
+  margin-right: 0;
 }
 
 .flotilla-attribute-container {

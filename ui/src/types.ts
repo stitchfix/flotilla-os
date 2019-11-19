@@ -35,6 +35,7 @@ export type Run = {
   exit_code?: number
   exit_reason?: string
   finished_at?: string
+  gpu?: number
   group_name: string
   image: string
   instance: RunInstance
