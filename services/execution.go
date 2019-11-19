@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/log"
+	"math/rand"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -45,6 +46,8 @@ type executionService struct {
 	ecsExecutionEngine engine.Engine
 	eksExecutionEngine engine.Engine
 	reservedEnv        map[string]func(run state.Run) string
+	eksClusterOverride string
+	eksOverridePercent int
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error) {
@@ -78,6 +81,10 @@ func NewExecutionService(conf config.Config,
 	if len(ownerKey) == 0 {
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
+
+	es.eksClusterOverride = conf.GetString("eks.cluster_override")
+	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
+
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
 			return conf.GetString("flotilla_mode")
@@ -90,7 +97,7 @@ func NewExecutionService(conf config.Config,
 		},
 	}
 	// Warm cached cluster list
-	es.ecsClusterClient.ListClusters()
+	_, _ = es.ecsClusterClient.ListClusters()
 	return &es, nil
 }
 
@@ -137,6 +144,15 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 
 	if engine == nil {
 		engine = &state.DefaultEngine
+	}
+
+	// Added to facilitate migration of ECS jobs to EKS.
+	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
+		modulo := 100 / es.eksOverridePercent
+		if rand.Int()%modulo == 0 {
+			clusterName = es.eksClusterOverride
+			engine = &state.EKSEngine
+		}
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
