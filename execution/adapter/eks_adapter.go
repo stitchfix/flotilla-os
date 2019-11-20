@@ -112,7 +112,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	affinity := &corev1.Affinity{}
 	var matchExpressions []corev1.NodeSelectorRequirement
 
-	gpuNodeTypes := []string{"p3.8xlarge", "p3.2xlarge", "p3.16xlarge"}
+	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 	nodeLifecycle := []string{*run.NodeLifecycle}
 
 	if definition.Gpu == nil {
@@ -121,16 +121,10 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
-	} else {
-		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: corev1.NodeSelectorOpIn,
-			Values:   gpuNodeTypes,
-		})
 	}
 
 	matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/lifecycle",
+		Key:      "node-lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})

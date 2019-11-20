@@ -105,7 +105,7 @@ func (sw *statusWorker) processRun(run state.Run) {
 		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
 
 		minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
-		if strings.Contains(message, "not found") && minutesInQueue > float64(15) {
+		if strings.Contains(message, "not found") && minutesInQueue > float64(30) {
 			stoppedAt := time.Now()
 			reason := "Job either timed out or not found on the EKS cluster."
 			updatedRun.Status = state.StatusStopped
