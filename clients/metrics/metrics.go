@@ -6,17 +6,19 @@ import (
 	"sync"
 )
 
-type MetricType string
+type Metric string
 
 const (
-	MetricIncrement MetricType = "Increment"
-	MetricDecrement MetricType = "Decrement"
+	EngineEKSExecuteSuccess Metric = "engine.eks.execute.success"
+	EngineEKSExecuteFailure Metric = "engine.eks.execute.failure"
+	EngineEKSEnqueueSuccess Metric = "engine.eks.enqueue.success"
+	EngineEKSEnqueueFailure Metric = "engine.eks.enqueue.failure"
 )
 
 type Client interface {
 	Init(conf config.Config) error
-	Decrement(name string, tags []string, rate float64)
-	Increment(name string, tags []string, rate float64)
+	Decrement(name Metric, tags []string, rate float64)
+	Increment(name Metric, tags []string, rate float64)
 }
 
 var once sync.Once
@@ -34,13 +36,12 @@ func InstantiateClient(conf config.Config) error {
 	once.Do(func() {
 		switch name {
 		case "dogstatsd":
-			client := &DatadogStatsdMetricsClient{}
+			instance := &DatadogStatsdMetricsClient{}
 
-			if err = client.Init(conf); err != nil {
+			if err = instance.Init(conf); err != nil {
+				instance = nil
 				break
 			}
-
-			instance = client
 		default:
 			err = fmt.Errorf("No Client named [%s] was found", name)
 		}
@@ -49,6 +50,10 @@ func InstantiateClient(conf config.Config) error {
 	return err
 }
 
-func GetInstance() Client {
-	return instance
+func Decrement(name Metric, tags []string, rate float64) {
+	instance.Decrement(name, tags, rate)
+}
+
+func Increment(name Metric, tags []string, rate float64) {
+	instance.Increment(name, tags, rate)
 }

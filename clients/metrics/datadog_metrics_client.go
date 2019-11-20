@@ -26,10 +26,10 @@ func (dd DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	return nil
 }
 
-func (dd DatadogStatsdMetricsClient) Decrement(name string, tags []string, rate float64) {
-	_ = dd.client.Decr(name, tags, rate)
+func (dd DatadogStatsdMetricsClient) Decrement(name Metric, tags []string, rate float64) {
+	_ = dd.client.Decr(string(name), tags, rate)
 }
 
-func (dd DatadogStatsdMetricsClient) Increment(name string, tags []string, rate float64) {
-	_ = dd.client.Incr(name, tags, rate)
+func (dd DatadogStatsdMetricsClient) Increment(name Metric, tags []string, rate float64) {
+	_ = dd.client.Incr(string(name), tags, rate)
 }

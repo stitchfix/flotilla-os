@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -82,15 +83,19 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
+		metrics.Increment(metrics.EngineEKSExecuteFailure, []string{}, 1)
 		return run, true, err
 	}
+
 	run, _ = ee.getPodName(run)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 	if err != nil {
+		metrics.Increment(metrics.EngineEKSExecuteFailure, []string{}, 1)
 		return run, false, err
 	}
 
+	metrics.Increment(metrics.EngineEKSExecuteSuccess, []string{}, 1)
 	return adaptedRun, false, nil
 }
 
@@ -140,13 +145,17 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
+		metrics.Increment(metrics.EngineEKSEnqueueFailure, []string{}, 1)
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = ee.qm.Enqueue(qurl, run); err != nil {
+		metrics.Increment(metrics.EngineEKSEnqueueFailure, []string{}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
+
+	metrics.Increment(metrics.EngineEKSEnqueueSuccess, []string{}, 1)
 	return nil
 }
 
