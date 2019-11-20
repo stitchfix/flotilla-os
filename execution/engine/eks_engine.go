@@ -112,7 +112,7 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
-			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
+			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
 	return run, nil
@@ -127,7 +127,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(0)
-	deletionPropagation := metav1.DeletePropagationBackground
+	deletionPropagation := metav1.DeletePropagationForeground
 	_ = ee.log.Log("terminating run=", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
