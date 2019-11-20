@@ -134,6 +134,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		if rand.Int()%modulo == 0 {
 			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
+			nodeLifecycle = &state.OndemandLifecycle
 		}
 	}
 
@@ -161,6 +162,7 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 		if rand.Int()%modulo == 0 {
 			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
+			nodeLifecycle = &state.OndemandLifecycle
 		}
 	}
 
