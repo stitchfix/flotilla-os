@@ -81,7 +81,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		Env:       a.envOverrides(definition, run),
 	}
 
-	affinity := a.constructAffinity(definition)
+	affinity := a.constructAffinity(definition, run)
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
@@ -108,29 +108,46 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	return eksJob, nil
 }
 
-func (a *eksAdapter) constructAffinity(definition state.Definition) *corev1.Affinity {
-	antiAffinity := &corev1.Affinity{}
+func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
+	affinity := &corev1.Affinity{}
+	var matchExpressions []corev1.NodeSelectorRequirement
+
+	gpuNodeTypes := []string{"p3.8xlarge", "p3.2xlarge", "p3.16xlarge"}
+	nodeLifecycle := []string{*run.NodeLifecycle}
+
 	if definition.Gpu == nil {
-		gpuNodeType := []string{"p3.8xlarge", "p3.2xlarge", "p3.16xlarge"}
-		antiAffinity = &corev1.Affinity{
-			NodeAffinity: &corev1.NodeAffinity{
-				RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-					NodeSelectorTerms: []corev1.NodeSelectorTerm{
-						{
-							MatchExpressions: []corev1.NodeSelectorRequirement{
-								{
-									Key:      "beta.kubernetes.io/instance-type",
-									Operator: corev1.NodeSelectorOpNotIn,
-									Values:   gpuNodeType,
-								},
-							},
-						},
+		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+			Key:      "beta.kubernetes.io/instance-type",
+			Operator: corev1.NodeSelectorOpNotIn,
+			Values:   gpuNodeTypes,
+		})
+	} else {
+		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+			Key:      "beta.kubernetes.io/instance-type",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   gpuNodeTypes,
+		})
+	}
+
+	matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+		Key:      "kubernetes.io/lifecycle",
+		Operator: corev1.NodeSelectorOpIn,
+		Values:   nodeLifecycle,
+	})
+
+	affinity = &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: matchExpressions,
 					},
 				},
 			},
-		}
+		},
 	}
-	return antiAffinity
+
+	return affinity
 }
 
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {

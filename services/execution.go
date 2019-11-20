@@ -398,9 +398,13 @@ func (es *executionService) Terminate(runID string) error {
 	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
 		err = es.eksExecutionEngine.Terminate(run)
 		if err == nil {
+			exitReason := "Task terminated by the user."
+			exitCode := int64(1)
 			finishedAt := time.Now()
 			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
 				Status:     state.StatusStopped,
+				ExitReason: &exitReason,
+				ExitCode:   &exitCode,
 				FinishedAt: &finishedAt,
 			})
 			return err
