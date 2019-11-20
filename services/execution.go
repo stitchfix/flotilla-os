@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -134,7 +135,12 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		if rand.Int()%modulo == 0 {
 			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
-			nodeLifecycle = &state.OndemandLifecycle
+
+			if strings.Contains(strings.ToLower(definition.Alias), "ondemand") {
+				nodeLifecycle = &state.OndemandLifecycle
+			} else {
+				nodeLifecycle = &state.SpotLifecycle
+			}
 		}
 	}
 
@@ -162,7 +168,12 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 		if rand.Int()%modulo == 0 {
 			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
-			nodeLifecycle = &state.OndemandLifecycle
+
+			if strings.Contains(strings.ToLower(definition.Alias), "ondemand") {
+				nodeLifecycle = &state.OndemandLifecycle
+			} else {
+				nodeLifecycle = &state.SpotLifecycle
+			}
 		}
 	}
 
