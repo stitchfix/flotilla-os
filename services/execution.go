@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -40,15 +39,16 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	stateManager       state.Manager
-	ecsClusterClient   cluster.Client
-	eksClusterClient   cluster.Client
-	registryClient     registry.Client
-	ecsExecutionEngine engine.Engine
-	eksExecutionEngine engine.Engine
-	reservedEnv        map[string]func(run state.Run) string
-	eksClusterOverride string
-	eksOverridePercent int
+	stateManager             state.Manager
+	ecsClusterClient         cluster.Client
+	eksClusterClient         cluster.Client
+	registryClient           registry.Client
+	ecsExecutionEngine       engine.Engine
+	eksExecutionEngine       engine.Engine
+	reservedEnv              map[string]func(run state.Run) string
+	eksClusterOverride       string
+	eksOverridePercent       int
+	clusterOndemandWhitelist []string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error) {
@@ -85,6 +85,7 @@ func NewExecutionService(conf config.Config,
 
 	es.eksClusterOverride = conf.GetString("eks.cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
+	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
 
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
@@ -113,6 +114,14 @@ func (es *executionService) ReservedVariables() []string {
 	}
 	return keys
 }
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
 
 //
 // Create constructs and queues a new Run on the cluster specified
@@ -133,14 +142,13 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
-			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
-
-			if strings.Contains(strings.ToLower(definition.Alias), "ondemand") {
+			if contains(es.clusterOndemandWhitelist, clusterName) {
 				nodeLifecycle = &state.OndemandLifecycle
 			} else {
 				nodeLifecycle = &state.SpotLifecycle
 			}
+			clusterName = es.eksClusterOverride
 		}
 	}
 
@@ -166,17 +174,15 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
-			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
-
-			if strings.Contains(strings.ToLower(definition.Alias), "ondemand") {
+			if contains(es.clusterOndemandWhitelist, clusterName) {
 				nodeLifecycle = &state.OndemandLifecycle
 			} else {
 				nodeLifecycle = &state.SpotLifecycle
 			}
+			clusterName = es.eksClusterOverride
 		}
 	}
-
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
