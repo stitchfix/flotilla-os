@@ -9,13 +9,14 @@ import (
 type MetricType string
 
 const (
-	JobComplete MetricType = "Complete"
-	JobFailed   MetricType = "Failed"
+	MetricIncrement MetricType = "Increment"
+	MetricDecrement MetricType = "Decrement"
 )
 
 type Client interface {
 	Init(conf config.Config) error
-	Measure(metricType string) error
+	Decrement(name string, tags []string, rate float64)
+	Increment(name string, tags []string, rate float64)
 }
 
 var once sync.Once
@@ -32,7 +33,7 @@ func InstantiateClient(conf config.Config) error {
 
 	once.Do(func() {
 		switch name {
-		case "datadog_statsd":
+		case "dogstatsd":
 			client := &DatadogStatsdMetricsClient{}
 
 			if err = client.Init(conf); err != nil {

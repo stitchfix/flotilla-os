@@ -11,11 +11,11 @@ type DatadogStatsdMetricsClient struct {
 }
 
 func (dd DatadogStatsdMetricsClient) Init(conf config.Config) error {
-	if !conf.IsSet("metrics.datadog.address") {
+	if !conf.IsSet("metrics.dogstatsd.address") {
 		return errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.datadog.address must be set in the config.")
 	}
 
-	addr := conf.GetString("metrics.datadog.address")
+	addr := conf.GetString("metrics.dogstatsd.address")
 	client, err := statsd.New(addr)
 	if err != nil {
 		err = errors.Errorf("Unable to initialize DatadogMetricsClient.")
@@ -26,6 +26,10 @@ func (dd DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	return nil
 }
 
-func (dd DatadogStatsdMetricsClient) Measure(metricType string) error {
-	return nil
+func (dd DatadogStatsdMetricsClient) Decrement(name string, tags []string, rate float64) {
+	_ = dd.client.Decr(name, tags, rate)
+}
+
+func (dd DatadogStatsdMetricsClient) Increment(name string, tags []string, rate float64) {
+	_ = dd.client.Incr(name, tags, rate)
 }
