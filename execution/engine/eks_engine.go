@@ -117,7 +117,7 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
-			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.TaskArn, "cpu", cpu, "mem", mem)
+			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
 	return run, nil
@@ -132,7 +132,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(0)
-	deletionPropagation := metav1.DeletePropagationBackground
+	deletionPropagation := metav1.DeletePropagationForeground
 	_ = ee.log.Log("terminating run=", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
@@ -267,19 +267,29 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		return run, err
 	}
 
-	var podList *v1.PodList
-	var pod *v1.Pod
-	// Only fetch associated Pod if the the run doesn't have a podName or if the job exited.
-	if job.Status.Failed == 1 || run.PodName == nil {
-		podList, err = ee.getPodList(run)
-		if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-			pod = &podList.Items[len(podList.Items)-1]
+	var mostRecentPod *v1.Pod
+	var mostRecentPodCreationTimestamp metav1.Time
 
-			if run.PodName == nil && pod != nil {
-				run.PodName = &pod.Name
+	podList, err := ee.getPodList(run)
+
+	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
+		ee.log.Log("message", "iterating over pods", "podlist length", len(podList.Items))
+		// Iterate over associated pods to find the most recent.
+		for _, p := range podList.Items {
+			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
+				mostRecentPod = &p
+				mostRecentPodCreationTimestamp = p.CreationTimestamp
 			}
+		}
+
+		// If the run doesn't have an associated pod name yet OR
+		// there is a newer pod (i.e. the old pod was killed),
+		// update it.
+		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
+			ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
+			run.PodName = &mostRecentPod.Name
 		}
 	}
 
-	return ee.adapter.AdaptJobToFlotillaRun(job, run, pod)
+	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
 }

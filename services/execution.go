@@ -39,15 +39,16 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	stateManager       state.Manager
-	ecsClusterClient   cluster.Client
-	eksClusterClient   cluster.Client
-	registryClient     registry.Client
-	ecsExecutionEngine engine.Engine
-	eksExecutionEngine engine.Engine
-	reservedEnv        map[string]func(run state.Run) string
-	eksClusterOverride string
-	eksOverridePercent int
+	stateManager             state.Manager
+	ecsClusterClient         cluster.Client
+	eksClusterClient         cluster.Client
+	registryClient           registry.Client
+	ecsExecutionEngine       engine.Engine
+	eksExecutionEngine       engine.Engine
+	reservedEnv              map[string]func(run state.Run) string
+	eksClusterOverride       string
+	eksOverridePercent       int
+	clusterOndemandWhitelist []string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error) {
@@ -84,6 +85,7 @@ func NewExecutionService(conf config.Config,
 
 	es.eksClusterOverride = conf.GetString("eks.cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
+	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
 
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
@@ -112,6 +114,14 @@ func (es *executionService) ReservedVariables() []string {
 	}
 	return keys
 }
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
 
 //
 // Create constructs and queues a new Run on the cluster specified
@@ -126,6 +136,20 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 
 	if engine == nil {
 		engine = &state.DefaultEngine
+	}
+
+	// Added to facilitate migration of ECS jobs to EKS.
+	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
+		modulo := 100 / es.eksOverridePercent
+		if rand.Int()%modulo == 0 {
+			engine = &state.EKSEngine
+			if contains(es.clusterOndemandWhitelist, clusterName) {
+				nodeLifecycle = &state.OndemandLifecycle
+			} else {
+				nodeLifecycle = &state.SpotLifecycle
+			}
+			clusterName = es.eksClusterOverride
+		}
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
@@ -150,11 +174,15 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
-			clusterName = es.eksClusterOverride
 			engine = &state.EKSEngine
+			if contains(es.clusterOndemandWhitelist, clusterName) {
+				nodeLifecycle = &state.OndemandLifecycle
+			} else {
+				nodeLifecycle = &state.SpotLifecycle
+			}
+			clusterName = es.eksClusterOverride
 		}
 	}
-
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
@@ -389,9 +417,13 @@ func (es *executionService) Terminate(runID string) error {
 	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
 		err = es.eksExecutionEngine.Terminate(run)
 		if err == nil {
+			exitReason := "Task terminated by the user."
+			exitCode := int64(1)
 			finishedAt := time.Now()
 			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
 				Status:     state.StatusStopped,
+				ExitReason: &exitReason,
+				ExitCode:   &exitCode,
 				FinishedAt: &finishedAt,
 			})
 			return err
