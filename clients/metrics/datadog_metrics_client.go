@@ -33,7 +33,6 @@ func (dd *DatadogStatsdMetricsClient) Decrement(name Metric, tags []string, rate
 }
 
 func (dd *DatadogStatsdMetricsClient) Increment(name Metric, tags []string, rate float64) error {
-	fmt.Println("GOT IT IN DD")
 	return dd.client.Incr(string(name), tags, rate)
 }
 
