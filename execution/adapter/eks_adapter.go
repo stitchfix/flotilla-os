@@ -164,6 +164,11 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 
 	}
 
+	// Override for legacy jobs.
+	if mem > 25600 && cpu < 4096 {
+		cpu = 4096
+	}
+
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
 	memoryQuantity := resource.MustParse(fmt.Sprintf("%dMi", mem))
 
