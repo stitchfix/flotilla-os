@@ -69,19 +69,39 @@ body {
 /**
  * Attribute
  */
-.flotilla-attributes-container {
+.flotilla-attributes-container.flotilla-attributes-container-vertical {
   display: flex;
   flex-flow: column nowrap;
 }
 
-.flotilla-attributes-container .flotilla-attribute-container {
+.flotilla-attributes-container.flotilla-attributes-container-vertical
+  .flotilla-attribute-container {
   display: flex;
   flex-flow: column nowrap;
   margin-bottom: var(--spacing);
 }
 
-.flotilla-attributes-container .flotilla-attribute-container:last-child {
+.flotilla-attributes-container.flotilla-attributes-container-vertical
+  .flotilla-attribute-container:last-child {
   margin-bottom: 0;
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal
+  .flotilla-attribute-container {
+  display: flex;
+  flex-flow: column nowrap;
+  margin-right: calc(var(--spacing) * 2);
+}
+
+.flotilla-attributes-container.flotilla-attributes-container-horizontal
+  .flotilla-attribute-container:last-child {
+  margin-right: 0;
 }
 
 .flotilla-attribute-container {
@@ -96,6 +116,7 @@ body {
   font-weight: 500;
   margin-bottom: 4px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .flotilla-attribute-value {
@@ -212,6 +233,7 @@ table {
 .flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
   flex: 1;
   min-width: 450px;
+  max-width: 540px;
 }
 
 .flotilla-sidebar-view-container > .flotilla-sidebar-view-content {
@@ -221,7 +243,10 @@ table {
 
 @media screen and (max-width: 1230px) {
   .flotilla-sidebar-view-container > .flotilla-sidebar-view-sidebar {
-    margin-bottom: var(--spacing);
+    width: 100%;
+    max-width: 100%;
+    margin-top: var(--spacing);
+    order: 2;
   }
 }
 

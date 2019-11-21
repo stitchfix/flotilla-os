@@ -4,7 +4,7 @@ import { Env } from "../types"
 import Attribute from "./Attribute"
 
 const EnvList: React.FunctionComponent<{ env: Env[] }> = ({ env }) => (
-  <div className="flotilla-attributes-container">
+  <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
     {isArray(env) &&
       !isEmpty(env) &&
       env.map(e => (
