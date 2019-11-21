@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"strings"
 )
 
 //
@@ -265,7 +264,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	podList, err := ee.getPodList(run)
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-		ee.log.Log("message", "iterating over pods")
+		ee.log.Log("message", "iterating over pods", "podlist length", len(podList.Items))
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
 			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
@@ -277,10 +276,8 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// If the run doesn't have an associated pod name yet OR
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
-		if mostRecentPod != nil && (run.PodName == nil || strings.Compare(mostRecentPod.Name, *run.PodName) != 0) {
-			ee.log.Log("message", "found new pod for run")
-			ee.log.Log("prev_pod_name", run.PodName)
-			ee.log.Log("next_pod_name", mostRecentPod.Name)
+		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
+			ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
 			run.PodName = &mostRecentPod.Name
 		}
 	}
