@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"sync"
 )
@@ -17,8 +18,18 @@ const (
 
 type Client interface {
 	Init(conf config.Config) error
-	Decrement(name Metric, tags []string, rate float64)
-	Increment(name Metric, tags []string, rate float64)
+	Decrement(name Metric, tags []string, rate float64) error
+	Increment(name Metric, tags []string, rate float64) error
+	Histogram(name Metric, value float64, tags []string, rate float64) error
+	Distribution(name Metric, value float64, tags []string, rate float64) error
+	Set(name Metric, value string, tags []string, rate float64) error
+	Event(evt event) error
+}
+
+type event struct {
+	Title string
+	Text  string
+	Tags  []string
 }
 
 var once sync.Once
@@ -36,9 +47,10 @@ func InstantiateClient(conf config.Config) error {
 	once.Do(func() {
 		switch name {
 		case "dogstatsd":
-			instance := &DatadogStatsdMetricsClient{}
+			instance = &DatadogStatsdMetricsClient{}
 
 			if err = instance.Init(conf); err != nil {
+				err = errors.Errorf("Unable to initialize dogstatsd client.")
 				instance = nil
 				break
 			}
@@ -50,10 +62,54 @@ func InstantiateClient(conf config.Config) error {
 	return err
 }
 
-func Decrement(name Metric, tags []string, rate float64) {
-	instance.Decrement(name, tags, rate)
+func Decrement(name Metric, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Decrement(name, tags, rate)
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Decrement metric.")
 }
 
-func Increment(name Metric, tags []string, rate float64) {
-	instance.Increment(name, tags, rate)
+func Increment(name Metric, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Increment(name, tags, rate)
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Increment metric.")
+}
+
+func Histogram(name Metric, value float64, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Histogram(name, value, tags, rate)
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Histogram metric.")
+}
+
+func Distribution(name Metric, value float64, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Distribution(name, value, tags, rate)
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Distribution metric.")
+}
+
+func Set(name Metric, value string, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Set(name, value, tags, rate)
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Set metric.")
+}
+
+func Event(title string, text string, tags []string) error {
+	if instance != nil {
+		return instance.Event(event{
+			Title: title,
+			Text:  text,
+			Tags:  tags,
+		})
+	}
+
+	return errors.Errorf("MetricsClient instance is nil, unable to send Event metric.")
 }
