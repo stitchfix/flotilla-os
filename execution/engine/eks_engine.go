@@ -83,11 +83,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{
-			string(metrics.StatusFailure),
-			fmt.Sprintf("run_id:%s", run.RunID),
-			fmt.Sprintf("definition_id:%s", run.DefinitionID),
-		}, 1)
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, true, err
 	}
 
@@ -95,19 +91,11 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{
-			string(metrics.StatusFailure),
-			fmt.Sprintf("run_id:%s", run.RunID),
-			fmt.Sprintf("definition_id:%s", run.DefinitionID),
-		}, 1)
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSExecute, []string{
-		string(metrics.StatusSuccess),
-		fmt.Sprintf("run_id:%s", run.RunID),
-		fmt.Sprintf("definition_id:%s", run.DefinitionID),
-	}, 1)
+	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 	return adaptedRun, false, nil
 }
 
@@ -153,19 +141,11 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSTerminate, []string{
-			string(metrics.StatusFailure),
-			fmt.Sprintf("run_id:%s", run.RunID),
-			fmt.Sprintf("definition_id:%s", run.DefinitionID),
-		}, 1)
+		_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusFailure)}, 1)
 		return err
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{
-		string(metrics.StatusSuccess),
-		fmt.Sprintf("run_id:%s", run.RunID),
-		fmt.Sprintf("definition_id:%s", run.DefinitionID),
-	}, 1)
+	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
 	return nil
 }
 
@@ -173,29 +153,17 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{
-			string(metrics.StatusFailure),
-			fmt.Sprintf("run_id:%s", run.RunID),
-			fmt.Sprintf("definition_id:%s", run.DefinitionID),
-		}, 1)
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = ee.qm.Enqueue(qurl, run); err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{
-			string(metrics.StatusFailure),
-			fmt.Sprintf("run_id:%s", run.RunID),
-			fmt.Sprintf("definition_id:%s", run.DefinitionID),
-		}, 1)
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{
-		string(metrics.StatusSuccess),
-		fmt.Sprintf("run_id:%s", run.RunID),
-		fmt.Sprintf("definition_id:%s", run.DefinitionID),
-	}, 1)
+	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusSuccess)}, 1)
 	return nil
 }
 
@@ -327,10 +295,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
 			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
-			_ = metrics.Increment(metrics.EngineEKSRunPodnameChange, []string{
-				fmt.Sprintf("run_id:%s", run.RunID),
-				fmt.Sprintf("definition_id:%s", run.DefinitionID),
-			}, 1)
+			_ = metrics.Increment(metrics.EngineEKSRunPodnameChange, []string{}, 1)
 			run.PodName = &mostRecentPod.Name
 		}
 	}
