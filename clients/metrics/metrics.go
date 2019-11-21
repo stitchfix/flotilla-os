@@ -10,10 +10,17 @@ import (
 type Metric string
 
 const (
-	EngineEKSExecuteSuccess Metric = "engine.eks.execute.success"
-	EngineEKSExecuteFailure Metric = "engine.eks.execute.failure"
-	EngineEKSEnqueueSuccess Metric = "engine.eks.enqueue.success"
-	EngineEKSEnqueueFailure Metric = "engine.eks.enqueue.failure"
+	EngineEKSExecute          Metric = "engine.eks.execute"
+	EngineEKSEnqueue          Metric = "engine.eks.enqueue"
+	EngineEKSTerminate        Metric = "engine.eks.terminate"
+	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
+)
+
+type MetricTag string
+
+const (
+	StatusSuccess MetricTag = "status:success"
+	StatusFailure MetricTag = "status:failure"
 )
 
 type Client interface {

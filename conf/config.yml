@@ -60,3 +60,6 @@ eks:
 metrics:
   dogstatsd:
     address: 127.0.0.1:8125
+    namespace: my.flotilla.namespace
+    tags:
+      - test
