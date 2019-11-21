@@ -21,6 +21,7 @@ export type State<ResponseType> = {
   data: ResponseType | null
   isLoading: boolean
   error: AxiosError | null
+  receivedAt: Date | null
 }
 
 export type ChildProps<ResponseType, ArgsType> = State<ResponseType> & {
@@ -41,6 +42,7 @@ class Request<ResponseType, ArgsType> extends React.Component<
     data: null,
     isLoading: false,
     error: null,
+    receivedAt: null,
   }
 
   componentDidMount() {
@@ -61,6 +63,7 @@ class Request<ResponseType, ArgsType> extends React.Component<
           isLoading: false,
           requestStatus: RequestStatus.READY,
           error: null,
+          receivedAt: new Date(),
         })
         if (onSuccess) onSuccess(data)
       })

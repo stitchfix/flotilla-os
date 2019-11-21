@@ -5,12 +5,8 @@ import {
   Card,
   Spinner,
   Classes,
-  ButtonGroup,
   Button,
-  Collapse,
-  Pre,
   Icon,
-  Tag,
   Tabs,
   Tab,
   Tooltip,
@@ -21,19 +17,20 @@ import Request, {
 } from "./Request"
 import api from "../api"
 import { Run as RunShape, RunStatus, ExecutionEngine, RunTabId } from "../types"
-import Attribute from "./Attribute"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
-import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import LogRequester from "./LogRequester"
-import RunTag from "./RunTag"
-import Duration from "./Duration"
 import RunEvents from "./RunEvents"
+import RunAttributes from "./RunAttributes"
 import QueryParams, { ChildProps as QPChildProps } from "./QueryParams"
 import { RUN_TAB_ID_QUERY_KEY } from "../constants"
+import Attribute from "./Attribute"
+import RunTag from "./RunTag"
+import Duration from "./Duration"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
@@ -105,7 +102,8 @@ export class Run extends React.Component<Props, State> {
 
   getLogsHeight(): number {
     if (window.innerWidth >= 1230) {
-      return window.innerHeight - 78 - 50 - 24 - 30 - 20
+      // LOL sorry.
+      return window.innerHeight - 78 - 50 - 24 - 30 - 20 - 95 - 12
     }
 
     return 720
@@ -146,7 +144,7 @@ export class Run extends React.Component<Props, State> {
   }
 
   render() {
-    const { data, requestStatus, runID } = this.props
+    const { data, requestStatus, runID, receivedAt, isLoading } = this.props
 
     if (requestStatus === RequestStatus.READY && data) {
       let btn: React.ReactNode = null
@@ -199,113 +197,7 @@ export class Run extends React.Component<Props, State> {
               <div className="flotilla-sidebar-view-container">
                 {metadataVisibility.isVisible && (
                   <div className="flotilla-sidebar-view-sidebar">
-                    <Card style={{ marginBottom: 12 }}>
-                      <div
-                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-                        style={{ marginBottom: 12 }}
-                      >
-                        <Attribute name="Status" value={<RunTag {...data} />} />
-                        <Attribute
-                          name="Duration"
-                          value={
-                            data.started_at && (
-                              <Duration
-                                start={data.started_at}
-                                end={data.finished_at}
-                                isActive={data.status !== RunStatus.STOPPED}
-                              />
-                            )
-                          }
-                        />
-                        <Attribute name="" value="" />
-                      </div>
-                      <div className="flotilla-form-section-divider" />
-                      <div
-                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-                        style={{ marginBottom: 12 }}
-                      >
-                        <Attribute name="Exit Code" value={data.exit_code} />
-                        <Attribute
-                          name="Exit Reason"
-                          value={data.exit_reason}
-                          containerStyle={{ flex: "2 2" }}
-                        />
-                      </div>
-                      <div className="flotilla-form-section-divider" />
-                      <div
-                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-                        style={{ marginBottom: 12 }}
-                      >
-                        <Attribute
-                          name="Engine Type"
-                          value={<Tag>{data.engine}</Tag>}
-                        />
-                        <Attribute name="Cluster" value={data.cluster} />
-
-                        <Attribute
-                          name="Node Lifecycle"
-                          value={<Tag>{data.node_lifecycle || "-"}</Tag>}
-                        />
-                      </div>
-                      <div className="flotilla-form-section-divider" />
-                      <div
-                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-                        style={{ marginBottom: 12 }}
-                      >
-                        <Attribute name="CPU (Units)" value={data.cpu} />
-                        <Attribute name="Memory (MB)" value={data.memory} />
-                        <Attribute
-                          name="Disk Size (GB)"
-                          value={data.ephemeral_storage || "-"}
-                        />
-                        <Attribute name="GPU Count" value={data.gpu || 0} />
-                      </div>
-                      <div className="flotilla-form-section-divider" />
-                      <div
-                        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-                        style={{ marginBottom: 12 }}
-                      >
-                        <Attribute
-                          name="Queued At"
-                          value={
-                            <ISO8601AttributeValue time={data.queued_at} />
-                          }
-                        />
-                        <Attribute
-                          name="Started At"
-                          value={
-                            <ISO8601AttributeValue time={data.started_at} />
-                          }
-                        />
-                        <Attribute
-                          name="Finished At"
-                          value={
-                            <ISO8601AttributeValue time={data.finished_at} />
-                          }
-                        />
-                      </div>
-                      <div className="flotilla-form-section-divider" />
-                      <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
-                        <Attribute name="Run ID" value={data.run_id} />
-                        <Attribute
-                          name="Definition ID"
-                          value={data.definition_id}
-                        />
-                        <Attribute name="Image" value={data.image} />
-                        <Attribute
-                          name="Command"
-                          value={
-                            data.command ? (
-                              <Pre className="flotilla-pre">
-                                {data.command.replace(/\n(\s)+/g, "\n")}
-                              </Pre>
-                            ) : (
-                              "-"
-                            )
-                          }
-                        />
-                      </div>
-                    </Card>
+                    <RunAttributes data={data} />
                     <Card>
                       <div className="flotilla-card-header-container">
                         <div className="flotilla-card-header">
@@ -317,6 +209,39 @@ export class Run extends React.Component<Props, State> {
                   </div>
                 )}
                 <div className="flotilla-sidebar-view-content">
+                  <Card style={{ marginBottom: 12 }}>
+                    <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
+                      <Attribute name="Status" value={<RunTag {...data} />} />
+                      <Attribute
+                        name="Duration"
+                        value={
+                          data.started_at && (
+                            <Duration
+                              start={data.started_at}
+                              end={data.finished_at}
+                              isActive={data.status !== RunStatus.STOPPED}
+                            />
+                          )
+                        }
+                      />
+                      <Attribute name="Exit Code" value={data.exit_code} />
+                      <Attribute
+                        name="Exit Reason"
+                        value={data.exit_reason || "-"}
+                      />
+                      <Attribute
+                        name="Last Updated At"
+                        value={
+                          <div style={{ display: "flex" }}>
+                            <ISO8601AttributeValue
+                              time={receivedAt ? receivedAt.toISOString() : ""}
+                            />
+                            {isLoading && <Spinner size={Spinner.SIZE_SMALL} />}
+                          </div>
+                        }
+                      />
+                    </div>
+                  </Card>
                   <Tabs
                     selectedTabId={this.getActiveTabId()}
                     onChange={id => {
