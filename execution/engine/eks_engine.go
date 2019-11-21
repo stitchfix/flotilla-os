@@ -84,6 +84,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	if err != nil {
 		return run, true, err
 	}
+
 	run, _ = ee.getPodName(run)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
@@ -147,6 +148,7 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	if err = ee.qm.Enqueue(qurl, run); err != nil {
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
+
 	return nil
 }
 

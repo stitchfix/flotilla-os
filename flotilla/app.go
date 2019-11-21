@@ -51,7 +51,6 @@ func NewApp(conf config.Config,
 	ecsClusterClient cluster.Client,
 	eksClusterClient cluster.Client,
 	registryClient registry.Client) (App, error) {
-
 	var app App
 	app.logger = log
 	app.configure(conf)
@@ -73,7 +72,6 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing eks log service")
 	}
-
 
 	workerService, err := services.NewWorkerService(conf, stateManager)
 	if err != nil {
@@ -97,6 +95,7 @@ func NewApp(conf config.Config,
 	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
+
 	return app, nil
 }
 
@@ -166,5 +165,3 @@ func (app *App) initializeEKSWorkers(
 	app.workerManager = workerManager
 	return nil
 }
-
-

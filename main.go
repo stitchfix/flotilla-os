@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
@@ -40,6 +41,14 @@ func main() {
 	c, err := config.NewConfig(&confDir)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize config"))
+		os.Exit(1)
+	}
+
+	//
+	// Instantiate metrics client.
+	//
+	if err = metrics.InstantiateClient(c); err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize metrics client"))
 		os.Exit(1)
 	}
 
