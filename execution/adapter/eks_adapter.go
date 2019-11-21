@@ -115,7 +115,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 	nodeLifecycle := []string{*run.NodeLifecycle}
 
-	if definition.Gpu == nil {
+	if definition.Gpu == nil || *definition.Gpu <= 0 {
 		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
@@ -167,7 +167,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
 	memoryQuantity := resource.MustParse(fmt.Sprintf("%dMi", mem))
 
-	if definition.Gpu != nil {
+	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
 	}
 	if run.EphemeralStorage != nil {
