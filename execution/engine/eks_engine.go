@@ -268,7 +268,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		ee.log.Log("message", "iterating over pods")
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
-			if mostRecentPodCreationTimestamp.IsZero() || mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
+			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
 				mostRecentPod = &p
 				mostRecentPodCreationTimestamp = p.CreationTimestamp
 			}
