@@ -10,6 +10,8 @@ import {
   Tabs,
   Tab,
   Tooltip,
+  Callout,
+  Intent,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -31,6 +33,7 @@ import Attribute from "./Attribute"
 import RunTag from "./RunTag"
 import Duration from "./Duration"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import ErrorCallout from "./ErrorCallout"
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
@@ -144,153 +147,177 @@ export class Run extends React.Component<Props, State> {
   }
 
   render() {
-    const { data, requestStatus, runID, receivedAt, isLoading } = this.props
+    const {
+      data,
+      requestStatus,
+      runID,
+      receivedAt,
+      isLoading,
+      error,
+    } = this.props
 
-    if (requestStatus === RequestStatus.READY && data) {
-      let btn: React.ReactNode = null
+    switch (requestStatus) {
+      case RequestStatus.ERROR:
+        return <ErrorCallout error={error} />
+      case RequestStatus.READY:
+        if (data) {
+          let btn: React.ReactNode = null
 
-      if (data.status === RunStatus.STOPPED) {
-        btn = (
-          <Link
-            className={Classes.BUTTON}
-            to={{
-              pathname: `/tasks/${data.definition_id}/execute`,
-              state: data,
-            }}
-          >
-            <div className="bp3-button-text">Retry</div>
-            <Icon icon="repeat" />
-          </Link>
-        )
-      } else {
-        btn = <StopRunButton runID={runID} definitionID={data.definition_id} />
-      }
+          if (data.status === RunStatus.STOPPED) {
+            btn = (
+              <Link
+                className={Classes.BUTTON}
+                to={{
+                  pathname: `/tasks/${data.definition_id}/execute`,
+                  state: data,
+                }}
+              >
+                <div className="bp3-button-text">Retry</div>
+                <Icon icon="repeat" />
+              </Link>
+            )
+          } else {
+            btn = (
+              <StopRunButton runID={runID} definitionID={data.definition_id} />
+            )
+          }
 
-      return (
-        <Toggler>
-          {metadataVisibility => (
-            <>
-              <ViewHeader
-                leftButton={
-                  <Button
-                    onClick={metadataVisibility.toggleVisibility}
-                    icon={
-                      metadataVisibility.isVisible ? "menu-closed" : "menu-open"
+          return (
+            <Toggler>
+              {metadataVisibility => (
+                <>
+                  <ViewHeader
+                    leftButton={
+                      <Button
+                        onClick={metadataVisibility.toggleVisibility}
+                        icon={
+                          metadataVisibility.isVisible
+                            ? "menu-closed"
+                            : "menu-open"
+                        }
+                        style={{ marginRight: 12 }}
+                      >
+                        {metadataVisibility.isVisible ? "Hide" : "Show"}
+                      </Button>
                     }
-                    style={{ marginRight: 12 }}
-                  >
-                    {metadataVisibility.isVisible ? "Hide" : "Show"}
-                  </Button>
-                }
-                breadcrumbs={[
-                  {
-                    text: data.alias,
-                    href: `/tasks/${data.definition_id}`,
-                  },
-                  {
-                    text: data.run_id,
-                    href: `/runs/${data.run_id}`,
-                  },
-                ]}
-                buttons={btn}
-              />
-              <div className="flotilla-sidebar-view-container">
-                {metadataVisibility.isVisible && (
-                  <div className="flotilla-sidebar-view-sidebar">
-                    <RunAttributes data={data} />
-                    <Card>
-                      <div className="flotilla-card-header-container">
-                        <div className="flotilla-card-header">
-                          Environment Variables
-                        </div>
-                      </div>
-                      <EnvList env={data.env} />
-                    </Card>
-                  </div>
-                )}
-                <div className="flotilla-sidebar-view-content">
-                  <Card style={{ marginBottom: 12 }}>
-                    <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
-                      <Attribute name="Status" value={<RunTag {...data} />} />
-                      <Attribute
-                        name="Duration"
-                        value={
-                          data.started_at && (
-                            <Duration
-                              start={data.started_at}
-                              end={data.finished_at}
-                              isActive={data.status !== RunStatus.STOPPED}
-                            />
-                          )
-                        }
-                      />
-                      <Attribute name="Exit Code" value={data.exit_code} />
-                      <Attribute
-                        name="Exit Reason"
-                        value={data.exit_reason || "-"}
-                      />
-                      <Attribute
-                        name="Last Updated At"
-                        value={
-                          <div style={{ display: "flex" }}>
-                            <ISO8601AttributeValue
-                              time={receivedAt ? receivedAt.toISOString() : ""}
-                            />
-                            {isLoading && <Spinner size={Spinner.SIZE_SMALL} />}
+                    breadcrumbs={[
+                      {
+                        text: data.alias,
+                        href: `/tasks/${data.definition_id}`,
+                      },
+                      {
+                        text: data.run_id,
+                        href: `/runs/${data.run_id}`,
+                      },
+                    ]}
+                    buttons={btn}
+                  />
+                  <div className="flotilla-sidebar-view-container">
+                    {metadataVisibility.isVisible && (
+                      <div className="flotilla-sidebar-view-sidebar">
+                        <RunAttributes data={data} />
+                        <Card>
+                          <div className="flotilla-card-header-container">
+                            <div className="flotilla-card-header">
+                              Environment Variables
+                            </div>
                           </div>
-                        }
-                      />
+                          <EnvList env={data.env} />
+                        </Card>
+                      </div>
+                    )}
+                    <div className="flotilla-sidebar-view-content">
+                      <Card style={{ marginBottom: 12 }}>
+                        <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
+                          <Attribute
+                            name="Status"
+                            value={<RunTag {...data} />}
+                          />
+                          <Attribute
+                            name="Duration"
+                            value={
+                              data.started_at && (
+                                <Duration
+                                  start={data.started_at}
+                                  end={data.finished_at}
+                                  isActive={data.status !== RunStatus.STOPPED}
+                                />
+                              )
+                            }
+                          />
+                          <Attribute name="Exit Code" value={data.exit_code} />
+                          <Attribute
+                            name="Exit Reason"
+                            value={data.exit_reason || "-"}
+                          />
+                          <Attribute
+                            name="Last Updated At"
+                            value={
+                              <div style={{ display: "flex" }}>
+                                <ISO8601AttributeValue
+                                  time={
+                                    receivedAt ? receivedAt.toISOString() : ""
+                                  }
+                                />
+                                {isLoading && (
+                                  <Spinner size={Spinner.SIZE_SMALL} />
+                                )}
+                              </div>
+                            }
+                          />
+                        </div>
+                      </Card>
+                      <Tabs
+                        selectedTabId={this.getActiveTabId()}
+                        onChange={id => {
+                          this.setActiveTabId(id as RunTabId)
+                        }}
+                      >
+                        <Tab
+                          id={RunTabId.LOGS}
+                          title="Container Logs"
+                          panel={
+                            <LogRequester
+                              runID={data.run_id}
+                              status={data.status}
+                              height={this.getLogsHeight()}
+                              setHasLogs={this.setHasLogs}
+                            />
+                          }
+                        />
+                        <Tab
+                          id={RunTabId.EVENTS}
+                          title={
+                            data.engine !== ExecutionEngine.EKS ? (
+                              <Tooltip content="Run events are only available for tasks run on EKS.">
+                                EKS Pod Events
+                              </Tooltip>
+                            ) : (
+                              "EKS Pod Events"
+                            )
+                          }
+                          panel={
+                            <RunEvents
+                              runID={data.run_id}
+                              status={data.status}
+                              hasLogs={this.state.hasLogs}
+                            />
+                          }
+                          disabled={data.engine !== ExecutionEngine.EKS}
+                        />
+                      </Tabs>
                     </div>
-                  </Card>
-                  <Tabs
-                    selectedTabId={this.getActiveTabId()}
-                    onChange={id => {
-                      this.setActiveTabId(id as RunTabId)
-                    }}
-                  >
-                    <Tab
-                      id={RunTabId.LOGS}
-                      title="Container Logs"
-                      panel={
-                        <LogRequester
-                          runID={data.run_id}
-                          status={data.status}
-                          height={this.getLogsHeight()}
-                          setHasLogs={this.setHasLogs}
-                        />
-                      }
-                    />
-                    <Tab
-                      id={RunTabId.EVENTS}
-                      title={
-                        data.engine !== ExecutionEngine.EKS ? (
-                          <Tooltip content="Run events are only available for tasks run on EKS.">
-                            EKS Pod Events
-                          </Tooltip>
-                        ) : (
-                          "EKS Pod Events"
-                        )
-                      }
-                      panel={
-                        <RunEvents
-                          runID={data.run_id}
-                          status={data.status}
-                          hasLogs={this.state.hasLogs}
-                        />
-                      }
-                      disabled={data.engine !== ExecutionEngine.EKS}
-                    />
-                  </Tabs>
-                </div>
-              </div>
-            </>
-          )}
-        </Toggler>
-      )
+                  </div>
+                </>
+              )}
+            </Toggler>
+          )
+        }
+        return <Callout title="Run not found" intent={Intent.WARNING} />
+      case RequestStatus.NOT_READY:
+      default:
+        return <Spinner />
     }
-
-    if (requestStatus === RequestStatus.ERROR) return <div>errro</div>
-    return <Spinner />
   }
 }
 
