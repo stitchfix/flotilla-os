@@ -55,16 +55,16 @@ func (sw *statusWorker) Run() error {
 
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
-				time.Sleep(time.Second * 30)
+				time.Sleep(sw.pollInterval)
 			}
 		}
 	}
 }
 
 func (sw *statusWorker) runOnceEKS() {
-	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
+	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -1).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -2).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
 	}, nil, []string{state.EKSEngine})
@@ -73,22 +73,12 @@ func (sw *statusWorker) runOnceEKS() {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-
-	jobs := make(chan state.Run, 1000)
-
-	for w := 1; w <= 5; w++ {
-		go sw.processRuns(w, jobs)
-	}
-	for _, run := range rl.Runs {
-		jobs <- run
-	}
-	close(jobs)
+	sw.processRuns(rl.Runs)
 }
 
-func (sw *statusWorker) processRuns(worker int, runs <-chan state.Run) {
-
-	for run := range runs {
-		_ = sw.log.Log("message", "processEKSRuns", "worker", worker, "run", run.RunID)
+func (sw *statusWorker) processRuns(runs []state.Run) {
+	for _, run := range runs {
+		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
 		sw.processRun(run)
 	}
 }
