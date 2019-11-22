@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"strings"
 )
 
 //
@@ -83,8 +84,11 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
-		return run, true, err
+		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
+			return run, false, nil
+		} else {
+			return run, true, err
+		}
 	}
 
 	run, _ = ee.getPodName(run)
