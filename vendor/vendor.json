@@ -15,6 +15,12 @@
 			"revisionTime": "2017-09-29T23:40:23Z"
 		},
 		{
+			"checksumSHA1": "2hEzx4FKjtGl3ALw4oM7xLapjXg=",
+			"path": "github.com/DataDog/datadog-go/statsd",
+			"revision": "87e3273d8c230a3abfbbe9dc16b9aa935b3af496",
+			"revisionTime": "2019-11-19T16:37:52Z"
+		},
+		{
 			"checksumSHA1": "9vIkKNaaSRELM/2nCkWOAdHD21M=",
 			"path": "github.com/Microsoft/go-winio",
 			"revision": "881e3d46423d592d11da9873ff6581dc577a1d0f",

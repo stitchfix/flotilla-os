@@ -5,15 +5,13 @@ import {
   Card,
   Spinner,
   Classes,
-  ButtonGroup,
   Button,
-  Collapse,
-  Pre,
   Icon,
-  Tag,
   Tabs,
   Tab,
   Tooltip,
+  Callout,
+  Intent,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -21,19 +19,21 @@ import Request, {
 } from "./Request"
 import api from "../api"
 import { Run as RunShape, RunStatus, ExecutionEngine, RunTabId } from "../types"
-import Attribute from "./Attribute"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
-import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import LogRequester from "./LogRequester"
-import RunTag from "./RunTag"
-import Duration from "./Duration"
 import RunEvents from "./RunEvents"
+import RunAttributes from "./RunAttributes"
 import QueryParams, { ChildProps as QPChildProps } from "./QueryParams"
 import { RUN_TAB_ID_QUERY_KEY } from "../constants"
+import Attribute from "./Attribute"
+import RunTag from "./RunTag"
+import Duration from "./Duration"
+import ISO8601AttributeValue from "./ISO8601AttributeValue"
+import ErrorCallout from "./ErrorCallout"
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
@@ -105,7 +105,8 @@ export class Run extends React.Component<Props, State> {
 
   getLogsHeight(): number {
     if (window.innerWidth >= 1230) {
-      return window.innerHeight - 78 - 50 - 24 - 30 - 20
+      // LOL sorry.
+      return window.innerHeight - 78 - 50 - 24 - 30 - 20 - 95 - 12
     }
 
     return 720
@@ -146,251 +147,177 @@ export class Run extends React.Component<Props, State> {
   }
 
   render() {
-    const { data, requestStatus, runID } = this.props
+    const {
+      data,
+      requestStatus,
+      runID,
+      receivedAt,
+      isLoading,
+      error,
+    } = this.props
 
-    if (requestStatus === RequestStatus.READY && data) {
-      let btn: React.ReactNode = null
+    switch (requestStatus) {
+      case RequestStatus.ERROR:
+        return <ErrorCallout error={error} />
+      case RequestStatus.READY:
+        if (data) {
+          let btn: React.ReactNode = null
 
-      if (data.status === RunStatus.STOPPED) {
-        btn = (
-          <Link
-            className={Classes.BUTTON}
-            to={{
-              pathname: `/tasks/${data.definition_id}/execute`,
-              state: data,
-            }}
-          >
-            <div className="bp3-button-text">Retry</div>
-            <Icon icon="repeat" />
-          </Link>
-        )
-      } else {
-        btn = <StopRunButton runID={runID} definitionID={data.definition_id} />
-      }
+          if (data.status === RunStatus.STOPPED) {
+            btn = (
+              <Link
+                className={Classes.BUTTON}
+                to={{
+                  pathname: `/tasks/${data.definition_id}/execute`,
+                  state: data,
+                }}
+              >
+                <div className="bp3-button-text">Retry</div>
+                <Icon icon="repeat" />
+              </Link>
+            )
+          } else {
+            btn = (
+              <StopRunButton runID={runID} definitionID={data.definition_id} />
+            )
+          }
 
-      return (
-        <Toggler>
-          {metadataVisibility => (
-            <>
-              <ViewHeader
-                leftButton={
-                  <Tooltip content="Toggle sidebar visibility.">
-                    <Button
-                      onClick={metadataVisibility.toggleVisibility}
-                      icon={
-                        metadataVisibility.isVisible
-                          ? "menu-closed"
-                          : "menu-open"
-                      }
-                      style={{ marginRight: 12 }}
-                    />
-                  </Tooltip>
-                }
-                breadcrumbs={[
-                  {
-                    text: data.alias,
-                    href: `/tasks/${data.definition_id}`,
-                  },
-                  {
-                    text: data.run_id,
-                    href: `/runs/${data.run_id}`,
-                  },
-                ]}
-                buttons={btn}
-              />
-              <div className="flotilla-sidebar-view-container">
-                {metadataVisibility.isVisible && (
-                  <div className="flotilla-sidebar-view-sidebar">
-                    <Toggler>
-                      {({ isVisible, toggleVisibility }) => (
-                        <Card style={{ marginBottom: 12 }}>
-                          <div className="flotilla-card-header-container">
-                            <div className="flotilla-card-header">
-                              Attributes
-                            </div>
-                            <ButtonGroup>
-                              <Button
-                                onClick={toggleVisibility}
-                                rightIcon={isVisible ? "minimize" : "maximize"}
-                              >
-                                {isVisible ? "Hide" : "Show"}
-                              </Button>
-                            </ButtonGroup>
-                          </div>
-                          <Collapse isOpen={isVisible}>
-                            <div className="flotilla-attributes-container">
-                              <Attribute
-                                name="Status"
-                                value={<RunTag {...data} />}
-                              />
-                              <Attribute
-                                name="Engine Type"
-                                value={<Tag>{data.engine}</Tag>}
-                                isExperimental
-                              />
-                              <Attribute
-                                name="Duration"
-                                value={
-                                  data.started_at && (
-                                    <Duration
-                                      start={data.started_at}
-                                      end={data.finished_at}
-                                      isActive={
-                                        data.status !== RunStatus.STOPPED
-                                      }
-                                    />
-                                  )
-                                }
-                              />
-                              <Attribute name="Run ID" value={data.run_id} />
-                              <Attribute
-                                name="Definition ID"
-                                value={data.definition_id}
-                              />
-                              <Attribute name="CPU (Units)" value={data.cpu} />
-                              <Attribute
-                                name="Memory (MB)"
-                                value={data.memory}
-                              />
-                              {data.ephemeral_storage && (
-                                <Attribute
-                                  name="Disk Size (GB)"
-                                  value={<Tag>{data.ephemeral_storage}</Tag>}
-                                  isExperimental
-                                />
-                              )}
-                              {data.node_lifecycle && (
-                                <Attribute
-                                  name="Node Lifecycle"
-                                  value={<Tag>{data.node_lifecycle}</Tag>}
-                                  isExperimental
-                                />
-                              )}
-                              <Attribute name="Cluster" value={data.cluster} />
-                              <Attribute
-                                name="Exit Code"
-                                value={data.exit_code}
-                              />
-                              <Attribute
-                                name="Exit Reason"
-                                value={data.exit_reason}
-                              />
-                              <Attribute
-                                name="Queued At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.queued_at}
-                                  />
-                                }
-                              />
-                              <Attribute
-                                name="Started At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.started_at}
-                                  />
-                                }
-                              />
-                              <Attribute
-                                name="Finished At"
-                                value={
-                                  <ISO8601AttributeValue
-                                    time={data.finished_at}
-                                  />
-                                }
-                              />
-                              <Attribute name="Image" value={data.image} />
-                              <Attribute
-                                name="Command"
-                                value={
-                                  data.command ? (
-                                    <Pre className="flotilla-pre">
-                                      {data.command.replace(/\n(\s)+/g, "\n")}
-                                    </Pre>
-                                  ) : (
-                                    "-"
-                                  )
-                                }
-                              />
-                            </div>
-                          </Collapse>
-                        </Card>
-                      )}
-                    </Toggler>
-                    <Toggler>
-                      {({ isVisible, toggleVisibility }) => (
+          return (
+            <Toggler>
+              {metadataVisibility => (
+                <>
+                  <ViewHeader
+                    leftButton={
+                      <Button
+                        onClick={metadataVisibility.toggleVisibility}
+                        icon={
+                          metadataVisibility.isVisible
+                            ? "menu-closed"
+                            : "menu-open"
+                        }
+                        style={{ marginRight: 12 }}
+                      >
+                        {metadataVisibility.isVisible ? "Hide" : "Show"}
+                      </Button>
+                    }
+                    breadcrumbs={[
+                      {
+                        text: data.alias,
+                        href: `/tasks/${data.definition_id}`,
+                      },
+                      {
+                        text: data.run_id,
+                        href: `/runs/${data.run_id}`,
+                      },
+                    ]}
+                    buttons={btn}
+                  />
+                  <div className="flotilla-sidebar-view-container">
+                    {metadataVisibility.isVisible && (
+                      <div className="flotilla-sidebar-view-sidebar">
+                        <RunAttributes data={data} />
                         <Card>
                           <div className="flotilla-card-header-container">
                             <div className="flotilla-card-header">
                               Environment Variables
                             </div>
-                            <ButtonGroup>
-                              <Button
-                                onClick={toggleVisibility}
-                                rightIcon={isVisible ? "minimize" : "maximize"}
-                              >
-                                {isVisible ? "Hide" : "Show"}
-                              </Button>
-                            </ButtonGroup>
                           </div>
-                          <Collapse isOpen={isVisible}>
-                            <EnvList env={data.env} />
-                          </Collapse>
+                          <EnvList env={data.env} />
                         </Card>
-                      )}
-                    </Toggler>
+                      </div>
+                    )}
+                    <div className="flotilla-sidebar-view-content">
+                      <Card style={{ marginBottom: 12 }}>
+                        <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
+                          <Attribute
+                            name="Status"
+                            value={<RunTag {...data} />}
+                          />
+                          <Attribute
+                            name="Duration"
+                            value={
+                              data.started_at && (
+                                <Duration
+                                  start={data.started_at}
+                                  end={data.finished_at}
+                                  isActive={data.status !== RunStatus.STOPPED}
+                                />
+                              )
+                            }
+                          />
+                          <Attribute name="Exit Code" value={data.exit_code} />
+                          <Attribute
+                            name="Exit Reason"
+                            value={data.exit_reason || "-"}
+                          />
+                          <Attribute
+                            name="Last Updated At"
+                            value={
+                              <div style={{ display: "flex" }}>
+                                <ISO8601AttributeValue
+                                  time={
+                                    receivedAt ? receivedAt.toISOString() : ""
+                                  }
+                                />
+                                {isLoading && (
+                                  <Spinner size={Spinner.SIZE_SMALL} />
+                                )}
+                              </div>
+                            }
+                          />
+                        </div>
+                      </Card>
+                      <Tabs
+                        selectedTabId={this.getActiveTabId()}
+                        onChange={id => {
+                          this.setActiveTabId(id as RunTabId)
+                        }}
+                      >
+                        <Tab
+                          id={RunTabId.LOGS}
+                          title="Container Logs"
+                          panel={
+                            <LogRequester
+                              runID={data.run_id}
+                              status={data.status}
+                              height={this.getLogsHeight()}
+                              setHasLogs={this.setHasLogs}
+                            />
+                          }
+                        />
+                        <Tab
+                          id={RunTabId.EVENTS}
+                          title={
+                            data.engine !== ExecutionEngine.EKS ? (
+                              <Tooltip content="Run events are only available for tasks run on EKS.">
+                                EKS Pod Events
+                              </Tooltip>
+                            ) : (
+                              "EKS Pod Events"
+                            )
+                          }
+                          panel={
+                            <RunEvents
+                              runID={data.run_id}
+                              status={data.status}
+                              hasLogs={this.state.hasLogs}
+                            />
+                          }
+                          disabled={data.engine !== ExecutionEngine.EKS}
+                        />
+                      </Tabs>
+                    </div>
                   </div>
-                )}
-                <div className="flotilla-sidebar-view-content">
-                  <Tabs
-                    selectedTabId={this.getActiveTabId()}
-                    onChange={id => {
-                      this.setActiveTabId(id as RunTabId)
-                    }}
-                  >
-                    <Tab
-                      id={RunTabId.LOGS}
-                      title="Container Logs"
-                      panel={
-                        <LogRequester
-                          runID={data.run_id}
-                          status={data.status}
-                          height={this.getLogsHeight()}
-                          setHasLogs={this.setHasLogs}
-                        />
-                      }
-                    />
-                    <Tab
-                      id={RunTabId.EVENTS}
-                      title={
-                        data.engine !== ExecutionEngine.EKS ? (
-                          <Tooltip content="Run events are only available for tasks run on EKS.">
-                            EKS Pod Events
-                          </Tooltip>
-                        ) : (
-                          "EKS Pod Events"
-                        )
-                      }
-                      panel={
-                        <RunEvents
-                          runID={data.run_id}
-                          status={data.status}
-                          hasLogs={this.state.hasLogs}
-                        />
-                      }
-                      disabled={data.engine !== ExecutionEngine.EKS}
-                    />
-                  </Tabs>
-                </div>
-              </div>
-            </>
-          )}
-        </Toggler>
-      )
+                </>
+              )}
+            </Toggler>
+          )
+        }
+        return <Callout title="Run not found" intent={Intent.WARNING} />
+      case RequestStatus.NOT_READY:
+      default:
+        return <Spinner />
     }
-
-    if (requestStatus === RequestStatus.ERROR) return <div>errro</div>
-    return <Spinner />
   }
 }
 

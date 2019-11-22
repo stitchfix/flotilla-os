@@ -84,7 +84,7 @@ const TaskDetails: React.FC<{}> = () => (
                             </ButtonGroup>
                           </div>
                           <Collapse isOpen={isVisible}>
-                            <div className="flotilla-attributes-container">
+                            <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
                               <Attribute name="Alias" value={data.alias} />
                               <Attribute
                                 name="Definition ID"

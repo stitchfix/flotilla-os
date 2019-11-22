@@ -6,6 +6,7 @@ state_manager: postgres
 queue_manager: sqs
 cluster_client: ecs
 logs_client: cloudwatch
+metrics_client: dogstatsd
 execution_engine: ecs
 enabled_workers:
     - retry
@@ -56,3 +57,9 @@ eks:
         driver:
             name: awslogs
             options: {awslogs-group: flotilla-eks-namespace, awslogs-region: us-east-1}
+metrics:
+  dogstatsd:
+    address: 127.0.0.1:8125
+    namespace: my.flotilla.namespace
+    tags:
+      - test

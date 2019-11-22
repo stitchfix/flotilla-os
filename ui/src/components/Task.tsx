@@ -24,6 +24,7 @@ export const TaskContext = React.createContext<TaskCtx>({
   request: () => {},
   basePath: "", // TODO: maybe this is not required.
   definitionID: "",
+  receivedAt: null,
 })
 
 export const Task: React.FunctionComponent<TaskCtx> = props => {

@@ -110,6 +110,7 @@ export class ListRequest<Response, Args> extends React.Component<
       data: this.props.data,
       isLoading: this.props.isLoading,
       error: this.props.error,
+      receivedAt: this.props.receivedAt,
       updateSort: this.updateSort.bind(this),
       updatePage: this.updatePage.bind(this),
       updateFilter: this.updateFilter.bind(this),

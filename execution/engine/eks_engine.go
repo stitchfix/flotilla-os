@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/adapter"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -82,15 +83,19 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, true, err
 	}
+
 	run, _ = ee.getPodName(run)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 	if err != nil {
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err
 	}
 
+	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 	return adaptedRun, false, nil
 }
 
@@ -133,20 +138,32 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &deletionPropagation,
 	}
-	return ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+	err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+
+	if err != nil {
+		_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusFailure)}, 1)
+		return err
+	}
+
+	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
+	return nil
 }
 
 func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = ee.qm.Enqueue(qurl, run); err != nil {
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
+
+	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusSuccess)}, 1)
 	return nil
 }
 
@@ -229,7 +246,7 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
 
-	ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
+	_ = ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
 	var runEvents []state.RunEvent
 	for _, e := range eventList.Items {
 		eTime := e.FirstTimestamp.Time
@@ -264,7 +281,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	podList, err := ee.getPodList(run)
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-		ee.log.Log("message", "iterating over pods", "podlist length", len(podList.Items))
+		_ = ee.log.Log("message", "iterating over pods", "podlist length", len(podList.Items))
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
 			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
@@ -277,7 +294,8 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
-			ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
+			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
+			_ = metrics.Increment(metrics.EngineEKSRunPodnameChange, []string{}, 1)
 			run.PodName = &mostRecentPod.Name
 		}
 	}
