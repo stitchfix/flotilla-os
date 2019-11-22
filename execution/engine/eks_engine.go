@@ -136,13 +136,16 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(0)
-	deletionPropagation := metav1.DeletePropagationForeground
+	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &deletionPropagation,
 	}
 	err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+	if run.PodName != nil {
+		_ = ee.kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
+	}
 
 	if err != nil {
 		_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusFailure)}, 1)
