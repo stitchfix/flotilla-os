@@ -553,7 +553,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Env, existing.Command,
 		existing.Memory, existing.Cpu, existing.Gpu,
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
-		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed, existing.MaxCpuUsed); err != nil {
+		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed, existing.MaxMemoryUsed); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}

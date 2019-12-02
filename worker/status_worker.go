@@ -111,6 +111,10 @@ func (sw *statusWorker) processRun(run state.Run) {
 			if err != nil {
 				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
 			}
+		} else {
+			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed || updatedRun.MaxCpuUsed != run.MaxCpuUsed {
+				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			}
 		}
 	}
 }

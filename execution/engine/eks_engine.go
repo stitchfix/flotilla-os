@@ -71,7 +71,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
 	ee.jobSA = conf.GetString("eks.service_account")
-	ee.metricsClient = metricsv.New(ee.kClient.RESTClient())
+	ee.metricsClient = metricsv.NewForConfigOrDie(clientConf)
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -284,10 +284,9 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 		if err != nil {
 			return run, err
 		}
-
 		if len(podMetrics.Containers) > 0 {
 			containerMetrics := podMetrics.Containers[0]
-			mem := containerMetrics.Usage.Memory().MilliValue()
+			mem := containerMetrics.Usage.Memory().ScaledValue(resource.Mega)
 			if run.MaxMemoryUsed == nil || *run.MaxMemoryUsed == 0 || *run.MaxMemoryUsed < mem {
 				run.MaxMemoryUsed = &mem
 			}
@@ -335,6 +334,5 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	}
 
 	run, _ = ee.FetchPodMetrics(run)
-
 	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
 }
