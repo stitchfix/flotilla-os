@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strings"
 )
 
@@ -24,14 +25,15 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	kClient      *kubernetes.Clientset
-	adapter      adapter.EKSAdapter
-	qm           queue.Manager
-	log          flotillaLog.Logger
-	jobQueue     string
-	jobNamespace string
-	jobTtl       int
-	jobSA        string
+	kClient       *kubernetes.Clientset
+	metricsClient *metricsv.Clientset
+	adapter       adapter.EKSAdapter
+	qm            queue.Manager
+	log           flotillaLog.Logger
+	jobQueue      string
+	jobNamespace  string
+	jobTtl        int
+	jobSA         string
 }
 
 //
@@ -69,6 +71,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
 	ee.jobSA = conf.GetString("eks.service_account")
+	ee.metricsClient = metricsv.New(ee.kClient.RESTClient())
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -273,6 +276,12 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 	}
 
 	return runEventList, nil
+}
+
+func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+
+	return run, nil
+
 }
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
