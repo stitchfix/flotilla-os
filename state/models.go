@@ -414,6 +414,14 @@ func (d *Run) UpdateWith(other Run) {
 		d.Gpu = other.Gpu
 	}
 
+	if other.MaxMemoryUsed != nil {
+		d.MaxMemoryUsed = other.MaxMemoryUsed
+	}
+
+	if other.MaxCpuUsed != nil {
+		d.MaxCpuUsed = other.MaxCpuUsed
+	}
+
 	if other.Engine != nil {
 		d.Engine = other.Engine
 	}
