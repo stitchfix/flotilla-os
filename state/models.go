@@ -337,6 +337,8 @@ type Run struct {
 	PodName          *string    `json:"pod_name,omitempty"`
 	Namespace        *string    `json:"namespace,omitempty"`
 	ContainerName    *string    `json:"container_name,omitempty"`
+	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
+	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
 }
 
 //

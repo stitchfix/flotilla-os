@@ -279,9 +279,27 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 }
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+	if run.PodName != nil {
+		podMetrics, err := ee.metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		if err != nil {
+			return run, err
+		}
 
-	return run, nil
+		if len(podMetrics.Containers) > 0 {
+			containerMetrics := podMetrics.Containers[0]
+			mem := containerMetrics.Usage.Memory().MilliValue()
+			if run.MaxMemoryUsed == nil || *run.MaxMemoryUsed == 0 || *run.MaxMemoryUsed < mem {
+				run.MaxMemoryUsed = &mem
+			}
 
+			cpu := containerMetrics.Usage.Cpu().MilliValue()
+			if run.MaxCpuUsed == nil || *run.MaxCpuUsed == 0 || *run.MaxCpuUsed < cpu {
+				run.MaxCpuUsed = &cpu
+			}
+		}
+		return run, nil
+	}
+	return run, errors.New("no pod associated with the run.")
 }
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
@@ -315,6 +333,8 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			run.PodName = &mostRecentPod.Name
 		}
 	}
+
+	run, _ = ee.FetchPodMetrics(run)
 
 	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
 }
