@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strings"
 )
 
@@ -24,14 +25,15 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	kClient      *kubernetes.Clientset
-	adapter      adapter.EKSAdapter
-	qm           queue.Manager
-	log          flotillaLog.Logger
-	jobQueue     string
-	jobNamespace string
-	jobTtl       int
-	jobSA        string
+	kClient       *kubernetes.Clientset
+	metricsClient *metricsv.Clientset
+	adapter       adapter.EKSAdapter
+	qm            queue.Manager
+	log           flotillaLog.Logger
+	jobQueue      string
+	jobNamespace  string
+	jobTtl        int
+	jobSA         string
 }
 
 //
@@ -69,6 +71,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
 	ee.jobSA = conf.GetString("eks.service_account")
+	ee.metricsClient = metricsv.NewForConfigOrDie(clientConf)
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -275,6 +278,29 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 	return runEventList, nil
 }
 
+func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+	if run.PodName != nil {
+		podMetrics, err := ee.metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		if err != nil {
+			return run, err
+		}
+		if len(podMetrics.Containers) > 0 {
+			containerMetrics := podMetrics.Containers[0]
+			mem := containerMetrics.Usage.Memory().ScaledValue(resource.Mega)
+			if run.MaxMemoryUsed == nil || *run.MaxMemoryUsed == 0 || *run.MaxMemoryUsed < mem {
+				run.MaxMemoryUsed = &mem
+			}
+
+			cpu := containerMetrics.Usage.Cpu().MilliValue()
+			if run.MaxCpuUsed == nil || *run.MaxCpuUsed == 0 || *run.MaxCpuUsed < cpu {
+				run.MaxCpuUsed = &cpu
+			}
+		}
+		return run, nil
+	}
+	return run, errors.New("no pod associated with the run.")
+}
+
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 
@@ -307,5 +333,6 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		}
 	}
 
+	run, _ = ee.FetchPodMetrics(run)
 	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
 }
