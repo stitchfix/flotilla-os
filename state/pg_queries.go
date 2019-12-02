@@ -212,8 +212,8 @@ select
   container_name as containername,
   pod_name as podname,
   namespace,
-  max_cpu_used,
-  max_memory_used
+  max_cpu_used as maxcpuused,
+  max_memory_used as maxmemoryused
 from task t
 `
 
