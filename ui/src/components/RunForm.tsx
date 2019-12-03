@@ -51,7 +51,7 @@ const validationSchema = Yup.object().shape({
   engine: Yup.string()
     .matches(/(eks|ecs)/)
     .required("A valid engine type of ecs or eks must be set."),
-  node_lifecycle: Yup.string().matches(/(spot|normal)/),
+  node_lifecycle: Yup.string().matches(/(spot|ondemand)/),
   ephemeral_storage: Yup.number()
     .min(1)
     .nullable(),
