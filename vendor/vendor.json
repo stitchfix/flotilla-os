@@ -2077,6 +2077,54 @@
 			"versionExact": "v0.4.0"
 		},
 		{
+			"checksumSHA1": "P0BXBrbGCZHDMF0vaKcCo9P4NvU=",
+			"path": "k8s.io/metrics/pkg/apis/custom_metrics",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "5yZ19yNn2QsgI/9fqKe5PRFvAkQ=",
+			"path": "k8s.io/metrics/pkg/apis/metrics",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "+2KifqF9Ou71a5HRdxlsqzQdqeE=",
+			"path": "k8s.io/metrics/pkg/apis/metrics/v1alpha1",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "YVqFC4/W6V5tJo4gum99NWDdVFI=",
+			"path": "k8s.io/metrics/pkg/apis/metrics/v1beta1",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "koN0qsqkoPAv7hS3ykmzHfpqJ88=",
+			"path": "k8s.io/metrics/pkg/client/clientset/versioned",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "mEm2GfBJqD3xIKTwM8JMZgSAPyo=",
+			"path": "k8s.io/metrics/pkg/client/clientset/versioned/scheme",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "HgvfgRVWRog8TUpyZ4PHu21vtVQ=",
+			"path": "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1alpha1",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
+			"checksumSHA1": "5CXpmR+MnrTtcuPe9qN/TbG1KBA=",
+			"path": "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1",
+			"revision": "b1134fd1210c0f59c2c495b797d8c7abfef04a4a",
+			"revisionTime": "2019-11-20T22:23:19Z"
+		},
+		{
 			"checksumSHA1": "rZ3TvI01NH0dGKeSwx+8HTHj4q8=",
 			"path": "k8s.io/utils/integer",
 			"revision": "2b95a09bc58df43d4032504619706b6a38293a47",

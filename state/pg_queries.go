@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS task (
   engine character varying DEFAULT 'ecs' NOT NULL,
   container_name text,
   pod_name text,
-  namespace text
+  namespace text,
+  max_cpu_used integer,
+  max_memory_used integer
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -209,7 +211,9 @@ select
   node_lifecycle as nodelifecycle,
   container_name as containername,
   pod_name as podname,
-  namespace
+  namespace,
+  max_cpu_used as maxcpuused,
+  max_memory_used as maxmemoryused
 from task t
 `
 
