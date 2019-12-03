@@ -170,7 +170,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	}
 
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dMi", mem))
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", mem))
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
