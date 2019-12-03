@@ -7,6 +7,7 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
+	"net/http"
 )
 
 //
@@ -16,6 +17,7 @@ type Client interface {
 	Name() string
 	Initialize(config config.Config) error
 	Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error)
+	LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error
 }
 
 type logsClient interface {
@@ -35,7 +37,7 @@ func (events byTimestamp) Less(i, j int) bool { return *(events[i].Timestamp) < 
 // NewLogsClient creates and initializes a run logs client
 //
 func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (Client, error) {
-	logger.Log("message", "Initializing logs client", "client", name)
+	_ = logger.Log("message", "Initializing logs client", "client", name)
 	switch name {
 	case "ecs":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service

@@ -123,14 +123,14 @@ func (ep endpoints) encodeError(w http.ResponseWriter, err error) {
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
 }
 
 func (ep *endpoints) encodeResponse(w http.ResponseWriter, response interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
@@ -536,10 +536,11 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
 	lastSeen := ep.getURLParam(params, "last_seen", "")
+	rawText := ep.getStringBoolVal(ep.getURLParam(params, "raw_text", ""))
 	run, err := ep.executionService.Get(vars["run_id"])
 
 	if err != nil {
-		ep.logger.Log(
+		_ = ep.logger.Log(
 			"message", "problem getting run",
 			"operation", "GetRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -555,7 +556,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	if *run.Engine == state.ECSEngine {
 		logs, newLastSeen, err := ep.ecsLogService.Logs(vars["run_id"], &lastSeen)
 		if err != nil {
-			ep.logger.Log(
+			_ = ep.logger.Log(
 				"message", "problem getting logs",
 				"operation", "GetLogs",
 				"error", fmt.Sprintf("%+v", err),
@@ -575,20 +576,23 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *run.Engine == state.EKSEngine {
-		logs, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
-		if err != nil {
-			logs = ""
-		}
+		if rawText == true {
+			ep.eksLogService.LogsText(vars["run_id"], w)
+		} else {
+			logs, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
+			if err != nil {
+				logs = ""
+			}
 
-		res := map[string]string{
-			"log": logs,
+			res := map[string]string{
+				"log": logs,
+			}
+			if newLastSeen != nil {
+				res["last_seen"] = *newLastSeen
+			}
+			ep.encodeResponse(w, res)
 		}
-		if newLastSeen != nil {
-			res["last_seen"] = *newLastSeen
-		}
-		ep.encodeResponse(w, res)
 	}
-
 }
 
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
@@ -723,4 +727,14 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 	} else {
 		ep.encodeResponse(w, updated)
 	}
+}
+
+func (ep *endpoints) getStringBoolVal(s string) bool {
+	l := strings.ToLower(s)
+
+	if l == "true" {
+		return true
+	}
+
+	return false
 }

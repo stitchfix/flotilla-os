@@ -1,7 +1,8 @@
 package logs
 
 import (
-	"encoding/json"
+	//"bytes"
+	//"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -9,11 +10,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
-	"io/ioutil"
+	"io"
+	"net/http"
+
+	//"io/ioutil"
 	"log"
 	"os"
-	"sort"
-	"strings"
+	//"sort"
+	//"strings"
 	"time"
 )
 
@@ -88,13 +92,17 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
+func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+	return "", nil, errors.Errorf("EKSS3LogsClient does not support the Logs method.")
+}
+
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
 	//Pod isn't there yet - dont return a 404
 	if run.PodName == nil {
-		return "", nil, nil
+		return nil
 	}
 	s3DirName := lc.toS3DirName(run)
 
@@ -105,7 +113,7 @@ func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, last
 	})
 
 	if err != nil {
-		return "", nil, errors.Wrap(err, "problem getting logs")
+		return errors.Wrap(err, "problem getting logs")
 	}
 
 	// TODO: get latest file.
@@ -117,46 +125,41 @@ func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, last
 		})
 
 		if err != nil {
-			return "", nil, errors.Wrap(err, "problem getting logs")
+			return err
 		}
 
-		byt, err := ioutil.ReadAll(result.Body)
-		str := string(byt)
-		message := lc.logsToMessage(&str)
-		return message, nil, nil
+		msg, err := lc.logsToMessage(result)
+
+		if err != nil {
+			return err
+		}
+
+		w.Write(msg)
 	}
 
-	return "", nil, nil
+	return nil
 }
 
 func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
 
-func (lc *EKSS3LogsClient) logsToMessage(events *string) string {
-	split := strings.Split(*events, "\n")
+func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput) ([]byte, error) {
+	fmt.Println("logsToMessage was called.")
+	bs := make([]byte, 1024)
 
-	// Create array of s3Log objects.
-	chunks := make([]s3Log, len(split))
-	for i, s := range split {
-		var chunk s3Log
-		err := json.Unmarshal([]byte(s), &chunk)
+	for {
+		_, err := result.Body.Read(bs)
+
 		if err != nil {
-
+			if err == io.EOF {
+				_ = result.Body.Close()
+				return bs, nil
+			}
+			_ = result.Body.Close()
+			return bs, err
 		}
-		chunks[i] = chunk
+
+		return bs, nil
 	}
-
-	// Sort by timestamp.
-	sort.SliceStable(chunks, func(i, j int) bool {
-		return chunks[i].Time.Before(chunks[j].Time)
-	})
-
-	// Stringify.
-	logs := make([]string, len(chunks))
-	for i, c := range chunks {
-		logs[i] = c.Log
-	}
-
-	return strings.Join(logs, "")
 }
