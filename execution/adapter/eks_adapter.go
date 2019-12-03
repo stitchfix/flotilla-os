@@ -113,7 +113,14 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	var matchExpressions []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
-	nodeLifecycle := []string{*run.NodeLifecycle}
+
+	var nodeLifecycle []string
+	if *run.NodeLifecycle == state.OndemandLifecycle {
+		nodeLifecycle = append(nodeLifecycle, "normal")
+	} else {
+		nodeLifecycle = append(nodeLifecycle, "spot")
+	}
+
 
 	if definition.Gpu == nil || *definition.Gpu <= 0 {
 		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
