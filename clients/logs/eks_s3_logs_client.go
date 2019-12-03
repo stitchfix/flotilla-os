@@ -158,5 +158,5 @@ func (lc *EKSS3LogsClient) logsToMessage(events *string) string {
 		logs[i] = c.Log
 	}
 
-	return strings.Join(logs, "\n")
+	return strings.Join(logs, "")
 }
