@@ -1,8 +1,6 @@
 package logs
 
 import (
-	//"bytes"
-	//"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,13 +9,9 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"io"
-	"net/http"
-
-	//"io/ioutil"
 	"log"
+	"net/http"
 	"os"
-	//"sort"
-	//"strings"
 	"time"
 )
 

@@ -167,7 +167,7 @@ export enum ExecutionEngine {
 
 export enum NodeLifecycle {
   SPOT = "spot",
-  ON_DEMAND = "normal",
+  ON_DEMAND = "ondemand",
 }
 
 export type LaunchRequestV2 = {

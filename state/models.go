@@ -27,7 +27,7 @@ var ActiveDeadlineSeconds = int64(86400)
 
 var SpotLifecycle = "spot"
 
-var OndemandLifecycle = "normal"
+var OndemandLifecycle = "ondemand"
 
 var DefaultLifecycle = SpotLifecycle
 
