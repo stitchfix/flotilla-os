@@ -46,7 +46,7 @@ func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (
 		return cwlc, nil
 	case "eks":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
-		ekscw := &EKSCloudWatchLogsClient{}
+		ekscw := &EKSS3LogsClient{}
 		if err := ekscw.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing EKSCloudWatchLogsClient")
 		}
