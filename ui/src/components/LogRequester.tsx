@@ -11,6 +11,7 @@ type Props = {
   runID: string
   height: number
   setHasLogs: () => void
+  shouldAutoscroll: boolean
 }
 
 type State = {
@@ -215,6 +216,7 @@ class LogRequester extends React.PureComponent<Props, State> {
         logs={logs}
         hasRunFinished={this.hasRunFinished()}
         isLoading={isLoading}
+        shouldAutoscroll={this.props.shouldAutoscroll}
       />
     )
   }

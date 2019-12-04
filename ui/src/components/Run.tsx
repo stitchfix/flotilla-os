@@ -12,6 +12,7 @@ import {
   Tooltip,
   Callout,
   Intent,
+  Checkbox,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -43,6 +44,7 @@ export type Props = QPChildProps &
 
 type State = {
   hasLogs: boolean
+  shouldAutoscroll: boolean
 }
 
 export class Run extends React.Component<Props, State> {
@@ -52,10 +54,12 @@ export class Run extends React.Component<Props, State> {
     super(props)
     this.request = this.request.bind(this)
     this.setHasLogs = this.setHasLogs.bind(this)
+    this.toggleAutoscroll = this.toggleAutoscroll.bind(this)
   }
 
   state = {
     hasLogs: false,
+    shouldAutoscroll: true,
   }
 
   componentDidMount() {
@@ -145,6 +149,10 @@ export class Run extends React.Component<Props, State> {
     if (this.state.hasLogs === false) {
       this.setState({ hasLogs: true })
     }
+  }
+
+  toggleAutoscroll() {
+    this.setState(prev => ({ shouldAutoscroll: !prev.shouldAutoscroll }))
   }
 
   render() {
@@ -254,16 +262,20 @@ export class Run extends React.Component<Props, State> {
                           <Attribute
                             name="Last Updated At"
                             value={
-                              <div style={{ display: "flex" }}>
-                                <ISO8601AttributeValue
-                                  time={
-                                    receivedAt ? receivedAt.toISOString() : ""
-                                  }
-                                />
-                                {isLoading && (
-                                  <Spinner size={Spinner.SIZE_SMALL} />
-                                )}
-                              </div>
+                              <ISO8601AttributeValue
+                                time={
+                                  receivedAt ? receivedAt.toISOString() : ""
+                                }
+                              />
+                            }
+                          />
+                          <Attribute
+                            name="Autoscroll?"
+                            value={
+                              <Checkbox
+                                checked={this.state.shouldAutoscroll}
+                                onChange={this.toggleAutoscroll}
+                              />
                             }
                           />
                         </div>
@@ -284,6 +296,7 @@ export class Run extends React.Component<Props, State> {
                                 status={data.status}
                                 height={this.getLogsHeight()}
                                 setHasLogs={this.setHasLogs}
+                                shouldAutoscroll={this.state.shouldAutoscroll}
                               />
                             ) : (
                               <LogRequester
@@ -291,6 +304,7 @@ export class Run extends React.Component<Props, State> {
                                 status={data.status}
                                 height={this.getLogsHeight()}
                                 setHasLogs={this.setHasLogs}
+                                shouldAutoscroll={this.state.shouldAutoscroll}
                               />
                             )
                           }
