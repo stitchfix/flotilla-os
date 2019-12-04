@@ -1,6 +1,8 @@
 package logs
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -131,6 +133,24 @@ func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 }
 
 func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
-	_, err := io.Copy(w, result.Body)
-	return err
+	reader := bufio.NewReader(result.Body)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return err
+		} else {
+			var parsedLine s3Log
+			err := json.Unmarshal(line, &parsedLine)
+			if err != nil {
+				return err
+			}
+			_, err = io.WriteString(w, parsedLine.Log)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
