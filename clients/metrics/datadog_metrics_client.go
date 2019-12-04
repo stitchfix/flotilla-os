@@ -12,7 +12,7 @@ type DatadogStatsdMetricsClient struct {
 
 func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	if !conf.IsSet("metrics.dogstatsd.address") {
-		return errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.datadog.address must be set in the config.")
+		return errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.dogstatsd.address must be set in the config.")
 	}
 
 	addr := conf.GetString("metrics.dogstatsd.address")
