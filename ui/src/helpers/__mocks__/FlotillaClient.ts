@@ -182,6 +182,9 @@ const runTask = jest.fn(
         engine: ExecutionEngine.ECS,
         node_lifecycle: NodeLifecycle.SPOT,
         ephemeral_storage: null,
+        max_cpu_used: 1,
+        max_memory_used: 1,
+        pod_name: "pod",
       })
     })
 )
@@ -228,6 +231,9 @@ const getRun = jest.fn(
         engine: ExecutionEngine.ECS,
         node_lifecycle: NodeLifecycle.SPOT,
         ephemeral_storage: null,
+        max_cpu_used: 1,
+        max_memory_used: 1,
+        pod_name: "pod",
       })
     })
 )
