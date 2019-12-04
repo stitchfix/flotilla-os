@@ -1,6 +1,6 @@
 import * as React from "react"
 import Ansi from "ansi-to-react"
-import { Spinner, Pre, Classes, Tag } from "@blueprintjs/core"
+import { Spinner, Pre, Classes, Tag, Checkbox, Icon } from "@blueprintjs/core"
 import { LogChunk } from "../types"
 
 type Props = {
@@ -8,20 +8,18 @@ type Props = {
   hasRunFinished: boolean
   isLoading: boolean
   height: number
+  shouldAutoscroll: boolean
 }
 
 class LogRenderer extends React.Component<Props> {
   private CONTAINER_DIV = React.createRef<HTMLDivElement>()
-  state = {
-    shouldAutoscroll: true,
-  }
 
   componentDidMount() {
     this.scrollToBottom()
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps.logs.length !== this.props.logs.length) {
+    if (this.shouldScrollToBottom(prevProps, this.props)) {
       this.scrollToBottom()
     }
   }
@@ -42,12 +40,29 @@ class LogRenderer extends React.Component<Props> {
     }
   }
 
+  shouldScrollToBottom(prev: Props, next: Props) {
+    // Handle manual override.
+    if (next.shouldAutoscroll === false) return false
+
+    // Handle CloudWatchLogs.
+    if (prev.logs.length !== next.logs.length) return true
+
+    // Handle S3 logs (there will only be one chunk).
+    if (
+      prev.logs.length === 1 &&
+      next.logs.length === 1 &&
+      prev.logs[0].chunk.length !== next.logs[0].chunk.length
+    )
+      return true
+    return false
+  }
+
   render() {
-    const { logs, height, hasRunFinished } = this.props
+    const { logs, height, hasRunFinished, isLoading } = this.props
 
     let loader = <Tag>END OF LOGS</Tag>
 
-    if (!hasRunFinished) {
+    if (!hasRunFinished || isLoading) {
       loader = <Spinner size={Spinner.SIZE_SMALL} />
     }
 

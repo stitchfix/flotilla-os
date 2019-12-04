@@ -48,6 +48,9 @@ export type Run = {
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
   ephemeral_storage?: number | null
+  max_cpu_used: number | null | undefined
+  max_memory_used: number | null | undefined
+  pod_name: string | null | undefined
 }
 
 export type RunLog = {

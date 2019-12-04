@@ -1,10 +1,13 @@
 import * as React from "react"
-import { Card, Pre, Tag } from "@blueprintjs/core"
-import { Run, RunStatus } from "../types"
+import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
+import { Run } from "../types"
 import Attribute from "./Attribute"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
-import RunTag from "./RunTag"
-import Duration from "./Duration"
+
+const isLessThanPct = (x: number, y: number, pct: number): boolean => {
+  if (x < pct * y) return true
+  return false
+}
 
 const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
   <Card style={{ marginBottom: 12 }}>
@@ -25,11 +28,61 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       className="flotilla-attributes-container flotilla-attributes-container-horizontal"
       style={{ marginBottom: 12 }}
     >
-      <Attribute name="CPU (Units)" value={data.cpu} />
-      <Attribute name="Memory (MB)" value={data.memory} />
-      <Attribute name="Disk Size (GB)" value={data.ephemeral_storage || "-"} />
-      <Attribute name="GPU Count" value={data.gpu || 0} />
+      <Attribute
+        name="CPU (Units)"
+        value={
+          <div>
+            <Tooltip content="Max CPU Used">
+              <span
+                style={{
+                  color:
+                    data.max_cpu_used &&
+                    isLessThanPct(data.max_cpu_used, data.cpu, 0.5)
+                      ? Colors.RED5
+                      : "",
+                }}
+              >
+                {data.max_cpu_used}
+              </span>
+            </Tooltip>{" "}
+            / <Tooltip content="CPU Requested">{data.cpu}</Tooltip>
+          </div>
+        }
+      />
+      <Attribute
+        name="Memory (MB)"
+        value={
+          <div>
+            <Tooltip content="Max Memory Used">
+              <span
+                style={{
+                  color:
+                    data.max_memory_used &&
+                    isLessThanPct(data.max_memory_used, data.memory, 0.5)
+                      ? Colors.RED5
+                      : "",
+                }}
+              >
+                {data.max_memory_used}
+              </span>
+            </Tooltip>{" "}
+            / <Tooltip content="Memory Requested">{data.memory}</Tooltip>
+          </div>
+        }
+      />
     </div>
+    {(data.ephemeral_storage || data.gpu) && (
+      <div
+        className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+        style={{ marginBottom: 12 }}
+      >
+        <Attribute
+          name="Disk Size (GB)"
+          value={data.ephemeral_storage || "-"}
+        />
+        <Attribute name="GPU Count" value={data.gpu || 0} />
+      </div>
+    )}
     <div className="flotilla-form-section-divider" />
     <div
       className="flotilla-attributes-container flotilla-attributes-container-horizontal"
@@ -63,6 +116,7 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         rawValue={data.definition_id}
       />
       <Attribute name="Image" value={data.image} />
+      {data.pod_name && <Attribute name="EKS Pod Name" value={data.pod_name} />}
       <Attribute
         name="Command"
         value={
