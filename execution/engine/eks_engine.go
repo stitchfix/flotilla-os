@@ -310,11 +310,12 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 
 	var mostRecentPod *v1.Pod
 	var mostRecentPodCreationTimestamp metav1.Time
+	mostRecentPodCreationTimestamp.Time = *run.QueuedAt
 
 	podList, err := ee.getPodList(run)
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-		_ = ee.log.Log("message", "iterating over pods", "podlist length", len(podList.Items))
+		_ = ee.log.Log("message", "iterating over pods", "podList length", len(podList.Items))
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
 			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) {
