@@ -121,16 +121,8 @@ func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, 
 		if err != nil {
 			return err
 		}
-
-		msg, err := lc.logsToMessage(result)
-
-		if err != nil {
-			return err
-		}
-
-		w.Write(msg)
+		return lc.logsToMessage(result, w)
 	}
-
 	return nil
 }
 
@@ -138,22 +130,7 @@ func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
 
-func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput) ([]byte, error) {
-	fmt.Println("logsToMessage was called.")
-	bs := make([]byte, 1024)
-
-	for {
-		_, err := result.Body.Read(bs)
-
-		if err != nil {
-			if err == io.EOF {
-				_ = result.Body.Close()
-				return bs, nil
-			}
-			_ = result.Body.Close()
-			return bs, err
-		}
-
-		return bs, nil
-	}
+func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
+	_, err := io.Copy(w, result.Body)
+	return err
 }
