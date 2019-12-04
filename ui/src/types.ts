@@ -55,6 +55,8 @@ export type RunLog = {
   last_seen?: string
 }
 
+export type RunLogRaw = string
+
 //
 // Enums
 //

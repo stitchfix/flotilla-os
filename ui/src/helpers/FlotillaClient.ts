@@ -20,6 +20,7 @@ import {
   ListGroupsResponse,
   ListTagsResponse,
   ListRunEventsResponse,
+  RunLogRaw,
 } from "../types"
 
 interface IInitOpts {
@@ -173,6 +174,14 @@ class FlotillaClient {
       method: HTTPMethod.GET,
       url: `/v6/${runID}/logs`,
       params: { last_seen: lastSeen },
+    })
+
+  /** Requests the logs of a single run. */
+  public getRunLogRaw = ({ runID }: { runID: string }): Promise<RunLogRaw> =>
+    this.request<RunLogRaw>({
+      method: HTTPMethod.GET,
+      url: `/v6/${runID}/logs`,
+      params: { raw_text: true },
     })
 
   /** Stops an existing run */
