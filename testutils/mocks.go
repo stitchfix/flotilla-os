@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -29,6 +30,11 @@ type ImplementsAllTheThings struct {
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+}
+
+func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+	iatt.Calls = append(iatt.Calls, "LogsText")
+	return nil
 }
 
 func (iatt *ImplementsAllTheThings) Log(keyvals ...interface{}) error {

@@ -12,6 +12,7 @@ import (
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -131,6 +132,10 @@ func (cwl *ECSCloudWatchLogsClient) Logs(definition state.Definition, run state.
 
 	message := cwl.logsToMessage(result.Events)
 	return message, result.NextForwardToken, nil
+}
+
+func (cwl *ECSCloudWatchLogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+	return errors.Errorf("ECSCloudWatchLogsClient does not support LogsText method.")
 }
 
 func (cwl *ECSCloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
