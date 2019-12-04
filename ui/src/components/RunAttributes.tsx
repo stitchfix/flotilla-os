@@ -1,4 +1,5 @@
 import * as React from "react"
+import { isNumber } from "lodash"
 import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
 import { Run } from "../types"
 import Attribute from "./Attribute"
@@ -7,6 +8,39 @@ import ISO8601AttributeValue from "./ISO8601AttributeValue"
 const isLessThanPct = (x: number, y: number, pct: number): boolean => {
   if (x < pct * y) return true
   return false
+}
+
+const ResourceUsageValue: React.FC<{
+  requested: number | undefined | null
+  actual: number | undefined | null
+  requestedName: string
+  actualName: string
+}> = ({ requested, actual, requestedName, actualName }) => {
+  if (!requested) {
+    return <span>-</span>
+  }
+
+  if (!actual) {
+    return <span>{requested}</span>
+  }
+
+  return (
+    <div>
+      <Tooltip content={actualName}>
+        <span
+          style={{
+            color:
+              actual && isLessThanPct(actual, requested, 0.5)
+                ? Colors.RED5
+                : "",
+          }}
+        >
+          {actual}
+        </span>
+      </Tooltip>{" "}
+      / <Tooltip content={requestedName}>{requested}</Tooltip>
+    </div>
+  )
 }
 
 const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
@@ -31,43 +65,23 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       <Attribute
         name="CPU (Units)"
         value={
-          <div>
-            <Tooltip content="Max CPU Used">
-              <span
-                style={{
-                  color:
-                    data.max_cpu_used &&
-                    isLessThanPct(data.max_cpu_used, data.cpu, 0.5)
-                      ? Colors.RED5
-                      : "",
-                }}
-              >
-                {data.max_cpu_used}
-              </span>
-            </Tooltip>{" "}
-            / <Tooltip content="CPU Requested">{data.cpu}</Tooltip>
-          </div>
+          <ResourceUsageValue
+            requested={data.cpu}
+            actual={data.max_cpu_used}
+            requestedName="CPU Requested"
+            actualName="Max CPU Used"
+          />
         }
       />
       <Attribute
         name="Memory (MB)"
         value={
-          <div>
-            <Tooltip content="Max Memory Used">
-              <span
-                style={{
-                  color:
-                    data.max_memory_used &&
-                    isLessThanPct(data.max_memory_used, data.memory, 0.5)
-                      ? Colors.RED5
-                      : "",
-                }}
-              >
-                {data.max_memory_used}
-              </span>
-            </Tooltip>{" "}
-            / <Tooltip content="Memory Requested">{data.memory}</Tooltip>
-          </div>
+          <ResourceUsageValue
+            requested={data.memory}
+            actual={data.max_memory_used}
+            requestedName="Memory Requested"
+            actualName="Max Memory Used"
+          />
         }
       />
     </div>
