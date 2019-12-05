@@ -64,7 +64,7 @@ func (sw *statusWorker) Run() error {
 func (sw *statusWorker) runOnceEKS() {
 	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -2).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
 	}, nil, []string{state.EKSEngine})
