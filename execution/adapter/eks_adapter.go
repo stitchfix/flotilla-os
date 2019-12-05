@@ -26,7 +26,6 @@ func NewEKSAdapter() (EKSAdapter, error) {
 	return &adapter, nil
 }
 
-// TODO: figure this out later.
 func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
 	updated := run
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
