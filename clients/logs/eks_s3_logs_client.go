@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -112,19 +113,25 @@ func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, 
 		return errors.Wrap(err, "problem getting logs")
 	}
 
-	// TODO: get latest file.
-	if len(result.Contents) == 1 {
-		s3Key := result.Contents[0].Key
-		result, err := lc.s3Client.GetObject(&s3.GetObjectInput{
-			Bucket: aws.String(lc.s3Bucket),
-			Key:    aws.String(*s3Key),
-		})
-
-		if err != nil {
-			return err
-		}
-		return lc.logsToMessage(result, w)
+	if result == nil || result.Contents == nil || len(result.Contents) == 0 {
+		return nil
 	}
+
+	for _, content := range result.Contents {
+		if strings.Contains(*content.Key, *run.PodName) {
+			s3Key := content.Key
+			result, err := lc.s3Client.GetObject(&s3.GetObjectInput{
+				Bucket: aws.String(lc.s3Bucket),
+				Key:    aws.String(*s3Key),
+			})
+
+			if err != nil {
+				return err
+			}
+			return lc.logsToMessage(result, w)
+		}
+	}
+
 	return nil
 }
 
