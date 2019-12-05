@@ -10,10 +10,14 @@ import (
 type Metric string
 
 const (
-	EngineEKSExecute          Metric = "engine.eks.execute"
-	EngineEKSEnqueue          Metric = "engine.eks.enqueue"
-	EngineEKSTerminate        Metric = "engine.eks.terminate"
-	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
+	EngineEKSExecuteCPU            Metric = "engine.eks.execute.cpu"
+	EngineEKSExecuteMemory         Metric = "engine.eks.execute.memory"
+	EngineEKSExecuteGpu            Metric = "engine.eks.execute.gpu"
+	EngineEKSExecute               Metric = "engine.eks.execute"
+	EngineEKSEnqueue               Metric = "engine.eks.enqueue"
+	EngineEKSTerminate             Metric = "engine.eks.terminate"
+	EngineEKSRunPodnameChange      Metric = "engine.eks.run_podname_changed"
+	EngineEKSNodeTriggeredScaledUp Metric = "engine.eks.triggered_scale_up"
 )
 
 type MetricTag string
