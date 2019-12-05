@@ -85,6 +85,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
+
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
@@ -97,12 +98,26 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 	run, _ = ee.getPodName(run)
 
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
+
 	if err != nil {
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err
 	}
 
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
+
+	if run.Cpu != nil && *run.Cpu > 0 {
+		_ = metrics.Increment(metrics.EngineEKSExecuteCPU, []string{}, float64(*run.Cpu))
+	}
+
+	if run.Memory != nil && *run.Memory > 0 {
+		_ = metrics.Increment(metrics.EngineEKSExecuteMemory, []string{}, float64(*run.Memory))
+	}
+
+	if run.Gpu != nil && *run.Gpu > 0 {
+		_ = metrics.Increment(metrics.EngineEKSExecuteGpu, []string{}, float64(*run.Gpu))
+	}
+
 	return adaptedRun, false, nil
 }
 
@@ -266,6 +281,11 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 			EventType:    e.Type,
 			Reason:       e.Reason,
 			SourceObject: e.ObjectMeta.Name,
+		}
+
+		if strings.Contains(e.Reason, "TriggeredScaleUp") {
+			source := fmt.Sprintf("source:%s", e.ObjectMeta.Name)
+			_ = metrics.Increment(metrics.EngineEKSNodeTriggeredScaledUp, []string{source}, 1)
 		}
 		runEvents = append(runEvents, runEvent)
 	}
