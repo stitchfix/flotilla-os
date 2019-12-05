@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strings"
+	"time"
 )
 
 //
@@ -356,7 +357,20 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			run.PodName = &mostRecentPod.Name
 		}
 	}
-
 	run, _ = ee.FetchPodMetrics(run)
+	hoursBack := time.Now().Add(-6 * time.Hour)
+
+	// Handle edge case for dangling jobs.
+	// Run used to have a pod and now it is not there, job is older than 6 hours. Terminate it.
+	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) == 0 && run.PodName != nil && run.QueuedAt.Before(hoursBack) {
+		err = ee.Terminate(run)
+		if err == nil {
+			exitCode := int64(124)
+			exitReason := "Pod terminated by Kubernetes."
+			run.ExitCode = &exitCode
+			run.ExitReason = &exitReason
+		}
+	}
+
 	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
 }
