@@ -82,6 +82,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	affinity := a.constructAffinity(definition, run)
+	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
@@ -89,6 +90,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		BackoffLimit:            &state.EKSBackoffLimit,
 
 		Template: corev1.PodTemplateSpec{
+			ObjectMeta: v1.ObjectMeta{
+				Annotations: annotations,
+			},
 			Spec: corev1.PodSpec{
 				Containers:         []corev1.Container{container},
 				RestartPolicy:      corev1.RestartPolicyNever,
@@ -120,7 +124,6 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot")
 	}
-
 
 	if definition.Gpu == nil || *definition.Gpu <= 0 {
 		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
