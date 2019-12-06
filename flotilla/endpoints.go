@@ -581,7 +581,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 		} else {
 			res := map[string]string{
 				"log":       fmt.Sprintf("json logs route not support for EKS jobs, fetch logs from: /api/v6/%s/logs?raw_text=true", run.RunID),
-				"last_seen": "deprecated",
+				"last_seen": "1",
 			}
 			ep.encodeResponse(w, res)
 		}
