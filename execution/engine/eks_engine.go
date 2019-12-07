@@ -336,6 +336,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
 		_ = ee.log.Log("message", "iterating over pods", "podList length", len(podList.Items))
+
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
 			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) || len(podList.Items) == 1 {
@@ -355,8 +356,19 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			}
 
 			run.PodName = &mostRecentPod.Name
+
+		}
+
+		if mostRecentPod != nil && mostRecentPod.Spec.Containers != nil && len(mostRecentPod.Spec.Containers) > 0 {
+			container := mostRecentPod.Spec.Containers[len(mostRecentPod.Spec.Containers)-1]
+			run.ContainerName = &container.Name
+			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
+			run.Cpu = &cpu
+			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+			run.Memory = &mem
 		}
 	}
+
 	run, _ = ee.FetchPodMetrics(run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
 
