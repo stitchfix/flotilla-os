@@ -178,7 +178,15 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 
 	}
 
-	// Override for legacy jobs.
+	// Override for legacy jobs, remove once migration is complete.
+	if mem > 1024 && mem < 10240 && cpu < 2048 {
+		cpu = 2048
+	}
+
+	if mem > 10240 && mem < 25600 && cpu < 3072 {
+		cpu = 3072
+	}
+
 	if mem > 25600 && cpu < 4096 {
 		cpu = 4096
 	}

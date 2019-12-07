@@ -579,7 +579,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 		if rawText == true {
 			ep.eksLogService.LogsText(vars["run_id"], w)
 		} else {
-			log := fmt.Sprintf("json logs route not support for EKS jobs, fetch logs from: /api/v6/%s/logs?raw_text=true", run.RunID)
+			log := fmt.Sprintf("json logs route is not supported for EKS jobs, fetch logs from: /api/v6/%s/logs?raw_text=true", run.RunID)
 
 			if len(lastSeen) > 0 {
 				log = ""
