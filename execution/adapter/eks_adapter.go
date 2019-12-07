@@ -161,7 +161,6 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
 	limits := make(corev1.ResourceList)
 	cpu := *definition.Cpu
-
 	if run.Cpu != nil {
 		cpu = *run.Cpu
 	}
@@ -175,10 +174,9 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	}
 	if mem < state.MinMem {
 		mem = state.MinMem
-
 	}
 
-	// Override for legacy jobs, remove once migration is complete.
+	// CPU Override for legacy jobs, remove once migration is complete.
 	if mem > 1024 && mem < 10240 && cpu < 2048 {
 		cpu = 2048
 	}
@@ -192,7 +190,10 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	}
 
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
+	run.Cpu = &cpu
+
 	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", mem))
+	run.Memory = &mem
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
