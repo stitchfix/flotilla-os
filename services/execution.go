@@ -138,6 +138,11 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.DefaultEngine
 	}
 
+	// Handle the case the cluster name was of type EKS but engine was not set to EKS.
+	if clusterName == es.eksClusterOverride {
+		engine = &state.EKSEngine
+	}
+
 	// Added to facilitate migration of ECS jobs to EKS.
 	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
