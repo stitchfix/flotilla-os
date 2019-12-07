@@ -184,6 +184,7 @@ func (sm *SQLStateManager) ListDefinitions(
 		return result, errors.Wrap(err, "issue running list definitions count sql")
 	}
 
+
 	return result, nil
 }
 
