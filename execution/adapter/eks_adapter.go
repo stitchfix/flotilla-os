@@ -177,7 +177,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	}
 
 	// CPU Override for legacy jobs that are high memory, remove once migration is complete.
-	if mem >= 4096 && mem < 120000 && (definition.Gpu == nil || *definition.Gpu == 0) {
+	if mem >= 24576 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
 		// using the 4x ratios between cpu and memory ~ m5 class of instances
 		cpuOverride := mem / 4
 		if cpuOverride > cpu {
