@@ -553,3 +553,8 @@ type WorkersList struct {
 	Total   int      `json:"total"`
 	Workers []Worker `json:"workers"`
 }
+
+type UserInfo struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}

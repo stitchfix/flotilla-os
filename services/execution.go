@@ -32,7 +32,7 @@ type ExecutionService interface {
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
 	UpdateStatus(runID string, status string, exitCode *int64) error
-	Terminate(runID string) error
+	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
 	GetEvents(run state.Run) (state.RunEventList, error)
@@ -401,7 +401,7 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 //
 // Terminate stops the run with the given runID
 //
-func (es *executionService) Terminate(runID string) error {
+func (es *executionService) Terminate(runID string, userInfo state.UserInfo) error {
 	run, err := es.stateManager.GetRun(runID)
 	if err != nil {
 		return err
@@ -427,7 +427,11 @@ func (es *executionService) Terminate(runID string) error {
 	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
 		err = es.eksExecutionEngine.Terminate(run)
 		if err == nil {
-			exitReason := "Task terminated by the user."
+			exitReason := "Task terminated by user"
+			if len(userInfo.Email) > 0 {
+				exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
+			}
+
 			exitCode := int64(1)
 			finishedAt := time.Now()
 			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{

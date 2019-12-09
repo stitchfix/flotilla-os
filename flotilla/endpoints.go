@@ -3,16 +3,15 @@ package flotilla
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 type endpoints struct {
@@ -470,7 +469,8 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.executionService.Terminate(vars["run_id"])
+	userInfo := ep.ExtractUserInfo(r)
+	err := ep.executionService.Terminate(vars["run_id"], userInfo)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem stopping run",
@@ -481,6 +481,24 @@ func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ep.encodeResponse(w, map[string]bool{"terminated": true})
 	}
+}
+
+func (ep *endpoints) ExtractUserInfo(r *http.Request) state.UserInfo {
+	var userInfo state.UserInfo
+	for name, headers := range r.Header {
+		name = strings.ToLower(name)
+		for _, h := range headers {
+
+			if strings.Contains(name, "-name") {
+				userInfo.Name = h
+			}
+
+			if strings.Contains(name, "-email") {
+				userInfo.Email = h
+			}
+		}
+	}
+	return userInfo
 }
 
 func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
