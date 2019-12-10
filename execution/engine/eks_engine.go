@@ -35,6 +35,7 @@ type EKSExecutionEngine struct {
 	jobNamespace  string
 	jobTtl        int
 	jobSA         string
+	schedulerName string
 }
 
 //
@@ -68,6 +69,12 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	ee.jobQueue = conf.GetString("eks.job_queue")
+	ee.schedulerName = "default-scheduler"
+
+	if conf.IsSet("eks.scheduler_name") {
+		ee.schedulerName = conf.GetString("eks.scheduler_name")
+	}
+
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
@@ -85,7 +92,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName)
 
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {

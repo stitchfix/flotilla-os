@@ -12,7 +12,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -64,7 +64,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error) {
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
 	cmd := definition.Command
@@ -98,6 +98,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 				Annotations: annotations,
 			},
 			Spec: corev1.PodSpec{
+				SchedulerName:      schedulerName,
 				Containers:         []corev1.Container{container},
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
