@@ -23,7 +23,7 @@ var MinMem = int64(125)
 
 var TTLSecondsAfterFinished = int32(3600)
 
-var SpotActiveDeadlineSeconds = int64(21600)
+var SpotActiveDeadlineSeconds = int64(86400)
 
 var OndemandActiveDeadlineSeconds = int64(172800)
 
