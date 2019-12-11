@@ -1,10 +1,13 @@
 import * as React from "react"
 import { Card, Icon } from "@blueprintjs/core"
+import urljoin from "url-join"
 import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"
 
-const createS3LogsUrl = (runID: string): string =>
-  `${process.env.REACT_APP_S3_LOGS_BUCKET_PREFIX || ""}/${runID}`
+const createS3LogsUrl = (runID: string): string => {
+  const prefix = process.env.REACT_APP_S3_LOGS_BUCKET_PREFIX || ""
+  return urljoin(prefix, runID)
+}
 
 const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
   <Card style={{ marginTop: 12 }}>
