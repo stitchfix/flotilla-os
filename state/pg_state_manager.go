@@ -26,7 +26,7 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
-func (sm *SQLStateManager) GetRunResources(definitionID string, command string) (TaskResources, error) {
+func (sm *SQLStateManager) EstimateRunResources(definitionID string, command string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
 	if len(command) > 0 {
