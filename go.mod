@@ -19,6 +19,7 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-kit/kit v0.0.0-20170719165541-1beb0cbdd6b1
 	github.com/go-logfmt/logfmt v0.3.0 // indirect
+	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-stack/stack v1.5.4 // indirect
 	github.com/google/btree v1.0.0 // indirect
