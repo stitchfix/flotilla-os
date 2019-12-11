@@ -215,32 +215,34 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 	cpu := state.MinCPU
 	mem := state.MinMem
 
-	pastRuns, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
-		"queued_at_since": {
-			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
-		},
-		"status":        {state.StatusStopped},
-		"command":       {*run.Command},
-		"definition_id": {definition.DefinitionID},
-	}, nil, []string{state.EKSEngine})
+	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
+		pastRuns, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
+			"queued_at_since": {
+				time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+			},
+			"status":        {state.StatusStopped},
+			"command":       {*run.Command},
+			"definition_id": {definition.DefinitionID},
+		}, nil, []string{state.EKSEngine})
 
-	if err != nil {
-		return cpu, mem
-	}
+		if err != nil {
+			return cpu, mem
+		}
 
-	if len(pastRuns.Runs) > 0 {
-		lastRun := pastRuns.Runs[0]
-		if lastRun.MaxMemoryUsed != nil && lastRun.MaxCpuUsed != nil {
-			if *lastRun.ExitCode == 0 {
-				cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
-				mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.25)
-			} else {
-				if !strings.Contains(*lastRun.ExitReason, "OOM") {
-					cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
-					mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.50)
-				} else {
+		if len(pastRuns.Runs) > 0 {
+			lastRun := pastRuns.Runs[0]
+			if lastRun.MaxMemoryUsed != nil && lastRun.MaxCpuUsed != nil {
+				if *lastRun.ExitCode == 0 {
 					cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
 					mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.25)
+				} else {
+					if !strings.Contains(*lastRun.ExitReason, "OOM") {
+						cpu = int64(float64(*lastRun.Cpu) * 1.1)
+						mem = int64(float64(*lastRun.Memory) * 1.50)
+					} else {
+						cpu = *lastRun.Cpu
+						mem = *lastRun.Memory
+					}
 				}
 			}
 		}
@@ -263,13 +265,6 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			if definition.Memory != nil && *definition.Memory != 0 {
 				mem = *definition.Memory
 			}
-		}
-	}
-
-	if mem >= 24576 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
-		cpuOverride := mem / 8
-		if cpuOverride > cpu {
-			cpu = cpuOverride
 		}
 	}
 
