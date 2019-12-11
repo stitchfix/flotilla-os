@@ -1,18 +1,34 @@
 import * as React from "react"
 import Ansi from "ansi-to-react"
-import { Spinner, Pre, Classes, Tag, Checkbox, Icon } from "@blueprintjs/core"
+import {
+  Spinner,
+  Pre,
+  Classes,
+  Tag,
+  Checkbox,
+  Icon,
+  Button,
+  ButtonGroup,
+} from "@blueprintjs/core"
 import { LogChunk } from "../types"
 
 type Props = {
-  logs: LogChunk[]
+  logs: string[]
   hasRunFinished: boolean
   isLoading: boolean
   height: number
   shouldAutoscroll: boolean
+  totalLogLength: number
 }
 
-class LogRenderer extends React.Component<Props> {
+type State = {
+  logPage: number
+}
+
+class LogRenderer extends React.Component<Props, State> {
   private CONTAINER_DIV = React.createRef<HTMLDivElement>()
+
+  state = { logPage: 0 }
 
   componentDidMount() {
     this.scrollToBottom()
@@ -41,24 +57,31 @@ class LogRenderer extends React.Component<Props> {
   }
 
   shouldScrollToBottom(prev: Props, next: Props) {
-    // Handle manual override.
-    if (next.shouldAutoscroll === false) return false
+    // // Handle manual override.
+    // if (next.shouldAutoscroll === false) return false
 
-    // Handle CloudWatchLogs.
-    if (prev.logs.length !== next.logs.length) return true
+    // // Handle CloudWatchLogs.
+    // if (prev.logs.length !== next.logs.length) return true
 
-    // Handle S3 logs (there will only be one chunk).
-    if (
-      prev.logs.length === 1 &&
-      next.logs.length === 1 &&
-      prev.logs[0].chunk.length !== next.logs[0].chunk.length
-    )
-      return true
+    // // Handle S3 logs (there will only be one chunk).
+    // if (
+    //   prev.logs.length === 1 &&
+    //   next.logs.length === 1 &&
+    //   prev.logs[0].chunk.length !== next.logs[0].chunk.length
+    // )
+    //   return true
     return false
   }
 
   render() {
-    const { logs, height, hasRunFinished, isLoading } = this.props
+    const {
+      logs,
+      height,
+      hasRunFinished,
+      isLoading,
+      totalLogLength,
+    } = this.props
+    const { logPage } = this.state
 
     let loader = <Tag>END OF LOGS</Tag>
 
@@ -67,32 +90,41 @@ class LogRenderer extends React.Component<Props> {
     }
 
     return (
-      <div
-        ref={this.CONTAINER_DIV}
-        className="flotilla-logs-container"
-        style={{ height }}
-      >
-        <Pre className={`flotilla-pre ${Classes.DARK}`}>
-          {logs.map((l: LogChunk) => (
-            // Note: using a CSS classname here as the Ansi component does not
-            // support a `style` prop.
-            <Ansi linkify={false} key={l.lastSeen} className="flotilla-ansi">
-              {l.chunk}
-            </Ansi>
+      <div>
+        <ButtonGroup>
+          {Array.from(Array(logs.length).keys()).map((_, i) => (
+            <Button
+              onClick={() => {
+                this.setState({ logPage: i })
+              }}
+            >
+              Page: {i}
+            </Button>
           ))}
-          <span
-            style={{
-              display: "flex",
-              flexFlow: "row nowrap",
-              justifyContent: "flex-start",
-              alignItems: "center",
-              width: "100%",
-              padding: 24,
-            }}
-          >
-            {loader}
-          </span>
-        </Pre>
+        </ButtonGroup>
+        <div
+          ref={this.CONTAINER_DIV}
+          className="flotilla-logs-container"
+          style={{ height }}
+        >
+          <Pre className={`flotilla-pre ${Classes.DARK}`}>
+            <Ansi linkify={false} className="flotilla-ansi">
+              {logs[logPage]}
+            </Ansi>
+            <span
+              style={{
+                display: "flex",
+                flexFlow: "row nowrap",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                width: "100%",
+                padding: 24,
+              }}
+            >
+              {loader}
+            </span>
+          </Pre>
+        </div>
       </div>
     )
   }

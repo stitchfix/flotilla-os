@@ -32,6 +32,7 @@ const initialState: State = {
 
 class LogRequester extends React.PureComponent<Props, State> {
   private requestInterval: number | undefined
+  private maxChunkCharsLength: number = 200000
   state = initialState
 
   componentDidMount() {
@@ -204,9 +205,25 @@ class LogRequester extends React.PureComponent<Props, State> {
 
   hasRunFinished = (): boolean => this.props.status === RunStatus.STOPPED
 
+  preprocessLogs(): [string[], number] {
+    const { logs } = this.state
+    let totalLen = 0
+    let l = []
+
+    for (let i = 0; i < logs.length; i++) {
+      totalLen += logs[i].chunk.length
+      for (let j = 0; j < logs[i].chunk.length; j += this.maxChunkCharsLength) {
+        l.push(logs[i].chunk.slice(j, j + this.maxChunkCharsLength))
+      }
+    }
+
+    return [l, totalLen]
+  }
+
   render() {
     const { height } = this.props
-    const { logs, isLoading, error } = this.state
+    const { isLoading, error } = this.state
+    const [logs, len] = this.preprocessLogs()
 
     if (error) return <ErrorCallout error={error} />
 
@@ -217,6 +234,7 @@ class LogRequester extends React.PureComponent<Props, State> {
         hasRunFinished={this.hasRunFinished()}
         isLoading={isLoading}
         shouldAutoscroll={this.props.shouldAutoscroll}
+        totalLogLength={len}
       />
     )
   }
