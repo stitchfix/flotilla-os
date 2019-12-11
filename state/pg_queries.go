@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS task_def (
   container_name character varying NOT NULL,
   task_type character varying,
   privileged boolean,
-  adaptive_resource_allocation boolean
+  adaptive_resource_allocation boolean,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );

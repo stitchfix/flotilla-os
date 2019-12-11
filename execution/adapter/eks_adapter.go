@@ -66,12 +66,12 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 }
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
-	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
-
 	cmd := definition.Command
 	if run.Command != nil {
 		cmd = *run.Command
 	}
+	run.Command = &cmd
+	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
 		Name:      run.RunID,
