@@ -2,6 +2,9 @@ package worker
 
 import (
 	"fmt"
+	"github.com/go-redis/redis"
+	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -21,6 +24,8 @@ type statusWorker struct {
 	pollInterval time.Duration
 	t            tomb.Tomb
 	engine       *string
+	redisClient  *redis.Client
+	workerId     string
 }
 
 func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
@@ -30,7 +35,17 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a status worker", "engine", *engine)
+	hostname, err := os.Hostname()
+	if err != nil {
+		sw.workerId = fmt.Sprintf("%s-%d", hostname, rand.Int())
+	} else {
+		sw.workerId = fmt.Sprintf("%d", rand.Int())
+	}
+
+	if *sw.engine == state.EKSEngine {
+		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db"),})
+	}
+	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
 }
 
@@ -79,7 +94,16 @@ func (sw *statusWorker) runOnceEKS() {
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
 		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
-		sw.processRun(run)
+
+		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 5*time.Second).Result()
+		if err != nil {
+			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+			return
+		}
+
+		if set == true {
+			sw.processRun(run)
+		}
 	}
 }
 

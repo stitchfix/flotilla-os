@@ -651,6 +651,62 @@
 			"revisionTime": "2018-11-22T01:56:15Z"
 		},
 		{
+			"checksumSHA1": "AvBO8FhcdWK1RMF7GiCxzxsgmhQ=",
+			"path": "github.com/go-redis/redis",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "pPBUPs5RJe7jbz3rXtpZe99k3jo=",
+			"path": "github.com/go-redis/redis/internal",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "GQZsUVg/+6UpQAYpc4luMvMutSI=",
+			"path": "github.com/go-redis/redis/internal/consistenthash",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "l66eTZiJqueypc56HXCakGDm784=",
+			"path": "github.com/go-redis/redis/internal/hashtag",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "OHj6H6AyvnbP1rYtWjO4thbD7Ug=",
+			"path": "github.com/go-redis/redis/internal/pool",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "zCo0t+gRBbctwyIpkDLrqRFtXew=",
+			"path": "github.com/go-redis/redis/internal/proto",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
+			"checksumSHA1": "1PH2NoAB/u3IZmLYyCrIbOzqLZ4=",
+			"path": "github.com/go-redis/redis/internal/util",
+			"revision": "7f69d5e32072d151eb6936cbe2306413e8117488",
+			"revisionTime": "2019-10-08T09:42:12Z",
+			"version": "=v6",
+			"versionExact": "v6"
+		},
+		{
 			"checksumSHA1": "bxbDYTjvuovf3t4qYfpUoZ3we4s=",
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "dadb625850898f31a8e40e83492f4a7132e520a2",

@@ -2,13 +2,13 @@ package worker
 
 import (
 	"fmt"
-	"time"
-
+	"github.com/go-redis/redis"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
+	"time"
 )
 
 type submitWorker struct {
@@ -19,6 +19,7 @@ type submitWorker struct {
 	pollInterval time.Duration
 	t            tomb.Tomb
 	engine       *string
+	redisClient  *redis.Client
 }
 
 func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
@@ -28,7 +29,8 @@ func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a submit worker","engine",  *engine)
+	sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db"),})
+	_ = sw.log.Log("message", "initialized a submit worker", "engine", *engine)
 	return nil
 }
 
