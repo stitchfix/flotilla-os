@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -216,38 +217,81 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 }
 
 func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
+	cpu, mem := a.getResourceDefaults(run, definition)
+
+	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
+		// Check if last run was a OOM, in that case only increase memory
+		lastRun := a.getLastRun(manager, run)
+		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOM") {
+			mem = int64(float64(*lastRun.Memory) * 1.5)
+			cpu = *lastRun.Cpu
+		} else {
+			// If last run wasn't an OOM, estimate based on successful runs.
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
+			if err == nil {
+				cpu = estimatedResources.Cpu
+				mem = estimatedResources.Memory
+			}
+		}
+	}
+
+	return a.checkResourceBounds(cpu, mem)
+}
+
+func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
+	if cpu < state.MinCPU {
+		cpu = state.MinCPU
+	}
+	if cpu > state.MaxCPU {
+		cpu = state.MaxCPU
+	}
+	if mem < state.MinMem {
+		mem = state.MinMem
+	}
+	if mem > state.MaxMem {
+		mem = state.MaxMem
+	}
+	return cpu, mem
+}
+
+func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definition) (int64, int64) {
+	// 1. Init with the global defaults
 	cpu := state.MinCPU
 	mem := state.MinMem
 
-	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
-		resources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
-		if err == nil {
-			cpu = resources.Cpu
-			mem = resources.Memory
+	// 2. Look up Run level
+	// 3. If not at Run level check Definitions
+	if run.Cpu != nil && *run.Cpu != 0 {
+		cpu = *run.Cpu
+	} else {
+		if definition.Cpu != nil && *definition.Cpu != 0 {
+			cpu = *definition.Cpu
 		}
 	}
-
-	if cpu == state.MinCPU {
-		if run.Cpu != nil && *run.Cpu != 0 {
-			cpu = *run.Cpu
-		} else {
-			if definition.Cpu != nil && *definition.Cpu != 0 {
-				cpu = *definition.Cpu
-			}
+	if run.Memory != nil && *run.Memory != 0 {
+		mem = *run.Memory
+	} else {
+		if definition.Memory != nil && *definition.Memory != 0 {
+			mem = *definition.Memory
 		}
 	}
-
-	if mem == state.MinMem {
-		if run.Memory != nil && *run.Memory != 0 {
-			mem = *run.Memory
-		} else {
-			if definition.Memory != nil && *definition.Memory != 0 {
-				mem = *definition.Memory
-			}
-		}
-	}
-
 	return cpu, mem
+}
+
+func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {
+	var lastRun state.Run
+	runList, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
+		"queued_at_since": {
+			time.Now().AddDate(0, 0, -7).Format(time.RFC3339),
+		},
+		"status":        {state.StatusStopped},
+		"command":       {*run.Command},
+		"definition_id": {run.DefinitionID},
+	}, nil, []string{state.EKSEngine})
+	if err == nil && len(runList.Runs) > 0 {
+		lastRun = runList.Runs[0]
+	}
+	return lastRun
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
