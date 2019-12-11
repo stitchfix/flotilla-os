@@ -220,7 +220,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 	mem := state.MinMem
 
 	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
-		resources, err := manager.GetRunResources(definition.DefinitionID, *run.Command)
+		resources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
 		if err == nil {
 			cpu = resources.Cpu
 			mem = resources.Memory
