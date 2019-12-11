@@ -184,7 +184,6 @@ func (sm *SQLStateManager) ListDefinitions(
 		return result, errors.Wrap(err, "issue running list definitions count sql")
 	}
 
-
 	return result, nil
 }
 
@@ -248,7 +247,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       arn = $2, image = $3,
       container_name = $4, "user" = $5,
       alias = $6, memory = $7,
-      command = $8, env = $9, privileged = $10, cpu = $11, gpu = $12
+      command = $8, env = $9, privileged = $10, cpu = $11, gpu = $12, adaptive_resource_allocation = $13
     WHERE definition_id = $1;
     `
 
@@ -289,7 +288,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		update, definitionID,
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
-		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu); err != nil {
+		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu, existing.AdaptiveResourceAllocation); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -330,9 +329,9 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	insert := `
     INSERT INTO task_def(
       arn, definition_id, image, group_name,
-      container_name, "user", alias, memory, command, env, privileged, cpu, gpu
+      container_name, "user", alias, memory, command, env, privileged, cpu, gpu, adaptive_resource_allocation
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
     `
 
 	insertPorts := `
@@ -358,7 +357,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu); err != nil {
+		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
@@ -757,7 +756,7 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 		existing Worker
 	)
 
-	engine:= DefaultEngine
+	engine := DefaultEngine
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return existing, errors.WithStack(err)

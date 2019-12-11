@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS task_def (
   container_name character varying NOT NULL,
   task_type character varying,
   privileged boolean,
+  adaptive_resource_allocation boolean
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );
@@ -137,6 +138,7 @@ const DefinitionSelect = `
 select
   coalesce(td.arn,'')       as arn,
   td.definition_id          as definitionid,
+  td.adaptive_resource_allocation as adaptiveresourceallocation,
   td.image                  as image,
   td.group_name             as groupname,
   td.container_name         as containername,

@@ -12,7 +12,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -64,7 +64,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
 	resourceRequirements := a.constructResourceRequirements(definition, run)
 
 	cmd := definition.Command
@@ -207,6 +207,10 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 		Limits: limits,
 	}
 	return resourceRequirements
+}
+
+func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run) (int64, int64) {
+	return 0, 0
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {

@@ -310,7 +310,7 @@ func (ee *ECSExecutionEngine) Enqueue(run state.Run) error {
 // Execute takes a pre-configured run and definition and submits them for execution
 // to AWS ECS
 //
-func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run) (state.Run, bool, error) {
+func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	var executed state.Run
 	rti := ee.toRunTaskInput(definition, run)
 	result, err := ee.ecsClient.RunTask(&rti)
