@@ -51,7 +51,6 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
     >
       <Attribute name="Engine Type" value={<Tag>{data.engine}</Tag>} />
       <Attribute name="Cluster" value={data.cluster} />
-
       <Attribute
         name="Node Lifecycle"
         value={<Tag>{data.node_lifecycle || "-"}</Tag>}
@@ -85,15 +84,11 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         }
       />
     </div>
-    {(data.ephemeral_storage || data.gpu) && (
+    {data.gpu && (
       <div
         className="flotilla-attributes-container flotilla-attributes-container-horizontal"
         style={{ marginBottom: 12 }}
       >
-        <Attribute
-          name="Disk Size (GB)"
-          value={data.ephemeral_storage || "-"}
-        />
         <Attribute name="GPU Count" value={data.gpu || 0} />
       </div>
     )}
@@ -130,7 +125,6 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         rawValue={data.definition_id}
       />
       <Attribute name="Image" value={data.image} />
-      {data.pod_name && <Attribute name="EKS Pod Name" value={data.pod_name} />}
       <Attribute
         name="Command"
         value={

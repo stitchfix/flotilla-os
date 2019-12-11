@@ -47,7 +47,6 @@ export type Run = {
   task_arn: string
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
-  ephemeral_storage?: number | null
   max_cpu_used: number | null | undefined
   max_memory_used: number | null | undefined
   pod_name: string | null | undefined
@@ -184,7 +183,6 @@ export type LaunchRequestV2 = {
   owner_id?: string
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
-  ephemeral_storage?: number | null
   command?: string | null
 }
 
