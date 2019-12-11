@@ -11,13 +11,9 @@ import {
   RadioGroup,
   Radio,
   Collapse,
-  Divider,
-  H2,
-  Tag,
-  Callout,
 } from "@blueprintjs/core"
 import api from "../api"
-import { LaunchRequestV2, Run, ExecutionEngine, NodeLifecycle } from "../types"
+import { LaunchRequestV2, Run, ExecutionEngine } from "../types"
 import getInitialValuesForTaskRun from "../helpers/getInitialValuesForTaskRun"
 import Request, {
   ChildProps as RequestChildProps,
@@ -128,21 +124,9 @@ class RunForm extends React.Component<Props, State> {
               </FormGroup>
               <div className="flotilla-form-section-divider" />
               {/* Engine Type Field */}
-              <Callout
-                title="Experimental Feature"
-                icon="clean"
-                intent={Intent.PRIMARY}
-                style={{ marginBottom: 12 }}
-              >
-                The EKS execution engine is an experimental feature we're
-                currently testing, which will allow you to run your task on
-                Kubernetes and will NOT need to select a cluster to run on.
-                Alternatively, you can still choose to run your task on the
-                classic ECS execution engine.
-              </Callout>
               <RadioGroup
                 inline
-                label="Engine Type (Experimental)"
+                label="Engine Type"
                 onChange={(evt: React.FormEvent<HTMLInputElement>) => {
                   setFieldValue("engine", evt.currentTarget.value)
 
@@ -151,11 +135,13 @@ class RunForm extends React.Component<Props, State> {
                       "cluster",
                       process.env.REACT_APP_EKS_CLUSTER_NAME || ""
                     )
+                  } else if (getEngine() === ExecutionEngine.EKS) {
+                    setFieldValue("cluster", "")
                   }
                 }}
                 selectedValue={values.engine}
               >
-                <Radio label="EKS (Experimental)" value={ExecutionEngine.EKS} />
+                <Radio label="EKS" value={ExecutionEngine.EKS} />
                 <Radio label="ECS" value={ExecutionEngine.ECS} />
               </RadioGroup>
               <div className="flotilla-form-section-divider" />
@@ -165,21 +151,22 @@ class RunForm extends React.Component<Props, State> {
                 "FastField" as it needs to re-render when value.engine is
                 updated.
               */}
-              <FormGroup
-                label="Cluster"
-                helperText="Select a cluster for this task to execute on."
-              >
-                <Field
-                  name="cluster"
-                  component={ClusterSelect}
-                  value={values.cluster}
-                  onChange={(value: string) => {
-                    setFieldValue("cluster", value)
-                  }}
-                  isDisabled={getEngine() === ExecutionEngine.EKS}
-                />
-                {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
-              </FormGroup>
+              {getEngine() !== ExecutionEngine.EKS && (
+                <FormGroup
+                  label="Cluster"
+                  helperText="Select a cluster for this task to execute on."
+                >
+                  <Field
+                    name="cluster"
+                    component={ClusterSelect}
+                    value={values.cluster}
+                    onChange={(value: string) => {
+                      setFieldValue("cluster", value)
+                    }}
+                  />
+                  {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
+                </FormGroup>
+              )}
 
               {/* CPU Field */}
               <FormGroup
@@ -211,9 +198,7 @@ class RunForm extends React.Component<Props, State> {
 
               {/* Advanced Options */}
               <div className="flotilla-form-section-header-container">
-                <div>
-                  Advanced Options <Tag intent={Intent.DANGER}>BETA</Tag>
-                </div>
+                <div>Advanced Options</div>
                 <Button onClick={this.toggleAdvancedOptionsVisibility}>
                   {areAdvancedOptionsVisible ? "Hide" : "Show"}
                 </Button>
@@ -258,6 +243,8 @@ class RunForm extends React.Component<Props, State> {
                 intent={Intent.PRIMARY}
                 type="submit"
                 disabled={isLoading || isValid === false}
+                style={{ marginTop: 24 }}
+                large
               >
                 Submit
               </Button>

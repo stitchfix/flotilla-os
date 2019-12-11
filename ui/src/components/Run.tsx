@@ -36,6 +36,7 @@ import RunTag from "./RunTag"
 import Duration from "./Duration"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import ErrorCallout from "./ErrorCallout"
+import RunDebugAttributes from "./RunDebugAttributes"
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
@@ -233,6 +234,9 @@ export class Run extends React.Component<Props, State> {
                           </div>
                           <EnvList env={data.env} />
                         </Card>
+                        {data && data.engine === ExecutionEngine.EKS && (
+                          <RunDebugAttributes data={data} />
+                        )}
                       </div>
                     )}
                     <div className="flotilla-sidebar-view-content">
