@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -65,7 +66,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 }
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
-	resourceRequirements := a.constructResourceRequirements(definition, run)
+	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
 
 	cmd := definition.Command
 	if run.Command != nil {
@@ -159,32 +160,9 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) corev1.ResourceRequirements {
 	limits := make(corev1.ResourceList)
-	cpu := *definition.Cpu
-	if run.Cpu != nil {
-		cpu = *run.Cpu
-	}
-	if cpu < state.MinCPU {
-		cpu = state.MinCPU
-	}
-
-	mem := *definition.Memory
-	if run.Memory != nil {
-		mem = *run.Memory
-	}
-	if mem < state.MinMem {
-		mem = state.MinMem
-	}
-
-	// CPU Override for legacy jobs that are high memory, remove once migration is complete.
-	if mem >= 24576 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
-		// using the 4x ratios between cpu and memory ~ m5 class of instances
-		cpuOverride := mem / 4
-		if cpuOverride > cpu {
-			cpu = cpuOverride
-		}
-	}
+	cpu, mem := a.adaptiveResources(definition, run, manager)
 
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
 	assignedCpu := cpuQuantity.ScaledValue(resource.Milli)
@@ -209,8 +187,69 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	return resourceRequirements
 }
 
-func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run) (int64, int64) {
-	return 0, 0
+func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
+	cpu := state.MinCPU
+	mem := state.MinMem
+
+	pastRuns, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
+		"queued_at_since": {
+			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+		},
+		"status":        {state.StatusStopped},
+		"command":       {*run.Command},
+		"definition_id": {definition.DefinitionID},
+	}, nil, []string{state.EKSEngine})
+
+	if err != nil {
+		return cpu, mem
+	}
+
+	if len(pastRuns.Runs) > 0 {
+		lastRun := pastRuns.Runs[0]
+		if lastRun.MaxMemoryUsed != nil && lastRun.MaxCpuUsed != nil {
+			if *lastRun.ExitCode == 0 {
+				cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
+				mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.25)
+			} else {
+				if !strings.Contains(*lastRun.ExitReason, "OOM") {
+					cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
+					mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.50)
+				} else {
+					cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
+					mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.25)
+				}
+			}
+		}
+	}
+
+	if cpu == state.MinCPU {
+		if run.Cpu != nil && *run.Cpu != 0 {
+			cpu = *run.Cpu
+		} else {
+			if definition.Cpu != nil && *definition.Cpu != 0 {
+				cpu = *definition.Cpu
+			}
+		}
+	}
+
+	if mem == state.MinMem {
+		if run.Memory != nil && *run.Memory != 0 {
+			mem = *run.Memory
+		} else {
+			if definition.Memory != nil && *definition.Memory != 0 {
+				mem = *definition.Memory
+			}
+		}
+	}
+
+	if mem >= 24576 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
+		cpuOverride := mem / 8
+		if cpuOverride > cpu {
+			cpu = cpuOverride
+		}
+	}
+
+	return cpu, mem
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
