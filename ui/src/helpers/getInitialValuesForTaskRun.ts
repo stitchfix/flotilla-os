@@ -79,7 +79,6 @@ const getInitialValuesForTaskRun = ({
           "node_lifecycle",
           process.env.REACT_APP_DEFAULT_NODE_LIFECYCLE
         ),
-        ephemeral_storage: get(routerState, "ephemeral_storage", null),
         env,
         cpu,
         memory,

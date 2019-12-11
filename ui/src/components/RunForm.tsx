@@ -52,9 +52,6 @@ const validationSchema = Yup.object().shape({
     .matches(/(eks|ecs)/)
     .required("A valid engine type of ecs or eks must be set."),
   node_lifecycle: Yup.string().matches(/(spot|ondemand)/),
-  ephemeral_storage: Yup.number()
-    .min(1)
-    .nullable(),
   command: Yup.string()
     .min(1)
     .nullable(),
@@ -241,21 +238,6 @@ class RunForm extends React.Component<Props, State> {
                   )}
                 </FormGroup>
 
-                {/* Ephemeral Storage Field */}
-                <FormGroup
-                  label="Disk Size (GB)"
-                  helperText="This field is only applicable to tasks running on EKS."
-                >
-                  <Field
-                    type="number"
-                    name="ephemeral_storage"
-                    className={Classes.INPUT}
-                    isDisabled={getEngine() !== ExecutionEngine.EKS}
-                  />
-                  {errors.ephemeral_storage && (
-                    <FieldError>{errors.ephemeral_storage}</FieldError>
-                  )}
-                </FormGroup>
                 <FormGroup
                   label={commandFieldSpec.label}
                   helperText="Override your task definition command."
