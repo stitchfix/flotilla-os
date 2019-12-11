@@ -587,3 +587,8 @@ type UserInfo struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
+
+type TaskResources struct {
+	Cpu    int64 `json:"cpu"`
+	Memory int64 `json:"memory"`
+}

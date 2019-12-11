@@ -7,7 +7,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 	"time"
 )
 
@@ -76,10 +75,15 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
-	cmd := definition.Command
+	cmd := ""
+	if len(definition.Command) > 0 {
+		cmd = definition.Command
+	}
+
 	if run.Command != nil {
 		cmd = *run.Command
 	}
+
 	run.Command = &cmd
 	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
 
@@ -216,35 +220,10 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 	mem := state.MinMem
 
 	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
-		pastRuns, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
-			"queued_at_since": {
-				time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
-			},
-			"status":        {state.StatusStopped},
-			"command":       {*run.Command},
-			"definition_id": {run.DefinitionID},
-		}, nil, []string{state.EKSEngine})
-
-		if err != nil {
-			return cpu, mem
-		}
-
-		if len(pastRuns.Runs) > 0 {
-			lastRun := pastRuns.Runs[0]
-			if lastRun.MaxMemoryUsed != nil && lastRun.MaxCpuUsed != nil {
-				if *lastRun.ExitCode == 0 {
-					cpu = int64(float64(*lastRun.MaxCpuUsed) * 1.1)
-					mem = int64(float64(*lastRun.MaxMemoryUsed) * 1.25)
-				} else {
-					if !strings.Contains(*lastRun.ExitReason, "OOM") {
-						cpu = int64(float64(*lastRun.Cpu) * 1.1)
-						mem = int64(float64(*lastRun.Memory) * 1.50)
-					} else {
-						cpu = *lastRun.Cpu
-						mem = *lastRun.Memory
-					}
-				}
-			}
+		resources, err := manager.GetRunResources(definition.DefinitionID, *run.Command)
+		if err == nil {
+			cpu = resources.Cpu
+			mem = resources.Memory
 		}
 	}
 
