@@ -26,6 +26,26 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
+func (sm *SQLStateManager) GetRunResources(definitionID string, command string) (TaskResources, error) {
+	var err error
+	var taskResources TaskResources
+	if len(command) > 0 {
+		err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, command)
+	} else {
+		err = sm.db.Get(&taskResources, TaskResourcesSelectSQL, definitionID)
+	}
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return taskResources, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Resource usage with definition %s not found", definitionID)}
+		} else {
+			return taskResources, errors.Wrapf(err, "issue getting resources with definition [%s]", definitionID)
+		}
+	}
+	return taskResources, err
+}
+
 //
 // Name is the name of the state manager - matches value in configuration
 //
@@ -476,6 +496,21 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 // GetRun gets run by id
 //
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
+	var err error
+	var r Run
+	err = sm.db.Get(&r, GetRunSQL, runID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return r, exceptions.MissingResource{
+				fmt.Sprintf("Run with id %s not found", runID)}
+		} else {
+			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
+		}
+	}
+	return r, nil
+}
+
+func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	var err error
 	var r Run
 	err = sm.db.Get(&r, GetRunSQL, runID)
