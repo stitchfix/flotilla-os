@@ -198,7 +198,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			},
 			"status":        {state.StatusStopped},
 			"command":       {*run.Command},
-			"definition_id": {definition.DefinitionID},
+			"definition_id": {run.DefinitionID},
 		}, nil, []string{state.EKSEngine})
 
 		if err != nil {
