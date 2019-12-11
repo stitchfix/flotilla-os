@@ -17,9 +17,13 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
-var MinCPU = int64(125)
+var MinCPU = int64(128)
 
-var MinMem = int64(125)
+var MaxCPU = int64(32000)
+
+var MinMem = int64(64)
+
+var MaxMem = int64(124000)
 
 var TTLSecondsAfterFinished = int32(3600)
 

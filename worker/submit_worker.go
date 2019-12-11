@@ -103,7 +103,7 @@ func (sw *submitWorker) runOnce() {
 			// Execute the run using the execution engine
 			//
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
-			launched, retryable, err := sw.ee.Execute(definition, run, nil)
+			launched, retryable, err := sw.ee.Execute(definition, run, sw.sm)
 			if err != nil {
 				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
