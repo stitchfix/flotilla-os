@@ -244,8 +244,11 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 }
 
 func (a *eksAdapter) sanitizeEnvVar(key string) string {
+	// Environment variable can't start with a $
 	if strings.HasPrefix(key, "$") {
 		key = strings.Replace(key, "$", "", 1)
 	}
+	// Environment variable names can't contain spaces.
+	key = strings.Replace(key, " ", "", -1)
 	return key
 }
