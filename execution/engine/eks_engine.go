@@ -96,35 +96,25 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
+		// Job is already submitted, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
 			return run, false, nil
-		} else {
-			return run, true, err
 		}
-	}
 
-	run, _ = ee.getPodName(run)
-
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
-
-	if err != nil {
+		// Job spec is invalid, don't retry.
+		if strings.Contains(strings.ToLower(err.Error()), "is invalid") {
+			exitReason := err.Error()
+			run.ExitReason = &exitReason
+			return run, false, err
+		}
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
-		return run, false, err
+		return run, true, err
 	}
 
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 
-	if run.Cpu != nil && *run.Cpu > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteCPU, []string{}, float64(*run.Cpu))
-	}
-
-	if run.Memory != nil && *run.Memory > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteMemory, []string{}, float64(*run.Memory))
-	}
-
-	if run.Gpu != nil && *run.Gpu > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteGpu, []string{}, float64(*run.Gpu))
-	}
+	run, _ = ee.getPodName(run)
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 
 	return adaptedRun, false, nil
 }
