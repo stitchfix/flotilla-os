@@ -107,6 +107,8 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state
 			run.ExitReason = &exitReason
 			return run, false, err
 		}
+
+		// Legitimate submit error, retryable.
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, true, err
 	}
