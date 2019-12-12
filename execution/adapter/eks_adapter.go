@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -233,6 +234,7 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 	var res []corev1.EnvVar
 	for key := range pairs {
 		if len(key) > 0 {
+			key = a.sanitizeEnvVar(key)
 			res = append(res, corev1.EnvVar{
 				Name:  key,
 				Value: pairs[key],
@@ -240,4 +242,11 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 		}
 	}
 	return res
+}
+
+func (a *eksAdapter) sanitizeEnvVar(key string) string {
+	if strings.HasPrefix(key, "$") {
+		key = strings.Replace(key, "$", "", 1)
+	}
+	return key
 }
