@@ -595,18 +595,22 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	if *run.Engine == state.EKSEngine {
 		if rawText == true {
-			ep.eksLogService.LogsText(vars["run_id"], w)
+			_ = ep.eksLogService.LogsText(vars["run_id"], w)
 		} else {
-			log := fmt.Sprintf("json logs route is not supported for EKS jobs, fetch logs from: /api/v6/%s/logs?raw_text=true", run.RunID)
-
-			if len(lastSeen) > 0 {
-				log = ""
-			}
+			log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
 
 			res := map[string]string{
-				"log":       log,
-				"last_seen": "1",
+				"log":       "",
+				"last_seen": lastSeen,
 			}
+
+			if err == nil {
+				res = map[string]string{
+					"log":       log,
+					"last_seen": *newLastSeen,
+				}
+			}
+
 			ep.encodeResponse(w, res)
 		}
 	}
