@@ -220,13 +220,13 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []corev1.EnvVar {
 	pairs := make(map[string]string)
 	for _, ev := range *definition.Env {
-		name := ev.Name
+		name := a.sanitizeEnvVar(ev.Name)
 		value := ev.Value
 		pairs[name] = value
 	}
 
 	for _, ev := range *run.Env {
-		name := ev.Name
+		name := a.sanitizeEnvVar(ev.Name)
 		value := ev.Value
 		pairs[name] = value
 	}
@@ -234,7 +234,6 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 	var res []corev1.EnvVar
 	for key := range pairs {
 		if len(key) > 0 {
-			key = a.sanitizeEnvVar(key)
 			res = append(res, corev1.EnvVar{
 				Name:  key,
 				Value: pairs[key],
