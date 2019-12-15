@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
@@ -36,6 +39,7 @@ type EKSExecutionEngine struct {
 	jobTtl        int
 	jobSA         string
 	schedulerName string
+	ec2Client     *ec2.EC2
 }
 
 //
@@ -80,6 +84,11 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.kClient = kClient
 	ee.jobSA = conf.GetString("eks.service_account")
 	ee.metricsClient = metricsv.NewForConfigOrDie(clientConf)
+
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(conf.GetString("aws_default_region"))}))
+
+	ee.ec2Client = ec2.New(sess)
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -137,12 +146,36 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.ContainerName = &container.Name
 			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
+			run = ee.getInstanceDetails(pod, run)
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
 	return run, nil
+}
+
+func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) (state.Run) {
+	if len(pod.Spec.NodeName) > 0 {
+		run.InstanceDNSName = pod.Spec.NodeName
+		name := "private-dns-name"
+		r, err := ee.ec2Client.DescribeInstances(&ec2.DescribeInstancesInput{
+			Filters: []*ec2.Filter{{
+				Name:   &name,
+				Values: []*string{&run.InstanceDNSName},
+			}},
+		})
+
+		if err == nil &&
+			r != nil &&
+			len(r.Reservations) > 0 &&
+			len(r.Reservations[0].Instances) > 0 &&
+			r.Reservations[0].Instances[0].InstanceType != nil &&
+			r.Reservations[0].Instances[0].InstanceId != nil {
+			run.InstanceID = *r.Reservations[0].Instances[0].InstanceId
+		}
+	}
+	return run
 }
 
 func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
@@ -348,6 +381,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
+
 			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
 
 			if run.PodName != nil && mostRecentPod.Name != *run.PodName {
@@ -355,7 +389,12 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			}
 
 			run.PodName = &mostRecentPod.Name
+			run = ee.getInstanceDetails(*mostRecentPod, run)
+		}
 
+		// Pod didn't change, but Instance information is not populated.
+		if mostRecentPod != nil && (len(run.InstanceDNSName) == 0 || len(run.InstanceID) == 0) {
+			run = ee.getInstanceDetails(*mostRecentPod, run)
 		}
 
 		if mostRecentPod != nil && mostRecentPod.Spec.Containers != nil && len(mostRecentPod.Spec.Containers) > 0 {

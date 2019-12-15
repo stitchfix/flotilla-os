@@ -50,6 +50,15 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		updated.ExitCode = &exitCode
 	}
 
+	if pod != nil && len(pod.Spec.Containers) > 0 && run.Command == nil {
+		container := pod.Spec.Containers[0]
+		//First three lines are injected by Flotilla, strip those out.
+		if len(container.Command) > 3 {
+			cmd := strings.Join(container.Command[3:], "\n")
+			run.Command = &cmd
+		}
+	}
+
 	if job != nil && job.Status.StartTime != nil {
 		updated.StartedAt = &job.Status.StartTime.Time
 	}
