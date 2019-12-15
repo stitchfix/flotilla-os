@@ -17,6 +17,7 @@ type EKSAdapter interface {
 }
 type eksAdapter struct{}
 
+
 //
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
