@@ -174,9 +174,7 @@ func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) (sta
 			len(r.Reservations[0].Instances) > 0 &&
 			r.Reservations[0].Instances[0].InstanceType != nil &&
 			r.Reservations[0].Instances[0].InstanceId != nil {
-			run.InstanceID = fmt.Sprintf("InstanceId=%s InstanceType=%s",
-				*r.Reservations[0].Instances[0].InstanceId,
-				*r.Reservations[0].Instances[0].InstanceType)
+			run.InstanceID = *r.Reservations[0].Instances[0].InstanceId
 		}
 	}
 	return run
@@ -385,6 +383,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
+
 			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
 
 			if run.PodName != nil && mostRecentPod.Name != *run.PodName {
@@ -392,7 +391,12 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			}
 
 			run.PodName = &mostRecentPod.Name
+			run = ee.getInstanceDetails(*mostRecentPod, run)
+		}
 
+		// Pod didn't change, but Instance information is not populated.
+		if mostRecentPod != nil && (len(run.InstanceDNSName) == 0 || len(run.InstanceID) == 0) {
+			run = ee.getInstanceDetails(*mostRecentPod, run)
 		}
 
 		if mostRecentPod != nil && mostRecentPod.Spec.Containers != nil && len(mostRecentPod.Spec.Containers) > 0 {
