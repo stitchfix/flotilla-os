@@ -86,6 +86,8 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	cmdSlice := a.constructCmdSlice(cmd)
+	cmd = strings.Join(cmdSlice, "\n")
+	run.Command = &cmd
 	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
