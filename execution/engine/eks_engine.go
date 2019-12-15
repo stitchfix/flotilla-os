@@ -146,8 +146,6 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.ContainerName = &container.Name
 			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
-			cmd := strings.Join(container.Command, "\n")
-			run.Command = &cmd
 			run = ee.getInstanceDetails(pod, run)
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
