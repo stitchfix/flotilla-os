@@ -85,13 +85,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		cmd = *run.Command
 	}
 
-	run.Command = &cmd
+	cmdSlice := a.constructCmdSlice(cmd)
 	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
-		Command:   a.constructCmdSlice(cmd),
+		Command:   cmdSlice,
 		Resources: resourceRequirements,
 		Env:       a.envOverrides(definition, run),
 	}
@@ -275,6 +275,16 @@ func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definit
 			mem = *definition.Memory
 		}
 	}
+	// 4. Override for very large memory requests.
+	// Remove after migration.
+	if mem >= 36864 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
+		// using the 8x ratios between cpu and memory ~ r5 class of instances
+		cpuOverride := mem / 8
+		if cpuOverride > cpu {
+			cpu = cpuOverride
+		}
+	}
+
 	return cpu, mem
 }
 
