@@ -50,7 +50,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		updated.ExitCode = &exitCode
 	}
 
-	if pod != nil && len(pod.Spec.Containers) > 0 && run.Command == nil {
+	if pod != nil && len(pod.Spec.Containers) > 0 {
 		container := pod.Spec.Containers[0]
 		//First three lines are injected by Flotilla, strip those out.
 		if len(container.Command) > 3 {
