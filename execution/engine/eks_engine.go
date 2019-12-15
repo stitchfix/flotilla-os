@@ -158,22 +158,6 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) (state.Run) {
 	if len(pod.Spec.NodeName) > 0 {
 		run.InstanceDNSName = pod.Spec.NodeName
-		name := "private-dns-name"
-		r, err := ee.ec2Client.DescribeInstances(&ec2.DescribeInstancesInput{
-			Filters: []*ec2.Filter{{
-				Name:   &name,
-				Values: []*string{&run.InstanceDNSName},
-			}},
-		})
-
-		if err == nil &&
-			r != nil &&
-			len(r.Reservations) > 0 &&
-			len(r.Reservations[0].Instances) > 0 &&
-			r.Reservations[0].Instances[0].InstanceType != nil &&
-			r.Reservations[0].Instances[0].InstanceId != nil {
-			run.InstanceID = *r.Reservations[0].Instances[0].InstanceId
-		}
 	}
 	return run
 }
@@ -393,7 +377,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		}
 
 		// Pod didn't change, but Instance information is not populated.
-		if mostRecentPod != nil && (len(run.InstanceDNSName) == 0 || len(run.InstanceID) == 0) {
+		if mostRecentPod != nil && len(run.InstanceDNSName) == 0 {
 			run = ee.getInstanceDetails(*mostRecentPod, run)
 		}
 
