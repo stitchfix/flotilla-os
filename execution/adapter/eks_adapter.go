@@ -75,7 +75,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 }
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error) {
-	resourceRequirements := a.constructResourceRequirements(definition, run)
+	resourceRequirements, run := a.constructResourceRequirements(definition, run)
 
 	cmd := definition.Command
 	if run.Command != nil {
@@ -129,9 +129,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
-	var matchExpressions []corev1.NodeSelectorRequirement
+	var requiredMatch []corev1.NodeSelectorRequirement
+	var preferredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
+	generalNodeTypes := []string{"m5.large", "m5.2xlarge", "m5.4xlarge", "m5.8xlarge", "m5.16xlarge"}
+	memoryNodeTypes := []string{"r5.4xlarge", "r5.8xlarge"}
 
 	var nodeLifecycle []string
 	if *run.NodeLifecycle == state.OndemandLifecycle {
@@ -141,14 +145,40 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	}
 
 	if definition.Gpu == nil || *definition.Gpu <= 0 {
-		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
+
+		if run.Memory != nil &&
+			run.Cpu != nil &&
+			*run.Cpu > int64(0) &&
+			*run.Memory > int64(0) {
+			cpuMemRatio := float64(*run.Cpu) / float64(*run.Memory)
+			nodeTypes := generalNodeTypes
+			switch {
+			// High cpu - c5
+			case cpuMemRatio >= 0.5:
+				nodeTypes = cpuNodeTypes
+			//	Moderate cpu - m5
+			case cpuMemRatio < 0.5 && cpuMemRatio >= 0.25:
+				nodeTypes = generalNodeTypes
+			//	Low cpu - r5
+			case cpuMemRatio < 0.25 && cpuMemRatio >= 0.125:
+				nodeTypes = memoryNodeTypes
+			}
+
+			preferredMatch = append(preferredMatch, corev1.NodeSelectorRequirement{
+				Key:      "beta.kubernetes.io/instance-type",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   nodeTypes,
+			})
+		}
+
 	}
 
-	matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 		Key:      "kubernetes.io/lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
@@ -159,17 +189,27 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
 				NodeSelectorTerms: []corev1.NodeSelectorTerm{
 					{
-						MatchExpressions: matchExpressions,
+						MatchExpressions: requiredMatch,
 					},
 				},
 			},
 		},
 	}
+	if len(preferredMatch) > 0 {
+		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []corev1.PreferredSchedulingTerm{
+			{
+				Weight: 1,
+				Preference: corev1.NodeSelectorTerm{
+					MatchExpressions: preferredMatch,
+				},
+			},
+		}
+	}
 
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	cpu := *definition.Cpu
 	if run.Cpu != nil {
@@ -216,7 +256,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits: limits,
 	}
-	return resourceRequirements
+	return resourceRequirements, run
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
