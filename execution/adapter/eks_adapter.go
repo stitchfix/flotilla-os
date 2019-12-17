@@ -130,12 +130,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 	var requiredMatch []corev1.NodeSelectorRequirement
-	var preferredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
-	generalNodeTypes := []string{"m5.large", "m5.2xlarge", "m5.4xlarge", "m5.8xlarge", "m5.16xlarge"}
-	memoryNodeTypes := []string{"r5.4xlarge", "r5.8xlarge"}
 
 	var nodeLifecycle []string
 	if *run.NodeLifecycle == state.OndemandLifecycle {
@@ -151,31 +148,19 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			Values:   gpuNodeTypes,
 		})
 
+		//For high cpu jobs - assign to c5 node types.
 		if run.Memory != nil &&
 			run.Cpu != nil &&
 			*run.Cpu > int64(0) &&
-			*run.Memory > int64(0) {
-			cpuMemRatio := float64(*run.Cpu) / float64(*run.Memory)
-			nodeTypes := generalNodeTypes
-			switch {
-			// High cpu - c5
-			case cpuMemRatio >= 0.5:
-				nodeTypes = cpuNodeTypes
-			//	Moderate cpu - m5
-			case cpuMemRatio < 0.5 && cpuMemRatio >= 0.25:
-				nodeTypes = generalNodeTypes
-			//	Low cpu - r5
-			case cpuMemRatio < 0.25 && cpuMemRatio >= 0.125:
-				nodeTypes = memoryNodeTypes
-			}
-
-			preferredMatch = append(preferredMatch, corev1.NodeSelectorRequirement{
-				Key:      "beta.kubernetes.io/instance-type",
-				Operator: corev1.NodeSelectorOpIn,
-				Values:   nodeTypes,
-			})
+			*run.Memory > int64(0) &&
+			float64(*run.Cpu)/float64(*run.Memory) >= 0.5 {
 		}
 
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+			Key:      "beta.kubernetes.io/instance-type",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   cpuNodeTypes,
+		})
 	}
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
@@ -194,16 +179,6 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 				},
 			},
 		},
-	}
-	if len(preferredMatch) > 0 {
-		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []corev1.PreferredSchedulingTerm{
-			{
-				Weight: 1,
-				Preference: corev1.NodeSelectorTerm{
-					MatchExpressions: preferredMatch,
-				},
-			},
-		}
 	}
 
 	return affinity
