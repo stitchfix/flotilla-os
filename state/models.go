@@ -343,6 +343,7 @@ type Run struct {
 	ContainerName    *string    `json:"container_name,omitempty"`
 	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
 	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
+	PodEvents        *PodEvents `json:"pod_events,omitempty"`
 }
 
 //
@@ -501,12 +502,14 @@ type RunList struct {
 	Runs  []Run `json:"history"`
 }
 
-type RunEventList struct {
-	Total     int        `json:"total"`
-	RunEvents []RunEvent `json:"run_events"`
+type PodEvents []PodEvent
+
+type PodEventList struct {
+	Total     int       `json:"total"`
+	PodEvents PodEvents `json:"pod_events"`
 }
 
-type RunEvent struct {
+type PodEvent struct {
 	Timestamp    *time.Time `json:"timestamp,omitempty"`
 	EventType    string     `json:"event_type"`
 	Reason       string     `json:"reason"`

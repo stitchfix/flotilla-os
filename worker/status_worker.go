@@ -95,7 +95,7 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
 		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
 
-		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 5*time.Second).Result()
+		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 15*time.Second).Result()
 		if err != nil {
 			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
 			return

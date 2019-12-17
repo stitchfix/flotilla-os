@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS task (
   pod_name text,
   namespace text,
   max_cpu_used integer,
-  max_memory_used integer
+  max_memory_used integer,
+  pod_events jsonb
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);

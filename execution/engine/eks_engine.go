@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -279,21 +280,20 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	return updates, nil
 }
 
-func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
+func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
 	if run.PodName == nil {
-		return state.RunEventList{}, nil
+		return state.PodEventList{}, nil
 	}
 	eventList, err := ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
 	if err != nil {
-		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
+		return state.PodEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
 
-
 	_ = ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
-	var runEvents []state.RunEvent
+	var podEvents []state.PodEvent
 	for _, e := range eventList.Items {
 		eTime := e.FirstTimestamp.Time
-		runEvent := state.RunEvent{
+		runEvent := state.PodEvent{
 			Message:      e.Message,
 			Timestamp:    &eTime,
 			EventType:    e.Type,
@@ -305,15 +305,15 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 			source := fmt.Sprintf("source:%s", e.ObjectMeta.Name)
 			_ = metrics.Increment(metrics.EngineEKSNodeTriggeredScaledUp, []string{source}, 1)
 		}
-		runEvents = append(runEvents, runEvent)
+		podEvents = append(podEvents, runEvent)
 	}
 
-	runEventList := state.RunEventList{
-		Total:     len(runEvents),
-		RunEvents: runEvents,
+	podEventList := state.PodEventList{
+		Total:     len(podEvents),
+		PodEvents: podEvents,
 	}
 
-	return runEventList, nil
+	return podEventList, nil
 }
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
@@ -389,11 +389,34 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
+
 		}
 	}
 
 	run, _ = ee.FetchPodMetrics(run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
+
+	events, err := ee.GetEvents(run)
+	if err == nil && len(events.PodEvents) > 0 {
+		newEvents := events.PodEvents
+		// Existing run.PodEvents - merge new events.
+		if run.PodEvents != nil && len(*run.PodEvents) > 0 {
+			newEvents = *run.PodEvents
+			for _, event := range newEvents {
+				addEvent := true
+				for _, priorEvent := range *run.PodEvents {
+					if reflect.DeepEqual(priorEvent, event) {
+						addEvent = false
+					}
+				}
+
+				if addEvent {
+					newEvents = append(newEvents, event)
+				}
+			}
+		}
+		run.PodEvents = &newEvents
+	}
 
 	// Handle edge case for dangling jobs.
 	// Run used to have a pod and now it is not there, job is older than 24 hours. Terminate it.

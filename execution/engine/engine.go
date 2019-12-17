@@ -32,7 +32,7 @@ type Engine interface {
 
 	PollStatus() (RunReceipt, error)
 
-	GetEvents(run state.Run) (state.RunEventList, error)
+	GetEvents(run state.Run) (state.PodEventList, error)
 
 	FetchUpdateStatus(run state.Run)(state.Run, error)
 }
