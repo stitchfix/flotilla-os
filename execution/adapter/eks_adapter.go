@@ -75,7 +75,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 }
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string) (batchv1.Job, error) {
-	resourceRequirements := a.constructResourceRequirements(definition, run)
+	resourceRequirements, run := a.constructResourceRequirements(definition, run)
 
 	cmd := definition.Command
 	if run.Command != nil {
@@ -129,9 +129,10 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
-	var matchExpressions []corev1.NodeSelectorRequirement
+	var requiredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
 
 	var nodeLifecycle []string
 	if *run.NodeLifecycle == state.OndemandLifecycle {
@@ -141,14 +142,28 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	}
 
 	if definition.Gpu == nil || *definition.Gpu <= 0 {
-		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
+
+		//For high cpu jobs - assign to c5 node types.
+		if run.Memory != nil &&
+			run.Cpu != nil &&
+			*run.Cpu > int64(0) &&
+			*run.Memory > int64(0) &&
+			float64(*run.Cpu)/float64(*run.Memory) >= 0.5 {
+		}
+
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+			Key:      "beta.kubernetes.io/instance-type",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   cpuNodeTypes,
+		})
 	}
 
-	matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 		Key:      "kubernetes.io/lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
@@ -159,7 +174,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
 				NodeSelectorTerms: []corev1.NodeSelectorTerm{
 					{
-						MatchExpressions: matchExpressions,
+						MatchExpressions: requiredMatch,
 					},
 				},
 			},
@@ -169,7 +184,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	cpu := *definition.Cpu
 	if run.Cpu != nil {
@@ -216,7 +231,7 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits: limits,
 	}
-	return resourceRequirements
+	return resourceRequirements, run
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
