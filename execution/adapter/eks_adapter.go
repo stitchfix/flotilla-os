@@ -154,13 +154,13 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			*run.Cpu > int64(0) &&
 			*run.Memory > int64(0) &&
 			float64(*run.Cpu)/float64(*run.Memory) >= 0.5 {
+			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+				Key:      "beta.kubernetes.io/instance-type",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   cpuNodeTypes,
+			})
 		}
 
-		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: corev1.NodeSelectorOpIn,
-			Values:   cpuNodeTypes,
-		})
 	}
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{

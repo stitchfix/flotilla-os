@@ -288,6 +288,7 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
 
+
 	_ = ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
 	var runEvents []state.RunEvent
 	for _, e := range eventList.Items {
