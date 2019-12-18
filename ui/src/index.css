@@ -121,6 +121,7 @@ body {
   color: #adbecc;
   flex: 1;
   font-size: 0.85rem;
+  word-wrap: break-word;
 }
 
 /**
