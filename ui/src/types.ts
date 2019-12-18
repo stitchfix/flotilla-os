@@ -217,7 +217,7 @@ export type LogChunk = {
   lastSeen?: string
 }
 
-export type RunEvent = {
+export type PodEvent = {
   timestamp: string
   event_type: string
   reason: string
@@ -227,7 +227,7 @@ export type RunEvent = {
 
 export type ListRunEventsResponse = {
   total: number
-  run_events: RunEvent[] | null
+  pod_events: PodEvent[] | null
 }
 
 export enum RunTabId {

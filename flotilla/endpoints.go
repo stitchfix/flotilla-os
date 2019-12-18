@@ -536,16 +536,13 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, err)
 		return
 	}
-
+	var podEventList state.PodEventList
 	if *run.Engine == state.EKSEngine {
-		events, err := ep.executionService.GetEvents(run)
-
-		if err != nil {
-			_ = ep.logger.Log("message", "problem getting events")
-			ep.encodeError(w, err)
-			return
+		if run.PodEvents != nil {
+			podEventList.Total = len(*run.PodEvents)
+			podEventList.PodEvents = *run.PodEvents
 		}
-		ep.encodeResponse(w, events)
+		ep.encodeResponse(w, podEventList)
 	}
 }
 
