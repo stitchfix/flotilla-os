@@ -362,9 +362,9 @@ const Connected: React.FunctionComponent<RouteComponentProps<{
         {props => (
           <>
             <Helmet>
-              <meta property="twitter:label1" content="Run Status" />
+              <meta name="twitter:label1" content="Run Status" />
               <meta
-                property="twitter:data1"
+                name="twitter:data1"
                 content={get(props, ["data", "status"], "")}
               />
             </Helmet>
