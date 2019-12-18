@@ -88,7 +88,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice, "\n")
 	run.Command = &cmd
-	resourceRequirements := a.constructResourceRequirements(definition, run, manager)
+	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
 		Name:      run.RunID,
@@ -192,7 +192,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) corev1.ResourceRequirements {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	cpu, mem := a.adaptiveResources(definition, run, manager)
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
