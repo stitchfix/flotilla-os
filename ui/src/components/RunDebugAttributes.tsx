@@ -35,6 +35,9 @@ const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
           }
         />
       )}
+      {data.instance.dns_name && (
+        <Attribute name="Instance DNS Name" value={data.instance.dns_name} />
+      )}
     </div>
   </Card>
 )

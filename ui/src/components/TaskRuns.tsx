@@ -9,6 +9,7 @@ import {
   SortOrder,
   Run,
   RunStatus,
+  ExecutionEngine,
 } from "../types"
 import pageToOffsetLimit from "../helpers/pageToOffsetLimit"
 import Table from "./Table"
@@ -120,7 +121,8 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             },
             cluster: {
               displayName: "Cluster",
-              render: (r: Run) => r.cluster,
+              render: (r: Run) =>
+                r.engine === ExecutionEngine.EKS ? "-" : r.cluster,
               isSortable: false,
             },
           }}

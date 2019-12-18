@@ -1,7 +1,7 @@
 import * as React from "react"
 import { isNumber } from "lodash"
 import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
-import { Run } from "../types"
+import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 
@@ -50,7 +50,9 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       style={{ marginBottom: 12 }}
     >
       <Attribute name="Engine Type" value={<Tag>{data.engine}</Tag>} />
-      <Attribute name="Cluster" value={data.cluster} />
+      {data.engine !== ExecutionEngine.EKS && (
+        <Attribute name="Cluster" value={data.cluster} />
+      )}
       <Attribute
         name="Node Lifecycle"
         value={<Tag>{data.node_lifecycle || "-"}</Tag>}
