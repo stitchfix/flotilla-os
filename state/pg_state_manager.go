@@ -184,7 +184,6 @@ func (sm *SQLStateManager) ListDefinitions(
 		return result, errors.Wrap(err, "issue running list definitions count sql")
 	}
 
-
 	return result, nil
 }
 
@@ -518,7 +517,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
 			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
 			&existing.Cpu, &existing.Gpu, &existing.Engine, &existing.EphemeralStorage, &existing.NodeLifecycle,
-			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed)
+			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed, &existing.PodEvents)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -538,7 +537,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       instance_dns_name = $14,
 	  group_name = $15, env = $16,
 	  command = $17, memory = $18, cpu = $19, gpu = $20, engine = $21, ephemeral_storage = $22, node_lifecycle = $23,
-	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28
+	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29
     WHERE run_id = $1;
     `
 
@@ -554,7 +553,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Env, existing.Command,
 		existing.Memory, existing.Cpu, existing.Gpu,
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
-		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed, existing.MaxMemoryUsed); err != nil {
+		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed,
+		existing.MaxMemoryUsed, existing.PodEvents); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -576,11 +576,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
       env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
-      container_name, pod_name, namespace, max_cpu_used, max_memory_used
+      container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28
-    );
+      $24, $25, $26, $27, $28, $29);
     `
 
 	tx, err := sm.db.Begin()
@@ -595,7 +594,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.InstanceID, r.InstanceDNSName, r.GroupName,
 		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle, r.EphemeralStorage,
-		r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed, r.MaxMemoryUsed); err != nil {
+		r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed, r.MaxMemoryUsed, r.PodEvents); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -757,7 +756,7 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 		existing Worker
 	)
 
-	engine:= DefaultEngine
+	engine := DefaultEngine
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -861,6 +860,21 @@ func (e *EnvList) Scan(value interface{}) error {
 
 // Value to db
 func (e EnvList) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+// Scan from db
+func (e *PodEvents) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
+// Value to db
+func (e PodEvents) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }

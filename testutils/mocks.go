@@ -268,12 +268,12 @@ func (iatt *ImplementsAllTheThings) List() ([]string, error) {
 	return res, nil
 }
 
-func (iatt *ImplementsAllTheThings) GetEvents(run state.Run) (state.RunEventList, error) {
+func (iatt *ImplementsAllTheThings) GetEvents(run state.Run) (state.PodEventList, error) {
 	iatt.Calls = append(iatt.Calls, "GetEvents")
 
-	return state.RunEventList{
+	return state.PodEventList{
 		Total:     0,
-		RunEvents: nil,
+		PodEvents: nil,
 	}, nil
 }
 

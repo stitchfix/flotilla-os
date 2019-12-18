@@ -343,6 +343,7 @@ type Run struct {
 	ContainerName    *string    `json:"container_name,omitempty"`
 	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
 	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
+	PodEvents        *PodEvents `json:"pod_events,omitempty"`
 }
 
 //
@@ -450,6 +451,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.Namespace = other.Namespace
 	}
 
+	if other.PodEvents != nil {
+		d.PodEvents = other.PodEvents
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
@@ -484,12 +489,19 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		"instance_id": r.InstanceID,
 		"dns_name":    r.InstanceDNSName,
 	}
+	podEvents := r.PodEvents
+	if podEvents == nil {
+		podEvents = &PodEvents{}
+	}
+
 	return json.Marshal(&struct {
-		Instance map[string]string `json:"instance"`
+		Instance  map[string]string `json:"instance"`
+		PodEvents *PodEvents        `json:"pod_events"`
 		Alias
 	}{
-		Instance: instance,
-		Alias:    (Alias)(r),
+		Instance:  instance,
+		PodEvents: podEvents,
+		Alias:     (Alias)(r),
 	})
 }
 
@@ -501,12 +513,23 @@ type RunList struct {
 	Runs  []Run `json:"history"`
 }
 
-type RunEventList struct {
-	Total     int        `json:"total"`
-	RunEvents []RunEvent `json:"run_events"`
+type PodEvents []PodEvent
+
+type PodEventList struct {
+	Total     int       `json:"total"`
+	PodEvents PodEvents `json:"pod_events"`
 }
 
-type RunEvent struct {
+func (w *PodEvent) Equal(other PodEvent) bool {
+	return w.Reason == other.Reason &&
+		other.Timestamp != nil &&
+		w.Timestamp.Equal(*other.Timestamp) &&
+		w.SourceObject == other.SourceObject &&
+		w.Message == other.Message &&
+		w.EventType == other.EventType
+}
+
+type PodEvent struct {
 	Timestamp    *time.Time `json:"timestamp,omitempty"`
 	EventType    string     `json:"event_type"`
 	Reason       string     `json:"reason"`

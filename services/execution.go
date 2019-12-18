@@ -35,7 +35,7 @@ type ExecutionService interface {
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
-	GetEvents(run state.Run) (state.RunEventList, error)
+	GetEvents(run state.Run) (state.PodEventList, error)
 }
 
 type executionService struct {
@@ -51,7 +51,7 @@ type executionService struct {
 	clusterOndemandWhitelist []string
 }
 
-func (es *executionService) GetEvents(run state.Run) (state.RunEventList, error) {
+func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
 	return es.eksExecutionEngine.GetEvents(run)
 }
 

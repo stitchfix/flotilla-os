@@ -42,11 +42,11 @@ const RunEvents: React.FC<Props> = ({ runID, status, hasLogs }) => (
                   </Button>
                 </Callout>
               )
-              if (data && data.run_events !== null) {
+              if (data && data.pod_events !== null) {
                 return (
                   <>
                     <div>
-                      {data.run_events.map(evt => (
+                      {data.pod_events.map(evt => (
                         <Card style={{ marginBottom: 12 }}>
                           <div className="flotilla-card-header-container">
                             <div className="flotilla-card-header">

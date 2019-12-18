@@ -55,7 +55,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		//First three lines are injected by Flotilla, strip those out.
 		if len(container.Command) > 3 {
 			cmd := strings.Join(container.Command[3:], "\n")
-			run.Command = &cmd
+			updated.Command = &cmd
 		}
 	}
 

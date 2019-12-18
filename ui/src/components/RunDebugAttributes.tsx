@@ -6,7 +6,7 @@ import Attribute from "./Attribute"
 
 const createS3LogsUrl = (runID: string): string => {
   const prefix = process.env.REACT_APP_S3_LOGS_BUCKET_PREFIX || ""
-  return urljoin(prefix, runID)
+  return urljoin(prefix, runID, "/")
 }
 
 const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (

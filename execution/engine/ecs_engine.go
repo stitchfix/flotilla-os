@@ -409,8 +409,8 @@ func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {
 	return ee.adapter.AdaptTask(task)
 }
 
-func (ee *ECSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
-	return state.RunEventList{}, nil
+func (ee *ECSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
+	return state.PodEventList{}, nil
 }
 func (ee *ECSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	return run, nil
