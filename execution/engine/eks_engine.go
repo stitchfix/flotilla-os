@@ -21,7 +21,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -394,26 +393,35 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	}
 
 	run, _ = ee.FetchPodMetrics(run)
-		hoursBack := time.Now().Add(-24 * time.Hour)
+	hoursBack := time.Now().Add(-24 * time.Hour)
 
 	events, err := ee.GetEvents(run)
+
 	if err == nil && len(events.PodEvents) > 0 {
+		newEvents := events.PodEvents
 		if run.PodEvents != nil && len(*run.PodEvents) > 0 {
-			newEvents := *run.PodEvents
-			for _, event := range events.PodEvents {
-				addEvent := true
-				for _, priorEvent := range newEvents {
-					if reflect.DeepEqual(priorEvent, event) {
-						addEvent = false
+			priorEvents := *run.PodEvents
+			for _, newEvent := range newEvents {
+				unseen := true
+				for _, priorEvent := range priorEvents {
+					if newEvent.Reason == priorEvent.Reason &&
+						priorEvent.Timestamp != nil &&
+						newEvent.Timestamp.Equal(*priorEvent.Timestamp) &&
+						newEvent.SourceObject == priorEvent.SourceObject &&
+						newEvent.Message == priorEvent.Message &&
+						newEvent.EventType == priorEvent.EventType {
+
+						unseen = false
+						break
 					}
 				}
-				if addEvent {
-					newEvents = append(newEvents, event)
+				if unseen {
+					priorEvents = append(priorEvents, newEvent)
 				}
 			}
-			run.PodEvents = &newEvents
+			run.PodEvents = &priorEvents
 		} else {
-			run.PodEvents = &events.PodEvents
+			run.PodEvents = &newEvents
 		}
 	}
 

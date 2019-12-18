@@ -451,6 +451,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.Namespace = other.Namespace
 	}
 
+	if other.PodEvents != nil {
+		d.PodEvents = other.PodEvents
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//

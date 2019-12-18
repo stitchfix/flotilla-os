@@ -498,9 +498,6 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		err      error
 		existing Run
 	)
-	if updates.PodEvents != nil {
-		fmt.Println("XXXX", len(*updates.PodEvents))
-	}
 
 	tx, err := sm.db.Begin()
 	if err != nil {
@@ -869,23 +866,11 @@ func (e EnvList) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *PodEvents) Scan(value interface{}) error {
-	fmt.Println("HERE")
-	switch v := value.(type) {
-	case []byte:
-		json.Unmarshal(v, &e)
-		return nil
-	case string:
-		json.Unmarshal([]byte(v), &e)
-		return nil
-	case *time.Time:
-		json.Unmarshal([]byte(v.String()), &e)
-		return nil
-	default:
+	if value != nil {
 		s := []byte(value.(string))
 		json.Unmarshal(s, &e)
-		return nil
 	}
-
+	return nil
 }
 
 // Value to db
