@@ -17,9 +17,13 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
-var MinCPU = int64(125)
+var MinCPU = int64(128)
 
-var MinMem = int64(125)
+var MaxCPU = int64(32000)
+
+var MinMem = int64(64)
+
+var MaxMem = int64(124000)
 
 var TTLSecondsAfterFinished = int32(3600)
 
@@ -135,23 +139,24 @@ type Tags []string
 // - roughly 1-1 with an AWS ECS task definition
 //
 type Definition struct {
-	Arn              string     `json:"arn"`
-	DefinitionID     string     `json:"definition_id"`
-	Image            string     `json:"image"`
-	GroupName        string     `json:"group_name"`
-	ContainerName    string     `json:"container_name"`
-	User             string     `json:"user,omitempty"`
-	Alias            string     `json:"alias"`
-	Memory           *int64     `json:"memory"`
-	Gpu              *int64     `json:"gpu,omitempty"`
-	Cpu              *int64     `json:"cpu,omitempty"`
-	Command          string     `json:"command,omitempty"`
-	TaskType         string     `json:"-"`
-	Env              *EnvList   `json:"env"`
-	Ports            *PortsList `json:"ports,omitempty"`
-	Tags             *Tags      `json:"tags,omitempty"`
-	Privileged       *bool      `json:"privileged,omitempty"`
-	SharedMemorySize *int64     `json:"sharedMemorySize,omitempty"`
+	Arn                        string     `json:"arn"`
+	DefinitionID               string     `json:"definition_id"`
+	Image                      string     `json:"image"`
+	GroupName                  string     `json:"group_name"`
+	ContainerName              string     `json:"container_name"`
+	User                       string     `json:"user,omitempty"`
+	Alias                      string     `json:"alias"`
+	Memory                     *int64     `json:"memory"`
+	Gpu                        *int64     `json:"gpu,omitempty"`
+	Cpu                        *int64     `json:"cpu,omitempty"`
+	Command                    string     `json:"command,omitempty"`
+	TaskType                   string     `json:"-"`
+	Env                        *EnvList   `json:"env"`
+	Ports                      *PortsList `json:"ports,omitempty"`
+	Tags                       *Tags      `json:"tags,omitempty"`
+	Privileged                 *bool      `json:"privileged,omitempty"`
+	SharedMemorySize           *int64     `json:"sharedMemorySize,omitempty"`
+	AdaptiveResourceAllocation *bool      `json:"adaptiveResourceAllocation,omitempty"`
 }
 
 var commandWrapper = `
@@ -240,6 +245,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
+	}
+	if other.AdaptiveResourceAllocation != nil {
+		d.AdaptiveResourceAllocation = other.AdaptiveResourceAllocation
 	}
 	if len(other.Command) > 0 {
 		d.Command = other.Command
@@ -582,4 +590,9 @@ type WorkersList struct {
 type UserInfo struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type TaskResources struct {
+	Cpu    int64 `json:"cpu"`
+	Memory int64 `json:"memory"`
 }

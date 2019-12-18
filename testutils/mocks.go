@@ -151,6 +151,11 @@ func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 	return nil
 }
 
+func (iatt *ImplementsAllTheThings) EstimateRunResources(definitionID string, command string) (state.TaskResources, error) {
+	iatt.Calls = append(iatt.Calls, "EstimateRunResources")
+	return state.TaskResources{}, nil
+}
+
 // UpdateRun - StateManager
 func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")
@@ -350,7 +355,7 @@ func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
 }
 
 // Execute - Execution Engine
-func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run) (state.Run, bool, error) {
+func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	iatt.Calls = append(iatt.Calls, "Execute")
 	return state.Run{}, iatt.ExecuteErrorIsRetryable, iatt.ExecuteError
 }

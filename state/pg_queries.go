@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS task_def (
   container_name character varying NOT NULL,
   task_type character varying,
   privileged boolean,
+  adaptive_resource_allocation boolean,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );
@@ -138,6 +139,7 @@ const DefinitionSelect = `
 select
   coalesce(td.arn,'')       as arn,
   td.definition_id          as definitionid,
+  td.adaptive_resource_allocation as adaptiveresourceallocation,
   td.image                  as image,
   td.group_name             as groupname,
   td.container_name         as containername,
@@ -179,6 +181,16 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 // GetDefinitionByAliasSQL get definition by alias
 //
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
+
+const TaskResourcesSelectSQL = `
+SELECT (percentile_disc(0.95) within GROUP (ORDER BY max_memory_used) * 1.125)::numeric::integer as memory,
+       (percentile_disc(0.95) within GROUP (ORDER BY max_cpu_used) * 1.05)::numeric::integer   as cpu
+FROM TASK
+WHERE definition_id = $1
+  AND exit_code = 0
+  AND engine = 'eks'`
+
+const TaskResourcesSelectCommandSQL = TaskResourcesSelectSQL + "\n  AND command = $2"
 
 //
 // RunSelect postgres specific query for runs
@@ -277,7 +289,6 @@ const WorkerSelect = `
 const ListWorkersSQL = WorkerSelect
 
 const GetWorkerEngine = WorkerSelect + "\nwhere engine = $1"
-
 
 //
 // GetWorkerSQL postgres specific query for retrieving data for a specific

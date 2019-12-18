@@ -100,8 +100,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName)
+func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager)
 
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
@@ -155,7 +155,7 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	return run, nil
 }
 
-func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) (state.Run) {
+func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) state.Run {
 	if len(pod.Spec.NodeName) > 0 {
 		run.InstanceDNSName = pod.Spec.NodeName
 	}

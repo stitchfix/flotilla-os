@@ -29,7 +29,7 @@ func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee eng
 	wm.ee = ee
 	wm.sm = sm
 	wm.pollInterval = pollInterval
-    wm.engine = engine
+	wm.engine = engine
 	if err := wm.InitializeWorkers(); err != nil {
 		return errors.Errorf("WorkerManager unable to initialize workers. engine %s", *wm.engine)
 	}

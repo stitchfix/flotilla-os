@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 
@@ -35,18 +34,16 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	hostname, err := os.Hostname()
-	if err != nil {
-		sw.workerId = fmt.Sprintf("%s-%d", hostname, rand.Int())
-	} else {
-		sw.workerId = fmt.Sprintf("%d", rand.Int())
-	}
-
-	if *sw.engine == state.EKSEngine {
-		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db"),})
-	}
+	sw.workerId = fmt.Sprintf("%d", rand.Int())
+	sw.setupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
+}
+
+func (sw *statusWorker) setupRedisClient(conf config.Config) {
+	if *sw.engine == state.EKSEngine {
+		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
+	}
 }
 
 func (sw *statusWorker) GetTomb() *tomb.Tomb {
@@ -93,8 +90,6 @@ func (sw *statusWorker) runOnceEKS() {
 
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
-		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
-
 		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 20*time.Second).Result()
 		if err != nil {
 			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
@@ -102,6 +97,7 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 		}
 
 		if set == true {
+			//_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
 			sw.processRun(run)
 		}
 	}

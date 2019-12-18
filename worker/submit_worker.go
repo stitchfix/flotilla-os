@@ -29,7 +29,7 @@ func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db"),})
+	sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
 	_ = sw.log.Log("message", "initialized a submit worker", "engine", *engine)
 	return nil
 }
@@ -103,7 +103,7 @@ func (sw *submitWorker) runOnce() {
 			// Execute the run using the execution engine
 			//
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
-			launched, retryable, err := sw.ee.Execute(definition, run)
+			launched, retryable, err := sw.ee.Execute(definition, run, sw.sm)
 			if err != nil {
 				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {

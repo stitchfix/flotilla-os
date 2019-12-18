@@ -201,11 +201,11 @@ func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.Ru
 	}
 
 	rti := ecs.RunTaskInput{
-		Cluster:              &run.ClusterName,
-		Count:                &n,
-		StartedBy:            aws.String("flotilla"),
-		TaskDefinition:       &definition.Arn,
-		Overrides:            &overrides,
+		Cluster:        &run.ClusterName,
+		Count:          &n,
+		StartedBy:      aws.String("flotilla"),
+		TaskDefinition: &definition.Arn,
+		Overrides:      &overrides,
 	}
 
 	return rti

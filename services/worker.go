@@ -14,7 +14,7 @@ type WorkerService interface {
 	List(engine string) (state.WorkersList, error)
 	Get(workerType string, engine string) (state.Worker, error)
 	Update(workerType string, updates state.Worker) (state.Worker, error)
-	BatchUpdate(updates []state.Worker, ) (state.WorkersList, error)
+	BatchUpdate(updates []state.Worker) (state.WorkersList, error)
 }
 
 type workerService struct {
