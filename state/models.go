@@ -520,6 +520,15 @@ type PodEventList struct {
 	PodEvents PodEvents `json:"pod_events"`
 }
 
+func (w *PodEvent) Equal(other PodEvent) bool {
+	return w.Reason == other.Reason &&
+		other.Timestamp != nil &&
+		w.Timestamp.Equal(*other.Timestamp) &&
+		w.SourceObject == other.SourceObject &&
+		w.Message == other.Message &&
+		w.EventType == other.EventType
+}
+
 type PodEvent struct {
 	Timestamp    *time.Time `json:"timestamp,omitempty"`
 	EventType    string     `json:"event_type"`

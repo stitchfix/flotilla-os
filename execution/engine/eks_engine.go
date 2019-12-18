@@ -404,13 +404,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			for _, newEvent := range newEvents {
 				unseen := true
 				for _, priorEvent := range priorEvents {
-					if newEvent.Reason == priorEvent.Reason &&
-						priorEvent.Timestamp != nil &&
-						newEvent.Timestamp.Equal(*priorEvent.Timestamp) &&
-						newEvent.SourceObject == priorEvent.SourceObject &&
-						newEvent.Message == priorEvent.Message &&
-						newEvent.EventType == priorEvent.EventType {
-
+					if priorEvent.Equal(newEvent) {
 						unseen = false
 						break
 					}
