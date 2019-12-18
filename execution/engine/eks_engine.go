@@ -155,7 +155,7 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	return run, nil
 }
 
-func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) (state.Run) {
+func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) state.Run {
 	if len(pod.Spec.NodeName) > 0 {
 		run.InstanceDNSName = pod.Spec.NodeName
 	}

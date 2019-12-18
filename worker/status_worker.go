@@ -42,7 +42,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 
 func (sw *statusWorker) setupRedisClient(conf config.Config) {
 	if *sw.engine == state.EKSEngine {
-		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db"),})
+		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
 	}
 }
 

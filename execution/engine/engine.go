@@ -34,7 +34,7 @@ type Engine interface {
 
 	GetEvents(run state.Run) (state.PodEventList, error)
 
-	FetchUpdateStatus(run state.Run)(state.Run, error)
+	FetchUpdateStatus(run state.Run) (state.Run, error)
 }
 
 type RunReceipt struct {

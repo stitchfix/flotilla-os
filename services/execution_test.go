@@ -114,7 +114,6 @@ func TestExecutionService_Create(t *testing.T) {
 		}
 	}
 
-
 	includesExpected := false
 	for _, e := range *run.Env {
 		if e.Name == "K1" && e.Value == "V1" {

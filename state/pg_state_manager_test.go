@@ -10,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
-
 )
 
 func getDB(conf config.Config) *sqlx.DB {
@@ -552,7 +551,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		},
 		Command: &cmd,
 		Memory:  &mem,
-		Engine: &DefaultEngine,
+		Engine:  &DefaultEngine,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
