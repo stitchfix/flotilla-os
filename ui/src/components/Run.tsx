@@ -37,6 +37,7 @@ import Duration from "./Duration"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import ErrorCallout from "./ErrorCallout"
 import RunDebugAttributes from "./RunDebugAttributes"
+import Helmet from "react-helmet"
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
@@ -359,12 +360,21 @@ const Connected: React.FunctionComponent<RouteComponentProps<{
         initialRequestArgs={{ runID: match.params.runID }}
       >
         {props => (
-          <Run
-            {...props}
-            runID={match.params.runID}
-            query={query}
-            setQuery={setQuery}
-          />
+          <>
+            <Helmet>
+              <meta property="twitter:label1" content="Run Status" />
+              <meta
+                property="twitter:data1"
+                content={get(props, ["data", "status"], "")}
+              />
+            </Helmet>
+            <Run
+              {...props}
+              runID={match.params.runID}
+              query={query}
+              setQuery={setQuery}
+            />
+          </>
         )}
       </Request>
     )}
