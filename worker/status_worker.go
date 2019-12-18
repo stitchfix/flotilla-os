@@ -95,12 +95,13 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
 		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
 
-		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 15*time.Second).Result()
-		if err != nil {
-			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
-			return
-		}
+		//set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 15*time.Second).Result()
+		//if err != nil {
+		//	_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		//	return
+		//}
 
+		set := true
 		if set == true {
 			sw.processRun(run)
 		}
@@ -129,6 +130,8 @@ func (sw *statusWorker) processRun(run state.Run) {
 		}
 
 	} else {
+		// TODO Remove - line below
+		_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 		if run.Status != updatedRun.Status {
 			_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)

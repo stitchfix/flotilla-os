@@ -214,7 +214,8 @@ select
   pod_name as podname,
   namespace,
   max_cpu_used as maxcpuused,
-  max_memory_used as maxmemoryused
+  max_memory_used as maxmemoryused,
+  pod_events::TEXT as podevents
 from task t
 `
 

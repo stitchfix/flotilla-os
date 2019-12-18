@@ -394,28 +394,27 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	}
 
 	run, _ = ee.FetchPodMetrics(run)
-	hoursBack := time.Now().Add(-24 * time.Hour)
+		hoursBack := time.Now().Add(-24 * time.Hour)
 
 	events, err := ee.GetEvents(run)
 	if err == nil && len(events.PodEvents) > 0 {
-		newEvents := events.PodEvents
-		// Existing run.PodEvents - merge new events.
 		if run.PodEvents != nil && len(*run.PodEvents) > 0 {
-			newEvents = *run.PodEvents
-			for _, event := range newEvents {
+			newEvents := *run.PodEvents
+			for _, event := range events.PodEvents {
 				addEvent := true
-				for _, priorEvent := range *run.PodEvents {
+				for _, priorEvent := range newEvents {
 					if reflect.DeepEqual(priorEvent, event) {
 						addEvent = false
 					}
 				}
-
 				if addEvent {
 					newEvents = append(newEvents, event)
 				}
 			}
+			run.PodEvents = &newEvents
+		} else {
+			run.PodEvents = &events.PodEvents
 		}
-		run.PodEvents = &newEvents
 	}
 
 	// Handle edge case for dangling jobs.

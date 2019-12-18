@@ -485,12 +485,19 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		"instance_id": r.InstanceID,
 		"dns_name":    r.InstanceDNSName,
 	}
+	podEvents := r.PodEvents
+	if podEvents == nil {
+		podEvents = &PodEvents{}
+	}
+
 	return json.Marshal(&struct {
-		Instance map[string]string `json:"instance"`
+		Instance  map[string]string `json:"instance"`
+		PodEvents *PodEvents        `json:"pod_events"`
 		Alias
 	}{
-		Instance: instance,
-		Alias:    (Alias)(r),
+		Instance:  instance,
+		PodEvents: podEvents,
+		Alias:     (Alias)(r),
 	})
 }
 
