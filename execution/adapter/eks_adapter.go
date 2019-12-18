@@ -74,7 +74,6 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
 	cmd := ""
 	if len(definition.Command) > 0 {
@@ -86,7 +85,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	cmdSlice := a.constructCmdSlice(cmd)
-	cmd = strings.Join(cmdSlice, "\n")
+	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
 	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
 
