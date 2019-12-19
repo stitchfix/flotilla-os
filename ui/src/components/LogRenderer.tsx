@@ -17,7 +17,6 @@ type Props = {
   isLoading: boolean
   height: number
   shouldAutoscroll: boolean
-  totalLogLength: number
 }
 
 class LogRenderer extends React.Component<Props> {
@@ -57,23 +56,16 @@ class LogRenderer extends React.Component<Props> {
     if (prev.logs.length !== next.logs.length) return true
 
     // Handle S3 logs (there will only be one chunk).
-    if (
-      prev.logs.length === 1 &&
-      next.logs.length === 1 &&
-      prev.logs[0].chunk.length !== next.logs[0].chunk.length
-    )
-      return true
+    // if (
+    //   prev.logs.length === 1 &&
+    //   next.logs.length === 1 &&
+    //   prev.logs[0].chunk.length !== next.logs[0].chunk.length
+    // )
+    //   return true
   }
 
   render() {
-    const {
-      logs,
-      height,
-      hasRunFinished,
-      isLoading,
-      totalLogLength,
-    } = this.props
-    const { logPage } = this.state
+    const { logs, height, hasRunFinished, isLoading } = this.props
 
     let loader = <Tag>END OF LOGS</Tag>
 
@@ -83,26 +75,15 @@ class LogRenderer extends React.Component<Props> {
 
     return (
       <div>
-        <ButtonGroup>
-          {Array.from(Array(logs.length).keys()).map((_, i) => (
-            <Button
-              onClick={() => {
-                this.setState({ logPage: i })
-              }}
-            >
-              Page: {i}
-            </Button>
-          ))}
-        </ButtonGroup>
         <div
           ref={this.CONTAINER_DIV}
           className="flotilla-logs-container"
           style={{ height }}
         >
           <Pre className={`flotilla-pre ${Classes.DARK}`}>
-            <Ansi linkify={false} className="flotilla-ansi">
+            {/* <Ansi linkify={false} className="flotilla-ansi">
               {logs[logPage]}
-            </Ansi>
+            </Ansi> */}
             <span
               style={{
                 display: "flex",

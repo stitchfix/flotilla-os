@@ -1,25 +1,21 @@
 import * as React from "react"
 import { FixedSizeList as List } from "react-window"
-import { get } from "lodash"
 import LogRow from "./LogRow"
 
-interface ILogRendererProps {
+type Props = {
   len: number
   width: number
   height: number
   logs: string[]
 }
 
-interface ILogRendererState {
+type State = {
   shouldAutoscroll: boolean
 }
 
 /** Renders the processed logs using react-window for performance. */
-class LogRenderer extends React.PureComponent<
-  ILogRendererProps,
-  ILogRendererState
-> {
-  static defaultProps: Partial<ILogRendererProps> = {
+class LogRendererOptimized extends React.PureComponent<Props, State> {
+  static defaultProps: Partial<Props> = {
     height: 0,
     len: 0,
     logs: [],
@@ -39,7 +35,7 @@ class LogRenderer extends React.PureComponent<
     }
   }
 
-  componentDidUpdate(prevProps: ILogRendererProps) {
+  componentDidUpdate(prevProps: Props) {
     if (
       this.state.shouldAutoscroll === true &&
       prevProps.len !== this.props.len
@@ -50,10 +46,6 @@ class LogRenderer extends React.PureComponent<
         listRef.scrollToItem(this.props.len)
       }
     }
-  }
-
-  toggleShouldAutoscroll = (): void => {
-    this.setState(prev => ({ shouldAutoscroll: !prev.shouldAutoscroll }))
   }
 
   handleScrollToTopClick = (): void => {
@@ -76,11 +68,11 @@ class LogRenderer extends React.PureComponent<
     return (
       <List
         ref={this.LIST_REF}
-        height={height}
-        itemCount={len}
+        height={500}
+        itemCount={logs.length}
         itemData={logs}
-        itemSize={20}
-        width={width}
+        itemSize={24}
+        width={500}
         overscanCount={100}
         // style={{ marginTop: RUN_BAR_HEIGHT_PX }}
       >
@@ -90,4 +82,4 @@ class LogRenderer extends React.PureComponent<
   }
 }
 
-export default LogRenderer
+export default LogRendererOptimized

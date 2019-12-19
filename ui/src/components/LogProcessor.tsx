@@ -1,26 +1,22 @@
 import * as React from "react"
 import ReactResizeDetector from "react-resize-detector"
 import { isEmpty, round } from "lodash"
-import {
-  NAVIGATION_HEIGHT_PX,
-  DETAIL_VIEW_SIDEBAR_WIDTH_PX,
-} from "../../helpers/styles"
-import LogRenderer from "./LogRenderer"
-import { IFlotillaUILogChunk } from "../../types"
-
-type Props = ConnectedProps & {
-  logs: IFlotillaUILogChunk[]
-}
+import LogRendererOptimized from "./LogRendererOptimized"
+import { LogChunk } from "../types"
 
 type ConnectedProps = {
+  logs: LogChunk[]
+}
+
+type Props = ConnectedProps & {
   width: number
   height: number
 }
 
 /**
- * The intermediate component between LogRequester and LogRenderer. This
- * component is responsible for slicing the logs into smaller pieces, each of
- * which will be rendered into a LowRow component.
+ * The intermediate component between LogRequester and LogRendererOptimized.
+ * This component is responsible for slicing the logs into smaller pieces, each
+ * of which will be rendered into a LowRow component.
  */
 class LogProcessor extends React.PureComponent<Props> {
   static HACKY_CHAR_TO_PIXEL_RATIO = 37 / 300
@@ -34,7 +30,7 @@ class LogProcessor extends React.PureComponent<Props> {
   /**
    * Takes the `logs` prop (an array of LogChunk objects), splits each
    * LogChunk's log string according to the available width, and flattens it to
-   * an array of strings, which it then passes to LogRenderer to render.
+   * an array of strings, which it then passes to LogRendererOptimized to render.
    */
   processLogs = (): string[] => {
     const { logs } = this.props
@@ -43,31 +39,28 @@ class LogProcessor extends React.PureComponent<Props> {
 
     const maxLineLength = this.getMaxLineLength()
 
-    return logs.reduce(
-      (acc: string[], chunk: IFlotillaUILogChunk): string[] => {
-        // Split the chunk string by newline chars.
-        const split = chunk.chunk.split("\n")
+    return logs.reduce((acc: string[], chunk: LogChunk): string[] => {
+      // Split the chunk string by newline chars.
+      const split = chunk.chunk.split("\n")
 
-        // Loop through each split part of the chunk. For each part, if the
-        // length of the string is greater than the maxLineLength variable, split
-        // the part so each sub-part is less than maxLineLength. Otherwise, push
-        // the part to the array to be returned.
-        for (let i = 0; i < split.length; i++) {
-          const str: string = split[i]
+      // Loop through each split part of the chunk. For each part, if the
+      // length of the string is greater than the maxLineLength variable, split
+      // the part so each sub-part is less than maxLineLength. Otherwise, push
+      // the part to the array to be returned.
+      for (let i = 0; i < split.length; i++) {
+        const str: string = split[i]
 
-          if (str.length > maxLineLength) {
-            for (let j = 0; j < str.length; j += maxLineLength) {
-              acc.push(str.slice(j, j + maxLineLength))
-            }
-          } else {
-            acc.push(str)
+        if (str.length > maxLineLength) {
+          for (let j = 0; j < str.length; j += maxLineLength) {
+            acc.push(str.slice(j, j + maxLineLength))
           }
+        } else {
+          acc.push(str)
         }
+      }
 
-        return acc
-      },
-      []
-    )
+      return acc
+    }, [])
   }
 
   /**
@@ -92,7 +85,8 @@ class LogProcessor extends React.PureComponent<Props> {
     if (this.areDimensionsValid()) {
       // Only process logs if the dimensions are valid.
       const logs = this.processLogs()
-      return <LogRenderer {...this.props} logs={logs} len={logs.length} />
+      console.log(logs)
+      return <LogRendererOptimized logs={logs} len={logs.length} />
     }
 
     return <span />
@@ -106,19 +100,8 @@ const Connected: React.FC<ConnectedProps> = props => (
     refreshMode="throttle"
     refreshRate={500}
   >
-    {(w: number, h: number) => {
-      let height = h
-      let width = w
-
-      if (h === 0 || h === undefined) {
-        height = window.innerHeight - NAVIGATION_HEIGHT_PX
-      }
-
-      if (w === 0 || w === undefined) {
-        width = DETAIL_VIEW_SIDEBAR_WIDTH_PX
-      }
-
-      return <LogProcessor {...props} width={width} height={height} />
+    {({ width, height }: { width: number; height: number }) => {
+      return <LogProcessor logs={props.logs} width={500} height={500} />
     }}
   </ReactResizeDetector>
 )

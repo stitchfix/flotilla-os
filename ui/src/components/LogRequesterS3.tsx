@@ -1,6 +1,7 @@
 import * as React from "react"
 import api from "../api"
 import LogRenderer from "./LogRenderer"
+import LogProcessor from "./LogProcessor"
 import { LogChunk, RunStatus } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
@@ -30,7 +31,6 @@ const initialState: State = {
 class S3LogRequester extends React.PureComponent<Props, State> {
   private dummyLastSeen: string = "DUMMY_LAST_SEEN"
   private requestInterval: number | undefined
-  private maxChunkCharsLength: number = 200000
   state = initialState
 
   componentDidMount() {
@@ -116,36 +116,19 @@ class S3LogRequester extends React.PureComponent<Props, State> {
 
   hasRunFinished = (): boolean => this.props.status === RunStatus.STOPPED
 
-  preprocessLogs(): [string[], number] {
-    const { logs } = this.state
-    let totalLen = 0
-    let l = []
-
-    for (let i = 0; i < logs.length; i++) {
-      totalLen += logs[i].chunk.length
-      for (let j = 0; j < logs[i].chunk.length; j += this.maxChunkCharsLength) {
-        l.push(logs[i].chunk.slice(j, j + this.maxChunkCharsLength))
-      }
-    }
-
-    return [l, totalLen]
-  }
-
   render() {
     const { height } = this.props
-    const { isLoading, error } = this.state
-    const [logs, len] = this.preprocessLogs()
+    const { isLoading, error, logs } = this.state
 
     if (error) return <ErrorCallout error={error} />
 
     return (
-      <LogRenderer
-        height={height}
+      <LogProcessor
+        // height={height}
         logs={logs}
-        hasRunFinished={this.hasRunFinished()}
-        isLoading={isLoading}
-        shouldAutoscroll={this.props.shouldAutoscroll}
-        totalLogLength={len}
+        // hasRunFinished={this.hasRunFinished()}
+        // isLoading={isLoading}
+        // shouldAutoscroll={this.props.shouldAutoscroll}
       />
     )
   }

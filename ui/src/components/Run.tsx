@@ -26,7 +26,7 @@ import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
 import LogRequester from "./LogRequester"
-import S3LogRequester from "./S3LogRequester"
+import LogRequesterS3 from "./LogRequesterS3"
 import RunEvents from "./RunEvents"
 import RunAttributes from "./RunAttributes"
 import QueryParams, { ChildProps as QPChildProps } from "./QueryParams"
@@ -296,7 +296,7 @@ export class Run extends React.Component<Props, State> {
                           title="Container Logs"
                           panel={
                             data.engine === ExecutionEngine.EKS ? (
-                              <S3LogRequester
+                              <LogRequesterS3
                                 runID={data.run_id}
                                 status={data.status}
                                 height={this.getLogsHeight()}
