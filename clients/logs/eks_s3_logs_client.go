@@ -185,6 +185,7 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 			}
 		}
 	}
+
 }
 
 func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
@@ -232,5 +233,6 @@ func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, start
 		}
 	}
 
+	_ = result.Body.Close()
 	return acc, currentPosition, nil
 }
