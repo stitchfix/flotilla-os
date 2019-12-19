@@ -9,6 +9,11 @@ const createS3LogsUrl = (runID: string): string => {
   return urljoin(prefix, runID, "/")
 }
 
+const createEC2Url = (dns: string): string => {
+  const prefix = process.env.REACT_APP_EC2_INSTANCE_URL_PREFIX || ""
+  return `${prefix}${dns}`
+}
+
 const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
   <Card style={{ marginTop: 12 }}>
     <div className="flotilla-card-header-container">
@@ -36,7 +41,23 @@ const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
         />
       )}
       {data.instance.dns_name && (
-        <Attribute name="Instance DNS Name" value={data.instance.dns_name} />
+        <Attribute
+          name="EC2 Instance"
+          value={
+            <a
+              href={createEC2Url(data.instance.dns_name)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {data.instance.dns_name}
+              <Icon
+                icon="share"
+                style={{ marginLeft: 4, transform: "translateY(-2px)" }}
+                iconSize={12}
+              />
+            </a>
+          }
+        />
       )}
     </div>
   </Card>

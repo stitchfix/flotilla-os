@@ -46,35 +46,32 @@ class CopyableAttributeValue extends React.Component<Props, State> {
 const Attribute: React.FunctionComponent<{
   name: React.ReactNode
   value: React.ReactNode
-  isExperimental?: boolean
   containerStyle?: object
   isCopyable?: boolean
   rawValue?: string
+  description?: React.ReactElement
+  isNew?: boolean
 }> = ({
   name,
   value,
-  isExperimental,
   containerStyle,
   isCopyable,
   rawValue,
+  description,
+  isNew,
 }) => (
   <div
     className="flotilla-attribute-container"
     style={containerStyle ? containerStyle : {}}
   >
     <div className="flotilla-attribute-name">
-      {name}{" "}
-      {isExperimental && isExperimental === true && (
-        <Tag
-          style={{
-            color: Colors.WHITE,
-            fontWeight: 500,
-            background: Colors.INDIGO4,
-          }}
-        >
-          BETA
-        </Tag>
+      <div>{name}</div>
+      {description && (
+        <Tooltip content={description}>
+          <Icon icon="info-sign" iconSize={14} />
+        </Tooltip>
       )}
+      {isNew && <Tag intent={Intent.DANGER}>New!</Tag>}
     </div>
     {isCopyable && rawValue ? (
       <CopyableAttributeValue rawValue={rawValue}>

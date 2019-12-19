@@ -18,6 +18,7 @@ export type Task = {
   command: string
   tags: string[]
   privileged: boolean
+  adaptiveResourceAllocation?: boolean
 }
 
 export type RunInstance = {
