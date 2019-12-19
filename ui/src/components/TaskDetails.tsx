@@ -44,12 +44,13 @@ const TaskDetails: React.FC<{}> = () => (
                         <div style={{ display: "flex" }}>
                           <div>{data.alias || definitionID}</div>
                           {hasAra && (
-                            <Tooltip content="blah blah blah cool new feature">
+                            <Tooltip content="Adaptive CPU and memory resource allocation based on prior run history.">
                               <Tag
                                 style={{
                                   background: Colors.ROSE5,
                                   color: Colors.WHITE,
                                   marginLeft: 6,
+                                  cursor: "default",
                                 }}
                               >
                                 ARA-ENABLED
