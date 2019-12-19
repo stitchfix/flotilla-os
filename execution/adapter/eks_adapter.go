@@ -7,12 +7,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -49,6 +50,15 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		updated.ExitCode = &exitCode
 	}
 
+	if pod != nil && len(pod.Spec.Containers) > 0 {
+		container := pod.Spec.Containers[0]
+		//First three lines are injected by Flotilla, strip those out.
+		if len(container.Command) > 3 {
+			cmd := strings.Join(container.Command[3:], "\n")
+			updated.Command = &cmd
+		}
+	}
+
 	if job != nil && job.Status.StartTime != nil {
 		updated.StartedAt = &job.Status.StartTime.Time
 	}
@@ -64,18 +74,25 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string) (batchv1.Job, error) {
-	resourceRequirements := a.constructResourceRequirements(definition, run)
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
+	cmd := ""
+	if len(definition.Command) > 0 {
+		cmd = definition.Command
+	}
 
-	cmd := definition.Command
-	if run.Command != nil {
+	if run.Command != nil && len(*run.Command) > 0 {
 		cmd = *run.Command
 	}
+
+	cmdSlice := a.constructCmdSlice(cmd)
+	cmd = strings.Join(cmdSlice[3:], "\n")
+	run.Command = &cmd
+	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
-		Command:   a.constructCmdSlice(cmd),
+		Command:   cmdSlice,
 		Resources: resourceRequirements,
 		Env:       a.envOverrides(definition, run),
 	}
@@ -98,6 +115,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 				Annotations: annotations,
 			},
 			Spec: corev1.PodSpec{
+				SchedulerName:      schedulerName,
 				Containers:         []corev1.Container{container},
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
@@ -118,9 +136,10 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 
 func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
-	var matchExpressions []corev1.NodeSelectorRequirement
+	var requiredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
 
 	var nodeLifecycle []string
 	if *run.NodeLifecycle == state.OndemandLifecycle {
@@ -130,14 +149,28 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	}
 
 	if definition.Gpu == nil || *definition.Gpu <= 0 {
-		matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
+
+		//For high cpu jobs - assign to c5 node types.
+		if run.Memory != nil &&
+			run.Cpu != nil &&
+			*run.Cpu > int64(0) &&
+			*run.Memory > int64(0) &&
+			float64(*run.Cpu)/float64(*run.Memory) >= 0.5 {
+			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+				Key:      "beta.kubernetes.io/instance-type",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   cpuNodeTypes,
+			})
+		}
+
 	}
 
-	matchExpressions = append(matchExpressions, corev1.NodeSelectorRequirement{
+	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 		Key:      "kubernetes.io/lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
@@ -148,7 +181,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
 				NodeSelectorTerms: []corev1.NodeSelectorTerm{
 					{
-						MatchExpressions: matchExpressions,
+						MatchExpressions: requiredMatch,
 					},
 				},
 			},
@@ -158,33 +191,9 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run) corev1.ResourceRequirements {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
-	cpu := *definition.Cpu
-	if run.Cpu != nil {
-		cpu = *run.Cpu
-	}
-	if cpu < state.MinCPU {
-		cpu = state.MinCPU
-	}
-
-	mem := *definition.Memory
-	if run.Memory != nil {
-		mem = *run.Memory
-	}
-	if mem < state.MinMem {
-		mem = state.MinMem
-	}
-
-	// CPU Override for legacy jobs that are high memory, remove once migration is complete.
-	if mem >= 24576 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
-		// using the 4x ratios between cpu and memory ~ m5 class of instances
-		cpuOverride := mem / 4
-		if cpuOverride > cpu {
-			cpu = cpuOverride
-		}
-	}
-
+	cpu, mem := a.adaptiveResources(definition, run, manager)
 	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
 	assignedCpu := cpuQuantity.ScaledValue(resource.Milli)
 	run.Cpu = &assignedCpu
@@ -205,7 +214,95 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits: limits,
 	}
-	return resourceRequirements
+	return resourceRequirements, run
+}
+
+func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
+	cpu, mem := a.getResourceDefaults(run, definition)
+
+	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
+		// Check if last run was a OOM, in that case only increase memory
+		lastRun := a.getLastRun(manager, run)
+		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
+			mem = int64(float64(*lastRun.Memory) * 1.5)
+			cpu = *lastRun.Cpu
+		} else {
+			// If last run wasn't an OOM, estimate based on successful runs.
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
+			if err == nil {
+				cpu = estimatedResources.Cpu
+				mem = estimatedResources.Memory
+			}
+		}
+	}
+
+	return a.checkResourceBounds(cpu, mem)
+}
+
+func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
+	if cpu < state.MinCPU {
+		cpu = state.MinCPU
+	}
+	if cpu > state.MaxCPU {
+		cpu = state.MaxCPU
+	}
+	if mem < state.MinMem {
+		mem = state.MinMem
+	}
+	if mem > state.MaxMem {
+		mem = state.MaxMem
+	}
+	return cpu, mem
+}
+
+func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definition) (int64, int64) {
+	// 1. Init with the global defaults
+	cpu := state.MinCPU
+	mem := state.MinMem
+
+	// 2. Look up Run level
+	// 3. If not at Run level check Definitions
+	if run.Cpu != nil && *run.Cpu != 0 {
+		cpu = *run.Cpu
+	} else {
+		if definition.Cpu != nil && *definition.Cpu != 0 {
+			cpu = *definition.Cpu
+		}
+	}
+	if run.Memory != nil && *run.Memory != 0 {
+		mem = *run.Memory
+	} else {
+		if definition.Memory != nil && *definition.Memory != 0 {
+			mem = *definition.Memory
+		}
+	}
+	// 4. Override for very large memory requests.
+	// Remove after migration.
+	if mem >= 36864 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
+		// using the 8x ratios between cpu and memory ~ r5 class of instances
+		cpuOverride := mem / 8
+		if cpuOverride > cpu {
+			cpu = cpuOverride
+		}
+	}
+
+	return cpu, mem
+}
+
+func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {
+	var lastRun state.Run
+	runList, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
+		"queued_at_since": {
+			time.Now().AddDate(0, 0, -7).Format(time.RFC3339),
+		},
+		"status":        {state.StatusStopped},
+		"command":       {strings.Replace(*run.Command, "'", "''", -1)},
+		"definition_id": {run.DefinitionID},
+	}, nil, []string{state.EKSEngine})
+	if err == nil && len(runList.Runs) > 0 {
+		lastRun = runList.Runs[0]
+	}
+	return lastRun
 }
 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
@@ -218,13 +315,13 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []corev1.EnvVar {
 	pairs := make(map[string]string)
 	for _, ev := range *definition.Env {
-		name := ev.Name
+		name := a.sanitizeEnvVar(ev.Name)
 		value := ev.Value
 		pairs[name] = value
 	}
 
 	for _, ev := range *run.Env {
-		name := ev.Name
+		name := a.sanitizeEnvVar(ev.Name)
 		value := ev.Value
 		pairs[name] = value
 	}
@@ -239,4 +336,14 @@ func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []
 		}
 	}
 	return res
+}
+
+func (a *eksAdapter) sanitizeEnvVar(key string) string {
+	// Environment variable can't start with a $
+	if strings.HasPrefix(key, "$") {
+		key = strings.Replace(key, "$", "", 1)
+	}
+	// Environment variable names can't contain spaces.
+	key = strings.Replace(key, " ", "", -1)
+	return key
 }

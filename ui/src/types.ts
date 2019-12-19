@@ -18,6 +18,7 @@ export type Task = {
   command: string
   tags: string[]
   privileged: boolean
+  adaptiveResourceAllocation?: boolean
 }
 
 export type RunInstance = {
@@ -47,7 +48,6 @@ export type Run = {
   task_arn: string
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
-  ephemeral_storage?: number | null
   max_cpu_used: number | null | undefined
   max_memory_used: number | null | undefined
   pod_name: string | null | undefined
@@ -184,7 +184,6 @@ export type LaunchRequestV2 = {
   owner_id?: string
   engine: ExecutionEngine
   node_lifecycle?: NodeLifecycle
-  ephemeral_storage?: number | null
   command?: string | null
 }
 
@@ -219,7 +218,7 @@ export type LogChunk = {
   lastSeen?: string
 }
 
-export type RunEvent = {
+export type PodEvent = {
   timestamp: string
   event_type: string
   reason: string
@@ -229,7 +228,7 @@ export type RunEvent = {
 
 export type ListRunEventsResponse = {
   total: number
-  run_events: RunEvent[] | null
+  pod_events: PodEvent[] | null
 }
 
 export enum RunTabId {

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS task_def (
   container_name character varying NOT NULL,
   task_type character varying,
   privileged boolean,
+  adaptive_resource_allocation boolean,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );
@@ -76,7 +77,8 @@ CREATE TABLE IF NOT EXISTS task (
   pod_name text,
   namespace text,
   max_cpu_used integer,
-  max_memory_used integer
+  max_memory_used integer,
+  pod_events jsonb
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -137,6 +139,7 @@ const DefinitionSelect = `
 select
   coalesce(td.arn,'')       as arn,
   td.definition_id          as definitionid,
+  td.adaptive_resource_allocation as adaptiveresourceallocation,
   td.image                  as image,
   td.group_name             as groupname,
   td.container_name         as containername,
@@ -179,6 +182,46 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 //
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
+const TaskResourcesSelectSQL = `
+SELECT
+  case when (
+    (
+      percentile_disc(0.99) within GROUP (
+        ORDER BY
+          max_memory_used
+      ) * 1.125
+    ):: numeric :: integer
+  ) is null then(
+    (
+      percentile_disc(0.99) within GROUP (
+        ORDER BY
+          memory
+      ) * 1.125
+    ):: numeric :: integer
+  ) end as memory,
+  case when (
+    (
+      percentile_disc(0.99) within GROUP (
+        ORDER BY
+          max_cpu_used
+      ) * 1.125
+    ):: numeric :: integer
+  ) is null then(
+    (
+      percentile_disc(0.99) within GROUP (
+        ORDER BY
+          cpu
+      ) * 1.125
+    ):: numeric :: integer
+  ) end as cpu
+FROM
+  TASK
+WHERE definition_id = $1
+  AND exit_code = 0
+  AND engine = 'eks'`
+
+const TaskResourcesSelectCommandSQL = TaskResourcesSelectSQL + "\n  AND command = $2"
+
 //
 // RunSelect postgres specific query for runs
 //
@@ -213,7 +256,8 @@ select
   pod_name as podname,
   namespace,
   max_cpu_used as maxcpuused,
-  max_memory_used as maxmemoryused
+  max_memory_used as maxmemoryused,
+  pod_events::TEXT as podevents
 from task t
 `
 
@@ -275,7 +319,6 @@ const WorkerSelect = `
 const ListWorkersSQL = WorkerSelect
 
 const GetWorkerEngine = WorkerSelect + "\nwhere engine = $1"
-
 
 //
 // GetWorkerSQL postgres specific query for retrieving data for a specific

@@ -111,7 +111,7 @@ func (rc *registryClient) IsImageValid(imageRef string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrapf(err, "issue fetching tags for image reference [%s]", imageRef)
 	}
-	
+
 	tag := taggedRef.Tag()
 	for _, t := range tags {
 		if tag == t {

@@ -2,6 +2,8 @@ package worker
 
 import (
 	"fmt"
+	"github.com/go-redis/redis"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -21,6 +23,8 @@ type statusWorker struct {
 	pollInterval time.Duration
 	t            tomb.Tomb
 	engine       *string
+	redisClient  *redis.Client
+	workerId     string
 }
 
 func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
@@ -30,8 +34,16 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.log.Log("message", "initialized a status worker", "engine", *engine)
+	sw.workerId = fmt.Sprintf("%d", rand.Int())
+	sw.setupRedisClient(conf)
+	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
+}
+
+func (sw *statusWorker) setupRedisClient(conf config.Config) {
+	if *sw.engine == state.EKSEngine {
+		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
+	}
 }
 
 func (sw *statusWorker) GetTomb() *tomb.Tomb {
@@ -78,8 +90,16 @@ func (sw *statusWorker) runOnceEKS() {
 
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
-		_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
-		sw.processRun(run)
+		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 20*time.Second).Result()
+		if err != nil {
+			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+			return
+		}
+
+		if set == true {
+			//_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
+			sw.processRun(run)
+		}
 	}
 }
 
@@ -115,7 +135,8 @@ func (sw *statusWorker) processRun(run state.Run) {
 			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 				updatedRun.MaxCpuUsed != run.MaxCpuUsed ||
 				updatedRun.Cpu != run.Cpu ||
-				updatedRun.Memory != run.Memory {
+				updatedRun.Memory != run.Memory ||
+				updatedRun.PodEvents != run.PodEvents {
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
 		}

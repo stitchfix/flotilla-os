@@ -15,7 +15,7 @@ import (
 type Engine interface {
 	Initialize(conf config.Config) error
 	// v0
-	Execute(definition state.Definition, run state.Run) (state.Run, bool, error)
+	Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error)
 
 	// v1 - once runs contain a copy of relevant definition info
 	// Execute(run state.Run) error
@@ -32,9 +32,9 @@ type Engine interface {
 
 	PollStatus() (RunReceipt, error)
 
-	GetEvents(run state.Run) (state.RunEventList, error)
+	GetEvents(run state.Run) (state.PodEventList, error)
 
-	FetchUpdateStatus(run state.Run)(state.Run, error)
+	FetchUpdateStatus(run state.Run) (state.Run, error)
 }
 
 type RunReceipt struct {

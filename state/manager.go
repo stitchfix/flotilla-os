@@ -24,6 +24,7 @@ type Manager interface {
 	DeleteDefinition(definitionID string) error
 
 	ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error)
+	EstimateRunResources(definitionID string, command string) (TaskResources, error)
 
 	GetRun(runID string) (Run, error)
 	CreateRun(r Run) error

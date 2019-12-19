@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -90,16 +91,41 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 }
 
 func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
-	return "", nil, errors.Errorf("EKSS3LogsClient does not support the Logs method.")
+	result, err := lc.getS3Object(run)
+	startPosition := int64(0)
+	if lastSeen != nil {
+		parsed, err := strconv.ParseInt(*lastSeen, 10, 64)
+		if err == nil {
+			startPosition = parsed
+		}
+	}
+
+	if result != nil && err == nil {
+		acc, position, err := lc.logsToMessageString(result, startPosition)
+		newLastSeen := fmt.Sprintf("%d", position)
+		return acc, &newLastSeen, err
+	}
+
+	return "", nil, errors.Errorf("No logs.")
 }
 
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
 func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+	result, err := lc.getS3Object(run)
+
+	if result != nil && err == nil {
+		return lc.logsToMessage(result, w)
+	}
+
+	return nil
+}
+
+func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
 	//Pod isn't there yet - dont return a 404
 	if run.PodName == nil {
-		return nil
+		return nil, errors.New("no pod associated with the run.")
 	}
 	s3DirName := lc.toS3DirName(run)
 
@@ -110,11 +136,11 @@ func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, 
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "problem getting logs")
+		return nil, errors.Wrap(err, "problem getting logs")
 	}
 
 	if result == nil || result.Contents == nil || len(result.Contents) == 0 {
-		return nil
+		return nil, errors.New("no s3 files associated with the run.")
 	}
 
 	for _, content := range result.Contents {
@@ -126,13 +152,12 @@ func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, 
 			})
 
 			if err != nil {
-				return err
+				return nil, err
 			}
-			return lc.logsToMessage(result, w)
+			return result, nil
 		}
 	}
-
-	return nil
+	return nil, errors.New("no s3 files associated with the run.")
 }
 
 func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
@@ -160,4 +185,54 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 			}
 		}
 	}
+
+}
+
+func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
+	acc := ""
+	currentPosition := int64(0)
+	// if less than/equal to 0, read entire log.
+	if startingPosition <= 0 {
+		startingPosition = currentPosition
+	}
+
+	// No S3 file or object, return "", 0, err
+	if result == nil {
+		return acc, startingPosition, errors.New("s3 object not present.")
+	}
+
+	reader := bufio.NewReader(result.Body)
+
+	// Reading until startingPosition and discard unneeded lines.
+	for currentPosition < startingPosition {
+		currentPosition = currentPosition + 1
+		_, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return acc, startingPosition, err
+		}
+	}
+
+	// Read upto MaxLogLines
+	for currentPosition <= startingPosition+state.MaxLogLines {
+		currentPosition = currentPosition + 1
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return acc, currentPosition, err
+		} else {
+			var parsedLine s3Log
+			err := json.Unmarshal(line, &parsedLine)
+			if err == nil {
+				acc = fmt.Sprintf("%s%s", acc, parsedLine.Log)
+			}
+		}
+	}
+
+	_ = result.Body.Close()
+	return acc, currentPosition, nil
 }

@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
@@ -35,6 +38,8 @@ type EKSExecutionEngine struct {
 	jobNamespace  string
 	jobTtl        int
 	jobSA         string
+	schedulerName string
+	ec2Client     *ec2.EC2
 }
 
 //
@@ -68,11 +73,22 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	ee.jobQueue = conf.GetString("eks.job_queue")
+	ee.schedulerName = "default-scheduler"
+
+	if conf.IsSet("eks.scheduler_name") {
+		ee.schedulerName = conf.GetString("eks.scheduler_name")
+	}
+
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClient = kClient
 	ee.jobSA = conf.GetString("eks.service_account")
 	ee.metricsClient = metricsv.NewForConfigOrDie(clientConf)
+
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(conf.GetString("aws_default_region"))}))
+
+	ee.ec2Client = ec2.New(sess)
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -84,40 +100,32 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA)
+func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager)
 
 	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
+		// Job is already submitted, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
 			return run, false, nil
-		} else {
-			return run, true, err
 		}
-	}
 
-	run, _ = ee.getPodName(run)
+		// Job spec is invalid, don't retry.
+		if strings.Contains(strings.ToLower(err.Error()), "is invalid") {
+			exitReason := err.Error()
+			run.ExitReason = &exitReason
+			return run, false, err
+		}
 
-	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
-
-	if err != nil {
+		// Legitimate submit error, retryable.
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
-		return run, false, err
+		return run, true, err
 	}
 
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 
-	if run.Cpu != nil && *run.Cpu > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteCPU, []string{}, float64(*run.Cpu))
-	}
-
-	if run.Memory != nil && *run.Memory > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteMemory, []string{}, float64(*run.Memory))
-	}
-
-	if run.Gpu != nil && *run.Gpu > 0 {
-		_ = metrics.Increment(metrics.EngineEKSExecuteGpu, []string{}, float64(*run.Gpu))
-	}
+	run, _ = ee.getPodName(run)
+	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 
 	return adaptedRun, false, nil
 }
@@ -138,12 +146,20 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.ContainerName = &container.Name
 			cpu := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
+			run = ee.getInstanceDetails(pod, run)
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
 	return run, nil
+}
+
+func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) state.Run {
+	if len(pod.Spec.NodeName) > 0 {
+		run.InstanceDNSName = pod.Spec.NodeName
+	}
+	return run
 }
 
 func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
@@ -263,20 +279,20 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	return updates, nil
 }
 
-func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, error) {
+func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
 	if run.PodName == nil {
-		return state.RunEventList{}, nil
+		return state.PodEventList{}, nil
 	}
 	eventList, err := ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
 	if err != nil {
-		return state.RunEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
+		return state.PodEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
 
 	_ = ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
-	var runEvents []state.RunEvent
+	var podEvents []state.PodEvent
 	for _, e := range eventList.Items {
 		eTime := e.FirstTimestamp.Time
-		runEvent := state.RunEvent{
+		runEvent := state.PodEvent{
 			Message:      e.Message,
 			Timestamp:    &eTime,
 			EventType:    e.Type,
@@ -288,15 +304,15 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.RunEventList, erro
 			source := fmt.Sprintf("source:%s", e.ObjectMeta.Name)
 			_ = metrics.Increment(metrics.EngineEKSNodeTriggeredScaledUp, []string{source}, 1)
 		}
-		runEvents = append(runEvents, runEvent)
+		podEvents = append(podEvents, runEvent)
 	}
 
-	runEventList := state.RunEventList{
-		Total:     len(runEvents),
-		RunEvents: runEvents,
+	podEventList := state.PodEventList{
+		Total:     len(podEvents),
+		PodEvents: podEvents,
 	}
 
-	return runEventList, nil
+	return podEventList, nil
 }
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
@@ -349,6 +365,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
+
 			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
 
 			if run.PodName != nil && mostRecentPod.Name != *run.PodName {
@@ -356,7 +373,12 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			}
 
 			run.PodName = &mostRecentPod.Name
+			run = ee.getInstanceDetails(*mostRecentPod, run)
+		}
 
+		// Pod didn't change, but Instance information is not populated.
+		if mostRecentPod != nil && len(run.InstanceDNSName) == 0 {
+			run = ee.getInstanceDetails(*mostRecentPod, run)
 		}
 
 		if mostRecentPod != nil && mostRecentPod.Spec.Containers != nil && len(mostRecentPod.Spec.Containers) > 0 {
@@ -366,11 +388,36 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			run.Cpu = &cpu
 			mem := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
+
 		}
 	}
 
 	run, _ = ee.FetchPodMetrics(run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
+
+	events, err := ee.GetEvents(run)
+
+	if err == nil && len(events.PodEvents) > 0 {
+		newEvents := events.PodEvents
+		if run.PodEvents != nil && len(*run.PodEvents) > 0 {
+			priorEvents := *run.PodEvents
+			for _, newEvent := range newEvents {
+				unseen := true
+				for _, priorEvent := range priorEvents {
+					if priorEvent.Equal(newEvent) {
+						unseen = false
+						break
+					}
+				}
+				if unseen {
+					priorEvents = append(priorEvents, newEvent)
+				}
+			}
+			run.PodEvents = &priorEvents
+		} else {
+			run.PodEvents = &newEvents
+		}
+	}
 
 	// Handle edge case for dangling jobs.
 	// Run used to have a pod and now it is not there, job is older than 24 hours. Terminate it.

@@ -42,12 +42,12 @@ const RunEvents: React.FC<Props> = ({ runID, status, hasLogs }) => (
                   </Button>
                 </Callout>
               )
-              if (data && data.run_events !== null) {
+              if (data && data.pod_events !== null) {
                 return (
                   <>
                     <div>
-                      {data.run_events.map(evt => (
-                        <Card style={{ marginBottom: 12 }}>
+                      {data.pod_events.map((evt, i) => (
+                        <Card style={{ marginBottom: 12 }} key={i}>
                           <div className="flotilla-card-header-container">
                             <div className="flotilla-card-header">
                               {evt.timestamp} <Tag>{evt.reason}</Tag>

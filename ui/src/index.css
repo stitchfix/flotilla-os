@@ -112,17 +112,28 @@ body {
 
 .flotilla-attribute-name {
   font-size: 0.85rem;
-  text-transform: uppercase;
   font-weight: 500;
   margin-bottom: 4px;
-  text-transform: uppercase;
   white-space: nowrap;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flotilla-attribute-name > * {
+  margin-right: calc(var(--spacing) / 2);
+}
+
+.flotilla-attribute-name > *:last-child {
+  margin-right: 0;
 }
 
 .flotilla-attribute-value {
   color: #adbecc;
   flex: 1;
   font-size: 0.85rem;
+  word-wrap: break-word;
 }
 
 /**

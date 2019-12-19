@@ -1,4 +1,5 @@
 import * as React from "react"
+import { get } from "lodash"
 import { Link } from "react-router-dom"
 import {
   Collapse,
@@ -9,6 +10,9 @@ import {
   Button,
   Spinner,
   Icon,
+  Tag,
+  Colors,
+  Tooltip,
 } from "@blueprintjs/core"
 import { TaskContext } from "./Task"
 import Attribute from "./Attribute"
@@ -28,13 +32,33 @@ const TaskDetails: React.FC<{}> = () => (
           return <ErrorCallout error={error} />
         case RequestStatus.READY:
           if (data) {
+            const hasAra =
+              get(data, "adaptiveResourceAllocation", false) === true
             return (
               <>
                 <ViewHeader
                   breadcrumbs={[
                     { text: "Tasks", href: "/tasks" },
                     {
-                      text: data.alias || definitionID,
+                      text: (
+                        <div style={{ display: "flex" }}>
+                          <div>{data.alias || definitionID}</div>
+                          {hasAra && (
+                            <Tooltip content="Adaptive CPU and memory resource allocation based on prior run history.">
+                              <Tag
+                                style={{
+                                  background: Colors.ROSE5,
+                                  color: Colors.WHITE,
+                                  marginLeft: 6,
+                                  cursor: "default",
+                                }}
+                              >
+                                ARA-ENABLED
+                              </Tag>
+                            </Tooltip>
+                          )}
+                        </div>
+                      ),
                       href: `/tasks/${definitionID}`,
                     },
                   ]}
@@ -113,10 +137,6 @@ const TaskDetails: React.FC<{}> = () => (
                                 value={data.memory}
                               />
                               <Attribute name="Arn" value={data.arn} />
-                              <Attribute
-                                name="Privileged"
-                                value={data.privileged === true ? "Yes" : "No"}
-                              />
                               <Attribute name="Tags" value={data.tags} />
                             </div>
                           </Collapse>

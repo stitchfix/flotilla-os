@@ -1,7 +1,7 @@
 import * as React from "react"
 import { isNumber } from "lodash"
 import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
-import { Run } from "../types"
+import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
 
@@ -50,8 +50,9 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       style={{ marginBottom: 12 }}
     >
       <Attribute name="Engine Type" value={<Tag>{data.engine}</Tag>} />
-      <Attribute name="Cluster" value={data.cluster} />
-
+      {data.engine !== ExecutionEngine.EKS && (
+        <Attribute name="Cluster" value={data.cluster} />
+      )}
       <Attribute
         name="Node Lifecycle"
         value={<Tag>{data.node_lifecycle || "-"}</Tag>}
@@ -85,15 +86,11 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         }
       />
     </div>
-    {(data.ephemeral_storage || data.gpu) && (
+    {data.gpu && (
       <div
         className="flotilla-attributes-container flotilla-attributes-container-horizontal"
         style={{ marginBottom: 12 }}
       >
-        <Attribute
-          name="Disk Size (GB)"
-          value={data.ephemeral_storage || "-"}
-        />
         <Attribute name="GPU Count" value={data.gpu || 0} />
       </div>
     )}
@@ -130,7 +127,6 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         rawValue={data.definition_id}
       />
       <Attribute name="Image" value={data.image} />
-      {data.pod_name && <Attribute name="EKS Pod Name" value={data.pod_name} />}
       <Attribute
         name="Command"
         value={

@@ -17,13 +17,17 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
-var MinCPU = int64(125)
+var MinCPU = int64(128)
 
-var MinMem = int64(125)
+var MaxCPU = int64(32000)
+
+var MinMem = int64(64)
+
+var MaxMem = int64(124000)
 
 var TTLSecondsAfterFinished = int32(3600)
 
-var SpotActiveDeadlineSeconds = int64(21600)
+var SpotActiveDeadlineSeconds = int64(86400)
 
 var OndemandActiveDeadlineSeconds = int64(172800)
 
@@ -51,6 +55,8 @@ var StatusPending = "PENDING"
 
 // StatusStopped means the run is finished
 var StatusStopped = "STOPPED"
+
+var MaxLogLines = int64(256)
 
 var EKSBackoffLimit = int32(0)
 
@@ -133,23 +139,24 @@ type Tags []string
 // - roughly 1-1 with an AWS ECS task definition
 //
 type Definition struct {
-	Arn              string     `json:"arn"`
-	DefinitionID     string     `json:"definition_id"`
-	Image            string     `json:"image"`
-	GroupName        string     `json:"group_name"`
-	ContainerName    string     `json:"container_name"`
-	User             string     `json:"user,omitempty"`
-	Alias            string     `json:"alias"`
-	Memory           *int64     `json:"memory"`
-	Gpu              *int64     `json:"gpu,omitempty"`
-	Cpu              *int64     `json:"cpu,omitempty"`
-	Command          string     `json:"command,omitempty"`
-	TaskType         string     `json:"-"`
-	Env              *EnvList   `json:"env"`
-	Ports            *PortsList `json:"ports,omitempty"`
-	Tags             *Tags      `json:"tags,omitempty"`
-	Privileged       *bool      `json:"privileged,omitempty"`
-	SharedMemorySize *int64     `json:"sharedMemorySize,omitempty"`
+	Arn                        string     `json:"arn"`
+	DefinitionID               string     `json:"definition_id"`
+	Image                      string     `json:"image"`
+	GroupName                  string     `json:"group_name"`
+	ContainerName              string     `json:"container_name"`
+	User                       string     `json:"user,omitempty"`
+	Alias                      string     `json:"alias"`
+	Memory                     *int64     `json:"memory"`
+	Gpu                        *int64     `json:"gpu,omitempty"`
+	Cpu                        *int64     `json:"cpu,omitempty"`
+	Command                    string     `json:"command,omitempty"`
+	TaskType                   string     `json:"-"`
+	Env                        *EnvList   `json:"env"`
+	Ports                      *PortsList `json:"ports,omitempty"`
+	Tags                       *Tags      `json:"tags,omitempty"`
+	Privileged                 *bool      `json:"privileged,omitempty"`
+	SharedMemorySize           *int64     `json:"sharedMemorySize,omitempty"`
+	AdaptiveResourceAllocation *bool      `json:"adaptiveResourceAllocation,omitempty"`
 }
 
 var commandWrapper = `
@@ -238,6 +245,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
+	}
+	if other.AdaptiveResourceAllocation != nil {
+		d.AdaptiveResourceAllocation = other.AdaptiveResourceAllocation
 	}
 	if len(other.Command) > 0 {
 		d.Command = other.Command
@@ -341,6 +351,7 @@ type Run struct {
 	ContainerName    *string    `json:"container_name,omitempty"`
 	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
 	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
+	PodEvents        *PodEvents `json:"pod_events,omitempty"`
 }
 
 //
@@ -448,6 +459,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.Namespace = other.Namespace
 	}
 
+	if other.PodEvents != nil {
+		d.PodEvents = other.PodEvents
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
@@ -482,12 +497,19 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		"instance_id": r.InstanceID,
 		"dns_name":    r.InstanceDNSName,
 	}
+	podEvents := r.PodEvents
+	if podEvents == nil {
+		podEvents = &PodEvents{}
+	}
+
 	return json.Marshal(&struct {
-		Instance map[string]string `json:"instance"`
+		Instance  map[string]string `json:"instance"`
+		PodEvents *PodEvents        `json:"pod_events"`
 		Alias
 	}{
-		Instance: instance,
-		Alias:    (Alias)(r),
+		Instance:  instance,
+		PodEvents: podEvents,
+		Alias:     (Alias)(r),
 	})
 }
 
@@ -499,12 +521,23 @@ type RunList struct {
 	Runs  []Run `json:"history"`
 }
 
-type RunEventList struct {
-	Total     int        `json:"total"`
-	RunEvents []RunEvent `json:"run_events"`
+type PodEvents []PodEvent
+
+type PodEventList struct {
+	Total     int       `json:"total"`
+	PodEvents PodEvents `json:"pod_events"`
 }
 
-type RunEvent struct {
+func (w *PodEvent) Equal(other PodEvent) bool {
+	return w.Reason == other.Reason &&
+		other.Timestamp != nil &&
+		w.Timestamp.Equal(*other.Timestamp) &&
+		w.SourceObject == other.SourceObject &&
+		w.Message == other.Message &&
+		w.EventType == other.EventType
+}
+
+type PodEvent struct {
 	Timestamp    *time.Time `json:"timestamp,omitempty"`
 	EventType    string     `json:"event_type"`
 	Reason       string     `json:"reason"`
@@ -557,4 +590,9 @@ type WorkersList struct {
 type UserInfo struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+type TaskResources struct {
+	Cpu    int64 `json:"cpu"`
+	Memory int64 `json:"memory"`
 }
