@@ -30,7 +30,7 @@ func (sm *SQLStateManager) EstimateRunResources(definitionID string, command str
 	var err error
 	var taskResources TaskResources
 	if len(command) > 0 {
-		err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, command)
+		err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, strings.Replace(command, "'", "''", -1))
 	} else {
 		err = sm.db.Get(&taskResources, TaskResourcesSelectSQL, definitionID)
 	}

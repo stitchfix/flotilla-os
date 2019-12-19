@@ -80,7 +80,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		cmd = definition.Command
 	}
 
-	if run.Command != nil {
+	if run.Command != nil && len(*run.Command) > 0 {
 		cmd = *run.Command
 	}
 
@@ -223,7 +223,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
 		// Check if last run was a OOM, in that case only increase memory
 		lastRun := a.getLastRun(manager, run)
-		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOM") {
+		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
 			mem = int64(float64(*lastRun.Memory) * 1.5)
 			cpu = *lastRun.Cpu
 		} else {
@@ -296,7 +296,7 @@ func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run 
 			time.Now().AddDate(0, 0, -7).Format(time.RFC3339),
 		},
 		"status":        {state.StatusStopped},
-		"command":       {*run.Command},
+		"command":       {strings.Replace(*run.Command, "'", "''", -1)},
 		"definition_id": {run.DefinitionID},
 	}, nil, []string{state.EKSEngine})
 	if err == nil && len(runList.Runs) > 0 {
