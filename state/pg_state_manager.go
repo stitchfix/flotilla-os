@@ -78,6 +78,10 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 		return errors.Wrap(err, "unable to open postgres db")
 	}
 
+	if conf.IsSet("database_max_idle_connections") {
+		sm.db.SetMaxIdleConns(conf.GetInt("database_max_idle_connections"))
+	}
+
 	if createSchema {
 		// Since this happens at initialization we
 		// could encounter racy conditions waiting for pg
