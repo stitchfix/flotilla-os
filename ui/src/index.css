@@ -115,6 +115,18 @@ body {
   font-weight: 500;
   margin-bottom: 4px;
   white-space: nowrap;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flotilla-attribute-name > * {
+  margin-right: calc(var(--spacing) / 2);
+}
+
+.flotilla-attribute-name > *:last-child {
+  margin-right: 0;
 }
 
 .flotilla-attribute-value {
