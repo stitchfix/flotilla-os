@@ -10,7 +10,6 @@ import {
   Button,
   ButtonGroup,
 } from "@blueprintjs/core"
-import { LogChunk } from "../types"
 
 type Props = {
   logs: string[]
@@ -21,14 +20,8 @@ type Props = {
   totalLogLength: number
 }
 
-type State = {
-  logPage: number
-}
-
-class LogRenderer extends React.Component<Props, State> {
+class LogRenderer extends React.Component<Props> {
   private CONTAINER_DIV = React.createRef<HTMLDivElement>()
-
-  state = { logPage: 0 }
 
   componentDidMount() {
     this.scrollToBottom()
@@ -57,20 +50,19 @@ class LogRenderer extends React.Component<Props, State> {
   }
 
   shouldScrollToBottom(prev: Props, next: Props) {
-    // // Handle manual override.
-    // if (next.shouldAutoscroll === false) return false
+    // Handle manual override.
+    if (next.shouldAutoscroll === false) return false
 
-    // // Handle CloudWatchLogs.
-    // if (prev.logs.length !== next.logs.length) return true
+    // Handle CloudWatchLogs.
+    if (prev.logs.length !== next.logs.length) return true
 
-    // // Handle S3 logs (there will only be one chunk).
-    // if (
-    //   prev.logs.length === 1 &&
-    //   next.logs.length === 1 &&
-    //   prev.logs[0].chunk.length !== next.logs[0].chunk.length
-    // )
-    //   return true
-    return false
+    // Handle S3 logs (there will only be one chunk).
+    if (
+      prev.logs.length === 1 &&
+      next.logs.length === 1 &&
+      prev.logs[0].chunk.length !== next.logs[0].chunk.length
+    )
+      return true
   }
 
   render() {
