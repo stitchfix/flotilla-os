@@ -49,6 +49,7 @@ type executionService struct {
 	eksClusterOverride       string
 	eksOverridePercent       int
 	clusterOndemandWhitelist []string
+	checkImageValidity       bool
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -86,7 +87,11 @@ func NewExecutionService(conf config.Config,
 	es.eksClusterOverride = conf.GetString("eks.cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
 	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
-
+	if conf.IsSet("check_image_validity") {
+		es.checkImageValidity = conf.GetBool("check_image_validity")
+	} else {
+		es.checkImageValidity = false
+	}
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
 			return conf.GetString("flotilla_mode")
@@ -312,15 +317,18 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 			}
 		}
 	}
-
-	ok, err := es.registryClient.IsImageValid(definition.Image)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return exceptions.MissingResource{
-			ErrorString: fmt.Sprintf(
-				"image [%s] was not found in any of the configured repositories", definition.Image)}
+	var ok bool
+	var err error
+	if es.checkImageValidity {
+		ok, err = es.registryClient.IsImageValid(definition.Image)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return exceptions.MissingResource{
+				ErrorString: fmt.Sprintf(
+					"image [%s] was not found in any of the configured repositories", definition.Image)}
+		}
 	}
 
 	if engine == state.ECSEngine {
