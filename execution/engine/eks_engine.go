@@ -392,7 +392,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		}
 	}
 
-	run, _ = ee.FetchPodMetrics(run)
+	//run, _ = ee.FetchPodMetrics(run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
 
 	events, err := ee.GetEvents(run)

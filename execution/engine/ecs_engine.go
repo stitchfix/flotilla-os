@@ -415,3 +415,7 @@ func (ee *ECSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 func (ee *ECSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	return run, nil
 }
+
+func (ee *ECSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+	return run, nil
+}
