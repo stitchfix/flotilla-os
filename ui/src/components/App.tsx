@@ -7,7 +7,7 @@ import Run from "./Run"
 import Runs from "./Runs"
 import Navigation from "./Navigation"
 
-const App: React.FunctionComponent = () => (
+const App: React.FC = () => (
   <div className="flotilla-app-container bp3-dark">
     <BrowserRouter>
       <Navigation />
