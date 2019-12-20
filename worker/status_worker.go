@@ -90,17 +90,22 @@ func (sw *statusWorker) runOnceEKS() {
 
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
-		set, err := sw.redisClient.SetNX(run.RunID, sw.workerId, 20*time.Second).Result()
-		if err != nil {
-			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
-			return
-		}
-
-		if set == true {
-			//_ = sw.log.Log("message", "processEKSRuns", "run", run.RunID)
+		if sw.acquireLock(run, "status", 15*time.Second) == true {
 			sw.processRun(run)
 		}
+
+		if sw.acquireLock(run, "metrics", 3*time.Second) == true {
+			sw.processRunMetrics(run)
+		}
 	}
+}
+func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
+	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
+	if err != nil {
+		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		return false
+	}
+	return set
 }
 
 func (sw *statusWorker) processRun(run state.Run) {
@@ -139,6 +144,16 @@ func (sw *statusWorker) processRun(run state.Run) {
 				updatedRun.PodEvents != run.PodEvents {
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
+		}
+	}
+}
+
+func (sw *statusWorker) processRunMetrics(run state.Run) {
+	updatedRun, err := sw.ee.FetchPodMetrics(run)
+	if err == nil {
+		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
+			updatedRun.MaxCpuUsed != run.MaxCpuUsed {
+			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 		}
 	}
 }

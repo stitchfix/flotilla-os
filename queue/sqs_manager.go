@@ -19,6 +19,7 @@ type SQSManager struct {
 	retentionSeconds  string
 	visibilityTimeout string
 	qc                sqsClient
+	qurlCache         map[string]string
 }
 
 type sqsClient interface {
@@ -67,6 +68,8 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 
 		qm.qc = sqs.New(sess)
 	}
+
+	qm.qurlCache = make(map[string]string)
 	return nil
 }
 
@@ -75,7 +78,17 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 // * if the queue does not exist it is created
 //
 func (qm *SQSManager) QurlFor(name string, prefixed bool) (string, error) {
-	return qm.getOrCreateQueue(name, prefixed)
+	key := fmt.Sprintf("%s-%t", name, prefixed)
+	val, ok := qm.qurlCache[key]
+	if ok {
+		return val, nil
+	}
+
+	val, err := qm.getOrCreateQueue(name, prefixed)
+	if err == nil {
+		qm.qurlCache[key] = val
+	}
+	return val, err
 }
 
 func (qm *SQSManager) getOrCreateQueue(name string, prefixed bool) (string, error) {
