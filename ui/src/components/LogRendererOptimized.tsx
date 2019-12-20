@@ -14,7 +14,7 @@ type State = {
 }
 
 /** Renders the processed logs using react-window for performance. */
-class LogRendererOptimized extends React.PureComponent<Props, State> {
+class LogRendererOptimized extends React.Component<Props, State> {
   static defaultProps: Partial<Props> = {
     height: 0,
     len: 0,
@@ -66,18 +66,20 @@ class LogRendererOptimized extends React.PureComponent<Props, State> {
     const { width, height, logs, len } = this.props
 
     return (
-      <List
-        ref={this.LIST_REF}
-        height={500}
-        itemCount={logs.length}
-        itemData={logs}
-        itemSize={24}
-        width={500}
-        overscanCount={100}
-        // style={{ marginTop: RUN_BAR_HEIGHT_PX }}
-      >
-        {LogRow}
-      </List>
+      <div className="flotilla-logs-container">
+        <List
+          ref={this.LIST_REF}
+          height={800}
+          itemCount={logs.length}
+          itemData={logs}
+          itemSize={24}
+          width={width}
+          overscanCount={100}
+          // style={{ marginTop: RUN_BAR_HEIGHT_PX }}
+        >
+          {LogRow}
+        </List>
+      </div>
     )
   }
 }

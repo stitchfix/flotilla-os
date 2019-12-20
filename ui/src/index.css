@@ -274,6 +274,7 @@ table {
   );
   overflow-y: scroll;
   padding: 0;
+  width: 100%;
 }
 
 /**
