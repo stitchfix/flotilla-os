@@ -30,7 +30,7 @@ const initialState: State = {
   hasLogs: false,
 }
 
-class LogRequester extends React.PureComponent<Props, State> {
+class LogRequesterCloudWatchLogs extends React.PureComponent<Props, State> {
   private requestInterval: number | undefined
   state = initialState
 
@@ -222,4 +222,4 @@ class LogRequester extends React.PureComponent<Props, State> {
   }
 }
 
-export default LogRequester
+export default LogRequesterCloudWatchLogs

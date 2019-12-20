@@ -25,7 +25,7 @@ import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
 import Toggler from "./Toggler"
-import LogRequester from "./LogRequester"
+import LogRequesterCloudWatchLogs from "./LogRequesterCloudWatchLogs"
 import LogRequesterS3 from "./LogRequesterS3"
 import RunEvents from "./RunEvents"
 import RunAttributes from "./RunAttributes"
@@ -304,7 +304,7 @@ export class Run extends React.Component<Props, State> {
                                 shouldAutoscroll={this.state.shouldAutoscroll}
                               />
                             ) : (
-                              <LogRequester
+                              <LogRequesterCloudWatchLogs
                                 runID={data.run_id}
                                 status={data.status}
                                 height={this.getLogsHeight()}

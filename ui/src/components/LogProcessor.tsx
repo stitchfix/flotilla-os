@@ -1,8 +1,10 @@
 import * as React from "react"
 import ReactResizeDetector from "react-resize-detector"
-import { isEmpty, round } from "lodash"
+import { round } from "lodash"
 import LogRendererOptimized from "./LogRendererOptimized"
 import { LogChunk } from "../types"
+import WebWorker from "../workers/index"
+import LogWorker from "../workers/log.worker"
 
 type ConnectedProps = {
   logs: LogChunk[]
@@ -13,13 +15,37 @@ type Props = ConnectedProps & {
   height: number
 }
 
+type State = {
+  logs: string[]
+}
+
 /**
  * The intermediate component between LogRequester and LogRendererOptimized.
  * This component is responsible for slicing the logs into smaller pieces, each
  * of which will be rendered into a LowRow component.
  */
-class LogProcessor extends React.PureComponent<Props> {
+class LogProcessor extends React.PureComponent<Props, State> {
   static HACKY_CHAR_TO_PIXEL_RATIO = 37 / 300
+  private logWorker: any
+
+  constructor(props: Props) {
+    super(props)
+    this.logWorker = new WebWorker(LogWorker)
+  }
+
+  state = {
+    logs: [],
+  }
+
+  componentDidMount() {
+    this.processLogs()
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.logs.length !== this.props.logs.length) {
+      this.processLogs()
+    }
+  }
 
   /**
    * Returns the max number of characters allowed per line.
@@ -32,64 +58,22 @@ class LogProcessor extends React.PureComponent<Props> {
    * LogChunk's log string according to the available width, and flattens it to
    * an array of strings, which it then passes to LogRendererOptimized to render.
    */
-  processLogs = (): string[] => {
+  processLogs = (): void => {
     const { logs } = this.props
-
-    if (isEmpty(logs)) return []
-
-    const maxLineLength = this.getMaxLineLength()
-
-    return logs.reduce((acc: string[], chunk: LogChunk): string[] => {
-      // Split the chunk string by newline chars.
-      const split = chunk.chunk.split("\n")
-
-      // Loop through each split part of the chunk. For each part, if the
-      // length of the string is greater than the maxLineLength variable, split
-      // the part so each sub-part is less than maxLineLength. Otherwise, push
-      // the part to the array to be returned.
-      for (let i = 0; i < split.length; i++) {
-        const str: string = split[i]
-
-        if (str.length > maxLineLength) {
-          for (let j = 0; j < str.length; j += maxLineLength) {
-            acc.push(str.slice(j, j + maxLineLength))
-          }
-        } else {
-          acc.push(str)
-        }
-      }
-
-      return acc
-    }, [])
-  }
-
-  /**
-   * Checks whether the dimensions have been set by ReactSizeDetector.
-   */
-  areDimensionsValid = (): boolean => {
-    const { width, height } = this.props
-
-    if (
-      width === 0 ||
-      width === undefined ||
-      height === 0 ||
-      height === undefined
-    ) {
-      return false
-    }
-
-    return true
+    console.log("sending preprocessed logs to worker")
+    this.logWorker.postMessage({
+      chunks: logs,
+      maxLen: this.getMaxLineLength(),
+    })
+    this.logWorker.addEventListener("message", (evt: any) => {
+      console.log("received message from worker")
+      this.setState({ logs: evt.data })
+    })
   }
 
   render() {
-    if (this.areDimensionsValid()) {
-      // Only process logs if the dimensions are valid.
-      const logs = this.processLogs()
-      console.log(logs)
-      return <LogRendererOptimized logs={logs} len={logs.length} />
-    }
-
-    return <span />
+    const { logs } = this.state
+    return <LogRendererOptimized logs={logs} len={logs.length} />
   }
 }
 
