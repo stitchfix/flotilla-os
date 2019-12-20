@@ -94,7 +94,7 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 			sw.processRun(run)
 		}
 
-		if sw.acquireLock(run, "metrics", 2*time.Second) == true {
+		if sw.acquireLock(run, "metrics", 3*time.Second) == true {
 			sw.processRunMetrics(run)
 		}
 	}
