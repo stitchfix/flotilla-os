@@ -288,6 +288,11 @@ func (iatt *ImplementsAllTheThings) FetchUpdateStatus(run state.Run) (state.Run,
 	return run, nil
 }
 
+func (iatt *ImplementsAllTheThings) FetchPodMetrics(run state.Run) (state.Run, error) {
+	iatt.Calls = append(iatt.Calls, "FetchPodMetrics")
+	return run, nil
+}
+
 // CanBeRun - Cluster Client
 func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, definition state.Definition) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "CanBeRun")
