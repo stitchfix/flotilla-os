@@ -18,3 +18,5 @@ export const RUN_STATUS_COLOR_MAP = new Map<
   [EnhancedRunStatus.SUCCESS, Colors.GREEN5],
   [EnhancedRunStatus.FAILED, Colors.RED4],
 ])
+export const LOCAL_STORAGE_SETTINGS_KEY = "settings"
+export const LOCAL_STORAGE_IS_ONBOARDED_KEY = "is_onboarded"

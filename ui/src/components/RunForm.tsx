@@ -28,6 +28,8 @@ import FieldError from "./FieldError"
 import NodeLifecycleSelect from "./NodeLifecycleSelect"
 import * as helpers from "../helpers/runFormHelpers"
 import { commandFieldSpec } from "../helpers/taskFormHelpers"
+import { useSelector } from "react-redux"
+import { RootState } from "../state/store"
 
 const validationSchema = Yup.object().shape({
   owner_id: Yup.string(),
@@ -259,55 +261,59 @@ class RunForm extends React.Component<Props, State> {
 const Connected: React.FunctionComponent<RouteComponentProps> = ({
   location,
   history,
-}) => (
-  <Request<Run, { definitionID: string; data: LaunchRequestV2 }>
-    requestFn={api.runTask}
-    shouldRequestOnMount={false}
-    onSuccess={(data: Run) => {
-      Toaster.show({
-        message: `Run ${data.run_id} submitted successfully!`,
-        intent: Intent.SUCCESS,
-      })
-      history.push(`/runs/${data.run_id}`)
-    }}
-    onFailure={() => {
-      Toaster.show({
-        message: "An error occurred.",
-        intent: Intent.DANGER,
-      })
-    }}
-  >
-    {requestProps => (
-      <TaskContext.Consumer>
-        {(ctx: TaskCtx) => {
-          switch (ctx.requestStatus) {
-            case RequestStatus.ERROR:
-              return <ErrorCallout error={ctx.error} />
-            case RequestStatus.READY:
-              if (ctx.data) {
-                const initialValues: LaunchRequestV2 = getInitialValuesForTaskRun(
-                  {
-                    task: ctx.data,
-                    routerState: location.state,
-                  }
-                )
-                return (
-                  <RunForm
-                    definitionID={ctx.definitionID}
-                    initialValues={initialValues}
-                    {...requestProps}
-                  />
-                )
-              }
-              break
-            case RequestStatus.NOT_READY:
-            default:
-              return <Spinner />
-          }
-        }}
-      </TaskContext.Consumer>
-    )}
-  </Request>
-)
+}) => {
+  const { settings } = useSelector((s: RootState) => s.settings)
+  return (
+    <Request<Run, { definitionID: string; data: LaunchRequestV2 }>
+      requestFn={api.runTask}
+      shouldRequestOnMount={false}
+      onSuccess={(data: Run) => {
+        Toaster.show({
+          message: `Run ${data.run_id} submitted successfully!`,
+          intent: Intent.SUCCESS,
+        })
+        history.push(`/runs/${data.run_id}`)
+      }}
+      onFailure={() => {
+        Toaster.show({
+          message: "An error occurred.",
+          intent: Intent.DANGER,
+        })
+      }}
+    >
+      {requestProps => (
+        <TaskContext.Consumer>
+          {(ctx: TaskCtx) => {
+            switch (ctx.requestStatus) {
+              case RequestStatus.ERROR:
+                return <ErrorCallout error={ctx.error} />
+              case RequestStatus.READY:
+                if (ctx.data) {
+                  const initialValues: LaunchRequestV2 = getInitialValuesForTaskRun(
+                    {
+                      task: ctx.data,
+                      routerState: location.state,
+                      settings,
+                    }
+                  )
+                  return (
+                    <RunForm
+                      definitionID={ctx.definitionID}
+                      initialValues={initialValues}
+                      {...requestProps}
+                    />
+                  )
+                }
+                break
+              case RequestStatus.NOT_READY:
+              default:
+                return <Spinner />
+            }
+          }}
+        </TaskContext.Consumer>
+      )}
+    </Request>
+  )
+}
 
 export default Connected

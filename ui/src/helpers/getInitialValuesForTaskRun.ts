@@ -7,6 +7,7 @@ import {
   NodeLifecycle,
 } from "../types"
 import getOwnerIdRunTagFromCookies from "./getOwnerIdRunTagFromCookies"
+import { Settings } from "../state/settings"
 
 /**
  * Given a task definition and history.location.state, return the initial
@@ -15,15 +16,17 @@ import getOwnerIdRunTagFromCookies from "./getOwnerIdRunTagFromCookies"
 const getInitialValuesForTaskRun = ({
   task,
   routerState,
+  settings,
 }: {
   task: Task
   routerState: any
+  settings: Settings
 }): LaunchRequestV2 => {
   // Set ownerID value.
   const ownerID = get(
     routerState,
     ["run_tags", "owner_id"],
-    getOwnerIdRunTagFromCookies()
+    get(settings, "DEFAULT_OWNER_ID", getOwnerIdRunTagFromCookies())
   )
 
   // Set env value.

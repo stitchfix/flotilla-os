@@ -322,6 +322,12 @@ table {
 .bp3-input {
   height: 36px;
 }
+.bp3-form-group {
+  margin-bottom: 28px;
+}
+.bp3-form-group:last-child {
+  margin-bottom: 0;
+}
 .bp3-form-group input,
 .bp3-form-group textarea {
   width: 100%;
