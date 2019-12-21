@@ -92,9 +92,10 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
 		if sw.acquireLock(run, "status", 15*time.Second) == true {
 			sw.processRun(run)
+
 		}
 
-		if sw.acquireLock(run, "metrics", 3*time.Second) == true {
+		if sw.acquireLock(run, "metrics", 15*time.Second) == true {
 			sw.processRunMetrics(run)
 		}
 	}
