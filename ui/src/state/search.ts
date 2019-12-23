@@ -36,24 +36,21 @@ const searchReducer = createSlice({
       state.matches = null
       state.cursor = null
     },
-    incrementCursor(state) {
-      if (state.matches !== null) {
-        if (
-          state.cursor === null ||
-          state.cursor === state.matches.length - 1
-        ) {
-          state.cursor = 0
+    incrementCursor({ matches, cursor }) {
+      if (matches !== null) {
+        if (cursor === null || cursor === matches.length - 1) {
+          cursor = 0
         } else {
-          state.cursor = state.cursor + 1
+          cursor = cursor + 1
         }
       }
     },
-    decrementCursor(state) {
-      if (state.matches !== null) {
-        if (state.cursor === null || state.cursor === 0) {
-          state.cursor = state.matches.length - 1
+    decrementCursor({ matches, cursor }) {
+      if (matches !== null) {
+        if (cursor === null || cursor === 0) {
+          cursor = matches.length - 1
         } else {
-          state.cursor = state.cursor + 1
+          cursor = cursor + 1
         }
       }
     },

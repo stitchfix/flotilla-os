@@ -269,12 +269,19 @@ table {
  * Logs
  */
 .flotilla-logs-container {
-  max-height: calc(
-    100vh - var(--blueprint-navbar-height) - (var(--spacing) * 4) - 54px
-  );
+  max-height: 600px;
   overflow-y: scroll;
   padding: 0;
   width: 100%;
+}
+
+.flotilla-logs-loader-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  margin: 0 var(--spacing) var(--spacing);
 }
 
 /**
