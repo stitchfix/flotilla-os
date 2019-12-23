@@ -112,7 +112,7 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
       })
       .catch(error => {
         this.clearRequestInterval()
-        this.setState({ error })
+        this.setState({ isLoading: false, error })
       })
   }
 

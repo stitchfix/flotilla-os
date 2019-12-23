@@ -1,26 +1,26 @@
-import { LogChunk } from "../types"
-
 export default () => {
-  onmessage = (evt: { data: { chunks: LogChunk[]; maxLen: number } }) => {
-    const { chunks, maxLen } = evt.data
+  onmessage = (evt: { data: { logs: string; maxLen: number } }) => {
+    const { logs, maxLen } = evt.data
     let processed: string[] = []
 
-    for (let i = 0; i < chunks.length; i++) {
-      const { chunk } = chunks[i]
-      const lines: string[] = chunk.split("\n")
+    // Split `logs` string by newline char.
+    const lines: string[] = logs.split("\n")
 
-      for (let j = 0; j < lines.length; j++) {
-        const line = lines[j]
+    // Iterate over each line. If line.length <= maxLen, push to `processed`
+    // array. If the length of the line is greater than maxLen, iterate over
+    // the line `maxLen` chars at a time and push each sub-line to the
+    // `processed` array.
+    for (let j = 0; j < lines.length; j++) {
+      const line = lines[j]
 
-        if (line.length <= maxLen) {
-          processed.push(line)
-        } else {
-          let k = 0
+      if (line.length <= maxLen) {
+        processed.push(line)
+      } else {
+        let k = 0
 
-          while (k < line.length) {
-            processed.push(line.substring(k, k + maxLen))
-            k += maxLen
-          }
+        while (k < line.length) {
+          processed.push(line.substring(k, k + maxLen))
+          k += maxLen
         }
       }
     }

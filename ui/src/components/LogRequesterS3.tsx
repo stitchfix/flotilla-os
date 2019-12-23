@@ -2,7 +2,7 @@ import * as React from "react"
 import api from "../api"
 import LogRenderer from "./LogRenderer"
 import LogProcessor from "./LogProcessor"
-import { LogChunk, RunStatus } from "../types"
+import { RunStatus } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
 
@@ -15,21 +15,20 @@ type Props = {
 }
 
 type State = {
-  logs: LogChunk[]
+  logs: string
   isLoading: boolean
   error: any
   hasLogs: boolean
 }
 
 const initialState: State = {
-  logs: [],
+  logs: "",
   isLoading: false,
   error: false,
   hasLogs: false,
 }
 
 class S3LogRequester extends React.PureComponent<Props, State> {
-  private dummyLastSeen: string = "DUMMY_LAST_SEEN"
   private requestInterval: number | undefined
   state = initialState
 
@@ -96,29 +95,22 @@ class S3LogRequester extends React.PureComponent<Props, State> {
 
     api
       .getRunLogRaw({ runID })
-      .then((log: string) => {
-        const chunk: LogChunk = {
-          chunk: log,
-          lastSeen: this.dummyLastSeen,
-        }
+      .then((logs: string) => {
         this.setState({
           isLoading: false,
           error: false,
-          logs: [chunk],
-          hasLogs: log.length > 0,
+          logs,
+          hasLogs: logs.length > 0,
         })
       })
       .catch(error => {
         this.clearRequestInterval()
-        this.setState({ error })
+        this.setState({ isLoading: false, error })
       })
   }
 
-  hasRunFinished = (): boolean => this.props.status === RunStatus.STOPPED
-
   render() {
-    const { height } = this.props
-    const { isLoading, error, logs } = this.state
+    const { error, logs } = this.state
 
     if (error) return <ErrorCallout error={error} />
 
