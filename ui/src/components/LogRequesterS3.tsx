@@ -1,6 +1,5 @@
 import * as React from "react"
 import api from "../api"
-import LogRenderer from "./LogRenderer"
 import LogProcessor from "./LogProcessor"
 import { RunStatus } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
@@ -28,7 +27,7 @@ const initialState: State = {
   hasLogs: false,
 }
 
-class S3LogRequester extends React.PureComponent<Props, State> {
+class LogRequesterS3 extends React.PureComponent<Props, State> {
   private requestInterval: number | undefined
   state = initialState
 
@@ -114,16 +113,8 @@ class S3LogRequester extends React.PureComponent<Props, State> {
 
     if (error) return <ErrorCallout error={error} />
 
-    return (
-      <LogProcessor
-        // height={height}
-        logs={logs}
-        // hasRunFinished={this.hasRunFinished()}
-        // isLoading={isLoading}
-        // shouldAutoscroll={this.props.shouldAutoscroll}
-      />
-    )
+    return <LogProcessor logs={logs} />
   }
 }
 
-export default S3LogRequester
+export default LogRequesterS3

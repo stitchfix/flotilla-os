@@ -1,7 +1,7 @@
 import * as React from "react"
 import { has, isEmpty } from "lodash"
 import api from "../api"
-import LogRenderer from "./LogRenderer"
+import Log from "./Log"
 import { RunStatus, RunLog } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
@@ -159,7 +159,7 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
     if (error) return <ErrorCallout error={error} />
 
     return (
-      <LogRenderer
+      <Log
         height={height}
         logs={logs}
         hasRunFinished={status === RunStatus.STOPPED}

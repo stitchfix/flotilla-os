@@ -20,3 +20,4 @@ export const RUN_STATUS_COLOR_MAP = new Map<
 ])
 export const LOCAL_STORAGE_SETTINGS_KEY = "settings"
 export const LOCAL_STORAGE_IS_ONBOARDED_KEY = "is_onboarded"
+export const CHAR_TO_PX_RATIO = 40 / 300

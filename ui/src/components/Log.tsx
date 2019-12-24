@@ -12,7 +12,7 @@ import {
 } from "@blueprintjs/core"
 
 type Props = {
-  logs: string[]
+  logs: string
   hasRunFinished: boolean
   isLoading: boolean
   height: number
@@ -51,17 +51,7 @@ class LogRenderer extends React.Component<Props> {
   shouldScrollToBottom(prev: Props, next: Props) {
     // Handle manual override.
     if (next.shouldAutoscroll === false) return false
-
-    // Handle CloudWatchLogs.
     if (prev.logs.length !== next.logs.length) return true
-
-    // Handle S3 logs (there will only be one chunk).
-    // if (
-    //   prev.logs.length === 1 &&
-    //   next.logs.length === 1 &&
-    //   prev.logs[0].chunk.length !== next.logs[0].chunk.length
-    // )
-    //   return true
   }
 
   render() {
@@ -74,30 +64,17 @@ class LogRenderer extends React.Component<Props> {
     }
 
     return (
-      <div>
-        <div
-          ref={this.CONTAINER_DIV}
-          className="flotilla-logs-container"
-          style={{ height }}
-        >
-          <Pre className={`flotilla-pre ${Classes.DARK}`}>
-            {/* <Ansi linkify={false} className="flotilla-ansi">
-              {logs[logPage]}
-            </Ansi> */}
-            <span
-              style={{
-                display: "flex",
-                flexFlow: "row nowrap",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                width: "100%",
-                padding: 24,
-              }}
-            >
-              {loader}
-            </span>
-          </Pre>
-        </div>
+      <div
+        ref={this.CONTAINER_DIV}
+        className="flotilla-logs-container"
+        style={{ height }}
+      >
+        {/* <Pre className={`flotilla-pre ${Classes.DARK}`}>
+          <Ansi linkify={false} className="flotilla-ansi">
+            {logs}
+          </Ansi>
+        </Pre>
+        <div className="flotilla-logs-loader-container">{loader}</div> */}
       </div>
     )
   }

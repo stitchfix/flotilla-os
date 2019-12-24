@@ -1,53 +1,36 @@
 import * as React from "react"
 import ReactResizeDetector from "react-resize-detector"
-import { get, round, isEmpty } from "lodash"
-import LogRendererOptimized from "./LogRendererOptimized"
-import { LogChunk } from "../types"
 import WebWorker from "../workers/index"
 import LogWorker from "../workers/log.worker"
-import { Button, Spinner } from "@blueprintjs/core"
-import { DebounceInput } from "react-debounce-input"
-import QueryParams, { ChildProps } from "./QueryParams"
-import { LOG_SEARCH_QUERY_KEY } from "../constants"
+import { CHAR_TO_PX_RATIO } from "../constants"
+import LogVirtualized from "./LogVirtualized"
 
 type ConnectedProps = {
-  logs: LogChunk[]
+  logs: string
 }
 
-type Props = ConnectedProps &
-  ChildProps & {
-    width: number
-    height: number
-  }
+type Props = ConnectedProps & {
+  width: number
+  height: number
+}
 
 type State = {
-  logs: string[]
-  isSearching: boolean
-  matches: Array<[number, number]>
+  processedLogs: string[]
 }
 
-/**
- * The intermediate component between LogRequester and LogRendererOptimized.
- * This component is responsible for slicing the logs into smaller pieces, each
- * of which will be rendered into a LowRow component.
- */
 class LogProcessor extends React.PureComponent<Props, State> {
-  static HACKY_CHAR_TO_PIXEL_RATIO = 40 / 300
   private logWorker: any
-
   constructor(props: Props) {
     super(props)
     this.logWorker = new WebWorker(LogWorker)
     this.logWorker.addEventListener("message", (evt: any) => {
       console.log("received message from worker")
-      this.setState({ logs: evt.data })
+      this.setState({ processedLogs: evt.data })
     })
   }
 
   state = {
-    logs: [],
-    isSearching: false,
-    matches: [],
+    processedLogs: [],
   }
 
   componentDidMount() {
@@ -55,95 +38,40 @@ class LogProcessor extends React.PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps.logs.length !== this.props.logs.length) {
+    // If the log length or container width change, re-process logs. Note: the
+    // container height has no effect on this.
+    if (
+      prevProps.logs.length !== this.props.logs.length ||
+      prevProps.width !== this.props.width
+    ) {
       this.processLogs()
-    }
-
-    // if (
-    //   prevProps.width !== this.props.width ||
-    //   prevProps.height !== this.props.height
-    // ) {
-    //   this.processLogs()
-    // }
-
-    const prevSearchQ = get(prevProps.query, LOG_SEARCH_QUERY_KEY)
-    const currSearchQ = get(this.props.query, LOG_SEARCH_QUERY_KEY)
-
-    if (prevSearchQ !== currSearchQ) {
-      if (isEmpty(currSearchQ)) {
-        this.setState({ matches: [] })
-      } else {
-        this.search(get(this.props.query, LOG_SEARCH_QUERY_KEY))
-      }
     }
   }
 
-  /**
-   * Returns the max number of characters allowed per line.
-   */
+  /** Returns the max number of characters allowed per line. */
   getMaxLineLength = (): number =>
-    round(this.props.width * LogProcessor.HACKY_CHAR_TO_PIXEL_RATIO)
+    Math.floor(this.props.width * CHAR_TO_PX_RATIO)
 
-  /**
-   * Takes the `logs` prop (an array of LogChunk objects), splits each
-   * LogChunk's log string according to the available width, and flattens it to
-   * an array of strings, which it then passes to LogRendererOptimized to render.
-   */
+  /** Send props.logs to web worker for processing. */
   processLogs = (): void => {
     const { logs } = this.props
-    console.log("sending preprocessed logs to worker")
     this.logWorker.postMessage({
-      chunks: logs,
+      logs,
       maxLen: this.getMaxLineLength(),
     })
   }
 
-  search(q: string): void {
-    const { logs } = this.state
-
-    this.setState({ isSearching: true, matches: [] }, () => {
-      let matches = []
-
-      for (let i = 0; i < logs.length; i++) {
-        const line: string = logs[i]
-        const firstIndex = line.indexOf(q)
-        if (firstIndex > -1) {
-          const m: [number, number] = [i, firstIndex]
-          matches.push(m)
-        }
-      }
-
-      this.setState({ isSearching: false, matches })
-    })
-  }
-
   render() {
-    const { query, setQuery, width, height } = this.props
-    const { logs, isSearching, matches } = this.state
+    const { width, height } = this.props
+    const { processedLogs } = this.state
 
     return (
-      <>
-        <div>
-          <DebounceInput
-            value={get(query, LOG_SEARCH_QUERY_KEY, "")}
-            onChange={evt => {
-              setQuery({ ...query, [LOG_SEARCH_QUERY_KEY]: evt.target.value })
-            }}
-            debounceTimeout={500}
-            className="bp3-input"
-          />
-          {isSearching === true && <Spinner size={Spinner.SIZE_LARGE} />}
-          <div>
-            <div>number of matches: {matches.length}</div>
-          </div>
-        </div>
-        <LogRendererOptimized
-          logs={logs}
-          len={logs.length}
-          width={width}
-          height={height}
-        />
-      </>
+      <LogVirtualized
+        logs={processedLogs}
+        width={width}
+        height={height}
+        shouldAutoscroll
+      />
     )
   }
 }
@@ -153,24 +81,15 @@ const Connected: React.FC<ConnectedProps> = props => (
     handleHeight
     handleWidth
     refreshMode="throttle"
-    refreshRate={500}
+    refreshRate={1000}
   >
-    {({ width, height }: { width: number; height: number }) => {
-      console.log(width, height)
-      return (
-        <QueryParams>
-          {({ query, setQuery }) => (
-            <LogProcessor
-              logs={props.logs}
-              width={width || 500}
-              height={height || 500}
-              query={query}
-              setQuery={setQuery}
-            />
-          )}
-        </QueryParams>
-      )
-    }}
+    {({ width, height }: { width?: number; height?: number }) => (
+      <LogProcessor
+        logs={props.logs}
+        width={width || 500}
+        height={height || 500}
+      />
+    )}
   </ReactResizeDetector>
 )
 

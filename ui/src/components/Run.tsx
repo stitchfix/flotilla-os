@@ -12,7 +12,7 @@ import {
   Tooltip,
   Callout,
   Intent,
-  Checkbox,
+  Switch,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -34,7 +34,6 @@ import { RUN_TAB_ID_QUERY_KEY } from "../constants"
 import Attribute from "./Attribute"
 import RunTag from "./RunTag"
 import Duration from "./Duration"
-import ISO8601AttributeValue from "./ISO8601AttributeValue"
 import ErrorCallout from "./ErrorCallout"
 import RunDebugAttributes from "./RunDebugAttributes"
 import Helmet from "react-helmet"
@@ -110,6 +109,7 @@ export class Run extends React.Component<Props, State> {
     window.clearInterval(this.requestIntervalID)
   }
 
+  // TODO: delete this garbage.
   getLogsHeight(): number {
     if (window.innerWidth >= 1230) {
       // LOL sorry.
@@ -265,19 +265,9 @@ export class Run extends React.Component<Props, State> {
                             value={data.exit_reason || "-"}
                           />
                           <Attribute
-                            name="Last Updated At"
+                            name="Autoscroll"
                             value={
-                              <ISO8601AttributeValue
-                                time={
-                                  receivedAt ? receivedAt.toISOString() : ""
-                                }
-                              />
-                            }
-                          />
-                          <Attribute
-                            name="Autoscroll?"
-                            value={
-                              <Checkbox
+                              <Switch
                                 checked={this.state.shouldAutoscroll}
                                 onChange={this.toggleAutoscroll}
                               />

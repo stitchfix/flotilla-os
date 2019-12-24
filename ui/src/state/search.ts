@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 // [line number, char index]
-type SearchMatches = [number, number][] | null
+type SearchMatches = [number, number][]
 
 // index of search matches
-type SearchCursor = number | null
+type SearchCursor = number
 
 type SearchReducer = {
   isSearchInputVisible: boolean
@@ -14,8 +14,8 @@ type SearchReducer = {
 
 const initialState: SearchReducer = {
   isSearchInputVisible: false,
-  matches: null,
-  cursor: null,
+  matches: [],
+  cursor: 0,
 }
 
 const searchReducer = createSlice({
@@ -28,35 +28,45 @@ const searchReducer = createSlice({
     ) {
       state.isSearchInputVisible = payload.isVisible
     },
+
     setMatches(state, { payload }: PayloadAction<{ matches: SearchMatches }>) {
       state.matches = payload.matches
-      state.cursor = null
+      state.cursor = 0
     },
-    clear(state) {
-      state.matches = null
-      state.cursor = null
+
+    clearSearchState(state) {
+      state.matches = []
+      state.cursor = 0
     },
-    incrementCursor({ matches, cursor }) {
-      if (matches !== null) {
-        if (cursor === null || cursor === matches.length - 1) {
-          cursor = 0
+
+    incrementCursor(state) {
+      if (state.matches.length > 0) {
+        if (state.cursor === state.matches.length - 1) {
+          state.cursor = 0
         } else {
-          cursor = cursor + 1
+          state.cursor = state.cursor + 1
         }
       }
     },
-    decrementCursor({ matches, cursor }) {
-      if (matches !== null) {
-        if (cursor === null || cursor === 0) {
-          cursor = matches.length - 1
+
+    decrementCursor(state) {
+      if (state.matches.length > 0) {
+        if (state.cursor === 0) {
+          state.cursor = state.matches.length - 1
         } else {
-          cursor = cursor + 1
+          state.cursor = state.cursor - 1
         }
       }
     },
   },
 })
 
-export const { setSearchInputVisibility } = searchReducer.actions
+export const {
+  setSearchInputVisibility,
+  incrementCursor,
+  decrementCursor,
+  setMatches,
+  clearSearchState,
+} = searchReducer.actions
 
 export default searchReducer.reducer
