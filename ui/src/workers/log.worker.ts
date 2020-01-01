@@ -3,6 +3,11 @@ export default () => {
     const { logs, maxLen } = evt.data
     let processed: string[] = []
 
+    if (logs.length === 0) {
+      postMessage([])
+      return
+    }
+
     // Split `logs` string by newline char.
     const lines: string[] = logs.split("\n")
 

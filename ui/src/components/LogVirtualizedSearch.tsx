@@ -1,51 +1,60 @@
 import * as React from "react"
-import { useSelector, useDispatch } from "react-redux"
-import { get } from "lodash"
-import Query from "./QueryParams"
 import { DebounceInput } from "react-debounce-input"
-import { LOG_SEARCH_QUERY_KEY } from "../constants"
 import { ButtonGroup, Button } from "@blueprintjs/core"
-import { RootState } from "../state/store"
-import { decrementCursor, incrementCursor } from "../state/search"
 
-const LogVirtualizedSearch: React.FC = props => {
-  const dispatch = useDispatch()
-
-  return (
-    <Query>
-      {({ query, setQuery }) => {
-        return (
-          <div
-            className="flotilla-logs-virtualized-search-container"
-            style={{ display: "flex" }}
-          >
-            <DebounceInput
-              value={get(query, LOG_SEARCH_QUERY_KEY, "")}
-              onChange={evt => {
-                setQuery({ [LOG_SEARCH_QUERY_KEY]: evt.target.value })
-              }}
-              debounceTimeout={500}
-              className="bp3-input"
-            />
-            <ButtonGroup>
-              <Button
-                icon="chevron-left"
-                onClick={() => {
-                  dispatch(decrementCursor())
-                }}
-              />
-              <Button
-                icon="chevron-right"
-                onClick={() => {
-                  dispatch(incrementCursor())
-                }}
-              />
-            </ButtonGroup>
-          </div>
-        )
-      }}
-    </Query>
-  )
+type Props = {
+  onChange: (value: string) => void
+  onFocus: () => void
+  onBlur: () => void
+  onIncrement: () => void
+  onDecrement: () => void
+  inputRef: React.Ref<HTMLInputElement>
+  cursorIndex: number
+  totalMatches: number
 }
+
+const LogVirtualizedSearch: React.FC<Props> = ({
+  onChange,
+  onFocus,
+  onBlur,
+  inputRef,
+  onIncrement,
+  onDecrement,
+  cursorIndex,
+  totalMatches,
+}) => (
+  <div className="flotilla-logs-virtualized-search-container">
+    <DebounceInput
+      onChange={evt => {
+        onChange(evt.target.value)
+      }}
+      debounceTimeout={500}
+      className="bp3-input flotilla-logs-virtualized-search-input"
+      inputRef={inputRef}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      placeholder="Search..."
+    />
+    {totalMatches > 0 && (
+      <div className="flotilla-logs-virtualized-search-info">
+        {cursorIndex + 1}/{totalMatches}
+      </div>
+    )}
+    <ButtonGroup>
+      <Button
+        icon="chevron-left"
+        onClick={onDecrement}
+        minimal
+        disabled={totalMatches === 0}
+      />
+      <Button
+        icon="chevron-right"
+        onClick={onIncrement}
+        minimal
+        disabled={totalMatches === 0}
+      />
+    </ButtonGroup>
+  </div>
+)
 
 export default LogVirtualizedSearch

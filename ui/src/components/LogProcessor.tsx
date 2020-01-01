@@ -4,6 +4,7 @@ import WebWorker from "../workers/index"
 import LogWorker from "../workers/log.worker"
 import { CHAR_TO_PX_RATIO } from "../constants"
 import LogVirtualized from "./LogVirtualized"
+import { Spinner } from "@blueprintjs/core"
 
 type ConnectedProps = {
   logs: string
@@ -15,6 +16,7 @@ type Props = ConnectedProps & {
 }
 
 type State = {
+  isProcessing: boolean
   processedLogs: string[]
 }
 
@@ -22,14 +24,16 @@ class LogProcessor extends React.PureComponent<Props, State> {
   private logWorker: any
   constructor(props: Props) {
     super(props)
+
+    // Instantiate worker and add event listener.
     this.logWorker = new WebWorker(LogWorker)
     this.logWorker.addEventListener("message", (evt: any) => {
-      console.log("received message from worker")
-      this.setState({ processedLogs: evt.data })
+      this.setState({ isProcessing: false, processedLogs: evt.data })
     })
   }
 
   state = {
+    isProcessing: false,
     processedLogs: [],
   }
 
@@ -55,15 +59,22 @@ class LogProcessor extends React.PureComponent<Props, State> {
   /** Send props.logs to web worker for processing. */
   processLogs = (): void => {
     const { logs } = this.props
-    this.logWorker.postMessage({
-      logs,
-      maxLen: this.getMaxLineLength(),
+
+    this.setState({ isProcessing: true }, () => {
+      this.logWorker.postMessage({
+        logs,
+        maxLen: this.getMaxLineLength(),
+      })
     })
   }
 
   render() {
     const { width, height } = this.props
-    const { processedLogs } = this.state
+    const { processedLogs, isProcessing } = this.state
+
+    // console.log(this.state)
+
+    if (isProcessing) return <Spinner />
 
     return (
       <LogVirtualized
@@ -84,11 +95,7 @@ const Connected: React.FC<ConnectedProps> = props => (
     refreshRate={1000}
   >
     {({ width, height }: { width?: number; height?: number }) => (
-      <LogProcessor
-        logs={props.logs}
-        width={width || 500}
-        height={height || 500}
-      />
+      <LogProcessor logs={props.logs} width={width || 500} height={800} />
     )}
   </ReactResizeDetector>
 )

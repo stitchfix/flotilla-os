@@ -284,6 +284,18 @@ table {
   margin: 0 var(--spacing) var(--spacing);
 }
 
+.flotilla-logs-virtualized-search-container {
+  display: flex;
+  flex-flow: row nowrap;
+  width: 100%;
+  border: var(--default-border);
+  border-bottom: none;
+}
+
+.flotilla-logs-virtualized-search-input {
+  flex: 1;
+}
+
 /**
  * Pre
  */

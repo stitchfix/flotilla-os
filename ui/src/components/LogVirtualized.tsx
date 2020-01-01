@@ -1,18 +1,30 @@
 import * as React from "react"
-import { connect, ConnectedProps as ReduxConnectedProps } from "react-redux"
-import { get, isEmpty } from "lodash"
 import { FixedSizeList as List } from "react-window"
-import Query, { ChildProps } from "./QueryParams"
+import { get } from "lodash"
 import LogRow from "./LogVirtualizedRow"
-import { LOG_SEARCH_QUERY_KEY } from "../constants"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
-import { RootState } from "../state/store"
-import { clearSearchState, setMatches } from "../state/search"
 
-type Props = ConnectedProps & ChildProps
+type Props = {
+  width: number
+  height: number
+  logs: string[]
+  shouldAutoscroll: boolean
+}
+
+type State = {
+  isSearchInputFocused: boolean
+  searchMatches: [number, number][] // [line number, char index]
+  searchCursor: number
+}
+
+enum KeyCode {
+  F = 70,
+  ESC = 27,
+  ENTER = 13,
+}
 
 /** Renders the processed logs using react-window for performance. */
-class LogVirtualized extends React.Component<Props> {
+class LogVirtualized extends React.Component<Props, State> {
   static defaultProps: Partial<Props> = {
     height: 0,
     logs: [],
@@ -20,8 +32,25 @@ class LogVirtualized extends React.Component<Props> {
     shouldAutoscroll: true,
   }
   private reactWindowRef = React.createRef<List>()
+  private searchInputRef = React.createRef<HTMLInputElement>()
+
+  constructor(props: Props) {
+    super(props)
+    this.search = this.search.bind(this)
+    this.handleCursorChange = this.handleCursorChange.bind(this)
+    this.handleIncrementCursor = this.handleIncrementCursor.bind(this)
+    this.handleDecrementCursor = this.handleDecrementCursor.bind(this)
+    this.handleKeydown = this.handleKeydown.bind(this)
+  }
+
+  state = {
+    isSearchInputFocused: false,
+    searchMatches: [],
+    searchCursor: 0,
+  }
 
   componentDidMount() {
+    window.addEventListener("keydown", this.handleKeydown)
     const listRef = this.reactWindowRef.current
 
     // Scroll to the most recent log.
@@ -30,7 +59,11 @@ class LogVirtualized extends React.Component<Props> {
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    if (prevState.searchCursor !== this.state.searchCursor) {
+      this.handleCursorChange()
+    }
+
     if (
       this.props.shouldAutoscroll === true &&
       prevProps.logs.length !== this.props.logs.length
@@ -38,81 +71,149 @@ class LogVirtualized extends React.Component<Props> {
       // Scroll to the most recent log if autoscroll is enabled.
       const listRef = this.reactWindowRef.current
       if (listRef) {
-        listRef.scrollToItem(this.props.logs.length)
+        listRef.scrollToItem(this.props.logs.length - 1)
       }
     }
-
-    const prevSearchQ = get(prevProps.query, LOG_SEARCH_QUERY_KEY)
-    const currSearchQ = get(this.props.query, LOG_SEARCH_QUERY_KEY)
-
-    if (prevSearchQ !== currSearchQ) {
-      if (isEmpty(currSearchQ)) {
-        this.props.dispatch(clearSearchState())
-      } else {
-        this.search(get(this.props.query, LOG_SEARCH_QUERY_KEY))
-      }
-    }
-
-    if (prevProps.cursor !== this.props.cursor) {
-      this.handleCursorChange()
-    }
   }
 
-  handleScrollToTopClick = (): void => {
-    const listRef = this.reactWindowRef.current
-    if (listRef) {
-      listRef.scrollToItem(0)
-    }
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.handleKeydown)
   }
 
-  handleScrollToBottomClick = (): void => {
-    const listRef = this.reactWindowRef.current
-    if (listRef) {
-      listRef.scrollToItem(this.props.logs.length)
-    }
-  }
-
+  /**
+   * Given a valid query (length > 0), this method will iterate through
+   * this.props.logs (string[]) and push the index of the first occurence of
+   * the query for each line into the `matches` array.
+   */
   search(q: string): void {
-    const { logs } = this.props
-
     let matches = []
 
-    for (let i = 0; i < logs.length; i++) {
-      const line: string = logs[i]
-      const firstIndex = line.indexOf(q)
-      // todo: search mroe than first index
-      if (firstIndex > -1) {
-        const m: [number, number] = [i, firstIndex]
-        matches.push(m)
+    if (q.length > 0) {
+      const { logs } = this.props
+
+      for (let i = 0; i < logs.length; i++) {
+        const line: string = logs[i]
+        const firstIndex = line.indexOf(q)
+        // todo: search more than first index.
+        if (firstIndex > -1) {
+          const m: [number, number] = [i, firstIndex]
+          matches.push(m)
+        }
       }
     }
 
-    this.props.dispatch(setMatches({ matches }))
+    this.setState({ searchMatches: matches, searchCursor: 0 })
   }
 
   handleCursorChange(): void {
     const listRef = this.reactWindowRef.current
     if (listRef) {
-      const { matches, cursor } = this.props
+      const { searchMatches, searchCursor } = this.state
 
-      if (matches !== null) {
-        listRef.scrollToItem(matches[cursor][0])
+      // If search cursor is within bounds, scroll to the item.
+      if (searchCursor >= 0 && searchCursor < searchMatches.length) {
+        const lineNumber = get(searchMatches, [searchCursor, 0], 0)
+        console.log(`lineNumber: ${lineNumber}`)
+        listRef.scrollToItem(lineNumber, "center")
       }
+    }
+  }
+
+  handleIncrementCursor(): void {
+    if (this.state.searchMatches.length > 0) {
+      this.setState(prev => ({
+        searchCursor:
+          prev.searchCursor === this.state.searchMatches.length - 1
+            ? 0
+            : prev.searchCursor + 1,
+      }))
+    }
+  }
+
+  handleDecrementCursor(): void {
+    if (this.state.searchMatches.length > 0) {
+      this.setState(prev => ({
+        searchCursor:
+          prev.searchCursor === 0
+            ? this.state.searchMatches.length - 1
+            : prev.searchCursor - 1,
+      }))
+    }
+  }
+
+  handleKeydown(evt: KeyboardEvent) {
+    const { isSearchInputFocused } = this.state
+
+    // If the search component is visible and the user hits the escape key,
+    // reset search state (hide input, reset matches to an empty array, etc.)
+    if (evt.keyCode === KeyCode.ESC && isSearchInputFocused) {
+      this.resetSearchState()
+      return
+    }
+
+    // Handle cmd-f.
+    if (evt.keyCode === KeyCode.F && evt.metaKey) {
+      evt.preventDefault()
+      evt.stopPropagation()
+      this.searchInputFocus()
+      return
+    }
+
+    // If search input is focused and the enter key is pressed, jump to the
+    // next search match.
+    if (evt.keyCode === KeyCode.ENTER && isSearchInputFocused) {
+      this.handleIncrementCursor()
+      return
+    }
+  }
+
+  resetSearchState(): void {
+    this.setState({
+      isSearchInputFocused: false,
+      searchMatches: [],
+      searchCursor: 0,
+    })
+  }
+
+  searchInputFocus() {
+    if (this.searchInputRef.current) {
+      this.searchInputRef.current.focus()
     }
   }
 
   render() {
     const { width, height, logs } = this.props
+    const { searchMatches, searchCursor, isSearchInputFocused } = this.state
+
+    console.log(this.state)
 
     return (
-      <>
-        <LogVirtualizedSearch />
+      <div className="flotilla-logs-virtualized-container">
+        <LogVirtualizedSearch
+          onChange={this.search}
+          onFocus={() => {
+            this.setState({ isSearchInputFocused: true })
+          }}
+          onBlur={() => {
+            this.setState({ isSearchInputFocused: false })
+          }}
+          onIncrement={this.handleIncrementCursor}
+          onDecrement={this.handleDecrementCursor}
+          inputRef={this.searchInputRef}
+          cursorIndex={searchCursor}
+          totalMatches={searchMatches.length}
+        />
         <div className="flotilla-logs-container">
           <List
             ref={this.reactWindowRef}
             height={height}
             itemCount={logs.length}
-            itemData={logs}
+            itemData={{
+              lines: logs,
+              searchMatches,
+              searchCursor,
+              isSearchInputFocused,
+            }}
             itemSize={24}
             width={width}
             overscanCount={100}
@@ -120,22 +221,9 @@ class LogVirtualized extends React.Component<Props> {
             {LogRow}
           </List>
         </div>
-      </>
+      </div>
     )
   }
 }
 
-const reduxConnector = connect((s: RootState) => s.search)
-
-type ConnectedProps = {
-  width: number
-  height: number
-  logs: string[]
-  shouldAutoscroll: boolean
-} & ReduxConnectedProps<typeof reduxConnector>
-
-const Connected: React.FC<ConnectedProps> = p => (
-  <Query>{q => <LogVirtualized {...p} {...q} />}</Query>
-)
-
-export default reduxConnector(Connected)
+export default LogVirtualized

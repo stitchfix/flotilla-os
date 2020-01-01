@@ -6,7 +6,6 @@ import {
 } from "@reduxjs/toolkit"
 import { ThunkAction } from "redux-thunk"
 import { createLogger } from "redux-logger"
-import search from "./search"
 import settings from "./settings"
 
 const middleware = [...getDefaultMiddleware()]
@@ -23,7 +22,6 @@ if (process.env.NODE_ENV !== "production") {
 
 const rootReducer = combineReducers({
   settings,
-  search,
 })
 
 const store = configureStore({

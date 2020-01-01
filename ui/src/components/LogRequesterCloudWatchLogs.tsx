@@ -58,7 +58,7 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
-    this.clearRequestInterval()
+    window.clearInterval(this.requestInterval)
   }
 
   setRequestInterval = (): void => {
