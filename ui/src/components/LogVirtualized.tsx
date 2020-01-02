@@ -1,15 +1,19 @@
 import * as React from "react"
 import { FixedSizeList as List } from "react-window"
+import { connect, ConnectedProps } from "react-redux"
 import { get } from "lodash"
 import LogRow from "./LogVirtualizedRow"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
+import { RootState } from "../state/store"
+
+const connected = connect((state: RootState) => state.runView)
 
 export type Props = {
   width: number
   height: number
   logs: string[]
-  shouldAutoscroll: boolean
-}
+  hasRunFinished: boolean
+} & ConnectedProps<typeof connected>
 
 type State = {
   isSearchInputFocused: boolean
@@ -24,12 +28,11 @@ enum KeyCode {
 }
 
 /** Renders the processed logs using react-window for performance. */
-class LogVirtualized extends React.Component<Props, State> {
+export class LogVirtualized extends React.Component<Props, State> {
   static defaultProps: Partial<Props> = {
     height: 0,
     logs: [],
     width: 0,
-    shouldAutoscroll: true,
   }
   private reactWindowRef = React.createRef<List>()
   private searchInputRef = React.createRef<HTMLInputElement>()
@@ -54,7 +57,7 @@ class LogVirtualized extends React.Component<Props, State> {
 
     // Scroll to the most recent log.
     if (this.props.shouldAutoscroll === true) {
-      this.scrollTo(this.props.logs.length - 1)
+      this.scrollTo(this.props.logs.length - 1, "end")
     }
   }
 
@@ -67,7 +70,7 @@ class LogVirtualized extends React.Component<Props, State> {
       this.props.shouldAutoscroll === true &&
       prevProps.logs.length !== this.props.logs.length
     ) {
-      this.scrollTo(this.props.logs.length - 1)
+      this.scrollTo(this.props.logs.length - 1, "end")
     }
   }
 
@@ -183,7 +186,7 @@ class LogVirtualized extends React.Component<Props, State> {
   }
 
   render() {
-    const { width, height, logs } = this.props
+    const { width, height, logs, hasRunFinished } = this.props
     const { searchMatches, searchCursor } = this.state
 
     return (
@@ -206,11 +209,12 @@ class LogVirtualized extends React.Component<Props, State> {
           <List
             ref={this.reactWindowRef}
             height={height}
-            itemCount={logs.length}
+            itemCount={logs.length + 1}
             itemData={{
               lines: logs,
               searchMatches,
               searchCursor,
+              hasRunFinished,
             }}
             itemSize={24}
             width={width}
@@ -224,4 +228,4 @@ class LogVirtualized extends React.Component<Props, State> {
   }
 }
 
-export default LogVirtualized
+export default connected(LogVirtualized)

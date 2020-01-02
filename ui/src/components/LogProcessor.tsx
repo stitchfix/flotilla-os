@@ -7,6 +7,7 @@ import LogVirtualized from "./LogVirtualized"
 
 type ConnectedProps = {
   logs: string
+  hasRunFinished: boolean
 }
 
 type Props = ConnectedProps & {
@@ -67,7 +68,7 @@ export class LogProcessor extends React.Component<Props, State> {
   }
 
   render() {
-    const { width, height } = this.props
+    const { width, height, hasRunFinished } = this.props
     const { processedLogs } = this.state
 
     return (
@@ -75,7 +76,7 @@ export class LogProcessor extends React.Component<Props, State> {
         logs={processedLogs}
         width={width}
         height={height}
-        shouldAutoscroll
+        hasRunFinished={hasRunFinished}
       />
     )
   }
@@ -88,8 +89,13 @@ const Connected: React.FC<ConnectedProps> = props => (
     refreshMode="throttle"
     refreshRate={1000}
   >
-    {({ width, height }: { width?: number; height?: number }) => (
-      <LogProcessor logs={props.logs} width={width || 500} height={800} />
+    {({ width }: { width?: number; height?: number }) => (
+      <LogProcessor
+        logs={props.logs}
+        hasRunFinished={props.hasRunFinished}
+        width={width || 500}
+        height={800}
+      />
     )}
   </ReactResizeDetector>
 )

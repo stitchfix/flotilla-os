@@ -9,6 +9,8 @@ import {
   NodeLifecycle,
 } from "../../types"
 import { RequestStatus } from "../Request"
+import { Provider } from "react-redux"
+import store from "../../state/store"
 
 jest.mock("../../workers/index")
 
@@ -42,9 +44,11 @@ const MockRun: RunType = {
 }
 
 const Proxy: React.FunctionComponent<Props> = props => (
-  <MemoryRouter>
-    <Run {...props} />
-  </MemoryRouter>
+  <Provider store={store}>
+    <MemoryRouter>
+      <Run {...props} />
+    </MemoryRouter>
+  </Provider>
 )
 
 const defaultProps: Props = {
@@ -82,24 +86,18 @@ describe("Run", () => {
 
     // Mount a stopped run.
     mount(
-      <MemoryRouter>
-        <Run
-          {...defaultProps}
-          data={{
-            ...MockRun,
-            status: RunStatus.STOPPED,
-          }}
-        />
-      </MemoryRouter>
+      <Proxy
+        {...defaultProps}
+        data={{
+          ...MockRun,
+          status: RunStatus.STOPPED,
+        }}
+      />
     )
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(0)
 
     // Mount a running one.
-    mount(
-      <MemoryRouter>
-        <Run {...defaultProps} />
-      </MemoryRouter>
-    )
+    mount(<Proxy {...defaultProps} />)
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(1)
   })
 
@@ -184,26 +182,6 @@ describe("Run", () => {
       },
     })
 
-    expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(1)
-  })
-
-  it("clears the request interval on componentWillUnmount", async () => {
-    const wrapper = mount(
-      <MemoryRouter>
-        <Run
-          {...defaultProps}
-          requestStatus={RequestStatus.READY}
-          data={MockRun}
-          isLoading={false}
-          error={null}
-          runID="a"
-          request={jest.fn()}
-        />
-      </MemoryRouter>
-    )
-    expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(0)
-    expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
     expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(1)
   })
 })

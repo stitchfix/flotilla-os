@@ -1,29 +1,24 @@
 import * as React from "react"
+import { connect, ConnectedProps } from "react-redux"
 import Ansi from "ansi-to-react"
-import {
-  Spinner,
-  Pre,
-  Classes,
-  Tag,
-  Checkbox,
-  Icon,
-  Button,
-  ButtonGroup,
-} from "@blueprintjs/core"
+import { Spinner, Pre, Classes, Tag } from "@blueprintjs/core"
+import { RootState } from "../state/store"
+
+const connector = connect((state: RootState) => state.runView)
 
 type Props = {
   logs: string
   hasRunFinished: boolean
   isLoading: boolean
-  height: number
-  shouldAutoscroll: boolean
-}
+} & ConnectedProps<typeof connector>
 
-class LogRenderer extends React.Component<Props> {
+class Log extends React.Component<Props> {
   private CONTAINER_DIV = React.createRef<HTMLDivElement>()
 
   componentDidMount() {
-    this.scrollToBottom()
+    if (this.props.shouldAutoscroll) {
+      this.scrollToBottom()
+    }
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -55,7 +50,7 @@ class LogRenderer extends React.Component<Props> {
   }
 
   render() {
-    const { logs, height, hasRunFinished, isLoading } = this.props
+    const { logs, hasRunFinished, isLoading } = this.props
 
     let loader = <Tag>END OF LOGS</Tag>
 
@@ -64,20 +59,16 @@ class LogRenderer extends React.Component<Props> {
     }
 
     return (
-      <div
-        ref={this.CONTAINER_DIV}
-        className="flotilla-logs-container"
-        style={{ height }}
-      >
-        {/* <Pre className={`flotilla-pre ${Classes.DARK}`}>
+      <div ref={this.CONTAINER_DIV} className="flotilla-logs-container">
+        <Pre className={`flotilla-pre ${Classes.DARK}`}>
           <Ansi linkify={false} className="flotilla-ansi">
             {logs}
           </Ansi>
         </Pre>
-        <div className="flotilla-logs-loader-container">{loader}</div> */}
+        <div className="flotilla-logs-loader-container">{loader}</div>
       </div>
     )
   }
 }
 
-export default LogRenderer
+export default connector(Log)

@@ -1,12 +1,13 @@
 import * as React from "react"
 import { mount, shallow } from "enzyme"
-import LogVirtualized, { Props } from "../LogVirtualized"
+import { LogVirtualized, Props } from "../LogVirtualized"
 
 const defaultProps: Props = {
   width: 100,
   height: 100,
   logs: ["a", "b", "c", "d"],
   shouldAutoscroll: true,
+  dispatch: jest.fn(),
 }
 
 describe("LogVirtualized", () => {

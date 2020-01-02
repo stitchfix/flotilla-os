@@ -1,30 +1,30 @@
 import * as React from "react"
+import { connect, ConnectedProps } from "react-redux"
 import api from "../api"
 import LogProcessor from "./LogProcessor"
 import { RunStatus } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
+import { RootState } from "../state/store"
+import { setHasLogs } from "../state/runView"
+
+const connected = connect((state: RootState) => state.runView)
 
 type Props = {
   status: RunStatus | undefined
   runID: string
-  height: number
-  setHasLogs: () => void
-  shouldAutoscroll: boolean
-}
+} & ConnectedProps<typeof connected>
 
 type State = {
   logs: string
   isLoading: boolean
   error: any
-  hasLogs: boolean
 }
 
 const initialState: State = {
   logs: "",
   isLoading: false,
   error: false,
-  hasLogs: false,
 }
 
 class LogRequesterS3 extends React.PureComponent<Props, State> {
@@ -35,7 +35,7 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
     this.initialize()
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     if (prevProps.runID !== this.props.runID) {
       this.handleRunIDChange()
       return
@@ -46,10 +46,6 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
       this.props.status === RunStatus.STOPPED
     ) {
       this.clearRequestInterval()
-    }
-
-    if (prevState.hasLogs === false && this.state.hasLogs === true) {
-      this.props.setHasLogs()
     }
   }
 
@@ -88,7 +84,7 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
   }
 
   requestLogs = () => {
-    const { runID } = this.props
+    const { runID, hasLogs } = this.props
 
     this.setState({ isLoading: true })
 
@@ -99,8 +95,11 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
           isLoading: false,
           error: false,
           logs,
-          hasLogs: logs.length > 0,
         })
+
+        if (hasLogs === false && logs.length > 0) {
+          this.props.dispatch(setHasLogs())
+        }
       })
       .catch(error => {
         this.clearRequestInterval()
@@ -109,12 +108,13 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
   }
 
   render() {
+    const { status } = this.props
     const { error, logs } = this.state
-
     if (error) return <ErrorCallout error={error} />
-
-    return <LogProcessor logs={logs} />
+    return (
+      <LogProcessor logs={logs} hasRunFinished={status === RunStatus.STOPPED} />
+    )
   }
 }
 
-export default LogRequesterS3
+export default connected(LogRequesterS3)

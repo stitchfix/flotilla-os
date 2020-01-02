@@ -1,4 +1,5 @@
 import * as React from "react"
+import { connect, ConnectedProps } from "react-redux"
 import { get } from "lodash"
 import { Link, RouteComponentProps } from "react-router-dom"
 import {
@@ -12,7 +13,6 @@ import {
   Tooltip,
   Callout,
   Intent,
-  Switch,
 } from "@blueprintjs/core"
 import Request, {
   ChildProps as RequestChildProps,
@@ -37,30 +37,22 @@ import Duration from "./Duration"
 import ErrorCallout from "./ErrorCallout"
 import RunDebugAttributes from "./RunDebugAttributes"
 import Helmet from "react-helmet"
+import AutoscrollSwitch from "./AutoscrollSwitch"
+import { RootState } from "../state/store"
+
+const connected = connect((state: RootState) => state.runView)
 
 export type Props = QPChildProps &
   RequestChildProps<RunShape, { runID: string }> & {
     runID: string
-  }
+  } & ConnectedProps<typeof connected>
 
-type State = {
-  hasLogs: boolean
-  shouldAutoscroll: boolean
-}
-
-export class Run extends React.Component<Props, State> {
+export class Run extends React.Component<Props> {
   requestIntervalID: number | undefined
 
   constructor(props: Props) {
     super(props)
     this.request = this.request.bind(this)
-    this.setHasLogs = this.setHasLogs.bind(this)
-    this.toggleAutoscroll = this.toggleAutoscroll.bind(this)
-  }
-
-  state = {
-    hasLogs: false,
-    shouldAutoscroll: true,
   }
 
   componentDidMount() {
@@ -89,7 +81,7 @@ export class Run extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
-    if (this.request !== undefined) this.clearRequestInterval()
+    window.clearInterval(this.requestIntervalID)
   }
 
   request() {
@@ -109,19 +101,8 @@ export class Run extends React.Component<Props, State> {
     window.clearInterval(this.requestIntervalID)
   }
 
-  // TODO: delete this garbage.
-  getLogsHeight(): number {
-    if (window.innerWidth >= 1230) {
-      // LOL sorry.
-      return window.innerHeight - 78 - 50 - 24 - 30 - 20 - 95 - 12
-    }
-
-    return 720
-  }
-
   getActiveTabId(): RunTabId {
-    const { data, query } = this.props
-    const { hasLogs } = this.state
+    const { data, query, hasLogs } = this.props
     const queryTabId: RunTabId | null = get(query, RUN_TAB_ID_QUERY_KEY, null)
 
     if (queryTabId === null) {
@@ -147,25 +128,8 @@ export class Run extends React.Component<Props, State> {
     this.props.setQuery({ [RUN_TAB_ID_QUERY_KEY]: id })
   }
 
-  setHasLogs() {
-    if (this.state.hasLogs === false) {
-      this.setState({ hasLogs: true })
-    }
-  }
-
-  toggleAutoscroll() {
-    this.setState(prev => ({ shouldAutoscroll: !prev.shouldAutoscroll }))
-  }
-
   render() {
-    const {
-      data,
-      requestStatus,
-      runID,
-      receivedAt,
-      isLoading,
-      error,
-    } = this.props
+    const { data, requestStatus, runID, error } = this.props
 
     switch (requestStatus) {
       case RequestStatus.ERROR:
@@ -266,12 +230,7 @@ export class Run extends React.Component<Props, State> {
                           />
                           <Attribute
                             name="Autoscroll"
-                            value={
-                              <Switch
-                                checked={this.state.shouldAutoscroll}
-                                onChange={this.toggleAutoscroll}
-                              />
-                            }
+                            value={<AutoscrollSwitch />}
                           />
                         </div>
                       </Card>
@@ -289,17 +248,11 @@ export class Run extends React.Component<Props, State> {
                               <LogRequesterS3
                                 runID={data.run_id}
                                 status={data.status}
-                                height={this.getLogsHeight()}
-                                setHasLogs={this.setHasLogs}
-                                shouldAutoscroll={this.state.shouldAutoscroll}
                               />
                             ) : (
                               <LogRequesterCloudWatchLogs
                                 runID={data.run_id}
                                 status={data.status}
-                                height={this.getLogsHeight()}
-                                setHasLogs={this.setHasLogs}
-                                shouldAutoscroll={this.state.shouldAutoscroll}
                               />
                             )
                           }
@@ -319,7 +272,7 @@ export class Run extends React.Component<Props, State> {
                             <RunEvents
                               runID={data.run_id}
                               status={data.status}
-                              hasLogs={this.state.hasLogs}
+                              hasLogs={this.props.hasLogs}
                             />
                           }
                           disabled={data.engine !== ExecutionEngine.EKS}
@@ -340,6 +293,8 @@ export class Run extends React.Component<Props, State> {
   }
 }
 
+const ReduxConnectedRun = connected(Run)
+
 const Connected: React.FunctionComponent<RouteComponentProps<{
   runID: string
 }>> = ({ match }) => (
@@ -358,7 +313,7 @@ const Connected: React.FunctionComponent<RouteComponentProps<{
                 content={get(props, ["data", "status"], "")}
               />
             </Helmet>
-            <Run
+            <ReduxConnectedRun
               {...props}
               runID={match.params.runID}
               query={query}

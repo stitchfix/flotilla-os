@@ -1,25 +1,26 @@
 import * as React from "react"
 import { has, isEmpty } from "lodash"
+import { connect, ConnectedProps } from "react-redux"
 import api from "../api"
 import Log from "./Log"
 import { RunStatus, RunLog } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
+import { setHasLogs } from "../state/runView"
+import { RootState } from "../state/store"
+
+const connected = connect((state: RootState) => state.runView)
 
 type Props = {
   status: RunStatus | undefined
   runID: string
-  height: number
-  setHasLogs: () => void
-  shouldAutoscroll: boolean
-}
+} & ConnectedProps<typeof connected>
 
 type State = {
   logs: string
   lastSeen: string | undefined
   isLoading: boolean
   error: any
-  hasLogs: boolean
 }
 
 const initialState: State = {
@@ -27,18 +28,17 @@ const initialState: State = {
   lastSeen: undefined,
   isLoading: false,
   error: false,
-  hasLogs: false,
 }
 
 class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
   private requestInterval: number | undefined
-  state = initialState
+  state: State = initialState
 
   componentDidMount() {
     this.initialize()
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     if (prevProps.runID !== this.props.runID) {
       this.handleRunIDChange()
       return
@@ -50,10 +50,6 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
       this.props.status === RunStatus.STOPPED
     ) {
       this.clearRequestInterval()
-    }
-
-    if (prevState.hasLogs === false && this.state.hasLogs === true) {
-      this.props.setHasLogs()
     }
   }
 
@@ -130,14 +126,13 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
 
         let logs = prev.logs
         let lastSeen: string | undefined = res.last_seen
-        let hasLogs = prev.hasLogs || res.log.length > 0
 
         // Append logs if necessary.
         if (res.last_seen && res.last_seen !== prev.lastSeen) {
           logs += res.log
         }
 
-        return { ...prev, isLoading, error, logs, lastSeen, hasLogs }
+        return { ...prev, isLoading, error, logs, lastSeen }
       },
       () => {
         if (
@@ -150,24 +145,26 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
         }
       }
     )
+
+    if (this.props.hasLogs === false && res.log.length > 0) {
+      this.props.dispatch(setHasLogs())
+    }
   }
 
   render() {
-    const { height, status, shouldAutoscroll } = this.props
+    const { status } = this.props
     const { isLoading, error, logs } = this.state
 
     if (error) return <ErrorCallout error={error} />
 
     return (
       <Log
-        height={height}
         logs={logs}
         hasRunFinished={status === RunStatus.STOPPED}
         isLoading={isLoading}
-        shouldAutoscroll={shouldAutoscroll}
       />
     )
   }
 }
 
-export default LogRequesterCloudWatchLogs
+export default connected(LogRequesterCloudWatchLogs)

@@ -7,6 +7,7 @@ import {
 import { ThunkAction } from "redux-thunk"
 import { createLogger } from "redux-logger"
 import settings from "./settings"
+import runView from "./runView"
 
 const middleware = [...getDefaultMiddleware()]
 
@@ -22,6 +23,7 @@ if (process.env.NODE_ENV !== "production") {
 
 const rootReducer = combineReducers({
   settings,
+  runView,
 })
 
 const store = configureStore({
