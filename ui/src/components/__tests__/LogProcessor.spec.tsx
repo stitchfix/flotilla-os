@@ -2,6 +2,8 @@ import * as React from "react"
 import { mount } from "enzyme"
 import { LogProcessor } from "../LogProcessor"
 
+jest.mock("../../workers/index")
+
 describe("LogProcessor", () => {
   it("calls processLogs upon mounting and if logs/width changes", () => {
     const process = LogProcessor.prototype.processLogs

@@ -47,6 +47,7 @@ describe("UpdateTaskForm", () => {
     request: jest.fn(),
     basePath: "",
     definitionID: DEFINITION_ID,
+    receivedAt: new Date(),
   }
 
   let wrapper: ReactWrapper

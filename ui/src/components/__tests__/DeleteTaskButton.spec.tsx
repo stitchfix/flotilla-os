@@ -17,6 +17,7 @@ const defaultProps: Props = {
   error: null,
   request: jest.fn(),
   definitionID: "definitionID",
+  receivedAt: new Date(),
 }
 
 describe("DeleteTaskButton", () => {

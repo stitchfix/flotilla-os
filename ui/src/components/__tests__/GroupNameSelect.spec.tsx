@@ -21,7 +21,7 @@ describe("GroupNameSelect", () => {
       value: "a",
       onChange: jest.fn(),
     }
-    const wrapper = mount(<GroupNameSelect {...props} />)
+    const wrapper = mount(<GroupNameSelect {...props} isDisabled={false} />)
     const select = wrapper.find(Creatable)
 
     // Ensure <Select> component is rendered.
@@ -48,7 +48,7 @@ describe("GroupNameSelect", () => {
 
   it("calls api.listGroups", () => {
     expect(api.listGroups).toHaveBeenCalledTimes(0)
-    mount(<Connected value="" onChange={jest.fn()} />)
+    mount(<Connected value="" onChange={jest.fn()} isDisabled={false} />)
     expect(api.listGroups).toHaveBeenCalledTimes(1)
   })
 })

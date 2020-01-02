@@ -47,6 +47,7 @@ describe("Runs", () => {
       currentSortKey: "started_at",
       currentSortOrder: SortOrder.DESC,
       query: initialQuery,
+      receivedAt: new Date(),
     }
 
     it("renders a Spinner props.requestStatus is `NOT_READY`", () => {

@@ -18,7 +18,7 @@ describe("ClusterSelect", () => {
         value: "a",
         onChange: jest.fn(),
       }
-      const wrapper = mount(<ClusterSelect {...props} />)
+      const wrapper = mount(<ClusterSelect {...props} isDisabled={false} />)
       const select = wrapper.find(Creatable)
 
       // Ensure <Select> component is rendered.
@@ -51,7 +51,7 @@ describe("ClusterSelect", () => {
 
     it("calls api.listClusters", () => {
       expect(api.listClusters).toHaveBeenCalledTimes(0)
-      mount(<Connected value="" onChange={jest.fn()} />)
+      mount(<Connected value="" onChange={jest.fn()} isDisabled={false} />)
       expect(api.listClusters).toHaveBeenCalledTimes(1)
     })
 
@@ -68,7 +68,9 @@ describe("ClusterSelect", () => {
             })
           })
       )
-      const wrapper = mount(<Connected value="" onChange={jest.fn()} />)
+      const wrapper = mount(
+        <Connected value="" onChange={jest.fn()} isDisabled={false} />
+      )
       const unconnected = wrapper.find(ClusterSelect)
       expect(unconnected).toHaveLength(1)
       expect(unconnected.prop("options")).toEqual([])

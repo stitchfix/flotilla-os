@@ -15,7 +15,6 @@ type Props = ConnectedProps & {
 }
 
 type State = {
-  isProcessing: boolean
   processedLogs: string[]
 }
 
@@ -25,14 +24,15 @@ export class LogProcessor extends React.Component<Props, State> {
     super(props)
 
     // Instantiate worker and add event listener.
-    this.logWorker = new WebWorker(LogWorker)
-    this.logWorker.addEventListener("message", (evt: any) => {
-      this.setState({ isProcessing: false, processedLogs: evt.data })
-    })
+    if (process.env.NODE_ENV !== "test") {
+      this.logWorker = new WebWorker(LogWorker)
+      this.logWorker.addEventListener("message", (evt: any) => {
+        this.setState({ processedLogs: evt.data })
+      })
+    }
   }
 
-  state = {
-    isProcessing: false,
+  state: State = {
     processedLogs: [],
   }
 
@@ -59,11 +59,10 @@ export class LogProcessor extends React.Component<Props, State> {
   processLogs(): void {
     const { logs } = this.props
 
-    this.setState({ isProcessing: true }, () => {
-      this.logWorker.postMessage({
-        logs,
-        maxLen: this.getMaxLineLength(),
-      })
+    if (process.env.NODE_ENV === "test") return
+    this.logWorker.postMessage({
+      logs,
+      maxLen: this.getMaxLineLength(),
     })
   }
 
