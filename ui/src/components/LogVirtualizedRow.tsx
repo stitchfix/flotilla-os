@@ -9,19 +9,14 @@ const LogVirtualizedRow: React.FC<ListChildComponentProps> = props => {
   const lines: string[] = get(data, "lines", [])
   const searchMatches: [number, number][] = get(data, "searchMatches", [])
   const searchCursor: number = get(data, "searchCursor", 0)
-  const isSearchInputFocused: boolean = get(data, "isSearchInputFocused", false)
   const searchCursorLineNumber = get(searchMatches, [searchCursor, 0], null)
-  // const searchCursorCharNumber = get(searchMatches, [searchCursor, 1], null)
 
   return (
     <Pre
       className={`flotilla-pre ${Classes.DARK}`}
       style={{
         ...style,
-        color:
-          isSearchInputFocused && searchCursorLineNumber === index
-            ? Colors.GOLD5
-            : "",
+        color: searchCursorLineNumber === index ? Colors.GOLD5 : "",
       }}
     >
       <Ansi className="flotilla-ansi" linkify={false}>

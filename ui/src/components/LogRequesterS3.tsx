@@ -54,7 +54,7 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
   }
 
   componentWillUnmount() {
-    this.clearRequestInterval()
+    window.clearInterval(this.requestInterval)
   }
 
   setRequestInterval = (): void => {

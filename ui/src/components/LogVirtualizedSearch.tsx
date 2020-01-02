@@ -8,7 +8,7 @@ type Props = {
   onBlur: () => void
   onIncrement: () => void
   onDecrement: () => void
-  inputRef: React.Ref<HTMLInputElement>
+  inputRef: React.Ref<HTMLInputElement> | null
   cursorIndex: number
   totalMatches: number
 }

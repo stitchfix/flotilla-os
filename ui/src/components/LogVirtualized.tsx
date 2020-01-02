@@ -4,7 +4,7 @@ import { get } from "lodash"
 import LogRow from "./LogVirtualizedRow"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
 
-type Props = {
+export type Props = {
   width: number
   height: number
   logs: string[]
@@ -43,7 +43,7 @@ class LogVirtualized extends React.Component<Props, State> {
     this.handleKeydown = this.handleKeydown.bind(this)
   }
 
-  state = {
+  state: State = {
     isSearchInputFocused: false,
     searchMatches: [],
     searchCursor: 0,
@@ -51,11 +51,10 @@ class LogVirtualized extends React.Component<Props, State> {
 
   componentDidMount() {
     window.addEventListener("keydown", this.handleKeydown)
-    const listRef = this.reactWindowRef.current
 
     // Scroll to the most recent log.
-    if (this.props.shouldAutoscroll === true && listRef) {
-      listRef.scrollToItem(this.props.logs.length)
+    if (this.props.shouldAutoscroll === true) {
+      this.scrollTo(this.props.logs.length - 1)
     }
   }
 
@@ -68,11 +67,7 @@ class LogVirtualized extends React.Component<Props, State> {
       this.props.shouldAutoscroll === true &&
       prevProps.logs.length !== this.props.logs.length
     ) {
-      // Scroll to the most recent log if autoscroll is enabled.
-      const listRef = this.reactWindowRef.current
-      if (listRef) {
-        listRef.scrollToItem(this.props.logs.length - 1)
-      }
+      this.scrollTo(this.props.logs.length - 1)
     }
   }
 
@@ -106,16 +101,12 @@ class LogVirtualized extends React.Component<Props, State> {
   }
 
   handleCursorChange(): void {
-    const listRef = this.reactWindowRef.current
-    if (listRef) {
-      const { searchMatches, searchCursor } = this.state
+    const { searchMatches, searchCursor } = this.state
 
-      // If search cursor is within bounds, scroll to the item.
-      if (searchCursor >= 0 && searchCursor < searchMatches.length) {
-        const lineNumber = get(searchMatches, [searchCursor, 0], 0)
-        console.log(`lineNumber: ${lineNumber}`)
-        listRef.scrollToItem(lineNumber, "center")
-      }
+    // If search cursor is within bounds, scroll to the item.
+    if (searchCursor >= 0 && searchCursor < searchMatches.length) {
+      const lineNumber = get(searchMatches, [searchCursor, 0], 0)
+      this.scrollTo(lineNumber, "center")
     }
   }
 
@@ -181,11 +172,19 @@ class LogVirtualized extends React.Component<Props, State> {
     }
   }
 
+  scrollTo(
+    line: number,
+    align?: "auto" | "smart" | "center" | "end" | "start" | undefined
+  ) {
+    const listRef = this.reactWindowRef.current
+    if (listRef) {
+      listRef.scrollToItem(line, align)
+    }
+  }
+
   render() {
     const { width, height, logs } = this.props
-    const { searchMatches, searchCursor, isSearchInputFocused } = this.state
-
-    console.log(this.state)
+    const { searchMatches, searchCursor } = this.state
 
     return (
       <div className="flotilla-logs-virtualized-container">
@@ -212,7 +211,6 @@ class LogVirtualized extends React.Component<Props, State> {
               lines: logs,
               searchMatches,
               searchCursor,
-              isSearchInputFocused,
             }}
             itemSize={24}
             width={width}

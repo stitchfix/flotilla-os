@@ -4,7 +4,6 @@ import WebWorker from "../workers/index"
 import LogWorker from "../workers/log.worker"
 import { CHAR_TO_PX_RATIO } from "../constants"
 import LogVirtualized from "./LogVirtualized"
-import { Spinner } from "@blueprintjs/core"
 
 type ConnectedProps = {
   logs: string
@@ -20,7 +19,7 @@ type State = {
   processedLogs: string[]
 }
 
-class LogProcessor extends React.PureComponent<Props, State> {
+export class LogProcessor extends React.Component<Props, State> {
   private logWorker: any
   constructor(props: Props) {
     super(props)
@@ -57,7 +56,7 @@ class LogProcessor extends React.PureComponent<Props, State> {
     Math.floor(this.props.width * CHAR_TO_PX_RATIO)
 
   /** Send props.logs to web worker for processing. */
-  processLogs = (): void => {
+  processLogs(): void {
     const { logs } = this.props
 
     this.setState({ isProcessing: true }, () => {
@@ -70,11 +69,7 @@ class LogProcessor extends React.PureComponent<Props, State> {
 
   render() {
     const { width, height } = this.props
-    const { processedLogs, isProcessing } = this.state
-
-    // console.log(this.state)
-
-    if (isProcessing) return <Spinner />
+    const { processedLogs } = this.state
 
     return (
       <LogVirtualized

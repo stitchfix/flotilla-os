@@ -77,6 +77,7 @@
     "enzyme-adapter-react-16": "1.13.2",
     "enzyme-to-json": "3.3.5",
     "flush-promises": "1.0.2",
+    "jsdom-worker": "^0.1.0",
     "regenerator-runtime": "0.13.2",
     "typescript": "3.4.5"
   }
