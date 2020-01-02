@@ -2,8 +2,17 @@ import * as React from "react"
 import { mount } from "enzyme"
 import { MemoryRouter } from "react-router-dom"
 import { Run, Props } from "../Run"
-import { Run as RunType, RunStatus } from "../../types"
+import {
+  Run as RunType,
+  RunStatus,
+  ExecutionEngine,
+  NodeLifecycle,
+} from "../../types"
 import { RequestStatus } from "../Request"
+import { Provider } from "react-redux"
+import store from "../../state/store"
+
+jest.mock("../../workers/index")
 
 export type RunInstance = {}
 
@@ -21,16 +30,38 @@ const MockRun: RunType = {
   exit_code: 0,
   status: RunStatus.RUNNING,
   started_at: "2019-10-24T05:21:51",
-  finished_at: "2019-10-25T05:21:51",
+  finished_at: "2019-10-25T06:21:51",
   group_name: "group_name",
   env: [],
+  engine: ExecutionEngine.EKS,
+  node_lifecycle: NodeLifecycle.ON_DEMAND,
+  max_cpu_used: 0,
+  max_memory_used: 0,
+  pod_name: "",
+  cpu: 100,
+  memory: 100,
+  queued_at: "2019-10-24T04:21:51",
 }
 
 const Proxy: React.FunctionComponent<Props> = props => (
-  <MemoryRouter>
-    <Run {...props} />
-  </MemoryRouter>
+  <Provider store={store}>
+    <MemoryRouter>
+      <Run {...props} />
+    </MemoryRouter>
+  </Provider>
 )
+
+const defaultProps: Props = {
+  requestStatus: RequestStatus.READY,
+  data: MockRun,
+  isLoading: false,
+  error: null,
+  runID: MockRun.run_id,
+  request: jest.fn(),
+  query: {},
+  setQuery: jest.fn(),
+  receivedAt: new Date(),
+}
 
 describe("Run", () => {
   const realSet = Run.prototype.setRequestInterval
@@ -55,35 +86,18 @@ describe("Run", () => {
 
     // Mount a stopped run.
     mount(
-      <MemoryRouter>
-        <Run
-          requestStatus={RequestStatus.READY}
-          data={{
-            ...MockRun,
-            status: RunStatus.STOPPED,
-          }}
-          isLoading={false}
-          error={null}
-          runID="a"
-          request={jest.fn()}
-        />
-      </MemoryRouter>
+      <Proxy
+        {...defaultProps}
+        data={{
+          ...MockRun,
+          status: RunStatus.STOPPED,
+        }}
+      />
     )
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(0)
 
     // Mount a running one.
-    mount(
-      <MemoryRouter>
-        <Run
-          requestStatus={RequestStatus.READY}
-          data={MockRun}
-          isLoading={false}
-          error={null}
-          runID="a"
-          request={jest.fn()}
-        />
-      </MemoryRouter>
-    )
+    mount(<Proxy {...defaultProps} />)
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(1)
   })
 
@@ -97,6 +111,9 @@ describe("Run", () => {
         error={null}
         runID="a"
         request={jest.fn()}
+        query={{}}
+        setQuery={jest.fn()}
+        receivedAt={new Date()}
       />
     )
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(0)
@@ -121,6 +138,9 @@ describe("Run", () => {
         error={null}
         runID="a"
         request={jest.fn()}
+        query={{}}
+        setQuery={jest.fn()}
+        receivedAt={new Date()}
       />
     )
     expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(0)
@@ -146,6 +166,9 @@ describe("Run", () => {
         error={null}
         runID="a"
         request={jest.fn()}
+        query={{}}
+        setQuery={jest.fn()}
+        receivedAt={new Date()}
       />
     )
     expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(0)
@@ -159,25 +182,6 @@ describe("Run", () => {
       },
     })
 
-    expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(1)
-  })
-
-  it("clears the request interval on componentWillUnmount", async () => {
-    const wrapper = mount(
-      <MemoryRouter>
-        <Run
-          requestStatus={RequestStatus.READY}
-          data={MockRun}
-          isLoading={false}
-          error={null}
-          runID="a"
-          request={jest.fn()}
-        />
-      </MemoryRouter>
-    )
-    expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(0)
-    expect(Run.prototype.setRequestInterval).toHaveBeenCalledTimes(1)
-    wrapper.unmount()
     expect(Run.prototype.clearRequestInterval).toHaveBeenCalledTimes(1)
   })
 })

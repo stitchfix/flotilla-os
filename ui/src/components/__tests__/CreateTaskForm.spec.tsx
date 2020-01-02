@@ -39,6 +39,7 @@ describe("CreateTaskForm", () => {
       memory: 1024,
       command: "my_command",
       tags: ["a", "b"],
+      cpu: 512,
     },
     onSuccess: jest.fn(),
   }

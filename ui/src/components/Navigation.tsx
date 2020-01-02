@@ -7,7 +7,9 @@ import {
   NavbarGroup,
   Alignment,
   Classes,
+  Button,
 } from "@blueprintjs/core"
+import SettingsButton from "./SettingsButton"
 
 const Navigation: React.FunctionComponent = () => (
   <Navbar fixedToTop className="bp3-dark">
@@ -26,12 +28,15 @@ const Navigation: React.FunctionComponent = () => (
       </ButtonGroup>
     </NavbarGroup>
     <NavbarGroup align={Alignment.RIGHT}>
-      <a
-        href="https://github.com/stitchfix/flotilla-os"
-        className={Classes.BUTTON}
-      >
-        Github
-      </a>
+      <ButtonGroup>
+        <SettingsButton />
+        <a
+          href="https://github.com/stitchfix/flotilla-os"
+          className={Classes.BUTTON}
+        >
+          Github
+        </a>
+      </ButtonGroup>
     </NavbarGroup>
   </Navbar>
 )

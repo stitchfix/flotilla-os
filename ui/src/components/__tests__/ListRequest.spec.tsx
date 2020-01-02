@@ -15,6 +15,7 @@ const DEFAULT_PROPS: Props<any, any> = {
   initialQuery: {},
   getRequestArgs: (query: object) => {},
   children: (props: ChildProps<any, any>) => <span />,
+  receivedAt: new Date(),
 }
 
 describe("ListRequest", () => {

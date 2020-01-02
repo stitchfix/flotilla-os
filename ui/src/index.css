@@ -31,8 +31,6 @@ body {
 }
 
 .flotilla-card-header {
-  text-transform: uppercase;
-  font-weight: 700;
 }
 
 /**
@@ -271,11 +269,31 @@ table {
  * Logs
  */
 .flotilla-logs-container {
-  max-height: calc(
-    100vh - var(--blueprint-navbar-height) - (var(--spacing) * 4) - 54px
-  );
+  max-height: 600px;
   overflow-y: scroll;
   padding: 0;
+  width: 100%;
+}
+
+.flotilla-logs-loader-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  margin: 0 var(--spacing) var(--spacing);
+}
+
+.flotilla-logs-virtualized-search-container {
+  display: flex;
+  flex-flow: row nowrap;
+  width: 100%;
+  border: var(--default-border);
+  border-bottom: none;
+}
+
+.flotilla-logs-virtualized-search-input {
+  flex: 1;
 }
 
 /**
@@ -322,6 +340,12 @@ table {
  */
 .bp3-input {
   height: 36px;
+}
+.bp3-form-group {
+  margin-bottom: 28px;
+}
+.bp3-form-group:last-child {
+  margin-bottom: 0;
 }
 .bp3-form-group input,
 .bp3-form-group textarea {

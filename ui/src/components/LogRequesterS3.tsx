@@ -1,34 +1,33 @@
 import * as React from "react"
+import { connect, ConnectedProps } from "react-redux"
 import api from "../api"
-import LogRenderer from "./LogRenderer"
-import { LogChunk, RunStatus } from "../types"
+import LogProcessor from "./LogProcessor"
+import { RunStatus } from "../types"
 import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
+import { RootState } from "../state/store"
+import { setHasLogs } from "../state/runView"
+
+const connected = connect((state: RootState) => state.runView)
 
 type Props = {
   status: RunStatus | undefined
   runID: string
-  height: number
-  setHasLogs: () => void
-  shouldAutoscroll: boolean
-}
+} & ConnectedProps<typeof connected>
 
 type State = {
-  logs: LogChunk[]
+  logs: string
   isLoading: boolean
   error: any
-  hasLogs: boolean
 }
 
 const initialState: State = {
-  logs: [],
+  logs: "",
   isLoading: false,
   error: false,
-  hasLogs: false,
 }
 
-class S3LogRequester extends React.PureComponent<Props, State> {
-  private dummyLastSeen: string = "DUMMY_LAST_SEEN"
+class LogRequesterS3 extends React.PureComponent<Props, State> {
   private requestInterval: number | undefined
   state = initialState
 
@@ -36,7 +35,7 @@ class S3LogRequester extends React.PureComponent<Props, State> {
     this.initialize()
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     if (prevProps.runID !== this.props.runID) {
       this.handleRunIDChange()
       return
@@ -48,14 +47,10 @@ class S3LogRequester extends React.PureComponent<Props, State> {
     ) {
       this.clearRequestInterval()
     }
-
-    if (prevState.hasLogs === false && this.state.hasLogs === true) {
-      this.props.setHasLogs()
-    }
   }
 
   componentWillUnmount() {
-    this.clearRequestInterval()
+    window.clearInterval(this.requestInterval)
   }
 
   setRequestInterval = (): void => {
@@ -89,48 +84,37 @@ class S3LogRequester extends React.PureComponent<Props, State> {
   }
 
   requestLogs = () => {
-    const { runID } = this.props
+    const { runID, hasLogs } = this.props
 
     this.setState({ isLoading: true })
 
     api
       .getRunLogRaw({ runID })
-      .then((log: string) => {
-        const chunk: LogChunk = {
-          chunk: log,
-          lastSeen: this.dummyLastSeen,
-        }
+      .then((logs: string) => {
         this.setState({
           isLoading: false,
           error: false,
-          logs: [chunk],
-          hasLogs: log.length > 0,
+          logs,
         })
+
+        if (hasLogs === false && logs.length > 0) {
+          this.props.dispatch(setHasLogs())
+        }
       })
       .catch(error => {
         this.clearRequestInterval()
-        this.setState({ error })
+        this.setState({ isLoading: false, error })
       })
   }
 
-  hasRunFinished = (): boolean => this.props.status === RunStatus.STOPPED
-
   render() {
-    const { height } = this.props
-    const { logs, isLoading, error } = this.state
-
+    const { status } = this.props
+    const { error, logs } = this.state
     if (error) return <ErrorCallout error={error} />
-
     return (
-      <LogRenderer
-        height={height}
-        logs={logs}
-        hasRunFinished={this.hasRunFinished()}
-        isLoading={isLoading}
-        shouldAutoscroll={this.props.shouldAutoscroll}
-      />
+      <LogProcessor logs={logs} hasRunFinished={status === RunStatus.STOPPED} />
     )
   }
 }
 
-export default S3LogRequester
+export default connected(LogRequesterS3)

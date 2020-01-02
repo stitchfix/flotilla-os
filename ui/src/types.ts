@@ -213,11 +213,6 @@ export type FieldSpec = {
   initialValue: any
 }
 
-export type LogChunk = {
-  chunk: string
-  lastSeen?: string
-}
-
 export type PodEvent = {
   timestamp: string
   event_type: string

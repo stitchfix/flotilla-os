@@ -18,7 +18,14 @@ describe("EnvFieldArray", () => {
   beforeAll(() => {
     wrapper = mount(
       <Formik initialValues={{ env: values }} onSubmit={jest.fn()}>
-        {() => <EnvFieldArray values={values} push={push} remove={remove} />}
+        {() => (
+          <EnvFieldArray
+            values={values}
+            push={push}
+            remove={remove}
+            errors={{}}
+          />
+        )}
       </Formik>
     )
   })

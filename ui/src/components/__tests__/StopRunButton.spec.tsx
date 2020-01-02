@@ -13,6 +13,7 @@ const defaultProps: Props = {
   request: jest.fn(),
   definitionID: "definitionID",
   runID: "runID",
+  receivedAt: new Date(),
 }
 
 describe("StopRunButton", () => {
