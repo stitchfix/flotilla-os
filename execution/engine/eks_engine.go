@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/base64"
-	"flag"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
@@ -43,6 +42,8 @@ type EKSExecutionEngine struct {
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	clusters := conf.GetStringMapString("eks.clusters")
+	ee.kClients = make(map[string]kubernetes.Clientset)
+	ee.metricsClients = make(map[string]metricsv.Clientset)
 
 	for clusterName, b64Kubeconfig := range clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
@@ -54,11 +55,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		if err != nil {
 			return err
 		}
-		kubeconfig := flag.String("kubeconfig",
-			filename,
-			"(optional) absolute path to the kubeconfig file")
-		flag.Parse()
-		clientConf, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
 			return err
 		}
@@ -79,8 +76,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
-	ee.kClients = make(map[string]kubernetes.Clientset)
-	ee.metricsClients = make(map[string]metricsv.Clientset)
 	ee.jobSA = conf.GetString("eks.service_account")
 
 	adapt, err := adapter.NewEKSAdapter()
