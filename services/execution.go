@@ -148,6 +148,10 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.EKSEngine
 	}
 
+	if engine == &state.EKSEngine {
+		clusterName = es.eksClusterOverride
+	}
+
 	// Added to facilitate migration of ECS jobs to EKS.
 	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
 		modulo := 100 / es.eksOverridePercent
