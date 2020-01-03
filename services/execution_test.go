@@ -134,7 +134,6 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 	}
 	expectedCalls := map[string]bool{
 		"GetDefinitionByAlias": true,
-		"IsImageValid":         true,
 		"CanBeRun":             true,
 		"CreateRun":            true,
 		"UpdateRun":            true,
