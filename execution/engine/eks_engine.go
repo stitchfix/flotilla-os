@@ -80,6 +80,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.kClients = make(map[string]kubernetes.Clientset)
+	ee.metricsClients = make(map[string]metricsv.Clientset)
 	ee.jobSA = conf.GetString("eks.service_account")
 
 	adapt, err := adapter.NewEKSAdapter()
