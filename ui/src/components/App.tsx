@@ -27,7 +27,7 @@ class App extends React.Component<ConnectedProps<typeof connector>> {
         Toaster.show({
           icon: "clean",
           message:
-            "You can now configure your global settings like default owner ID via the Settings menu.",
+            "You can now configure global settings via the Settings menu.",
           timeout: 0,
           intent: Intent.PRIMARY,
           action: {
