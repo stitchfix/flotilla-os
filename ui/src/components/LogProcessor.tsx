@@ -94,7 +94,7 @@ const Connected: React.FC<ConnectedProps> = props => (
         logs={props.logs}
         hasRunFinished={props.hasRunFinished}
         width={width || 500}
-        height={800}
+        height={600}
       />
     )}
   </ReactResizeDetector>

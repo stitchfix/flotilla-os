@@ -57,7 +57,7 @@ export class LogVirtualized extends React.Component<Props, State> {
 
     // Scroll to the most recent log.
     if (this.props.shouldAutoscroll === true) {
-      this.scrollTo(this.props.logs.length - 1, "end")
+      this.scrollTo(this.props.logs.length, "end")
     }
   }
 
@@ -70,7 +70,7 @@ export class LogVirtualized extends React.Component<Props, State> {
       this.props.shouldAutoscroll === true &&
       prevProps.logs.length !== this.props.logs.length
     ) {
-      this.scrollTo(this.props.logs.length - 1, "end")
+      this.scrollTo(this.props.logs.length, "end")
     }
   }
 
