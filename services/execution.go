@@ -90,7 +90,7 @@ func NewExecutionService(conf config.Config,
 	if conf.IsSet("check_image_validity") {
 		es.checkImageValidity = conf.GetBool("check_image_validity")
 	} else {
-		es.checkImageValidity = false
+		es.checkImageValidity = true
 	}
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {

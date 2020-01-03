@@ -4,9 +4,6 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
@@ -29,47 +26,48 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	kClient       *kubernetes.Clientset
-	metricsClient *metricsv.Clientset
-	adapter       adapter.EKSAdapter
-	qm            queue.Manager
-	log           flotillaLog.Logger
-	jobQueue      string
-	jobNamespace  string
-	jobTtl        int
-	jobSA         string
-	schedulerName string
-	ec2Client     *ec2.EC2
+	kClients       map[string]kubernetes.Clientset
+	metricsClients map[string]metricsv.Clientset
+	adapter        adapter.EKSAdapter
+	qm             queue.Manager
+	log            flotillaLog.Logger
+	jobQueue       string
+	jobNamespace   string
+	jobTtl         int
+	jobSA          string
+	schedulerName  string
 }
 
 //
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	kStr, err := base64.StdEncoding.DecodeString(conf.GetString("eks.kubeconfig"))
-	if err != nil {
-		return err
-	}
+	clusters := conf.GetStringMapString("eks.clusters")
 
-	err = ioutil.WriteFile(conf.GetString("eks.kubeconfig_path"), kStr, 0644)
-	if err != nil {
-		return err
-	}
-
-	kubeconfig := flag.String("kubeconfig",
-		conf.GetString("eks.kubeconfig_path"),
-		"(optional) absolute tmpPath to the kubeconfig file")
-
-	flag.Parse()
-
-	clientConf, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		return err
-	}
-
-	kClient, err := kubernetes.NewForConfig(clientConf)
-	if err != nil {
-		return err
+	for clusterName, b64Kubeconfig := range clusters {
+		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
+		kStr, err := base64.StdEncoding.DecodeString(b64Kubeconfig)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(filename, kStr, 0644)
+		if err != nil {
+			return err
+		}
+		kubeconfig := flag.String("kubeconfig",
+			filename,
+			"(optional) absolute path to the kubeconfig file")
+		flag.Parse()
+		clientConf, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			return err
+		}
+		kClient, err := kubernetes.NewForConfig(clientConf)
+		if err != nil {
+			return err
+		}
+		ee.kClients[clusterName] = *kClient
+		ee.metricsClients[clusterName] = *metricsv.NewForConfigOrDie(clientConf)
 	}
 
 	ee.jobQueue = conf.GetString("eks.job_queue")
@@ -81,14 +79,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
-	ee.kClient = kClient
+	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.jobSA = conf.GetString("eks.service_account")
-	ee.metricsClient = metricsv.NewForConfigOrDie(clientConf)
-
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(conf.GetString("aws_default_region"))}))
-
-	ee.ec2Client = ec2.New(sess)
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -103,7 +95,14 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager)
 
-	result, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
+		run.ExitReason = &exitReason
+		return run, false, err
+	}
+
+	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
 	if err != nil {
 		// Job is already submitted, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
@@ -163,10 +162,22 @@ func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) stat
 }
 
 func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
-	podList, err := ee.kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		return &v1.PodList{}, err
+	}
+	podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
 	})
 	return podList, err
+}
+
+func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	kClient, ok := ee.kClients[run.ClusterName]
+	if !ok {
+		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
+	}
+	return kClient, nil
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
@@ -177,9 +188,17 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &deletionPropagation,
 	}
-	err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
+		run.ExitReason = &exitReason
+		return err
+	}
+
+	err = kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 	if run.PodName != nil {
-		_ = ee.kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
+		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
 	}
 
 	if err != nil {
@@ -265,7 +284,11 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 }
 
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
-	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		return state.Run{}, err
+	}
+	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
@@ -283,7 +306,12 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 	if run.PodName == nil {
 		return state.PodEventList{}, nil
 	}
-	eventList, err := ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		return state.PodEventList{}, err
+	}
+
+	eventList, err := kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
 	if err != nil {
 		return state.PodEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
@@ -317,7 +345,11 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
 	if run.PodName != nil {
-		podMetrics, err := ee.metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		metricsClient, ok := ee.metricsClients[run.ClusterName]
+		if !ok {
+			return state.Run{}, errors.New("Metrics client not defined.")
+		}
+		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
 		if err != nil {
 			return run, err
 		}
@@ -339,7 +371,11 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 }
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
-	job, err := ee.kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	kClient, err := ee.getKClient(run)
+	if err != nil {
+		return state.Run{}, err
+	}
+	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
 
 	if err != nil {
 		return run, err
