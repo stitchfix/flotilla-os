@@ -7,7 +7,6 @@ import { AppThunk } from "./store"
 export type Settings = {
   USE_OPTIMIZED_LOG_RENDERER: boolean
   SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW: boolean
-  DEFAULT_OWNER_ID: string
 }
 
 type SettingsReducer = {
@@ -22,7 +21,6 @@ const initialState: SettingsReducer = {
   settings: {
     USE_OPTIMIZED_LOG_RENDERER: true,
     SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW: true,
-    DEFAULT_OWNER_ID: "",
   },
 }
 
@@ -37,7 +35,6 @@ const merge = (initial: Settings, cached: any): Settings => ({
     "SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW",
     initial.SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW
   ),
-  DEFAULT_OWNER_ID: get(cached, "DEFAULT_OWNER_ID", initial.DEFAULT_OWNER_ID),
 })
 
 const settingsReducer = createSlice({

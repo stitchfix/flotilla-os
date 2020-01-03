@@ -26,7 +26,7 @@ const getInitialValuesForTaskRun = ({
   const ownerID = get(
     routerState,
     ["run_tags", "owner_id"],
-    get(settings, "DEFAULT_OWNER_ID", getOwnerIdRunTagFromCookies())
+    getOwnerIdRunTagFromCookies()
   )
 
   // Set env value.

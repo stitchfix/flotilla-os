@@ -6,7 +6,10 @@ import LogRow from "./LogVirtualizedRow"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
 import { RootState } from "../state/store"
 
-const connected = connect((state: RootState) => state.runView)
+const connected = connect((state: RootState) => ({
+  ...state.runView,
+  settings: state.settings.settings,
+}))
 
 export type Props = {
   width: number
@@ -136,7 +139,10 @@ export class LogVirtualized extends React.Component<Props, State> {
   }
 
   handleKeydown(evt: KeyboardEvent) {
+    const { settings } = this.props
     const { isSearchInputFocused } = this.state
+
+    if (settings.SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW === false) return
 
     // If the search component is visible and the user hits the escape key,
     // reset search state (hide input, reset matches to an empty array, etc.)

@@ -7,8 +7,12 @@ import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
 import { RootState } from "../state/store"
 import { setHasLogs } from "../state/runView"
+import Log from "./Log"
 
-const connected = connect((state: RootState) => state.runView)
+const connected = connect((state: RootState) => ({
+  ...state.runView,
+  settings: state.settings.settings,
+}))
 
 type Props = {
   status: RunStatus | undefined
@@ -108,11 +112,24 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
   }
 
   render() {
-    const { status } = this.props
-    const { error, logs } = this.state
+    const { status, settings } = this.props
+    const { error, logs, isLoading } = this.state
     if (error) return <ErrorCallout error={error} />
+    if (settings.USE_OPTIMIZED_LOG_RENDERER === true) {
+      return (
+        <LogProcessor
+          logs={logs}
+          hasRunFinished={status === RunStatus.STOPPED}
+        />
+      )
+    }
+
     return (
-      <LogProcessor logs={logs} hasRunFinished={status === RunStatus.STOPPED} />
+      <Log
+        logs={logs}
+        hasRunFinished={status === RunStatus.STOPPED}
+        isLoading={isLoading}
+      />
     )
   }
 }

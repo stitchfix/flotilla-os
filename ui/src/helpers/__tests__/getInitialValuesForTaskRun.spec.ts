@@ -21,7 +21,6 @@ describe("getInitialValuesForTaskRun", () => {
         settings: {
           USE_OPTIMIZED_LOG_RENDERER: true,
           SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW: true,
-          DEFAULT_OWNER_ID: "",
         },
       })
     ).toEqual(expectedEks)

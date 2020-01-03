@@ -8,8 +8,12 @@ import { LOG_FETCH_INTERVAL_MS } from "../constants"
 import ErrorCallout from "./ErrorCallout"
 import { setHasLogs } from "../state/runView"
 import { RootState } from "../state/store"
+import LogProcessor from "./LogProcessor"
 
-const connected = connect((state: RootState) => state.runView)
+const connected = connect((state: RootState) => ({
+  ...state.runView,
+  settings: state.settings.settings,
+}))
 
 type Props = {
   status: RunStatus | undefined
@@ -152,10 +156,19 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
   }
 
   render() {
-    const { status } = this.props
+    const { status, settings } = this.props
     const { isLoading, error, logs } = this.state
 
     if (error) return <ErrorCallout error={error} />
+
+    if (settings.USE_OPTIMIZED_LOG_RENDERER === true) {
+      return (
+        <LogProcessor
+          logs={logs}
+          hasRunFinished={status === RunStatus.STOPPED}
+        />
+      )
+    }
 
     return (
       <Log

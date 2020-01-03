@@ -8,6 +8,12 @@ const defaultProps: Props = {
   logs: ["a", "b", "c", "d"],
   shouldAutoscroll: true,
   dispatch: jest.fn(),
+  hasRunFinished: false,
+  hasLogs: true,
+  settings: {
+    USE_OPTIMIZED_LOG_RENDERER: true,
+    SHOULD_OVERRIDE_CMD_F_IN_RUN_VIEW: true,
+  },
 }
 
 describe("LogVirtualized", () => {

@@ -79,15 +79,6 @@ const SettingsButton: React.FC = () => {
                       disabled={values.USE_OPTIMIZED_LOG_RENDERER === false}
                     />
                   </FormGroup>
-                  <FormGroup
-                    label="Default Owner ID"
-                    helperText="Fill in once, never fill in again."
-                  >
-                    <FastField
-                      name="DEFAULT_OWNER_ID"
-                      className={Classes.INPUT}
-                    />
-                  </FormGroup>
                 </div>
                 <div className={Classes.DIALOG_FOOTER}>
                   <div className={Classes.DIALOG_FOOTER_ACTIONS}>
