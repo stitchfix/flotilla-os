@@ -38,7 +38,7 @@ const SettingsButton: React.FC = () => {
           dispatch(toggleDialogVisibilityChange(false))
         }}
         className="bp3-dark"
-        title="Settings"
+        title={`Settings (v${process.env.REACT_APP_VERSION})`}
       >
         <Formik<Settings>
           initialValues={settings}
@@ -81,7 +81,6 @@ const SettingsButton: React.FC = () => {
                   </FormGroup>
                 </div>
                 <div className={Classes.DIALOG_FOOTER}>
-                  <div>v{process.env.REACT_APP_VERSION}</div>
                   <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button
                       onClick={() => {
