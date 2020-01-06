@@ -163,6 +163,7 @@ export type UpdateTaskPayload = {
   cpu: number
   command: string
   tags: string[]
+  adaptiveResourceAllocation?: boolean
 }
 
 export enum ExecutionEngine {
