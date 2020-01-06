@@ -139,7 +139,6 @@ func (sw *statusWorker) processRun(run state.Run) {
 			}
 
 			if updatedRun.Status == state.StatusStopped {
-				// Garbage collect the run once it's done.
 				_ = sw.ee.Terminate(run)
 			}
 		} else {

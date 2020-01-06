@@ -148,7 +148,7 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		engine = &state.EKSEngine
 	}
 
-	if engine == &state.EKSEngine {
+	if *engine == state.EKSEngine {
 		clusterName = es.eksClusterOverride
 	}
 
@@ -189,7 +189,7 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 		engine = &state.EKSEngine
 	}
 
-	if engine == &state.EKSEngine {
+	if *engine == state.EKSEngine {
 		clusterName = es.eksClusterOverride
 	}
 

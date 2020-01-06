@@ -177,8 +177,8 @@ func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, e
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
-	gracePeriod := int64(0)
-	deletionPropagation := metav1.DeletePropagationBackground
+	gracePeriod := int64(300)
+	deletionPropagation := metav1.DeletePropagationOrphan
 	_ = ee.log.Log("terminating run=", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
