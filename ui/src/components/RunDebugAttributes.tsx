@@ -20,6 +20,7 @@ const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
       <div className="flotilla-card-header">EKS Debug</div>
     </div>
     <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
+      {data.cluster && <Attribute name="EKS Cluster" value={data.cluster} />}
       {data.pod_name && <Attribute name="EKS Pod Name" value={data.pod_name} />}
       {data.engine === ExecutionEngine.EKS && (
         <Attribute
