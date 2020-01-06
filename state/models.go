@@ -155,8 +155,8 @@ type Definition struct {
 	Ports                      *PortsList `json:"ports,omitempty"`
 	Tags                       *Tags      `json:"tags,omitempty"`
 	Privileged                 *bool      `json:"privileged,omitempty"`
-	SharedMemorySize           *int64     `json:"sharedMemorySize,omitempty"`
-	AdaptiveResourceAllocation *bool      `json:"adaptiveResourceAllocation,omitempty"`
+	SharedMemorySize           *int64     `json:"shared_memory_size,omitempty"`
+	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 }
 
 var commandWrapper = `
