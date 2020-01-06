@@ -1,17 +1,24 @@
 import * as React from "react"
 import { get } from "lodash"
-import { Switch, Tag, Colors, Tooltip, Checkbox } from "@blueprintjs/core"
-import { Task } from "../types"
+import { Tag, Colors, Checkbox, Intent } from "@blueprintjs/core"
+import { Task, UpdateTaskPayload } from "../types"
 import api from "../api"
+import Toaster from "./Toaster"
+import Request, { ChildProps } from "./Request"
 
-type Props = Task
+type Props = {
+  task: Task
+} & ChildProps<Task, { definitionID: string; data: UpdateTaskPayload }>
 
 class ARASwitch extends React.Component<Props> {
   constructor(props: Props) {
     super(props)
     this.handleChange = this.handleChange.bind(this)
   }
+
   handleChange() {
+    const { task, request } = this.props
+
     let enabled: boolean
     if (this.isEnabled()) {
       enabled = false
@@ -19,25 +26,23 @@ class ARASwitch extends React.Component<Props> {
       enabled = true
     }
 
-    api
-      .updateTask({
-        definitionID: this.props.definition_id,
-        data: {
-          env: this.props.env,
-          image: this.props.image,
-          group_name: this.props.group_name,
-          memory: this.props.memory,
-          cpu: this.props.cpu,
-          command: this.props.command,
-          tags: this.props.tags,
-          adaptiveResourceAllocation: enabled,
-        },
-      })
-      .then(res => {})
+    request({
+      definitionID: task.definition_id,
+      data: {
+        env: task.env,
+        image: task.image,
+        group_name: task.group_name,
+        memory: task.memory,
+        cpu: task.cpu,
+        command: task.command,
+        tags: task.tags,
+        adaptive_resource_allocation: enabled,
+      },
+    })
   }
 
   isEnabled() {
-    return get(this.props, "adaptiveResourceAllocation", false) === true
+    return get(this.props, "adaptive_resource_allocation", false) === true
   }
 
   render() {
@@ -63,4 +68,32 @@ class ARASwitch extends React.Component<Props> {
   }
 }
 
-export default ARASwitch
+type ConnectedProps = {
+  task: Task
+  request: (opts: { definitionID: string }) => void
+}
+
+const Connected: React.FC<ConnectedProps> = ({ task, request }) => (
+  <Request<Task, { definitionID: string; data: UpdateTaskPayload }>
+    requestFn={api.updateTask}
+    shouldRequestOnMount={false}
+    onSuccess={(data: Task) => {
+      Toaster.show({
+        message: `ARA enabled for ${data.alias}!`,
+        intent: Intent.SUCCESS,
+      })
+      // Re-request data.
+      request({ definitionID: data.definition_id })
+    }}
+    onFailure={() => {
+      Toaster.show({
+        message: "An error occurred.",
+        intent: Intent.DANGER,
+      })
+    }}
+  >
+    {requestProps => <ARASwitch task={task} {...requestProps} />}
+  </Request>
+)
+
+export default Connected

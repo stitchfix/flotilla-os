@@ -24,14 +24,12 @@ import ARASwitch from "./ARASwitch"
 
 const TaskDetails: React.FC<{}> = () => (
   <TaskContext.Consumer>
-    {({ requestStatus, data, error, definitionID }) => {
+    {({ requestStatus, data, error, definitionID, request }) => {
       switch (requestStatus) {
         case RequestStatus.ERROR:
           return <ErrorCallout error={error} />
         case RequestStatus.READY:
           if (data) {
-            const hasAra =
-              get(data, "adaptiveResourceAllocation", false) === true
             return (
               <>
                 <ViewHeader
@@ -91,7 +89,9 @@ const TaskDetails: React.FC<{}> = () => (
                             <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
                               <Attribute
                                 name="Adaptive Resource Allocation"
-                                value={<ARASwitch {...data} />}
+                                value={
+                                  <ARASwitch task={data} request={request} />
+                                }
                                 description={
                                   <span>
                                     Adaptive CPU and memory resource allocation
