@@ -38,7 +38,7 @@ const SettingsButton: React.FC = () => {
           dispatch(toggleDialogVisibilityChange(false))
         }}
         className="bp3-dark"
-        title="Settings"
+        title={`Settings (v${process.env.REACT_APP_VERSION})`}
       >
         <Formik<Settings>
           initialValues={settings}

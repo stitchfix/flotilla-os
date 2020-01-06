@@ -10,9 +10,6 @@ import {
   Button,
   Spinner,
   Icon,
-  Tag,
-  Colors,
-  Tooltip,
 } from "@blueprintjs/core"
 import { TaskContext } from "./Task"
 import Attribute from "./Attribute"
@@ -23,42 +20,23 @@ import DeleteTaskButton from "./DeleteTaskButton"
 import Toggler from "./Toggler"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
+import ARASwitch from "./ARASwitch"
 
 const TaskDetails: React.FC<{}> = () => (
   <TaskContext.Consumer>
-    {({ requestStatus, data, error, definitionID }) => {
+    {({ requestStatus, data, error, definitionID, request }) => {
       switch (requestStatus) {
         case RequestStatus.ERROR:
           return <ErrorCallout error={error} />
         case RequestStatus.READY:
           if (data) {
-            const hasAra =
-              get(data, "adaptiveResourceAllocation", false) === true
             return (
               <>
                 <ViewHeader
                   breadcrumbs={[
                     { text: "Tasks", href: "/tasks" },
                     {
-                      text: (
-                        <div style={{ display: "flex" }}>
-                          <div>{data.alias || definitionID}</div>
-                          {hasAra && (
-                            <Tooltip content="Adaptive CPU and memory resource allocation based on prior run history.">
-                              <Tag
-                                style={{
-                                  background: Colors.ROSE5,
-                                  color: Colors.WHITE,
-                                  marginLeft: 6,
-                                  cursor: "default",
-                                }}
-                              >
-                                ARA-ENABLED
-                              </Tag>
-                            </Tooltip>
-                          )}
-                        </div>
-                      ),
+                      text: data.alias || definitionID,
                       href: `/tasks/${definitionID}`,
                     },
                   ]}
@@ -109,6 +87,18 @@ const TaskDetails: React.FC<{}> = () => (
                           </div>
                           <Collapse isOpen={isVisible}>
                             <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
+                              <Attribute
+                                name="Adaptive Resource Allocation"
+                                value={
+                                  <ARASwitch task={data} request={request} />
+                                }
+                                description={
+                                  <span>
+                                    Adaptive CPU and memory resource allocation
+                                    based on prior run history.
+                                  </span>
+                                }
+                              />
                               <Attribute name="Alias" value={data.alias} />
                               <Attribute
                                 name="Definition ID"

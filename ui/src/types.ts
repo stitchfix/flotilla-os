@@ -18,7 +18,8 @@ export type Task = {
   command: string
   tags: string[]
   privileged: boolean
-  adaptiveResourceAllocation?: boolean
+  shared_memory_size?: number
+  adaptive_resource_allocation?: boolean
 }
 
 export type RunInstance = {
@@ -163,6 +164,7 @@ export type UpdateTaskPayload = {
   cpu: number
   command: string
   tags: string[]
+  adaptive_resource_allocation?: boolean
 }
 
 export enum ExecutionEngine {
