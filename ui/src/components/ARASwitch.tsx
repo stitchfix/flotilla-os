@@ -42,7 +42,7 @@ class ARASwitch extends React.Component<Props> {
   }
 
   isEnabled() {
-    return get(this.props, "adaptive_resource_allocation", false) === true
+    return get(this.props.task, "adaptive_resource_allocation", false) === true
   }
 
   render() {
@@ -79,7 +79,7 @@ const Connected: React.FC<ConnectedProps> = ({ task, request }) => (
     shouldRequestOnMount={false}
     onSuccess={(data: Task) => {
       Toaster.show({
-        message: `ARA enabled for ${data.alias}!`,
+        message: `${data.alias} updated successfully!`,
         intent: Intent.SUCCESS,
       })
       // Re-request data.
