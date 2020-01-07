@@ -139,7 +139,8 @@ func (sw *statusWorker) processRun(run state.Run) {
 			}
 
 			if updatedRun.Status == state.StatusStopped {
-				_ = sw.ee.Terminate(run)
+				//TODO - move to a separate worker.
+				//_ = sw.ee.Terminate(run)
 			}
 		} else {
 			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||

@@ -220,6 +220,11 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
+	// Run GPU nodes only on on-demand instances (termination rates are high on spot for p3 class instances
+	if definition.Gpu != nil && *definition.Gpu > 0 {
+		run.NodeLifecycle = &state.OndemandLifecycle
+	}
+
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {
