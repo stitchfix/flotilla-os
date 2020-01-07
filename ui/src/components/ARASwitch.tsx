@@ -79,7 +79,7 @@ const Connected: React.FC<ConnectedProps> = ({ task, request }) => (
     shouldRequestOnMount={false}
     onSuccess={(data: Task) => {
       Toaster.show({
-        message: `ARA enabled for ${data.alias}!`,
+        message: `${data.alias} updated successfully!`,
         intent: Intent.SUCCESS,
       })
       // Re-request data.
