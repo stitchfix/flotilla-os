@@ -167,12 +167,13 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 				Values:   cpuNodeTypes,
 			})
 		}
-		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-			Key:      "kubernetes.io/lifecycle",
-			Operator: corev1.NodeSelectorOpIn,
-			Values:   nodeLifecycle,
-		})
 	}
+
+	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+		Key:      "kubernetes.io/lifecycle",
+		Operator: corev1.NodeSelectorOpIn,
+		Values:   nodeLifecycle,
+	})
 
 	affinity = &corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{
