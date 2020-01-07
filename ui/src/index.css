@@ -273,6 +273,7 @@ table {
   overflow-y: scroll;
   padding: 0;
   width: 100%;
+  overscroll-behavior: contain;
 }
 
 .flotilla-logs-loader-container {
