@@ -1,9 +1,11 @@
 import * as React from "react"
+import { get } from "lodash"
 import ReactResizeDetector from "react-resize-detector"
 import WebWorker from "../workers/index"
 import LogWorker from "../workers/log.worker"
 import { CHAR_TO_PX_RATIO } from "../constants"
 import LogVirtualized from "./LogVirtualized"
+import { Spinner, Callout } from "@blueprintjs/core"
 
 type ConnectedProps = {
   logs: string
@@ -16,6 +18,7 @@ type Props = ConnectedProps & {
 }
 
 type State = {
+  isProcessing: boolean
   processedLogs: string[]
 }
 
@@ -28,12 +31,16 @@ export class LogProcessor extends React.Component<Props, State> {
     if (process.env.NODE_ENV !== "test") {
       this.logWorker = new WebWorker(LogWorker)
       this.logWorker.addEventListener("message", (evt: any) => {
-        this.setState({ processedLogs: evt.data })
+        this.setState({
+          processedLogs: get(evt, "data", []),
+          isProcessing: false,
+        })
       })
     }
   }
 
   state: State = {
+    isProcessing: false,
     processedLogs: [],
   }
 
@@ -60,7 +67,10 @@ export class LogProcessor extends React.Component<Props, State> {
   processLogs(): void {
     const { logs } = this.props
 
-    if (process.env.NODE_ENV === "test") return
+    // Early exit if running tests or no logs.
+    if (process.env.NODE_ENV === "test" || logs.length === 0) return
+
+    this.setState({ isProcessing: true })
     this.logWorker.postMessage({
       logs,
       maxLen: this.getMaxLineLength(),
@@ -69,7 +79,18 @@ export class LogProcessor extends React.Component<Props, State> {
 
   render() {
     const { width, height, hasRunFinished } = this.props
-    const { processedLogs } = this.state
+    const { isProcessing, processedLogs } = this.state
+
+    // If no existing logs and processing, return spinner.
+    if (isProcessing && processedLogs.length === 0) {
+      return (
+        <Callout>
+          <div style={{ display: "flex" }}>
+            Optimizing... <Spinner size={Spinner.SIZE_SMALL} />
+          </div>
+        </Callout>
+      )
+    }
 
     return (
       <LogVirtualized

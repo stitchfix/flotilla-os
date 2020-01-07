@@ -5,6 +5,7 @@ import { get } from "lodash"
 import LogRow from "./LogVirtualizedRow"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
 import { RootState } from "../state/store"
+import { Callout, Spinner } from "@blueprintjs/core"
 
 const connected = connect((state: RootState) => ({
   ...state.runView,
@@ -192,8 +193,18 @@ export class LogVirtualized extends React.Component<Props, State> {
   }
 
   render() {
-    const { width, height, logs, hasRunFinished } = this.props
+    const { width, height, logs, hasRunFinished, hasLogs } = this.props
     const { searchMatches, searchCursor } = this.state
+
+    if (hasLogs === false) {
+      return (
+        <Callout>
+          <div style={{ display: "flex" }}>
+            Fetching logs... <Spinner size={Spinner.SIZE_SMALL} />
+          </div>
+        </Callout>
+      )
+    }
 
     return (
       <div className="flotilla-logs-virtualized-container">
