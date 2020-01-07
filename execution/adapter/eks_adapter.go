@@ -203,6 +203,8 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
+		// Run GPU nodes only on on-demand instances (termination rates are high on spot for p3 class instances)
+		run.NodeLifecycle = &state.OndemandLifecycle
 	}
 	if run.EphemeralStorage != nil {
 		limits[corev1.ResourceEphemeralStorage] =
