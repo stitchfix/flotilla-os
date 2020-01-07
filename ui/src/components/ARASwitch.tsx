@@ -42,7 +42,7 @@ class ARASwitch extends React.Component<Props> {
   }
 
   isEnabled() {
-    return get(this.props, "adaptive_resource_allocation", false) === true
+    return get(this.props.task, "adaptive_resource_allocation", false) === true
   }
 
   render() {
