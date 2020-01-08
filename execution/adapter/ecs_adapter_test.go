@@ -513,6 +513,7 @@ func TestEcsAdapter_AdaptTaskDef(t *testing.T) {
 	}
 
 	adapted := adapter.AdaptTaskDef(taskDef)
+
 	if adapted.DefinitionID != family {
 		t.Errorf("Expected DefinitionID %s but was %s", family, adapted.DefinitionID)
 	}

@@ -128,6 +128,10 @@ func (ds *definitionService) Update(definitionID string, updates state.Definitio
 		return definition, err
 	}
 
+	if definition.AdaptiveResourceAllocation!=nil{
+		defined.AdaptiveResourceAllocation = definition.AdaptiveResourceAllocation
+	}
+
 	return ds.sm.UpdateDefinition(definitionID, defined)
 }
 
