@@ -3,7 +3,10 @@ import { connect, ConnectedProps } from "react-redux"
 import api from "../api"
 import LogProcessor from "./LogProcessor"
 import { RunStatus } from "../types"
-import { LOG_FETCH_INTERVAL_MS } from "../constants"
+import {
+  LOG_FETCH_INTERVAL_MS,
+  KILL_LOG_POLLING_TIMEOUT_MS,
+} from "../constants"
 import ErrorCallout from "./ErrorCallout"
 import { RootState } from "../state/store"
 import { setHasLogs } from "../state/runView"
@@ -33,6 +36,7 @@ const initialState: State = {
 
 class LogRequesterS3 extends React.PureComponent<Props, State> {
   private requestInterval: number | undefined
+  private killPollingTimeout: number | undefined
   state = initialState
 
   componentDidMount() {
@@ -49,12 +53,21 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
       prevProps.status !== RunStatus.STOPPED &&
       this.props.status === RunStatus.STOPPED
     ) {
-      this.clearRequestInterval()
+      // Kill the polling process after n seconds.
+      this.killPollingTimeout = window.setTimeout(() => {
+        this.clearRequestInterval()
+      }, KILL_LOG_POLLING_TIMEOUT_MS)
     }
   }
 
   componentWillUnmount() {
-    window.clearInterval(this.requestInterval)
+    if (this.requestInterval) {
+      window.clearInterval(this.requestInterval)
+    }
+
+    if (this.killPollingTimeout) {
+      window.clearTimeout(this.killPollingTimeout)
+    }
   }
 
   setRequestInterval = (): void => {
