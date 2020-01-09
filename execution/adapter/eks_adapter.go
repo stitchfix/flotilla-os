@@ -192,13 +192,14 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
-	cpu, mem := a.adaptiveResources(definition, run, manager)
-	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
-	assignedCpu := cpuQuantity.ScaledValue(resource.Milli)
-	run.Cpu = &assignedCpu
 
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", mem))
+	cpuLimit, memLimit := a.getResourceDefaults(run, definition)
+	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
+	assignedCpu := cpuLimitQuantity.ScaledValue(resource.Milli)
+	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", memLimit))
 	assignedMem := memoryQuantity.ScaledValue(resource.Mega)
+
+	run.Cpu = &assignedCpu
 	run.Memory = &assignedMem
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
@@ -210,15 +211,32 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 		limits[corev1.ResourceEphemeralStorage] =
 			resource.MustParse(fmt.Sprintf("%dGi", *run.EphemeralStorage))
 	}
-	limits[corev1.ResourceCPU] = cpuQuantity
+	limits[corev1.ResourceCPU] = cpuLimitQuantity
 	limits[corev1.ResourceMemory] = memoryQuantity
+
+	requests := make(corev1.ResourceList)
+	cpuRequest, memRequest := a.adaptiveResourceRequests(definition, run, manager)
+
+	if cpuRequest > 0 && cpuRequest < cpuLimit {
+		requests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
+	} else {
+		requests[corev1.ResourceCPU] = cpuLimitQuantity
+	}
+
+	if memRequest > 0 && memRequest < memLimit {
+		requests[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dM", memRequest))
+	} else {
+		requests[corev1.ResourceMemory] = memoryQuantity
+	}
+
 	resourceRequirements := corev1.ResourceRequirements{
-		Limits: limits,
+		Limits:   limits,
+		Requests: requests,
 	}
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
+func (a *eksAdapter) adaptiveResourceRequests(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
 	cpu, mem := a.getResourceDefaults(run, definition)
 
 	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {

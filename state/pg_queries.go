@@ -184,38 +184,10 @@ const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectSQL = `
 SELECT
-  case when (
-    (
-      percentile_disc(0.99) within GROUP (
-        ORDER BY
-          max_memory_used
-      ) * 1.125
-    ):: numeric :: integer
-  ) is null then(
-    (
-      percentile_disc(0.99) within GROUP (
-        ORDER BY
-          memory
-      ) * 1.125
-    ):: numeric :: integer
-  ) end as memory,
-  case when (
-    (
-      percentile_disc(0.99) within GROUP (
-        ORDER BY
-          max_cpu_used
-      ) * 1.125
-    ):: numeric :: integer
-  ) is null then(
-    (
-      percentile_disc(0.99) within GROUP (
-        ORDER BY
-          cpu
-      ) * 1.125
-    ):: numeric :: integer
-  ) end as cpu
+percentile_disc(0.99) within GROUP (ORDER BY max_memory_used) * 1.25 as memory,
+percentile_disc(0.99) within GROUP (ORDER BY max_cpu_used) * 1.25 as cpu 
 FROM
-  TASK
+  task
 WHERE definition_id = $1
   AND exit_code = 0
   AND engine = 'eks'`
