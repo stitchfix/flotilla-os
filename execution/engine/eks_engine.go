@@ -1,8 +1,12 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
@@ -14,6 +18,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -25,16 +30,20 @@ import (
 // EKSExecutionEngine submits runs to EKS.
 //
 type EKSExecutionEngine struct {
-	kClients       map[string]kubernetes.Clientset
-	metricsClients map[string]metricsv.Clientset
-	adapter        adapter.EKSAdapter
-	qm             queue.Manager
-	log            flotillaLog.Logger
-	jobQueue       string
-	jobNamespace   string
-	jobTtl         int
-	jobSA          string
-	schedulerName  string
+	kClients        map[string]kubernetes.Clientset
+	metricsClients  map[string]metricsv.Clientset
+	adapter         adapter.EKSAdapter
+	qm              queue.Manager
+	log             flotillaLog.Logger
+	jobQueue        string
+	jobNamespace    string
+	jobTtl          int
+	jobSA           string
+	schedulerName   string
+	serializer      *k8sJson.Serializer
+	s3Client        *s3.S3
+	s3Bucket        string
+	s3BucketRootDir string
 }
 
 //
@@ -84,6 +93,21 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		return err
 	}
 
+	ee.serializer = k8sJson.NewSerializerWithOptions(
+		k8sJson.DefaultMetaFactory, nil, nil,
+		k8sJson.SerializerOptions{
+			Yaml:   true,
+			Pretty: true,
+			Strict: true,
+		},
+	)
+	confLogOptions := conf.GetStringMapString("eks.manifest.storage.options")
+	awsRegion := confLogOptions["region"]
+	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
+	ee.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
+	ee.s3Bucket = confLogOptions["s3_bucket_name"]
+	ee.s3BucketRootDir = confLogOptions["s3_bucket_root_dir"]
+
 	ee.adapter = adapt
 	return nil
 }
@@ -99,6 +123,7 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manage
 	}
 
 	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
+
 	if err != nil {
 		// Job is already submitted, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
@@ -117,6 +142,21 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manage
 		return run, true, err
 	}
 
+	var b0 bytes.Buffer
+	err = ee.serializer.Encode(result, &b0)
+	if err == nil {
+		putObject := s3.PutObjectInput{
+			Bucket:      aws.String(ee.s3Bucket),
+			Body:        bytes.NewReader(b0.Bytes()),
+			Key:         aws.String(fmt.Sprintf("%s/%s/%s.yaml", ee.s3BucketRootDir, run.RunID, run.RunID)),
+			ContentType: aws.String("text/yaml"),
+		}
+		_, err = ee.s3Client.PutObject(&putObject)
+
+		if err != nil {
+			_ = ee.log.Log("s3_upload_error", "error", err.Error())
+		}
+	}
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 
 	run, _ = ee.getPodName(run)
