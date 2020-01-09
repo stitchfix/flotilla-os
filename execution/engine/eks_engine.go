@@ -145,11 +145,11 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manage
 	var b0 bytes.Buffer
 	err = ee.serializer.Encode(result, &b0)
 	if err == nil {
-		key := fmt.Sprintf("%s/%s/%s.yaml", ee.s3BucketRootDir, run.RunID, run.RunID)
 		putObject := s3.PutObjectInput{
-			Bucket: &ee.s3Bucket,
-			Body:   aws.ReadSeekCloser(&b0),
-			Key:    &key,
+			Bucket:      aws.String(ee.s3Bucket),
+			Body:        bytes.NewReader(b0.Bytes()),
+			Key:         aws.String(fmt.Sprintf("%s/%s/%s.yaml", ee.s3BucketRootDir, run.RunID, run.RunID)),
+			ContentType: aws.String("text/yaml"),
 		}
 		_, err = ee.s3Client.PutObject(&putObject)
 
