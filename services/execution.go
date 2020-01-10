@@ -428,7 +428,7 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 	}
 
 	// If it's queued and not submitted, set status to stopped (checked by submit worker)
-	if run.Status == state.StatusQueued {
+	if run.Status == state.StatusQueued && *run.Engine == state.ECSEngine {
 		_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
 		return err
 	}
