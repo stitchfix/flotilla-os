@@ -184,16 +184,15 @@ const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectSQL = `
 SELECT
-percentile_disc(0.99) within GROUP (ORDER BY max_memory_used) * 1.25 as memory,
-percentile_disc(0.99) within GROUP (ORDER BY max_cpu_used) * 1.25 as cpu 
+percentile_disc(0.99) within GROUP (ORDER BY max_memory_used) * 1.25 :: numeric :: integer as memory,
+percentile_disc(0.99) within GROUP (ORDER BY max_cpu_used) * 1.25 :: numeric :: integer as cpu
 FROM
   task
 WHERE definition_id = $1
   AND exit_code = 0
-  AND engine = 'eks'`
-
-const TaskResourcesSelectCommandSQL = TaskResourcesSelectSQL + "\n  AND command = $2"
-
+  AND engine = 'eks'
+  AND command = (SELECT command from task where run_id = $2)
+`
 //
 // RunSelect postgres specific query for runs
 //

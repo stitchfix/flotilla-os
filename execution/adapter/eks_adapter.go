@@ -247,7 +247,7 @@ func (a *eksAdapter) adaptiveResourceRequests(definition state.Definition, run s
 			cpu = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.RunID)
 			if err == nil {
 				cpu = estimatedResources.Cpu
 				mem = estimatedResources.Memory
