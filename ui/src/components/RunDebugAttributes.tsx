@@ -15,7 +15,7 @@ const createEC2Url = (dns: string): string => {
 }
 
 const createS3ManifestUrl = (runID: string): string => {
-  const prefix = process.env.REACT_APP_S3_BUCKET_PREFIX || ""
+  const prefix = process.env.REACT_APP_S3_OBJECT_PREFIX || ""
   return urljoin(prefix, "manifests", runID, `${runID}.yaml`)
 }
 
