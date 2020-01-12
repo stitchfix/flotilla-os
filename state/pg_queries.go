@@ -183,15 +183,28 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectSQL = `
-SELECT
-percentile_disc(0.99) within GROUP (ORDER BY max_memory_used) * 1.25 :: numeric :: integer as memory,
-percentile_disc(0.99) within GROUP (ORDER BY max_cpu_used) * 1.25 :: numeric :: integer as cpu
-FROM
-  task
-WHERE definition_id = $1
-  AND exit_code = 0
-  AND engine = 'eks'
-  AND command = (SELECT command from task where run_id = $2)
+SELECT least(greatest(task.cpu, task_def.cpu), $3)       as cpulimit,
+       least(greatest(task.memory, task_def.memory), $5) as memorylimit,
+       greatest(least(ara.cpu_request, task.cpu), $4)       as cpurequest,
+       greatest(least(ara.memory_request, task.memory), $6) as memoryrequest
+FROM task,
+     task_def,
+     (SELECT Percentile_disc(0.95) WITHIN GROUP (ORDER BY task.max_memory_used) :: NUMERIC :: INTEGER AS memory_request,
+             Percentile_disc(0.95) WITHIN GROUP (ORDER BY task.max_cpu_used) :: NUMERIC :: INTEGER    AS cpu_request
+      FROM task,
+           task_def
+      WHERE task_def.definition_id = $1
+        AND task.definition_id = $1
+        AND task.command =
+            (
+                SELECT task.command
+                FROM task
+                WHERE task.run_id = $2
+            )
+        AND task.exit_code = 0
+        AND task_def.adaptive_resource_allocation = true) ara
+WHERE task.run_id = $2
+  AND task_def.definition_id = $1
 `
 //
 // RunSelect postgres specific query for runs

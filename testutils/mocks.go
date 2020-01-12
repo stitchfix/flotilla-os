@@ -151,9 +151,9 @@ func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 	return nil
 }
 
-func (iatt *ImplementsAllTheThings) EstimateRunResources(definitionID string, command string) (state.TaskResources, error) {
+func (iatt *ImplementsAllTheThings) EstimateRunResources(definition state.Definition, run state.Run, defaults state.TaskResources) state.TaskResources {
 	iatt.Calls = append(iatt.Calls, "EstimateRunResources")
-	return state.TaskResources{}, nil
+	return state.TaskResources{}
 }
 
 // UpdateRun - StateManager

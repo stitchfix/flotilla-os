@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -191,43 +192,15 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 }
 
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
-	limits := make(corev1.ResourceList)
-
-	cpuLimit, memLimit := a.getResourceDefaults(run, definition)
-	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
-	assignedCpu := cpuLimitQuantity.ScaledValue(resource.Milli)
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", memLimit))
-	assignedMem := memoryQuantity.ScaledValue(resource.Mega)
-
-	run.Cpu = &assignedCpu
-	run.Memory = &assignedMem
+	limits, requests := a.adaptiveResourceRequests(definition, run, manager)
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
-		// Run GPU nodes only on on-demand instances (termination rates are high on spot for p3 class instances)
 		run.NodeLifecycle = &state.OndemandLifecycle
 	}
-	if run.EphemeralStorage != nil {
-		limits[corev1.ResourceEphemeralStorage] =
-			resource.MustParse(fmt.Sprintf("%dGi", *run.EphemeralStorage))
-	}
-	limits[corev1.ResourceCPU] = cpuLimitQuantity
-	limits[corev1.ResourceMemory] = memoryQuantity
 
-	requests := make(corev1.ResourceList)
-	cpuRequest, memRequest := a.adaptiveResourceRequests(definition, run, manager)
-
-	if cpuRequest > 0 && cpuRequest < cpuLimit {
-		requests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
-	} else {
-		requests[corev1.ResourceCPU] = cpuLimitQuantity
-	}
-
-	if memRequest > 0 && memRequest < memLimit {
-		requests[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dM", memRequest))
-	} else {
-		requests[corev1.ResourceMemory] = memoryQuantity
-	}
+	run.Cpu = aws.Int64(requests.Cpu().ScaledValue(resource.Milli))
+	run.Memory = aws.Int64(requests.Memory().ScaledValue(resource.Mega))
 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits:   limits,
@@ -236,45 +209,25 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResourceRequests(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
-	cpu, mem := a.getResourceDefaults(run, definition)
-
-	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
-		// Check if last run was a OOM, in that case only increase memory
-		lastRun := a.getLastRun(manager, run)
-		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
-			mem = int64(float64(*lastRun.Memory) * 1.5)
-			cpu = *lastRun.Cpu
-		} else {
-			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.RunID)
-			if err == nil {
-				cpu = estimatedResources.Cpu
-				mem = estimatedResources.Memory
-			}
-		}
-	}
-
-	return a.checkResourceBounds(cpu, mem)
+func (a *eksAdapter) adaptiveResourceRequests(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceList, corev1.ResourceList) {
+	defaultsResources := a.getResourceDefaults(run, definition)
+	estimatedResources := manager.EstimateRunResources(definition, run, defaultsResources)
+	return a.constructResourceList(estimatedResources)
 }
 
-func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
-	if cpu < state.MinCPU {
-		cpu = state.MinCPU
-	}
-	if cpu > state.MaxCPU {
-		cpu = state.MaxCPU
-	}
-	if mem < state.MinMem {
-		mem = state.MinMem
-	}
-	if mem > state.MaxMem {
-		mem = state.MaxMem
-	}
-	return cpu, mem
+func (a *eksAdapter) constructResourceList(estimatedResources state.TaskResources) (corev1.ResourceList, corev1.ResourceList) {
+	limits := make(corev1.ResourceList)
+	requests := make(corev1.ResourceList)
+
+	limits[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", estimatedResources.CpuLimit))
+	limits[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dM", estimatedResources.MemoryLimit))
+	requests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", estimatedResources.CpuRequest))
+	requests[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dM", estimatedResources.MemoryRequest))
+
+	return limits, requests
 }
 
-func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definition) (int64, int64) {
+func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definition) state.TaskResources {
 	// 1. Init with the global defaults
 	cpu := state.MinCPU
 	mem := state.MinMem
@@ -305,7 +258,12 @@ func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definit
 		}
 	}
 
-	return cpu, mem
+	return state.TaskResources{
+		CpuLimit:      cpu,
+		MemoryLimit:   mem,
+		CpuRequest:    cpu,
+		MemoryRequest: mem,
+	}
 }
 
 func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {

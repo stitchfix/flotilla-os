@@ -593,6 +593,8 @@ type UserInfo struct {
 }
 
 type TaskResources struct {
-	Cpu    int64 `json:"cpu"`
-	Memory int64 `json:"memory"`
+	CpuLimit      int64 `json:"cpu_limit"`
+	MemoryLimit   int64 `json:"memory_limit"`
+	CpuRequest    int64 `json:"cpu_request"`
+	MemoryRequest int64 `json:"memory_request"`
 }
