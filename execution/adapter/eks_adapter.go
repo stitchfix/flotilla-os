@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -192,52 +193,67 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 
 func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
-	cpu, mem := a.adaptiveResources(definition, run, manager)
-	cpuQuantity := resource.MustParse(fmt.Sprintf("%dm", cpu))
-	assignedCpu := cpuQuantity.ScaledValue(resource.Milli)
-	run.Cpu = &assignedCpu
+	requests := make(corev1.ResourceList)
+	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(definition, run, manager)
 
-	memoryQuantity := resource.MustParse(fmt.Sprintf("%dM", mem))
-	assignedMem := memoryQuantity.ScaledValue(resource.Mega)
-	run.Memory = &assignedMem
+	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
+	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
+
+	memLimitQuantity := resource.MustParse(fmt.Sprintf("%dM", memLimit))
+	memRequestQuantity := resource.MustParse(fmt.Sprintf("%dM", memRequest))
+
+	limits[corev1.ResourceCPU] = cpuLimitQuantity
+	limits[corev1.ResourceMemory] = memLimitQuantity
+
+	requests[corev1.ResourceCPU] = cpuRequestQuantity
+	requests[corev1.ResourceMemory] = memRequestQuantity
 
 	if definition.Gpu != nil && *definition.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
-		// Run GPU nodes only on on-demand instances (termination rates are high on spot for p3 class instances)
+		requests["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
 		run.NodeLifecycle = &state.OndemandLifecycle
 	}
-	if run.EphemeralStorage != nil {
-		limits[corev1.ResourceEphemeralStorage] =
-			resource.MustParse(fmt.Sprintf("%dGi", *run.EphemeralStorage))
-	}
-	limits[corev1.ResourceCPU] = cpuQuantity
-	limits[corev1.ResourceMemory] = memoryQuantity
+
+	run.Memory = aws.Int64(memRequestQuantity.ScaledValue(resource.Mega))
+	run.Cpu = aws.Int64(cpuRequestQuantity.ScaledValue(resource.Milli))
+
 	resourceRequirements := corev1.ResourceRequirements{
-		Limits: limits,
+		Limits:   limits,
+		Requests: requests,
 	}
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64) {
-	cpu, mem := a.getResourceDefaults(run, definition)
-
+func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64, int64, int64) {
+	cpuLimit, memLimit := a.getResourceDefaults(run, definition)
+	cpuRequest, memRequest := a.getResourceDefaults(run, definition)
 	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
 		// Check if last run was a OOM, in that case only increase memory
 		lastRun := a.getLastRun(manager, run)
 		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
-			mem = int64(float64(*lastRun.Memory) * 1.5)
-			cpu = *lastRun.Cpu
+			memRequest = int64(float64(*lastRun.Memory) * 1.5)
+			cpuRequest = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, *run.Command)
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.RunID)
 			if err == nil {
-				cpu = estimatedResources.Cpu
-				mem = estimatedResources.Memory
+				cpuRequest = estimatedResources.Cpu
+				memRequest = estimatedResources.Memory
 			}
 		}
 	}
+	if cpuRequest > cpuLimit {
+		cpuLimit = cpuRequest
+	}
 
-	return a.checkResourceBounds(cpu, mem)
+	if memRequest > memLimit {
+		memLimit = memRequest
+	}
+
+	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest)
+	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit)
+
+	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
 func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
