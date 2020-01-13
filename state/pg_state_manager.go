@@ -26,14 +26,11 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
-func (sm *SQLStateManager) EstimateRunResources(definitionID string, command string) (TaskResources, error) {
+func (sm *SQLStateManager) EstimateRunResources(definitionID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
-	if len(command) > 0 {
-		err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, strings.Replace(command, "'", "''", -1))
-	} else {
-		err = sm.db.Get(&taskResources, TaskResourcesSelectSQL, definitionID)
-	}
+
+	err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
