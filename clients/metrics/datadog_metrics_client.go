@@ -28,7 +28,7 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 
 	// Set global tags if set in config.
 	if conf.IsSet("metrics.dogstatsd.tags") {
-		tags := conf.GetStringSlice("metrics.dogstatsd.namespace")
+		tags := conf.GetStringSlice("metrics.dogstatsd.tags")
 		for _, tag := range tags {
 			client.Tags = append(client.Tags, tag)
 		}
