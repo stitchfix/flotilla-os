@@ -184,19 +184,19 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectCommandSQL = `
-SELECT percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used) * 1.25 :: numeric :: integer as memory,
+SELECT percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used) * 1.50 :: numeric :: integer as memory,
        percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used) * 1.125 :: numeric :: integer   as cpu
-FROM (
-         SELECT max_memory_used, max_cpu_used
-         FROM TASK
-         WHERE definition_id = $1
+FROM (SELECT max_memory_used, max_cpu_used
+      FROM TASK
+      WHERE definition_id = $1
            AND exit_code = 0
            AND engine = 'eks'
            AND max_memory_used is not null
            AND max_cpu_used is not null
-           AND command_hash = $2
-         ORDER BY queued_at DESC
-         LIMIT 30) A
+           AND command_hash is not NULL
+           AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
+      ORDER BY queued_at DESC
+      LIMIT 30) A
 `
 
 //
@@ -232,10 +232,10 @@ select
   container_name as containername,
   pod_name as podname,
   namespace,
-  coalesce(command_hash,'') as commandhash,
   max_cpu_used as maxcpuused,
   max_memory_used as maxmemoryused,
-  pod_events::TEXT as podevents
+  pod_events::TEXT as podevents,
+  coalesce(command_hash, MD5(command)) as commandhash
 from task t
 `
 
