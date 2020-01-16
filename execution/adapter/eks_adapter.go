@@ -1,6 +1,8 @@
 package adapter
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
@@ -57,6 +59,8 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		if len(container.Command) > 3 {
 			cmd := strings.Join(container.Command[3:], "\n")
 			updated.Command = &cmd
+			commandHashInBytes := md5.Sum([]byte(cmd))
+			updated.CommandHash = hex.EncodeToString(commandHashInBytes[:])
 		}
 	}
 
@@ -88,6 +92,8 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
+	commandHashInBytes := md5.Sum([]byte(cmd))
+	run.CommandHash = hex.EncodeToString(commandHashInBytes[:])
 	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
@@ -235,7 +241,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			cpuRequest = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.RunID)
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.CommandHash)
 			if err == nil {
 				cpuRequest = estimatedResources.Cpu
 				memRequest = estimatedResources.Memory

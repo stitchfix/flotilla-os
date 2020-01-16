@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS task (
   task_type character varying,
   -- Refactor these --
   command text,
+  command_hash text,
   memory integer,
   cpu integer,
   gpu integer,
@@ -193,7 +194,7 @@ FROM (
            AND engine = 'eks'
            AND max_memory_used is not null
            AND max_cpu_used is not null
-           AND command = (SELECT command FROM TASK WHERE run_id = $2)
+           AND command_hash = $2
          ORDER BY queued_at DESC
          LIMIT 30) A
 `
@@ -231,6 +232,7 @@ select
   container_name as containername,
   pod_name as podname,
   namespace,
+  command_hash as commandhash,
   max_cpu_used as maxcpuused,
   max_memory_used as maxmemoryused,
   pod_events::TEXT as podevents
