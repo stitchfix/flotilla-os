@@ -60,7 +60,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 			cmd := strings.Join(container.Command[3:], "\n")
 			updated.Command = &cmd
 			commandHashInBytes := md5.Sum([]byte(cmd))
-			updated.CommandHash = aws.String(hex.EncodeToString(commandHashInBytes[:]))
+			updated.CommandHash = hex.EncodeToString(commandHashInBytes[:])
 		}
 	}
 
@@ -93,7 +93,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
 	commandHashInBytes := md5.Sum([]byte(cmd))
-	run.CommandHash = aws.String(hex.EncodeToString(commandHashInBytes[:]))
+	run.CommandHash = hex.EncodeToString(commandHashInBytes[:])
 	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
 
 	container := corev1.Container{
@@ -241,12 +241,11 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			cpuRequest = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
-			if run.CommandHash != nil {
-				estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, *run.CommandHash)
-				if err == nil {
-					cpuRequest = estimatedResources.Cpu
-					memRequest = estimatedResources.Memory
-				}
+			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.CommandHash)
+			if err == nil {
+				cpuRequest = estimatedResources.Cpu
+				memRequest = estimatedResources.Memory
+
 			}
 		}
 	}
