@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
@@ -28,9 +29,9 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 
 	// Set global tags if set in config.
 	if conf.IsSet("metrics.dogstatsd.tags") {
-		tags := conf.GetStringSlice("metrics.dogstatsd.tags")
-		for _, tag := range tags {
-			client.Tags = append(client.Tags, tag)
+		tags := conf.GetStringMapString("metrics.dogstatsd.tags")
+		for k, v := range tags {
+			client.Tags = append(client.Tags, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 
