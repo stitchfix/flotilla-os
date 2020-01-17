@@ -239,6 +239,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			if err == nil {
 				cpuRequest = estimatedResources.Cpu
 				memRequest = estimatedResources.Memory
+
 			}
 		}
 	}

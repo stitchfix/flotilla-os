@@ -339,6 +339,7 @@ type Run struct {
 	TaskType         string     `json:"-"`
 	Env              *EnvList   `json:"env,omitempty"`
 	Command          *string    `json:"command,omitempty"`
+	CommandHash      *string    `json:"command_hash,omitempty"`
 	Memory           *int64     `json:"memory,omitempty"`
 	Cpu              *int64     `json:"cpu,omitempty"`
 	Gpu              *int64     `json:"gpu,omitempty"`
@@ -413,6 +414,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.Command != nil && len(*other.Command) > 0 {
 		d.Command = other.Command
+	}
+
+	if other.CommandHash != nil && len(*other.CommandHash) > 0 {
+		d.CommandHash = other.CommandHash
 	}
 
 	if other.Memory != nil {
