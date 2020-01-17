@@ -184,8 +184,8 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectCommandSQL = `
-SELECT percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used) * 1.50 :: numeric :: integer as memory,
-       percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used) * 1.125 :: numeric :: integer   as cpu
+SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 1.5 as int) as memory,
+       cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used)) * 1.25  as int)  as cpu
 FROM (SELECT max_memory_used, max_cpu_used
       FROM TASK
       WHERE definition_id = $1
