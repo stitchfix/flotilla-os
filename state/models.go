@@ -339,7 +339,7 @@ type Run struct {
 	TaskType         string     `json:"-"`
 	Env              *EnvList   `json:"env,omitempty"`
 	Command          *string    `json:"command,omitempty"`
-	CommandHash      *string     `json:"command_hash,omitempty"`
+	CommandHash      *string    `json:"command_hash,omitempty"`
 	Memory           *int64     `json:"memory,omitempty"`
 	Cpu              *int64     `json:"cpu,omitempty"`
 	Gpu              *int64     `json:"gpu,omitempty"`
