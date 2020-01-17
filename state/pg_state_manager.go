@@ -617,7 +617,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
       container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28, $29, MD5($18));
+      $24, $25, $26, $27, $28, $29, MD5($17));
     `
 
 	tx, err := sm.db.Begin()
