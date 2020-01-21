@@ -27,9 +27,9 @@ var MaxMem = int64(124000)
 
 var TTLSecondsAfterFinished = int32(3600)
 
-var SpotActiveDeadlineSeconds = int64(86400)
+var SpotActiveDeadlineSeconds = int64(172800)
 
-var OndemandActiveDeadlineSeconds = int64(172800)
+var OndemandActiveDeadlineSeconds = int64(604800)
 
 var SpotLifecycle = "spot"
 
