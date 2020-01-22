@@ -6,6 +6,16 @@ package state
 //
 const CreateTablesSQL = `
 --
+-- Task Types
+--
+CREATE TABLE IF NOT EXISTS task_type (
+  id character varying PRIMARY KEY,
+  alias character varying,
+  schema jsonb NOT NULL,
+  template character varying NOT NULL
+);
+
+--
 -- Definitions
 --
 
@@ -130,16 +140,6 @@ CREATE TABLE IF NOT EXISTS worker (
   worker_type character varying,
   engine character varying,
   count_per_instance integer
-);
-
---
--- Task Types
---
-CREATE TABLE IF NOT EXISTS task_type (
-  id character varying PRIMARY KEY,
-  alias character varying,
-  schema jsonb NOT NULL,
-  template string NOT NULL
 );
 `
 
