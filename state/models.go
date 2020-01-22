@@ -152,7 +152,7 @@ type Definition struct {
 	Gpu                        *int64       `json:"gpu,omitempty"`
 	Cpu                        *int64       `json:"cpu,omitempty"`
 	Command                    string       `json:"command,omitempty"`
-	TaskType                   TaskTypes    `json:"task_type,omitempty"`
+	TaskType                   string       `json:"task_type,omitempty"`
 	Env                        *EnvList     `json:"env"`
 	Ports                      *PortsList   `json:"ports,omitempty"`
 	Tags                       *Tags        `json:"tags,omitempty"`
@@ -609,12 +609,6 @@ type TaskResources struct {
 	Cpu    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
 }
-
-type TaskTypes string
-
-const (
-	TaskTypeShell TaskTypes = "SHELL"
-)
 
 type TaskType struct {
 	Id       string      `json:"id"`
