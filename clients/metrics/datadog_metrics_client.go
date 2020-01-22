@@ -31,7 +31,7 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	if conf.IsSet("metrics.dogstatsd.tags") {
 		tags := conf.GetStringMapString("metrics.dogstatsd.tags")
 		for k, v := range tags {
-			client.Tags = append(client.Tags, fmt.Sprintf("%s=%s", k, v))
+			client.Tags = append(client.Tags, fmt.Sprintf("%s:%s", k, v))
 		}
 	}
 
