@@ -220,6 +220,13 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
+	// If not legacy task not, wrap command.
+	if definition.TaskType != state.TaskTypeLegacy {
+		// parse command.
+		// schema = es.stateManager.GetTaskTypeSchema(definition.TaskType)
+		// command = generateCommand(schema, definition.Payload)
+	}
+
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {

@@ -388,7 +388,6 @@ func (a *ecsAdapter) constructCmdSlice(cmdString string) []string {
 	optLogin := "-l"
 	optStr := "-c"
 	return []string{bashCmd, optLogin, optStr, cmdString}
-
 }
 
 //

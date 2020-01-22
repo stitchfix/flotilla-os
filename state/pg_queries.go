@@ -23,9 +23,10 @@ CREATE TABLE IF NOT EXISTS task_def (
   "user" character varying,
   arn character varying,
   container_name character varying NOT NULL,
-  task_type character varying,
+  task_type character varying REFERENCES task_type(id),
   privileged boolean,
   adaptive_resource_allocation boolean,
+  payload jsonb,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );
@@ -129,6 +130,15 @@ CREATE TABLE IF NOT EXISTS worker (
   worker_type character varying,
   engine character varying,
   count_per_instance integer
+);
+
+--
+-- Task Types
+--
+CREATE TABLE IF NOT EXISTS task_type (
+  id character varying PRIMARY KEY,
+  schema jsonb NOT NULL,
+  template string NOT NULL
 );
 `
 

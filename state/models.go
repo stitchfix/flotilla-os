@@ -60,6 +60,13 @@ var MaxLogLines = int64(256)
 
 var EKSBackoffLimit = int32(0)
 
+type TaskType string
+
+const (
+	TaskTypeLegacy TaskType = "LEGACY_SHELL"
+	TaskTypeShell  TaskType = "SHELL"
+)
+
 var WorkerTypes = map[string]bool{
 	"retry":  true,
 	"submit": true,
@@ -150,13 +157,14 @@ type Definition struct {
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
 	Command                    string     `json:"command,omitempty"`
-	TaskType                   string     `json:"-"`
+	TaskType                   TaskType   `json:"task_type,omitempty"`
 	Env                        *EnvList   `json:"env"`
 	Ports                      *PortsList `json:"ports,omitempty"`
 	Tags                       *Tags      `json:"tags,omitempty"`
 	Privileged                 *bool      `json:"privileged,omitempty"`
 	SharedMemorySize           *int64     `json:"shared_memory_size,omitempty"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
+	Payload                    string     `json:"payload,omitempty"`
 }
 
 var commandWrapper = `
