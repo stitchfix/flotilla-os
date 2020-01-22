@@ -105,6 +105,14 @@ const TaskDetails: React.FC<{}> = () => (
                                 value={data.definition_id}
                               />
                               <Attribute
+                                name="Task Type"
+                                value={data.task_type}
+                              />
+                              <Attribute
+                                name="Payload"
+                                value={JSON.stringify(data.payload)}
+                              />
+                              <Attribute
                                 name="Container Name"
                                 value={data.container_name}
                               />

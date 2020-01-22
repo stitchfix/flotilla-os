@@ -9,7 +9,7 @@ import App from "./components/App"
 import store from "./state/store"
 import { init } from "./state/settings"
 
-store.dispatch(init())
+store.dispatch<any>(init())
 
 ReactDOM.render(
   <Provider store={store}>

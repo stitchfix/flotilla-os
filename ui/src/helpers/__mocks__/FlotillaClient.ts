@@ -17,6 +17,7 @@ import {
   UpdateTaskPayload,
   ExecutionEngine,
   NodeLifecycle,
+  TaskTypes,
 } from "../../types"
 
 const getTask = jest.fn(
@@ -35,6 +36,8 @@ const getTask = jest.fn(
         command: "command",
         tags: ["a", "b", "c"],
         privileged: false,
+        task_type: TaskTypes.SHELL,
+        payload: {},
       })
     })
 )
@@ -55,6 +58,8 @@ const getTaskByAlias = jest.fn(
         command: "command",
         tags: ["a", "b", "c"],
         privileged: false,
+        task_type: TaskTypes.SHELL,
+        payload: {},
       })
     })
 )
@@ -115,6 +120,8 @@ const createTask = jest.fn(
         command: data.command,
         tags: data.tags,
         privileged: false,
+        task_type: TaskTypes.SHELL,
+        payload: {},
       })
     })
 )
@@ -141,6 +148,8 @@ const updateTask = jest.fn(
         command: data.command,
         tags: data.tags,
         privileged: false,
+        task_type: TaskTypes.SHELL,
+        payload: {},
       })
     })
 )
