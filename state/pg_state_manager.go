@@ -854,6 +854,40 @@ func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
+//
+// ListWorkers returns list of workers
+//
+func (sm *SQLStateManager) ListTaskTypes(limit int, offset int) (list TaskTypeList, err error) {
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListTaskTypeSQL)
+
+	err = sm.db.Select(&list.TaskTypes, ListTaskTypeSQL, limit, offset)
+	if err != nil {
+		return list, errors.Wrap(err, "issue running list workers sql")
+	}
+
+	err = sm.db.Get(&list.Total, countSQL)
+	if err != nil {
+		return list, errors.Wrap(err, "issue running list workers count sql")
+	}
+
+	return list, nil
+}
+
+//
+// GetWorker returns data for a single worker.
+//
+func (sm *SQLStateManager) GetTaskType(id string) (t TaskType, err error) {
+	if err := sm.db.Get(&t, GetTaskTypeSQL, id); err != nil {
+		if err == sql.ErrNoRows {
+			err = exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Task type [%s] not found", id)}
+		} else {
+			err = errors.Wrapf(err, "issue getting task type [%s]", id)
+		}
+	}
+	return t, err
+}
+
 type orderable interface {
 	validOrderField(field string) bool
 	validOrderFields() []string
@@ -942,5 +976,20 @@ func (e *Tags) Scan(value interface{}) error {
 // Value to db
 func (e Tags) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+// Scan from db
+func (p *TaskPayload) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &p)
+	}
+	return nil
+}
+
+// Value to db
+func (p TaskPayload) Value() (driver.Value, error) {
+	res, _ := json.Marshal(p)
 	return res, nil
 }

@@ -164,7 +164,8 @@ select
   tags                      as tags,
   td.privileged             as privileged,
   td.cpu                    as cpu,
-  td.gpu                    as gpu
+  td.gpu                    as gpu,
+  td.payload::TEXT          as payload
   from (select * from task_def) td left outer join
     (select task_def_id,
       array_to_json(array_agg(port))::TEXT as ports
@@ -323,5 +324,5 @@ const taskTypeSelect = `
   SELECT id, alias, schema, template
   FROM task_type
 `
-const ListTaskType = taskTypeSelect + "\n limit $1 offset $2"
-const GetTaskType = taskTypeSelect + "\n where id = $1"
+const ListTaskTypeSQL = taskTypeSelect + "\n limit $1 offset $2"
+const GetTaskTypeSQL = taskTypeSelect + "\n where id = $1"

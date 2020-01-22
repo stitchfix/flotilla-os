@@ -37,6 +37,9 @@ type Manager interface {
 	BatchUpdateWorkers(updates []Worker) (WorkersList, error)
 	GetWorker(workerType string, engine string) (Worker, error)
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
+
+	ListTaskTypes(limit int, offset int) (TaskTypeList, error)
+	GetTaskType(id string) (TaskType, error)
 }
 
 //

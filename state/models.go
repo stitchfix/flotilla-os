@@ -60,13 +60,6 @@ var MaxLogLines = int64(256)
 
 var EKSBackoffLimit = int32(0)
 
-type TaskType string
-
-const (
-	TaskTypeLegacy TaskType = "LEGACY_SHELL"
-	TaskTypeShell  TaskType = "SHELL"
-)
-
 var WorkerTypes = map[string]bool{
 	"retry":  true,
 	"submit": true,
@@ -142,29 +135,31 @@ type EnvVar struct {
 //
 type Tags []string
 
+type TaskPayload map[string]interface{}
+
 // Definition represents a definition of a job
 // - roughly 1-1 with an AWS ECS task definition
 //
 type Definition struct {
-	Arn                        string     `json:"arn"`
-	DefinitionID               string     `json:"definition_id"`
-	Image                      string     `json:"image"`
-	GroupName                  string     `json:"group_name"`
-	ContainerName              string     `json:"container_name"`
-	User                       string     `json:"user,omitempty"`
-	Alias                      string     `json:"alias"`
-	Memory                     *int64     `json:"memory"`
-	Gpu                        *int64     `json:"gpu,omitempty"`
-	Cpu                        *int64     `json:"cpu,omitempty"`
-	Command                    string     `json:"command,omitempty"`
-	TaskType                   TaskType   `json:"task_type,omitempty"`
-	Env                        *EnvList   `json:"env"`
-	Ports                      *PortsList `json:"ports,omitempty"`
-	Tags                       *Tags      `json:"tags,omitempty"`
-	Privileged                 *bool      `json:"privileged,omitempty"`
-	SharedMemorySize           *int64     `json:"shared_memory_size,omitempty"`
-	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
-	Payload                    string     `json:"payload,omitempty"`
+	Arn                        string       `json:"arn"`
+	DefinitionID               string       `json:"definition_id"`
+	Image                      string       `json:"image"`
+	GroupName                  string       `json:"group_name"`
+	ContainerName              string       `json:"container_name"`
+	User                       string       `json:"user,omitempty"`
+	Alias                      string       `json:"alias"`
+	Memory                     *int64       `json:"memory"`
+	Gpu                        *int64       `json:"gpu,omitempty"`
+	Cpu                        *int64       `json:"cpu,omitempty"`
+	Command                    string       `json:"command,omitempty"`
+	TaskType                   TaskTypes    `json:"task_type,omitempty"`
+	Env                        *EnvList     `json:"env"`
+	Ports                      *PortsList   `json:"ports,omitempty"`
+	Tags                       *Tags        `json:"tags,omitempty"`
+	Privileged                 *bool        `json:"privileged,omitempty"`
+	SharedMemorySize           *int64       `json:"shared_memory_size,omitempty"`
+	AdaptiveResourceAllocation *bool        `json:"adaptive_resource_allocation,omitempty"`
+	Payload                    *TaskPayload `json:"payload,omitempty"`
 }
 
 var commandWrapper = `
@@ -275,6 +270,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Privileged != nil {
 		d.Privileged = other.Privileged
 	}
+	if other.Payload != nil {
+		d.Payload = other.Payload
+	}
 }
 
 func (d Definition) MarshalJSON() ([]byte, error) {
@@ -285,12 +283,19 @@ func (d Definition) MarshalJSON() ([]byte, error) {
 		env = &EnvList{}
 	}
 
+	payload := d.Payload
+	if payload == nil {
+		payload = &TaskPayload{}
+	}
+
 	return json.Marshal(&struct {
-		Env *EnvList `json:"env"`
+		Env     *EnvList     `json:"env"`
+		Payload *TaskPayload `json:"payload"`
 		Alias
 	}{
-		Env:   env,
-		Alias: (Alias)(d),
+		Env:     env,
+		Payload: payload,
+		Alias:   (Alias)(d),
 	})
 }
 
@@ -603,4 +608,22 @@ type UserInfo struct {
 type TaskResources struct {
 	Cpu    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
+}
+
+type TaskTypes string
+
+const (
+	TaskTypeShell TaskTypes = "SHELL"
+)
+
+type TaskType struct {
+	Id       string      `json:"id"`
+	Alias    string      `json:"alias"`
+	Schema   interface{} `json:"schema"`
+	Template string      `json:"template"`
+}
+
+type TaskTypeList struct {
+	Total     int        `json:"total"`
+	TaskTypes []TaskType `json:"task_types"`
 }
