@@ -211,25 +211,20 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
-func (es *executionService) generateTaskTypeCommand(definition state.Definition, fallback *string) (string, error) {
-	if len(definition.TaskType) > 0 {
-		var taskType state.TaskType
-		taskType, err := es.stateManager.GetTaskType(definition.TaskType)
+func (es *executionService) generateTaskTypeCommand(definition state.Definition) (string, error) {
+	var taskType state.TaskType
+	taskType, err := es.stateManager.GetTaskType(definition.TaskType)
 
-		if err != nil {
-			return "", err
-		}
-
-		// Do command generation here.
-		var CommandTemplate, _ = template.New("command").Parse(taskType.Template)
-		var result bytes.Buffer
-		if err := CommandTemplate.Execute(&result, definition.Payload); err != nil {
-			return "", err
-		}
-		return result.String(), nil
+	if err != nil {
+		return "", err
 	}
 
-	return *fallback, nil
+	var CommandTemplate, _ = template.New("command").Parse(taskType.Template)
+	var result bytes.Buffer
+	if err := CommandTemplate.Execute(&result, definition.Payload); err != nil {
+		return "", err
+	}
+	return result.String(), nil
 }
 
 func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
@@ -243,14 +238,16 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	// Generate task type command.
-	_command, err := es.generateTaskTypeCommand(definition, command)
-	if err != nil {
-		return run, err
+	if len(definition.TaskType) > 0 {
+		ptr, err := es.generateTaskTypeCommand(definition)
+		command = &ptr
+		if err != nil {
+			return run, err
+		}
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, &_command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
+	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {
 		return run, err
 	}
