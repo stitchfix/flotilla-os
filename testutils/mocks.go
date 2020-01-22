@@ -30,6 +30,7 @@ type ImplementsAllTheThings struct {
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+	TaskTypes               []state.TaskType
 }
 
 func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
@@ -388,4 +389,16 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", nil, nil
+}
+
+// ListWorkers - StateManager
+func (iatt *ImplementsAllTheThings) ListTaskTypes(limit int, offset int) (state.TaskTypeList, error) {
+	iatt.Calls = append(iatt.Calls, "ListTaskTypes")
+	return state.TaskTypeList{Total: len(iatt.TaskTypes), TaskTypes: iatt.TaskTypes}, nil
+}
+
+// GetWorker - StateManager
+func (iatt *ImplementsAllTheThings) GetTaskType(id string) (state.TaskType, error) {
+	iatt.Calls = append(iatt.Calls, "GetTaskType")
+	return state.TaskType{Id: "a", Alias: "task type alias", Schema: "{}", Template: ""}, nil
 }
