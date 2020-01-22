@@ -50,7 +50,7 @@ func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, 
 //
 func (ds *definitionService) Create(definition *state.Definition) (state.Definition, error) {
 	if valid, reasons := definition.IsValid(); !valid {
-		return state.Definition{}, exceptions.MalformedInput{strings.Join(reasons, "\n")}
+		return state.Definition{}, exceptions.MalformedInput{ErrorString: strings.Join(reasons, "\n")}
 	}
 
 	exists, err := ds.aliasExists(definition.Alias)
@@ -60,7 +60,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 
 	if exists {
 		return state.Definition{}, exceptions.ConflictingResource{
-			fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
+			ErrorString: fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
 	}
 	ara := false
 	if definition.AdaptiveResourceAllocation == nil {
@@ -128,7 +128,7 @@ func (ds *definitionService) Update(definitionID string, updates state.Definitio
 		return definition, err
 	}
 
-	if definition.AdaptiveResourceAllocation!=nil{
+	if definition.AdaptiveResourceAllocation != nil {
 		defined.AdaptiveResourceAllocation = definition.AdaptiveResourceAllocation
 	}
 
