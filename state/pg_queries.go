@@ -321,7 +321,7 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
 const taskTypeSelect = `
-  SELECT id, alias, schema, template
+  SELECT id, alias, schema::TEXT, template
   FROM task_type
 `
 const ListTaskTypeSQL = taskTypeSelect + "\n limit $1 offset $2"
