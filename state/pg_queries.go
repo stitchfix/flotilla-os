@@ -235,7 +235,7 @@ select
   max_cpu_used as maxcpuused,
   max_memory_used as maxmemoryused,
   pod_events::TEXT as podevents,
-  coalesce(command_hash, MD5(command)) as commandhash
+  command_hash as commandhash
 from task t
 `
 
