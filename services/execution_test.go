@@ -102,7 +102,7 @@ func TestExecutionService_Create(t *testing.T) {
 		t.Errorf("Expected non-nil command")
 	} else {
 		if *run.Command != cmd {
-			t.Errorf("Unexpected command, found [%s], exptecting [%s]", *run.Command, cmd)
+			t.Errorf("Unexpected command, found [%s], expecting [%s]", *run.Command, cmd)
 		}
 	}
 
@@ -110,7 +110,7 @@ func TestExecutionService_Create(t *testing.T) {
 		t.Errorf("Expected non-nil cpu")
 	} else {
 		if *run.Cpu != cpu {
-			t.Errorf("Unexpected cpu, found [%d], exptecting [%d]", *run.Cpu, cpu)
+			t.Errorf("Unexpected cpu, found [%d], expecting [%d]", *run.Cpu, cpu)
 		}
 	}
 
@@ -195,7 +195,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 		t.Errorf("Expected non-nil memory")
 	} else {
 		if *run.Memory != mem {
-			t.Errorf("Unexpected memory , found [%d], exptecting [%d]", *run.Memory, mem)
+			t.Errorf("Unexpected memory , found [%d], expecting [%d]", *run.Memory, mem)
 		}
 	}
 
