@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS worker (
 --
 CREATE TABLE IF NOT EXISTS task_type (
   id character varying PRIMARY KEY,
+  alias character varying,
   schema jsonb NOT NULL,
   template string NOT NULL
 );
@@ -317,3 +318,10 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 // worker type; locks the row.
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
+
+const taskTypeSelect = `
+  SELECT id, alias, schema, template
+  FROM task_type
+`
+const ListTaskType = taskTypeSelect + "\n limit $1 offset $2"
+const GetTaskType = taskTypeSelect + "\n where id = $1"
