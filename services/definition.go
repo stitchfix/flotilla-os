@@ -6,6 +6,7 @@ import (
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/xeipuuv/gojsonschema"
 	"strings"
 )
 
@@ -49,8 +50,28 @@ func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, 
 // * Stores definition using state manager
 //
 func (ds *definitionService) Create(definition *state.Definition) (state.Definition, error) {
+	// Basic validation.
 	if valid, reasons := definition.IsValid(); !valid {
 		return state.Definition{}, exceptions.MalformedInput{ErrorString: strings.Join(reasons, "\n")}
+	}
+
+	// Task template validation.
+	if len(definition.TaskType) > 0 {
+		taskType, err := ds.sm.GetTaskType(definition.TaskType)
+
+		if err != nil {
+			return state.Definition{}, err
+		}
+
+		schemaLoader := gojsonschema.NewStringLoader(taskType.Schema)
+		documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", definition.Payload))
+		result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+
+		fmt.Println(result)
+
+		if err != nil {
+			return state.Definition{}, err
+		}
 	}
 
 	exists, err := ds.aliasExists(definition.Alias)

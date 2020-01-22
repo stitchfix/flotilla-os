@@ -28,6 +28,7 @@ require (
 	github.com/rs/cors v1.6.1-0.20190613161432-33ffc0734c60
 	github.com/spf13/viper v1.4.1-0.20190614151712-3349bd9cc288
 	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/xeipuuv/gojsonschema v1.2.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	k8s.io/api v0.0.0-20191121015604-11707872ac1c
 	k8s.io/apimachinery v0.0.0-20191121015412-41065c7a8c2a

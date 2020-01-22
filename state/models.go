@@ -616,10 +616,10 @@ type TaskResources struct {
 }
 
 type TaskType struct {
-	Id       string      `json:"id"`
-	Alias    string      `json:"alias"`
-	Schema   interface{} `json:"schema"`
-	Template string      `json:"template"`
+	Id       string `json:"id"`
+	Alias    string `json:"alias"`
+	Schema   string `json:"schema"`
+	Template string `json:"template"`
 }
 
 type TaskTypeList struct {
