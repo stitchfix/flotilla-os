@@ -221,7 +221,8 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	// If not legacy task not, wrap command.
-	if definition.TaskType != state.TaskTypeLegacy {
+	if definition.TaskType != state.TaskTypeShell {
+		fmt.Println("handle task type")
 		// parse command.
 		// schema = es.stateManager.GetTaskTypeSchema(definition.TaskType)
 		// command = generateCommand(schema, definition.Payload)
