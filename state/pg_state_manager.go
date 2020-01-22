@@ -218,7 +218,7 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
-				fmt.Sprintf("Definition with ID %s not found", definitionID)}
+				ErrorString: fmt.Sprintf("Definition with ID %s not found", definitionID)}
 		} else {
 			return definition, errors.Wrapf(err, "issue getting definition with id [%s]", definitionID)
 		}
@@ -236,7 +236,7 @@ func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
-				fmt.Sprintf("Definition with alias %s not found", alias)}
+				ErrorString: fmt.Sprintf("Definition with alias %s not found", alias)}
 		} else {
 			return definition, errors.Wrapf(err, "issue getting definition with alias [%s]", alias)
 		}
@@ -503,7 +503,7 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
-				fmt.Sprintf("Run with id %s not found", runID)}
+				ErrorString: fmt.Sprintf("Run with id %s not found", runID)}
 		} else {
 			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
 		}
@@ -518,7 +518,7 @@ func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
-				fmt.Sprintf("Run with id %s not found", runID)}
+				ErrorString: fmt.Sprintf("Run with id %s not found", runID)}
 		} else {
 			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
 		}
