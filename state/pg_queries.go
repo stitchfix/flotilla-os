@@ -194,8 +194,8 @@ FROM (SELECT max_memory_used, max_cpu_used
            AND max_memory_used is not null
            AND max_cpu_used is not null
            AND command_hash is not NULL
+           AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
-      ORDER BY queued_at DESC
       LIMIT 30) A
 `
 
