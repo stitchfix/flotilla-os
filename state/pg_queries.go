@@ -327,7 +327,7 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
 const definitionTemplateSelect = `
-  SELECT id, alias, schema, template, image
+  SELECT id as templateid, type, version, schema, template, image
   FROM definition_template
 `
 const ListDefinitionTemplateSQL = definitionTemplateSelect + "\n limit $1 offset $2"

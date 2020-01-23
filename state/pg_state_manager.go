@@ -883,16 +883,17 @@ func (sm *SQLStateManager) Cleanup() error {
 }
 
 func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int) (list DefinitionTemplateList, err error) {
+	fmt.Println(limit)
+	fmt.Println(offset)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListDefinitionTemplateSQL)
-
 	err = sm.db.Select(&list.DefinitionTemplates, ListDefinitionTemplateSQL, limit, offset)
 	if err != nil {
-		return list, errors.Wrap(err, "issue running list workers sql")
+		return list, errors.Wrap(err, "issue running list definition templates sql")
 	}
 
-	err = sm.db.Get(&list.Total, countSQL)
+	err = sm.db.Get(&list.Total, countSQL, limit, offset)
 	if err != nil {
-		return list, errors.Wrap(err, "issue running list workers count sql")
+		return list, errors.Wrap(err, "issue running list definition templates count sql")
 	}
 
 	return list, nil
@@ -908,6 +909,44 @@ func (sm *SQLStateManager) GetDefinitionTemplateByID(id string) (t DefinitionTem
 		}
 	}
 	return t, err
+}
+
+func (sm *SQLStateManager) CreateDefinitionTemplate(t DefinitionTemplate) (DefinitionTemplate, error) {
+	var err error
+	getMaxVersionByTypeSQL := `SELECT max(version) FROM definition_template WHERE type = $1;`
+	insertSQL := `
+    INSERT INTO definition_template (id, type, version, schema, template, image)
+    VALUES ($1, $2, $3, $4, $5, $6);
+  `
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	// Get the current max version of this 'type'.
+	var prevMaxVersion int
+	err = sm.db.Get(&prevMaxVersion, getMaxVersionByTypeSQL, t.Type)
+
+	if err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	fmt.Println(fmt.Sprintf("max version: %d", prevMaxVersion))
+
+	t.Version = prevMaxVersion + 1
+
+	if _, err = tx.Exec(insertSQL, t.TemplateID, t.Type, t.Version, t.Schema, t.Template, t.Image); err != nil {
+		tx.Rollback()
+		return t, errors.Wrapf(
+			err, "issue creating new definition template with type [%s] and id [%s]", t.Type, t.TemplateID)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	return t, nil
 }
 
 type orderable interface {

@@ -391,14 +391,20 @@ func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.
 	return "", nil, nil
 }
 
-// ListWorkers - StateManager
+// ListDefinitionTemplates - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitionTemplates(limit int, offset int) (state.DefinitionTemplateList, error) {
 	iatt.Calls = append(iatt.Calls, "ListDefinitionTemplates")
 	return state.DefinitionTemplateList{Total: len(iatt.DefinitionTemplates), DefinitionTemplates: iatt.DefinitionTemplates}, nil
 }
 
-// GetWorker - StateManager
+// GetDefinitionTemplateByID - StateManager
 func (iatt *ImplementsAllTheThings) GetDefinitionTemplateByID(id string) (state.DefinitionTemplate, error) {
 	iatt.Calls = append(iatt.Calls, "GetDefinitionTemplate")
 	return state.DefinitionTemplate{TemplateID: "a", Type: "shell", Version: 1, Schema: "{}", Template: "", Image: "imageA"}, nil
+}
+
+// CreateDefinitionTemplate - StateManager
+func (iatt *ImplementsAllTheThings) CreateDefinitionTemplate(t state.DefinitionTemplate) (state.DefinitionTemplate, error) {
+	iatt.Calls = append(iatt.Calls, "CreateDefinitionTemplate")
+	return t, nil
 }

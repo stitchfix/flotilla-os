@@ -40,6 +40,7 @@ type Manager interface {
 
 	ListDefinitionTemplates(limit int, offset int) (DefinitionTemplateList, error)
 	GetDefinitionTemplateByID(id string) (DefinitionTemplate, error)
+	CreateDefinitionTemplate(t DefinitionTemplate) (DefinitionTemplate, error)
 }
 
 //

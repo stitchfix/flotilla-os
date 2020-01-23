@@ -97,6 +97,15 @@ func NewDefinitionID(definition Definition) (string, error) {
 	return fmt.Sprintf("%s-%s", definition.GroupName, uuid4), nil
 }
 
+// NewDefinitionTemplateID returns a new uuid for a DefinitionTemplate
+func NewDefinitionTemplateID() (string, error) {
+	uuid4, err := newUUIDv4()
+	if err != nil {
+		return "", err
+	}
+	return uuid4, nil
+}
+
 func newUUIDv4() (string, error) {
 	u, err := uuid.NewV4()
 	if err != nil {
@@ -631,12 +640,12 @@ type DefinitionTemplate struct {
 	TemplateID string `json:"template_id"`
 	Type       string `json:"type"`
 	Version    int    `json:"version"`
-	Schema     string `json:"schema"`
+	Schema     string `json:"schema"` // todo: parse
 	Template   string `json:"template"`
 	Image      string `json:"image"`
 }
 
 type DefinitionTemplateList struct {
 	Total               int                  `json:"total"`
-	DefinitionTemplates []DefinitionTemplate `json:"templates"`
+	DefinitionTemplates []DefinitionTemplate `json:"definition_templates"`
 }
