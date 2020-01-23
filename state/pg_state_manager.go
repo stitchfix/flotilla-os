@@ -925,16 +925,18 @@ func (sm *SQLStateManager) CreateDefinitionTemplate(t DefinitionTemplate) (Defin
 	}
 
 	// Get the current max version of this 'type'.
-	var prevMaxVersion int
+	var prevMaxVersion sql.NullInt64
 	err = sm.db.Get(&prevMaxVersion, getMaxVersionByTypeSQL, t.Type)
 
 	if err != nil {
 		return t, errors.WithStack(err)
 	}
 
-	fmt.Println(fmt.Sprintf("max version: %d", prevMaxVersion))
-
-	t.Version = prevMaxVersion + 1
+	if prevMaxVersion.Valid == false {
+		t.Version = 1
+	} else {
+		t.Version = prevMaxVersion.Int64 + 1
+	}
 
 	if _, err = tx.Exec(insertSQL, t.TemplateID, t.Type, t.Version, t.Schema, t.Template, t.Image); err != nil {
 		tx.Rollback()

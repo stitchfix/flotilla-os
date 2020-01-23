@@ -639,7 +639,7 @@ type TaskResources struct {
 type DefinitionTemplate struct {
 	TemplateID string `json:"template_id"`
 	Type       string `json:"type"`
-	Version    int    `json:"version"`
+	Version    int64  `json:"version"`
 	Schema     string `json:"schema"` // todo: parse
 	Template   string `json:"template"`
 	Image      string `json:"image"`
