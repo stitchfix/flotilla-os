@@ -883,8 +883,6 @@ func (sm *SQLStateManager) Cleanup() error {
 }
 
 func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int) (list DefinitionTemplateList, err error) {
-	fmt.Println(limit)
-	fmt.Println(offset)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListDefinitionTemplateSQL)
 	err = sm.db.Select(&list.DefinitionTemplates, ListDefinitionTemplateSQL, limit, offset)
 	if err != nil {

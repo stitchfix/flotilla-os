@@ -314,6 +314,11 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		EphemeralStorage: ephemeralStorage,
 	}
 
+	if len(definition.TemplateID) > 0 {
+		run.TemplateID = definition.TemplateID
+		run.TemplatePayload = definition.TemplatePayload
+	}
+
 	runEnv := es.constructEnviron(run, env)
 	run.Env = &runEnv
 	return run, nil
