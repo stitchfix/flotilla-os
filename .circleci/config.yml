@@ -14,5 +14,6 @@ jobs:
           POSTGRES_PASSWORD: flotilla
     steps:
       - checkout
-      - run: go get ./...
+      - run: go get -u github.com/kardianos/govendor
+      - run: govendor sync
       - run: go test -v ./...
