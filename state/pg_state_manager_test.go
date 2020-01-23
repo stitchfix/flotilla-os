@@ -111,11 +111,11 @@ func tearDown() {
 	conf, _ := config.NewConfig(nil)
 	db := getDB(conf)
 	db.MustExec(`
+		DELETE FROM task_def_ports;
+		DELETE FROM task_def_tags;
+		DELETE FROM task_status;
 		DELETE FROM task;
 		DELETE FROM task_def;
-		DELETE FROM task_def_ports;
-		DELETE FROM task_status;
-		DELETE FROM task_def_tags;
 		DELETE FROM tags;
     DROP SEQUENCE IF EXISTS task_status_status_id_seq;
   `)
