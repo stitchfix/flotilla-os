@@ -66,7 +66,11 @@ func insertDefinitions(db *sqlx.DB) {
     )
     `
 
-	db.MustExec(templateSQL, TEMPLATE_ID, "shell_task", 1, "{}", "", "imageA")
+	_, err := db.Exec(templateSQL, TEMPLATE_ID, "shell_task", 1, "{}", "", "imageA")
+
+	if err != nil {
+		fmt.Println(err)
+	}
 	db.MustExec(defsql,
 		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true, TEMPLATE_ID, "{}")
 	db.MustExec(defsql,

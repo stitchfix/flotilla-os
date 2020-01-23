@@ -16,9 +16,9 @@ jobs:
           POSTGRES_PASSWORD: flotilla
     steps:
       - checkout
-      # - run:
-      #     name: Waiting for Postgres to be ready
-      #     command: dockerize -wait tcp://localhost:5432 -timeout 5m
+
+      # Note: this is to ensure that the DB is up before Flyway attempts to
+      # connect.
       - run: sleep 180
       - run:
           name: Installing Flyway
