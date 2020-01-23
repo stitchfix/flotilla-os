@@ -42,7 +42,7 @@ func insertDefinitions(db *sqlx.DB) {
 	`
 	defsql := `
     INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged, template_id, template_payload)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     `
 
 	portsql := `
