@@ -111,11 +111,14 @@ func tearDown() {
 	conf, _ := config.NewConfig(nil)
 	db := getDB(conf)
 	db.MustExec(`
-    drop table if exists
-      task, task_def, task_def_ports, task_status, task_def_tags, tags
-    cascade;
-    drop sequence if exists task_status_status_id_seq;
-    `)
+		DELETE FROM task;
+		DELETE FROM task_def;
+		DELETE FROM task_def_ports;
+		DELETE FROM task_status;
+		DELETE FROM task_def_tags;
+		DELETE FROM tags;
+    DROP SEQUENCE IF EXISTS task_status_status_id_seq;
+  `)
 }
 
 func TestSQLStateManager_ListDefinitions(t *testing.T) {
