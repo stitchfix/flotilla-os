@@ -629,7 +629,8 @@ type TaskResources struct {
 
 type DefinitionTemplate struct {
 	TemplateID string `json:"template_id"`
-	Alias      string `json:"alias"`
+	Type       string `json:"type"`
+	Version    int    `json:"version"`
 	Schema     string `json:"schema"`
 	Template   string `json:"template"`
 	Image      string `json:"image"`

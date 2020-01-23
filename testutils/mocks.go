@@ -398,7 +398,7 @@ func (iatt *ImplementsAllTheThings) ListDefinitionTemplates(limit int, offset in
 }
 
 // GetWorker - StateManager
-func (iatt *ImplementsAllTheThings) GetDefinitionTemplate(id string) (state.DefinitionTemplate, error) {
+func (iatt *ImplementsAllTheThings) GetDefinitionTemplateByID(id string) (state.DefinitionTemplate, error) {
 	iatt.Calls = append(iatt.Calls, "GetDefinitionTemplate")
-	return state.DefinitionTemplate{TemplateID: "a", Alias: "task type alias", Schema: "{}", Template: ""}, nil
+	return state.DefinitionTemplate{TemplateID: "a", Type: "shell", Version: 1, Schema: "{}", Template: "", Image: "imageA"}, nil
 }

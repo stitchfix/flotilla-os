@@ -898,13 +898,13 @@ func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int) (list 
 	return list, nil
 }
 
-func (sm *SQLStateManager) GetDefinitionTemplate(id string) (t DefinitionTemplate, err error) {
-	if err := sm.db.Get(&t, GetDefinitionTemplateSQL, id); err != nil {
+func (sm *SQLStateManager) GetDefinitionTemplateByID(id string) (t DefinitionTemplate, err error) {
+	if err := sm.db.Get(&t, GetDefinitionTemplateByIdSQL, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = exceptions.MissingResource{
-				ErrorString: fmt.Sprintf("Task type [%s] not found", id)}
+				ErrorString: fmt.Sprintf("Task template with id: [%s] not found", id)}
 		} else {
-			err = errors.Wrapf(err, "issue getting task type [%s]", id)
+			err = errors.Wrapf(err, "issue getting task type with id: [%s]", id)
 		}
 	}
 	return t, err

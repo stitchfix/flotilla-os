@@ -39,7 +39,7 @@ type Manager interface {
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
 
 	ListDefinitionTemplates(limit int, offset int) (DefinitionTemplateList, error)
-	GetDefinitionTemplate(id string) (DefinitionTemplate, error)
+	GetDefinitionTemplateByID(id string) (DefinitionTemplate, error)
 }
 
 //

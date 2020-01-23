@@ -213,7 +213,7 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 
 func (es *executionService) generateTaskTypeCommand(definition state.Definition) (string, error) {
 	var taskType state.DefinitionTemplate
-	taskType, err := es.stateManager.GetDefinitionTemplate(definition.TemplateID)
+	taskType, err := es.stateManager.GetDefinitionTemplateByID(definition.TemplateID)
 
 	if err != nil {
 		return "", err

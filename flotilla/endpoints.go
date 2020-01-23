@@ -20,6 +20,7 @@ type endpoints struct {
 	ecsLogService     services.LogService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
+	templateService   services.TemplateService
 	logger            flotillaLog.Logger
 }
 
@@ -744,6 +745,34 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, updated)
+	}
+}
+
+func (ep *endpoints) ListDefinitionTemplates(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+	templates, err := ep.templateService.List(lr.limit, lr.offset)
+
+	if templates.DefinitionTemplates == nil {
+		templates.DefinitionTemplates = []state.DefinitionTemplate{}
+	}
+
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = templates.Total
+		response["workers"] = templates.DefinitionTemplates
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) GetDefinitionTemplate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	template, err := ep.templateService.GetByID(vars["template_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, template)
 	}
 }
 

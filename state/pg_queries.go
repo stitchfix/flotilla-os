@@ -10,7 +10,8 @@ const CreateTablesSQL = `
 --
 CREATE TABLE IF NOT EXISTS definition_template (
   id VARCHAR PRIMARY KEY,
-  alias VARCHAR,
+  type VARCHAR NOT NULL,
+  version INTEGER NOT NULL,
   schema JSONB NOT NULL,
   template TEXT NOT NULL,
   image VARCHAR NOT NULL
@@ -330,4 +331,4 @@ const definitionTemplateSelect = `
   FROM definition_template
 `
 const ListDefinitionTemplateSQL = definitionTemplateSelect + "\n limit $1 offset $2"
-const GetDefinitionTemplateSQL = definitionTemplateSelect + "\n where id = $1"
+const GetDefinitionTemplateByIdSQL = definitionTemplateSelect + "\n where id = $1"

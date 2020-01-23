@@ -57,7 +57,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 
 	// Task template validation.
 	if len(definition.TemplateID) > 0 {
-		taskType, err := ds.sm.GetDefinitionTemplate(definition.TemplateID)
+		taskType, err := ds.sm.GetDefinitionTemplateByID(definition.TemplateID)
 
 		if err != nil {
 			return state.Definition{}, err

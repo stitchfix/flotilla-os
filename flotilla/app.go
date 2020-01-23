@@ -78,12 +78,18 @@ func NewApp(conf config.Config,
 		return app, errors.Wrap(err, "problem initializing worker service")
 	}
 
+	templateService, err := services.NewDefinitionTemplateService(conf, stateManager)
+	if err != nil {
+		return app, errors.Wrap(err, "problem initializing worker service")
+	}
+
 	ep := endpoints{
 		executionService:  executionService,
 		definitionService: definitionService,
 		ecsLogService:     ecsLogService,
 		eksLogService:     eksLogService,
 		workerService:     workerService,
+		templateService: templateService,
 		logger:            log,
 	}
 
