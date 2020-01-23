@@ -116,7 +116,7 @@ func tearDown() {
 	db := getDB(conf)
 	db.MustExec(`
     drop table if exists
-      task, task_def, task_def_ports, task_status, task_def_tags, tags
+      task, task_def, task_def_ports, task_status, task_def_tags, tags, definition_template
     cascade;
     drop sequence if exists task_status_status_id_seq;
     `)
