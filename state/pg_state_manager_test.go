@@ -12,6 +12,8 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 )
 
+var TEMPLATE_ID = "TEMPLATE_ID"
+
 func getDB(conf config.Config) *sqlx.DB {
 	db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
 	if err != nil {
@@ -66,15 +68,15 @@ func insertDefinitions(db *sqlx.DB) {
     )
     `
 
-	db.MustExec(templateSQL, "template_a", "shell_task", "{}", "", "imageA")
+	db.MustExec(templateSQL, TEMPLATE_ID, "shell_task", "{}", "", "imageA")
 	db.MustExec(defsql,
-		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true, "template_a", "{}")
+		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true, TEMPLATE_ID, "{}")
 	db.MustExec(defsql,
 		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
-		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil, "template_a", "{}")
-	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil, "template_a", "{}")
-	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false, "template_a", "{}")
-	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true, "template_a", "{}")
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil, TEMPLATE_ID, "{}")
+	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil, TEMPLATE_ID, "{}")
+	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false, TEMPLATE_ID, "{}")
+	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true, TEMPLATE_ID, "{}")
 
 	db.MustExec(portsql, "A", 10000)
 	db.MustExec(portsql, "C", 10001)
@@ -96,19 +98,19 @@ func insertDefinitions(db *sqlx.DB) {
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
 	db.MustExec(taskSQL,
-		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, "template_a", "{}")
+		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, TEMPLATE_ID, "{}")
 	db.MustExec(
-		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, "template_a", "{}")
+		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, TEMPLATE_ID, "{}")
 
 	db.MustExec(
-		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, "template_a", "{}")
+		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, TEMPLATE_ID, "{}")
 
 	db.MustExec(taskSQL,
 		"run3", "C", "clusta", "aliasC", "imgC", nil, StatusQueued, nil, nil, "", "", "groupX",
-		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, "template_a", "{}")
+		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, TEMPLATE_ID, "{}")
 
-	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, "template_a", "{}")
-	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, "template_a", "{}")
+	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, TEMPLATE_ID, "{}")
+	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, TEMPLATE_ID, "{}")
 }
 
 func tearDown() {
@@ -268,8 +270,9 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 		Env: &EnvList{
 			{Name: "E1", Value: "V1"},
 		},
-		Ports: &PortsList{12345, 6789},
-		Tags:  &Tags{"apple", "orange", "tiger"},
+		Ports:      &PortsList{12345, 6789},
+		Tags:       &Tags{"apple", "orange", "tiger"},
+		TemplateID: TEMPLATE_ID,
 	}
 
 	err = sm.CreateDefinition(d)
@@ -523,7 +526,8 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
-		Engine: &DefaultEngine,
+		Engine:     &DefaultEngine,
+		TemplateID: TEMPLATE_ID,
 	}
 
 	ec := int64(137)
@@ -551,9 +555,10 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Env: &EnvList{
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
-		Command: &cmd,
-		Memory:  &mem,
-		Engine:  &DefaultEngine,
+		Command:    &cmd,
+		Memory:     &mem,
+		Engine:     &DefaultEngine,
+		TemplateID: TEMPLATE_ID,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
