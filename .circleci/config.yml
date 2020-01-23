@@ -21,7 +21,7 @@ jobs:
           command: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.0.7/flyway-commandline-6.0.7-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-6.0.7/flyway /usr/local/bin
       - run:
           name: Waiting for Postgres to be ready
-          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+          command: dockerize -wait tcp://localhost:5432 -timeout 5m
       - run:
           name: Set Up DB
           command: |
