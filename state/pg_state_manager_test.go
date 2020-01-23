@@ -117,7 +117,6 @@ func tearDown() {
 		DELETE FROM task;
 		DELETE FROM task_def;
 		DELETE FROM tags;
-    DROP SEQUENCE IF EXISTS task_status_status_id_seq;
   `)
 }
 
