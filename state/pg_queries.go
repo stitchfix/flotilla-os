@@ -179,6 +179,7 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
+// definitionTemplateSelect retrives definition template data.
 const definitionTemplateSelect = `
   SELECT id as templateid, type, version, schema, template, image
   FROM definition_template
