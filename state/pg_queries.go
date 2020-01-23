@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS definition_template (
   version INTEGER NOT NULL,
   schema JSONB NOT NULL,
   template TEXT NOT NULL,
-  image VARCHAR NOT NULL
+  image VARCHAR NOT NULL,
+  CONSTRAINT definition_template_type_version UNIQUE(type, version)
 );
 
 --
