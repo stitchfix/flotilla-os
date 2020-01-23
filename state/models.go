@@ -135,31 +135,31 @@ type EnvVar struct {
 //
 type Tags []string
 
-type TaskPayload map[string]interface{}
+type DefinitionTemplatePayload map[string]interface{}
 
 // Definition represents a definition of a job
 // - roughly 1-1 with an AWS ECS task definition
 //
 type Definition struct {
-	Arn                        string       `json:"arn"`
-	DefinitionID               string       `json:"definition_id"`
-	Image                      string       `json:"image"`
-	GroupName                  string       `json:"group_name"`
-	ContainerName              string       `json:"container_name"`
-	User                       string       `json:"user,omitempty"`
-	Alias                      string       `json:"alias"`
-	Memory                     *int64       `json:"memory"`
-	Gpu                        *int64       `json:"gpu,omitempty"`
-	Cpu                        *int64       `json:"cpu,omitempty"`
-	Command                    string       `json:"command,omitempty"`
-	TaskType                   string       `json:"task_type,omitempty"`
-	Env                        *EnvList     `json:"env"`
-	Ports                      *PortsList   `json:"ports,omitempty"`
-	Tags                       *Tags        `json:"tags,omitempty"`
-	Privileged                 *bool        `json:"privileged,omitempty"`
-	SharedMemorySize           *int64       `json:"shared_memory_size,omitempty"`
-	AdaptiveResourceAllocation *bool        `json:"adaptive_resource_allocation,omitempty"`
-	Payload                    *TaskPayload `json:"payload,omitempty"`
+	Arn                        string                     `json:"arn"`
+	DefinitionID               string                     `json:"definition_id"`
+	Image                      string                     `json:"image"`
+	GroupName                  string                     `json:"group_name"`
+	ContainerName              string                     `json:"container_name"`
+	User                       string                     `json:"user,omitempty"`
+	Alias                      string                     `json:"alias"`
+	Memory                     *int64                     `json:"memory"`
+	Gpu                        *int64                     `json:"gpu,omitempty"`
+	Cpu                        *int64                     `json:"cpu,omitempty"`
+	Command                    string                     `json:"command,omitempty"`
+	Env                        *EnvList                   `json:"env"`
+	Ports                      *PortsList                 `json:"ports,omitempty"`
+	Tags                       *Tags                      `json:"tags,omitempty"`
+	Privileged                 *bool                      `json:"privileged,omitempty"`
+	SharedMemorySize           *int64                     `json:"shared_memory_size,omitempty"`
+	AdaptiveResourceAllocation *bool                      `json:"adaptive_resource_allocation,omitempty"`
+	TemplateID                 string                     `json:"template_id,omitempty"`
+	TemplatePayload            *DefinitionTemplatePayload `json:"template_payload,omitempty"`
 }
 
 var commandWrapper = `
@@ -201,7 +201,7 @@ func (d *Definition) IsValid() (bool, []string) {
 		{len(d.GroupName) > 255, "Group name must be 255 characters or less"},
 		{len(d.Alias) == 0, "string [alias] must be specified"},
 		{d.Memory == nil, "int [memory] must be specified"},
-		{len(d.Command) == 0 && len(d.TaskType) == 0, "string [command] must be specified if not using templated task"},
+		{len(d.Command) == 0 && len(d.TemplateID) == 0, "string [command] must be specified if not using templated task"},
 	}
 
 	valid := true
@@ -255,9 +255,6 @@ func (d *Definition) UpdateWith(other Definition) {
 	if len(other.Command) > 0 {
 		d.Command = other.Command
 	}
-	if len(other.TaskType) > 0 {
-		d.TaskType = other.TaskType
-	}
 	if other.Env != nil {
 		d.Env = other.Env
 	}
@@ -270,8 +267,11 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Privileged != nil {
 		d.Privileged = other.Privileged
 	}
-	if other.Payload != nil {
-		d.Payload = other.Payload
+	if len(other.TemplateID) > 0 {
+		d.TemplateID = other.TemplateID
+	}
+	if other.TemplatePayload != nil {
+		d.TemplatePayload = other.TemplatePayload
 	}
 }
 
@@ -283,19 +283,19 @@ func (d Definition) MarshalJSON() ([]byte, error) {
 		env = &EnvList{}
 	}
 
-	payload := d.Payload
+	payload := d.TemplatePayload
 	if payload == nil {
-		payload = &TaskPayload{}
+		payload = &DefinitionTemplatePayload{}
 	}
 
 	return json.Marshal(&struct {
-		Env     *EnvList     `json:"env"`
-		Payload *TaskPayload `json:"payload"`
+		Env             *EnvList                   `json:"env"`
+		TemplatePayload *DefinitionTemplatePayload `json:"template_payload"`
 		Alias
 	}{
-		Env:     env,
-		Payload: payload,
-		Alias:   (Alias)(d),
+		Env:             env,
+		TemplatePayload: payload,
+		Alias:           (Alias)(d),
 	})
 }
 
@@ -334,38 +334,39 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn          string     `json:"task_arn"`
-	RunID            string     `json:"run_id"`
-	DefinitionID     string     `json:"definition_id"`
-	Alias            string     `json:"alias"`
-	Image            string     `json:"image"`
-	ClusterName      string     `json:"cluster"`
-	ExitCode         *int64     `json:"exit_code,omitempty"`
-	Status           string     `json:"status"`
-	QueuedAt         *time.Time `json:"queued_at,omitempty"`
-	StartedAt        *time.Time `json:"started_at,omitempty"`
-	FinishedAt       *time.Time `json:"finished_at,omitempty"`
-	InstanceID       string     `json:"-"`
-	InstanceDNSName  string     `json:"-"`
-	GroupName        string     `json:"group_name"`
-	User             string     `json:"user,omitempty"`
-	TaskType         string     `json:"-"`
-	Env              *EnvList   `json:"env,omitempty"`
-	Command          *string    `json:"command,omitempty"`
-	CommandHash      *string    `json:"command_hash,omitempty"`
-	Memory           *int64     `json:"memory,omitempty"`
-	Cpu              *int64     `json:"cpu,omitempty"`
-	Gpu              *int64     `json:"gpu,omitempty"`
-	ExitReason       *string    `json:"exit_reason,omitempty"`
-	Engine           *string    `json:"engine,omitempty"`
-	NodeLifecycle    *string    `json:"node_lifecycle,omitempty"`
-	EphemeralStorage *int64     `json:"ephemeral_storage,omitempty"`
-	PodName          *string    `json:"pod_name,omitempty"`
-	Namespace        *string    `json:"namespace,omitempty"`
-	ContainerName    *string    `json:"container_name,omitempty"`
-	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
-	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
-	PodEvents        *PodEvents `json:"pod_events,omitempty"`
+	TaskArn          string                     `json:"task_arn"`
+	RunID            string                     `json:"run_id"`
+	DefinitionID     string                     `json:"definition_id"`
+	Alias            string                     `json:"alias"`
+	Image            string                     `json:"image"`
+	ClusterName      string                     `json:"cluster"`
+	ExitCode         *int64                     `json:"exit_code,omitempty"`
+	Status           string                     `json:"status"`
+	QueuedAt         *time.Time                 `json:"queued_at,omitempty"`
+	StartedAt        *time.Time                 `json:"started_at,omitempty"`
+	FinishedAt       *time.Time                 `json:"finished_at,omitempty"`
+	InstanceID       string                     `json:"-"`
+	InstanceDNSName  string                     `json:"-"`
+	GroupName        string                     `json:"group_name"`
+	User             string                     `json:"user,omitempty"`
+	Env              *EnvList                   `json:"env,omitempty"`
+	Command          *string                    `json:"command,omitempty"`
+	CommandHash      *string                    `json:"command_hash,omitempty"`
+	Memory           *int64                     `json:"memory,omitempty"`
+	Cpu              *int64                     `json:"cpu,omitempty"`
+	Gpu              *int64                     `json:"gpu,omitempty"`
+	ExitReason       *string                    `json:"exit_reason,omitempty"`
+	Engine           *string                    `json:"engine,omitempty"`
+	NodeLifecycle    *string                    `json:"node_lifecycle,omitempty"`
+	EphemeralStorage *int64                     `json:"ephemeral_storage,omitempty"`
+	PodName          *string                    `json:"pod_name,omitempty"`
+	Namespace        *string                    `json:"namespace,omitempty"`
+	ContainerName    *string                    `json:"container_name,omitempty"`
+	MaxMemoryUsed    *int64                     `json:"max_memory_used,omitempty"`
+	MaxCpuUsed       *int64                     `json:"max_cpu_used,omitempty"`
+	PodEvents        *PodEvents                 `json:"pod_events,omitempty"`
+	TemplateID       string                     `json:"template_id,omitempty"`
+	TemplatePayload  *DefinitionTemplatePayload `json:"template_payload,omitempty"`
 }
 
 //
@@ -413,9 +414,6 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if len(other.User) > 0 {
 		d.User = other.User
-	}
-	if len(other.TaskType) > 0 {
-		d.TaskType = other.TaskType
 	}
 	if other.Env != nil {
 		d.Env = other.Env
@@ -481,6 +479,13 @@ func (d *Run) UpdateWith(other Run) {
 		d.PodEvents = other.PodEvents
 	}
 
+	if len(other.TemplateID) > 0 {
+		d.TemplateID = other.TemplateID
+	}
+	if other.TemplatePayload != nil {
+		d.TemplatePayload = other.TemplatePayload
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
@@ -520,14 +525,21 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		podEvents = &PodEvents{}
 	}
 
+	payload := r.TemplatePayload
+	if payload == nil {
+		payload = &DefinitionTemplatePayload{}
+	}
+
 	return json.Marshal(&struct {
-		Instance  map[string]string `json:"instance"`
-		PodEvents *PodEvents        `json:"pod_events"`
+		Instance        map[string]string          `json:"instance"`
+		PodEvents       *PodEvents                 `json:"pod_events"`
+		TemplatePayload *DefinitionTemplatePayload `json:"template_payload"`
 		Alias
 	}{
-		Instance:  instance,
-		PodEvents: podEvents,
-		Alias:     (Alias)(r),
+		Instance:        instance,
+		PodEvents:       podEvents,
+		TemplatePayload: payload,
+		Alias:           (Alias)(r),
 	})
 }
 
@@ -615,14 +627,15 @@ type TaskResources struct {
 	Memory int64 `json:"memory"`
 }
 
-type TaskType struct {
-	Id       string `json:"id"`
-	Alias    string `json:"alias"`
-	Schema   string `json:"schema"`
-	Template string `json:"template"`
+type DefinitionTemplate struct {
+	TemplateID string `json:"template_id"`
+	Alias      string `json:"alias"`
+	Schema     string `json:"schema"`
+	Template   string `json:"template"`
+	Image      string `json:"image"`
 }
 
-type TaskTypeList struct {
-	Total     int        `json:"total"`
-	TaskTypes []TaskType `json:"task_types"`
+type DefinitionTemplateList struct {
+	Total               int                  `json:"total"`
+	DefinitionTemplates []DefinitionTemplate `json:"templates"`
 }

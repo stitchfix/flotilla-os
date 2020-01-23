@@ -212,8 +212,8 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 }
 
 func (es *executionService) generateTaskTypeCommand(definition state.Definition) (string, error) {
-	var taskType state.TaskType
-	taskType, err := es.stateManager.GetTaskType(definition.TaskType)
+	var taskType state.DefinitionTemplate
+	taskType, err := es.stateManager.GetDefinitionTemplate(definition.TemplateID)
 
 	if err != nil {
 		return "", err
@@ -221,7 +221,7 @@ func (es *executionService) generateTaskTypeCommand(definition state.Definition)
 
 	var CommandTemplate, _ = template.New("command").Parse(taskType.Template)
 	var result bytes.Buffer
-	if err := CommandTemplate.Execute(&result, definition.Payload); err != nil {
+	if err := CommandTemplate.Execute(&result, definition.TemplatePayload); err != nil {
 		return "", err
 	}
 	return result.String(), nil
@@ -238,7 +238,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
-	if len(definition.TaskType) > 0 {
+	if len(definition.TemplateID) > 0 {
 		ptr, err := es.generateTaskTypeCommand(definition)
 		command = &ptr
 		if err != nil {

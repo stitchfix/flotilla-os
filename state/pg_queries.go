@@ -8,11 +8,12 @@ const CreateTablesSQL = `
 --
 -- Task Types
 --
-CREATE TABLE IF NOT EXISTS task_type (
-  id character varying PRIMARY KEY,
-  alias character varying,
-  schema jsonb NOT NULL,
-  template character varying NOT NULL
+CREATE TABLE IF NOT EXISTS definition_template (
+  id VARCHAR PRIMARY KEY,
+  alias VARCHAR,
+  schema JSONB NOT NULL,
+  template TEXT NOT NULL,
+  image VARCHAR NOT NULL
 );
 
 --
@@ -33,10 +34,10 @@ CREATE TABLE IF NOT EXISTS task_def (
   "user" character varying,
   arn character varying,
   container_name character varying NOT NULL,
-  task_type character varying REFERENCES task_type(id),
   privileged boolean,
   adaptive_resource_allocation boolean,
-  payload jsonb,
+  template_id character varying REFERENCES definition_template(id),
+  template_payload jsonb,
   -- Refactor these
   CONSTRAINT task_def_alias UNIQUE(alias)
 );
@@ -75,7 +76,6 @@ CREATE TABLE IF NOT EXISTS task (
   task_arn character varying,
   docker_id character varying,
   "user" character varying,
-  task_type character varying,
   -- Refactor these --
   command text,
   command_hash text,
@@ -90,7 +90,9 @@ CREATE TABLE IF NOT EXISTS task (
   namespace text,
   max_cpu_used integer,
   max_memory_used integer,
-  pod_events jsonb
+  pod_events jsonb,
+  template_id character varying REFERENCES definition_template(id),
+  template_payload jsonb
 );
 
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
@@ -159,14 +161,14 @@ select
   td.alias                  as alias,
   td.memory                 as memory,
   coalesce(td.command,'')   as command,
-  coalesce(td.task_type,'') as tasktype,
   env::TEXT                 as env,
   ports                     as ports,
   tags                      as tags,
   td.privileged             as privileged,
   td.cpu                    as cpu,
   td.gpu                    as gpu,
-  td.payload::TEXT          as payload
+  coalesce(td.template_id,'') as templateid,
+  td.template_payload::TEXT          as templatepayload
   from (select * from task_def) td left outer join
     (select task_def_id,
       array_to_json(array_agg(port))::TEXT as ports
@@ -232,7 +234,6 @@ select
   coalesce(t.instance_dns_name,'')           as instancednsname,
   coalesce(t.group_name,'')                  as groupname,
   coalesce(t.user,'')                        as "user",
-  coalesce(t.task_type,'')                   as tasktype,
   env::TEXT                                  as env,
   command,
   memory,
@@ -247,7 +248,9 @@ select
   max_cpu_used as maxcpuused,
   max_memory_used as maxmemoryused,
   pod_events::TEXT as podevents,
-  command_hash as commandhash
+  command_hash as commandhash,
+  coalesce(t.template_id,'') as templateid,
+  t.template_payload::TEXT          as templatepayload
 from task t
 `
 
@@ -322,9 +325,9 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
-const taskTypeSelect = `
-  SELECT id, alias, schema::TEXT, template
-  FROM task_type
+const definitionTemplateSelect = `
+  SELECT id, alias, schema, template, image
+  FROM definition_template
 `
-const ListTaskTypeSQL = taskTypeSelect + "\n limit $1 offset $2"
-const GetTaskTypeSQL = taskTypeSelect + "\n where id = $1"
+const ListDefinitionTemplateSQL = definitionTemplateSelect + "\n limit $1 offset $2"
+const GetDefinitionTemplateSQL = definitionTemplateSelect + "\n where id = $1"

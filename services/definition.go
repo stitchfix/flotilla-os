@@ -56,15 +56,15 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 	}
 
 	// Task template validation.
-	if len(definition.TaskType) > 0 {
-		taskType, err := ds.sm.GetTaskType(definition.TaskType)
+	if len(definition.TemplateID) > 0 {
+		taskType, err := ds.sm.GetDefinitionTemplate(definition.TemplateID)
 
 		if err != nil {
 			return state.Definition{}, err
 		}
 
 		schemaLoader := gojsonschema.NewStringLoader(taskType.Schema)
-		documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", definition.Payload))
+		documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", definition.TemplatePayload))
 		result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 
 		fmt.Println(result)

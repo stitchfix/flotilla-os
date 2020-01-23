@@ -1,22 +1,18 @@
 package state
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-
 	"github.com/jmoiron/sqlx"
-
-	// Pull in postgres specific drivers
-	"database/sql"
-	"math"
-	"strings"
-	"time"
-
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	"math"
+	"strings"
+	"time"
 )
 
 //
@@ -265,10 +261,20 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	deleteTags := `DELETE FROM task_def_tags WHERE task_def_id = $1`
 	update := `
     UPDATE task_def SET
-      arn = $2, image = $3,
-      container_name = $4, "user" = $5,
-      alias = $6, memory = $7,
-      command = $8, env = $9, privileged = $10, cpu = $11, gpu = $12, adaptive_resource_allocation = $13
+			arn = $2,
+			image = $3,
+			container_name = $4,
+			"user" = $5,
+			alias = $6,
+			memory = $7,
+			command = $8,
+			env = $9,
+			privileged = $10,
+			cpu = $11,
+			gpu = $12,
+			adaptive_resource_allocation = $13,
+			template_id = $14,
+			template_payload = $15
     WHERE definition_id = $1;
     `
 
@@ -309,7 +315,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		update, definitionID,
 		existing.Arn, existing.Image, existing.ContainerName,
 		existing.User, existing.Alias, existing.Memory,
-		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu, existing.AdaptiveResourceAllocation); err != nil {
+		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu, existing.AdaptiveResourceAllocation, existing.TemplateID, existing.TemplatePayload); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -349,10 +355,11 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	var err error
 	insert := `
     INSERT INTO task_def(
-      arn, definition_id, image, group_name,
-      container_name, "user", alias, memory, command, env, privileged, cpu, gpu, adaptive_resource_allocation
+			arn, definition_id, image, group_name, container_name, "user", alias,
+			memory, command, env, privileged, cpu, gpu, adaptive_resource_allocation,
+			template_id, template_payload
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
     `
 
 	insertPorts := `
@@ -378,7 +385,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation); err != nil {
+		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation, d.TemplateID, d.TemplatePayload); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
@@ -551,10 +558,10 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.TaskArn, &existing.RunID, &existing.DefinitionID, &existing.Alias, &existing.Image,
 			&existing.ClusterName, &existing.ExitCode, &existing.ExitReason, &existing.Status, &existing.QueuedAt,
 			&existing.StartedAt, &existing.FinishedAt, &existing.InstanceID, &existing.InstanceDNSName,
-			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
+			&existing.GroupName, &existing.User, &existing.Env, &existing.Command, &existing.Memory,
 			&existing.Cpu, &existing.Gpu, &existing.Engine, &existing.EphemeralStorage, &existing.NodeLifecycle,
 			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed,
-			&existing.PodEvents, &existing.CommandHash)
+			&existing.PodEvents, &existing.CommandHash, &existing.TemplateID, &existing.TemplatePayload)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -564,17 +571,36 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 
 	update := `
     UPDATE task SET
-      task_arn = $2, definition_id = $3,
-	  alias = $4, image = $5,
-      cluster_name = $6, exit_code = $7,
+			task_arn = $2,
+			definition_id = $3,
+			alias = $4,
+			image = $5,
+			cluster_name = $6,
+			exit_code = $7,
       exit_reason = $8, 
-      status = $9, queued_at = $10,
+			status = $9,
+			queued_at = $10,
       started_at = $11,
-      finished_at = $12, instance_id = $13,
+			finished_at = $12,
+			instance_id = $13,
       instance_dns_name = $14,
-	  group_name = $15, env = $16,
-	  command = $17, memory = $18, cpu = $19, gpu = $20, engine = $21, ephemeral_storage = $22, node_lifecycle = $23,
-	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29
+			group_name = $15,
+			env = $16,
+			command = $17,
+			memory = $18,
+			cpu = $19,
+			gpu = $20,
+			engine = $21,
+			ephemeral_storage = $22,
+			node_lifecycle = $23,
+			container_name = $24,
+			pod_name = $25,
+			namespace = $26,
+			max_cpu_used = $27,
+			max_memory_used = $28,
+			pod_events = $29,
+			template_id = $30,
+			template_payload = $31
     WHERE run_id = $1;
     `
 
@@ -591,7 +617,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Memory, existing.Cpu, existing.Gpu,
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
 		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed,
-		existing.MaxMemoryUsed, existing.PodEvents); err != nil {
+		existing.MaxMemoryUsed, existing.PodEvents, existing.TemplateID, existing.TemplatePayload); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -612,11 +638,12 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
-      container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash
+      env, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
+			container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash,
+			template_id, template_payload
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28, $29, MD5($17));
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
+      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31);
     `
 
 	tx, err := sm.db.Begin()
@@ -631,7 +658,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.InstanceID, r.InstanceDNSName, r.GroupName,
 		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle, r.EphemeralStorage,
-		r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed, r.MaxMemoryUsed, r.PodEvents); err != nil {
+		r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed, r.MaxMemoryUsed, r.PodEvents, r.TemplateID, r.TemplatePayload); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -855,13 +882,10 @@ func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
-//
-// ListWorkers returns list of workers
-//
-func (sm *SQLStateManager) ListTaskTypes(limit int, offset int) (list TaskTypeList, err error) {
-	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListTaskTypeSQL)
+func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int) (list DefinitionTemplateList, err error) {
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListDefinitionTemplateSQL)
 
-	err = sm.db.Select(&list.TaskTypes, ListTaskTypeSQL, limit, offset)
+	err = sm.db.Select(&list.DefinitionTemplates, ListDefinitionTemplateSQL, limit, offset)
 	if err != nil {
 		return list, errors.Wrap(err, "issue running list workers sql")
 	}
@@ -874,11 +898,8 @@ func (sm *SQLStateManager) ListTaskTypes(limit int, offset int) (list TaskTypeLi
 	return list, nil
 }
 
-//
-// GetWorker returns data for a single worker.
-//
-func (sm *SQLStateManager) GetTaskType(id string) (t TaskType, err error) {
-	if err := sm.db.Get(&t, GetTaskTypeSQL, id); err != nil {
+func (sm *SQLStateManager) GetDefinitionTemplate(id string) (t DefinitionTemplate, err error) {
+	if err := sm.db.Get(&t, GetDefinitionTemplateSQL, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Task type [%s] not found", id)}
@@ -981,7 +1002,7 @@ func (e Tags) Value() (driver.Value, error) {
 }
 
 // Scan from db
-func (p *TaskPayload) Scan(value interface{}) error {
+func (p *DefinitionTemplatePayload) Scan(value interface{}) error {
 	if value != nil {
 		s := []byte(value.(string))
 		json.Unmarshal(s, &p)
@@ -990,7 +1011,7 @@ func (p *TaskPayload) Scan(value interface{}) error {
 }
 
 // Value to db
-func (p TaskPayload) Value() (driver.Value, error) {
+func (p DefinitionTemplatePayload) Value() (driver.Value, error) {
 	res, _ := json.Marshal(p)
 	return res, nil
 }

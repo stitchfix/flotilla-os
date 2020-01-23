@@ -38,8 +38,8 @@ type Manager interface {
 	GetWorker(workerType string, engine string) (Worker, error)
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
 
-	ListTaskTypes(limit int, offset int) (TaskTypeList, error)
-	GetTaskType(id string) (TaskType, error)
+	ListDefinitionTemplates(limit int, offset int) (DefinitionTemplateList, error)
+	GetDefinitionTemplate(id string) (DefinitionTemplate, error)
 }
 
 //
