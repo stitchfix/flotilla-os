@@ -31,9 +31,6 @@ func setUp() Manager {
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
-	//
-	//
-	//
 	insertDefinitions(db)
 
 	return sm
@@ -45,7 +42,7 @@ func insertDefinitions(db *sqlx.DB) {
 	`
 	defsql := `
     INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged, template_id, template_payload)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 10, $11)
     `
 
 	portsql := `
@@ -65,7 +62,7 @@ func insertDefinitions(db *sqlx.DB) {
 			started_at, finished_at, instance_id, instance_dns_name, group_name, env,
 			template_id, template_payload
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
     )
     `
 
