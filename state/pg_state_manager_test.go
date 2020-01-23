@@ -31,9 +31,7 @@ func setUp() Manager {
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
-	//
-	//
-	//
+
 	insertDefinitions(db)
 
 	return sm

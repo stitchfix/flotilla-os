@@ -1,19 +1,32 @@
 version: 2
 jobs:
-   build:
-     working_directory: /go/src/github.com/stitchfix/flotilla-os
-     docker:
-       - image: circleci/golang:1.12
-         environment:
-           FLOTILLA_MODE: test
-           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
-       - image: postgres:9.6.2
-         environment:
-           POSTGRES_USER: flotilla
-           POSTGRES_DB: flotilla
-           POSTGRES_PASSWORD: flotilla
-     steps:
-       - checkout
-       - run: go get -u github.com/kardianos/govendor
-       - run: govendor sync
-       - run: go test -v ./...
+  build:
+    working_directory: /go/src/github.com/stitchfix/flotilla-os
+    docker:
+      - image: circleci/golang:1.12
+        environment:
+          FLOTILLA_MODE: test
+          DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+      - image: postgres:9.6.2
+        environment:
+          POSTGRES_USER: flotilla
+          POSTGRES_DB: flotilla
+          POSTGRES_PASSWORD: flotilla
+    steps:
+      - checkout
+      - run:
+        name: Install Flyway
+        command: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.0.7/flyway-commandline-6.0.7-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-6.0.7/flyway /usr/local/bin
+      - run:
+          name: Set Up DB
+          command: |
+            flyway baseline -configFiles=./.migrations/dev.conf \
+              -user=flotilla \
+              -password=flotilla
+            flyway migrate -configFiles=./.migrations/dev.conf \
+              -locations=./.migrations/ \
+              -user=flotilla \
+              -password=flotilla
+      - run: go get -u github.com/kardianos/govendor
+      - run: govendor sync
+      - run: go test -v ./...
