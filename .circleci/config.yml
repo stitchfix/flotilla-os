@@ -5,9 +5,10 @@ jobs:
     docker:
       - image: circleci/golang:1.12
         environment:
-          PGHOST: 127.0.0.1
           FLOTILLA_MODE: test
           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+          PGHOST: 127.0.0.1
+          PGUSER: flotilla
       - image: postgres:9.6.2
         environment:
           POSTGRES_USER: flotilla
