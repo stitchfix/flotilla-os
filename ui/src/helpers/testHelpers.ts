@@ -54,7 +54,6 @@ export const createMockTaskObject = (overrides?: Partial<Task>): Task => ({
   command: "command",
   tags: ["a", "b", "c"],
   privileged: false,
-  payload: {},
   template_id: "shell",
   ...overrides,
 })
