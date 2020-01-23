@@ -7,8 +7,11 @@ jobs:
         environment:
           FLOTILLA_MODE: test
           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
-          PGHOST: 127.0.0.1
-          PGUSER: flotilla
+          POSTGRES_PASSWORD: flotilla
+          POSTGRES_DB: flotilla
+          POSTGRES_USER: flotilla
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
       - image: postgres:9.6.2
         environment:
           POSTGRES_USER: flotilla
