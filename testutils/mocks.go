@@ -392,7 +392,7 @@ func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.
 }
 
 // ListDefinitionTemplates - StateManager
-func (iatt *ImplementsAllTheThings) ListDefinitionTemplates(limit int, offset int) (state.DefinitionTemplateList, error) {
+func (iatt *ImplementsAllTheThings) ListDefinitionTemplates(limit int, offset int, latestOnly bool) (state.DefinitionTemplateList, error) {
 	iatt.Calls = append(iatt.Calls, "ListDefinitionTemplates")
 	return state.DefinitionTemplateList{Total: len(iatt.DefinitionTemplates), DefinitionTemplates: iatt.DefinitionTemplates}, nil
 }
