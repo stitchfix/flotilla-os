@@ -1,14 +1,7 @@
 import { FormikActions } from "formik"
 import { createMemoryHistory, createLocation } from "history"
 import { RouteComponentProps } from "react-router-dom"
-import {
-  Task,
-  Run,
-  RunStatus,
-  ExecutionEngine,
-  NodeLifecycle,
-  TaskTypes,
-} from "../types"
+import { Task, Run, RunStatus, ExecutionEngine, NodeLifecycle } from "../types"
 
 export function createMockRouteComponentProps<MatchParams>({
   path,
@@ -61,8 +54,8 @@ export const createMockTaskObject = (overrides?: Partial<Task>): Task => ({
   command: "command",
   tags: ["a", "b", "c"],
   privileged: false,
-  task_type: TaskTypes.SHELL,
   payload: {},
+  template_id: "shell",
   ...overrides,
 })
 

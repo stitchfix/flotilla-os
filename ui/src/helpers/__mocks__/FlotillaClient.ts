@@ -17,50 +17,20 @@ import {
   UpdateTaskPayload,
   ExecutionEngine,
   NodeLifecycle,
-  TaskTypes,
 } from "../../types"
+import { createMockTaskObject, createMockRunObject } from "../testHelpers"
 
 const getTask = jest.fn(
   ({ definitionID }: { definitionID: string }): Promise<Task> =>
     new Promise<Task>(resolve => {
-      resolve({
-        env: [{ name: "a", value: "b" }],
-        arn: "arn",
-        definition_id: definitionID,
-        image: "image",
-        group_name: "group_name",
-        container_name: "container_name",
-        alias: "alias",
-        memory: 1024,
-        cpu: 512,
-        command: "command",
-        tags: ["a", "b", "c"],
-        privileged: false,
-        task_type: TaskTypes.SHELL,
-        payload: {},
-      })
+      resolve(createMockTaskObject({ definition_id: definitionID }))
     })
 )
 
 const getTaskByAlias = jest.fn(
   ({ alias }: { alias: string }): Promise<Task> =>
     new Promise<Task>(resolve => {
-      resolve({
-        env: [{ name: "a", value: "b" }],
-        arn: "arn",
-        definition_id: "definition_id",
-        image: "image",
-        group_name: "group_name",
-        container_name: "container_name",
-        alias: alias,
-        memory: 1024,
-        cpu: 512,
-        command: "command",
-        tags: ["a", "b", "c"],
-        privileged: false,
-        task_type: TaskTypes.SHELL,
-        payload: {},
-      })
+      resolve(createMockTaskObject({ alias: alias }))
     })
 )
 
@@ -107,22 +77,7 @@ const listTasks = jest.fn(
 const createTask = jest.fn(
   ({ data }: { data: CreateTaskPayload }): Promise<Task> =>
     new Promise<Task>(resolve => {
-      resolve({
-        env: data.env,
-        arn: "arn",
-        definition_id: "definition_id",
-        image: data.image,
-        group_name: data.group_name,
-        container_name: "container_name",
-        alias: data.alias,
-        memory: data.memory,
-        cpu: 512,
-        command: data.command,
-        tags: data.tags,
-        privileged: false,
-        task_type: TaskTypes.SHELL,
-        payload: {},
-      })
+      resolve(createMockTaskObject(data))
     })
 )
 
@@ -135,22 +90,7 @@ const updateTask = jest.fn(
     data: UpdateTaskPayload
   }): Promise<Task> =>
     new Promise<Task>(resolve => {
-      resolve({
-        env: data.env,
-        arn: "arn",
-        definition_id: definitionID,
-        image: data.image,
-        group_name: data.group_name,
-        container_name: "container_name",
-        alias: "alias",
-        memory: data.memory,
-        cpu: 512,
-        command: data.command,
-        tags: data.tags,
-        privileged: false,
-        task_type: TaskTypes.SHELL,
-        payload: {},
-      })
+      resolve(createMockTaskObject({ ...data, definition_id: definitionID }))
     })
 )
 
@@ -170,30 +110,7 @@ const runTask = jest.fn(
     data: LaunchRequestV2
   }): Promise<Run> =>
     new Promise<Run>(resolve => {
-      resolve({
-        instance: {
-          dns_name: "dns_name",
-          instance_id: "instance_id",
-        },
-        task_arn: "task_arn",
-        run_id: "run_id",
-        definition_id: definitionID,
-        alias: "alias",
-        image: "image",
-        cluster: data.cluster,
-        status: RunStatus.PENDING,
-        group_name: "group_name",
-        env: data.env || [],
-        cpu: 1,
-        memory: 1024,
-        command: "echo 'hi'",
-        queued_at: "2019-10-24T05:21:51",
-        engine: ExecutionEngine.ECS,
-        node_lifecycle: NodeLifecycle.SPOT,
-        max_cpu_used: 1,
-        max_memory_used: 1,
-        pod_name: "pod",
-      })
+      resolve(createMockRunObject({ definition_id: definitionID }))
     })
 )
 
@@ -218,30 +135,7 @@ const listRun = jest.fn(
 const getRun = jest.fn(
   ({ runID }: { runID: string }): Promise<Run> =>
     new Promise<Run>(resolve => {
-      resolve({
-        instance: {
-          dns_name: "dns_name",
-          instance_id: "instance_id",
-        },
-        task_arn: "task_arn",
-        run_id: runID,
-        definition_id: "definition_id",
-        alias: "alias",
-        image: "image",
-        cluster: "cluster",
-        status: RunStatus.PENDING,
-        group_name: "group_name",
-        env: [],
-        cpu: 1,
-        memory: 1024,
-        command: "echo 'hi'",
-        queued_at: "2019-10-24T05:21:51",
-        engine: ExecutionEngine.ECS,
-        node_lifecycle: NodeLifecycle.SPOT,
-        max_cpu_used: 1,
-        max_memory_used: 1,
-        pod_name: "pod",
-      })
+      resolve(createMockRunObject({ run_id: runID }))
     })
 )
 

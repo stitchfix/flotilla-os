@@ -5,10 +5,6 @@ export type Env = {
   value: any
 }
 
-export enum TaskTypes {
-  SHELL = "shell",
-}
-
 export type Task = {
   env: Env[]
   arn: string
@@ -24,9 +20,23 @@ export type Task = {
   privileged: boolean
   shared_memory_size?: number
   adaptive_resource_allocation?: boolean
-  task_type: TaskTypes
-  payload: any
+  template_id?: string
+  template_payload?: any
 }
+
+export type DefinitionTemplate = {
+  template_id: string
+  type: string
+  version: number
+  schema: string
+  template: string
+  image: string
+}
+
+export type CreateDefinitionTemplatePayload = Pick<
+  DefinitionTemplate,
+  "type" | "schema" | "template" | "image"
+>
 
 export type RunInstance = {
   dns_name: string

@@ -21,6 +21,7 @@ import {
   ListTagsResponse,
   ListRunEventsResponse,
   RunLogRaw,
+  CreateDefinitionTemplatePayload,
 } from "../types"
 
 interface IInitOpts {
@@ -225,6 +226,31 @@ class FlotillaClient {
     this.request<ListRunEventsResponse>({
       method: HTTPMethod.GET,
       url: `/v6/${runID}/events`,
+    })
+
+  public listDefinitionTemplatesV7 = (): Promise<any> =>
+    this.request<any>({
+      method: HTTPMethod.GET,
+      url: `/v7/template`,
+      params: {
+        offset: 0,
+        limit: 200,
+      },
+    })
+
+  public getDefinitionTemplateByIdV7 = (id: string): Promise<any> =>
+    this.request<any>({
+      method: HTTPMethod.GET,
+      url: `/v7/template/${id}`,
+    })
+
+  public createDefinitionTemplateV7 = (
+    data: CreateDefinitionTemplatePayload
+  ): Promise<any> =>
+    this.request<any>({
+      method: HTTPMethod.POST,
+      url: `/v7/template`,
+      data,
     })
 
   /** Returns a new Promise that sends an HTTP request when invoked. */
