@@ -385,7 +385,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 
 	if _, err = tx.Exec(insert,
 		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation, d.TemplateID, d.TemplatePayload); err != nil {
+		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation, sql.NullString{String: d.TemplateID}, d.TemplatePayload); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
