@@ -37,7 +37,8 @@ func setUp() Manager {
 
 func insertDefinitions(db *sqlx.DB) {
 	templateSQL := `
-		INSERT INTO definition_template VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO definition_template (id, type, version, schema, template, image)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	defsql := `
     INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged, template_id, template_payload)
@@ -65,7 +66,7 @@ func insertDefinitions(db *sqlx.DB) {
     )
     `
 
-	db.MustExec(templateSQL, TEMPLATE_ID, "shell_task", "{}", "", "imageA")
+	db.MustExec(templateSQL, TEMPLATE_ID, "shell_task", 1, "{}", "", "imageA")
 	db.MustExec(defsql,
 		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true, TEMPLATE_ID, "{}")
 	db.MustExec(defsql,
