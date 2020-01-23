@@ -24,16 +24,11 @@ func setUp() Manager {
 	conf, _ := config.NewConfig(nil)
 
 	db := getDB(conf)
-	//
-	// Implicit testing - this will create tables
-	//
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
-	//
-	//
-	//
+
 	insertDefinitions(db)
 
 	return sm
@@ -113,11 +108,13 @@ func tearDown() {
 	conf, _ := config.NewConfig(nil)
 	db := getDB(conf)
 	db.MustExec(`
-    drop table if exists
-      task, task_def, task_def_ports, task_status, task_def_tags, tags
-    cascade;
-    drop sequence if exists task_status_status_id_seq;
-    `)
+		DELETE FROM task_def_ports;
+		DELETE FROM task_def_tags;
+		DELETE FROM task_status;
+		DELETE FROM task;
+		DELETE FROM task_def;
+		DELETE FROM tags;
+  `)
 }
 
 func TestSQLStateManager_ListDefinitions(t *testing.T) {

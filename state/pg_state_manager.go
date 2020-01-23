@@ -95,21 +95,12 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 			}
 		}
 
-		if err = sm.createTables(); err != nil {
-			return errors.Wrap(err, "problem executing create tables sql")
-		}
-
 		// Populate worker table
 		if err = sm.initWorkerTable(conf); err != nil {
 			return errors.Wrap(err, "problem populating worker table sql")
 		}
 	}
 	return nil
-}
-
-func (sm *SQLStateManager) createTables() error {
-	_, err := sm.db.Exec(CreateTablesSQL)
-	return err
 }
 
 func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) []string {
