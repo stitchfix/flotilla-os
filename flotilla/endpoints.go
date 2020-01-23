@@ -750,7 +750,11 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 
 func (ep *endpoints) ListDefinitionTemplates(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
-	templates, err := ep.templateService.List(lr.limit, lr.offset)
+	params := r.URL.Query()
+
+	latestOnly := ep.getStringBoolVal(ep.getURLParam(params, "latest_only", ""))
+
+	templates, err := ep.templateService.List(lr.limit, lr.offset, latestOnly)
 
 	if templates.DefinitionTemplates == nil {
 		templates.DefinitionTemplates = []state.DefinitionTemplate{}

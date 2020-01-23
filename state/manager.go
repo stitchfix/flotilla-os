@@ -38,7 +38,7 @@ type Manager interface {
 	GetWorker(workerType string, engine string) (Worker, error)
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
 
-	ListDefinitionTemplates(limit int, offset int) (DefinitionTemplateList, error)
+	ListDefinitionTemplates(limit int, offset int, latestOnly bool) (DefinitionTemplateList, error)
 	GetDefinitionTemplateByID(id string) (DefinitionTemplate, error)
 	CreateDefinitionTemplate(t DefinitionTemplate) (DefinitionTemplate, error)
 }

@@ -183,5 +183,12 @@ const definitionTemplateSelect = `
   SELECT id as templateid, type, version, schema, template, image
   FROM definition_template
 `
+const ListDefinitionTemplateLatestOnlySQL = `
+  SELECT DISTINCT ON (type)
+    id as templateid, type, version, schema, template, image
+  FROM definition_template
+  ORDER BY type, version DESC, id
+  LIMIT $1 OFFSET $2;
+`
 const ListDefinitionTemplateSQL = definitionTemplateSelect + "\n limit $1 offset $2"
 const GetDefinitionTemplateByIdSQL = definitionTemplateSelect + "\n where id = $1"

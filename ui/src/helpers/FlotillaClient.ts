@@ -235,6 +235,7 @@ class FlotillaClient {
       params: {
         offset: 0,
         limit: 200,
+        latest_only: true,
       },
     })
 

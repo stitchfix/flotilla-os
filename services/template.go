@@ -10,7 +10,7 @@ import (
 // templates.
 //
 type TemplateService interface {
-	List(limit int, offset int) (state.DefinitionTemplateList, error)
+	List(limit int, offset int, latestOnly bool) (state.DefinitionTemplateList, error)
 	GetByID(id string) (state.DefinitionTemplate, error)
 	Create(t *state.DefinitionTemplate) (state.DefinitionTemplate, error)
 }
@@ -27,8 +27,8 @@ func NewDefinitionTemplateService(conf config.Config, sm state.Manager) (Templat
 	return &ts, nil
 }
 
-func (ts *templateService) List(limit int, offset int) (state.DefinitionTemplateList, error) {
-	return ts.sm.ListDefinitionTemplates(limit, offset)
+func (ts *templateService) List(limit int, offset int, latestOnly bool) (state.DefinitionTemplateList, error) {
+	return ts.sm.ListDefinitionTemplates(limit, offset, latestOnly)
 }
 
 func (ts *templateService) GetByID(id string) (state.DefinitionTemplate, error) {

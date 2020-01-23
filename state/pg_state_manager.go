@@ -873,9 +873,16 @@ func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
-func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int) (list DefinitionTemplateList, err error) {
+func (sm *SQLStateManager) ListDefinitionTemplates(limit int, offset int, latestOnly bool) (list DefinitionTemplateList, err error) {
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListDefinitionTemplateSQL)
-	err = sm.db.Select(&list.DefinitionTemplates, ListDefinitionTemplateSQL, limit, offset)
+
+	q := ListDefinitionTemplateSQL
+
+	if latestOnly == true {
+		q = ListDefinitionTemplateLatestOnlySQL
+	}
+
+	err = sm.db.Select(&list.DefinitionTemplates, q, limit, offset)
 	if err != nil {
 		return list, errors.Wrap(err, "issue running list definition templates sql")
 	}
