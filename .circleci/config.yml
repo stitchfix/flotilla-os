@@ -7,13 +7,31 @@ jobs:
         environment:
           FLOTILLA_MODE: test
           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
-      - image: postgres:9.6.2
+          PG_USER: flotilla
+          PG_HOST: 127.0.0.1
+      - image: circleci/postgres:9.6.2-alpine
         environment:
           POSTGRES_USER: flotilla
           POSTGRES_DB: flotilla
           POSTGRES_PASSWORD: flotilla
     steps:
       - checkout
+      - run:
+          name: Installing Flyway
+          command: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.0.7/flyway-commandline-6.0.7-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-6.0.7/flyway /usr/local/bin
+      - run:
+          name: Waiting for Postgres to be ready
+          command: dockerize -wait tcp://localhost:5432 -timeout 5m
+      - run:
+          name: Set Up DB
+          command: |
+            flyway baseline -configFiles=./.migrations/dev.conf \
+              -user=flotilla \
+              -password=flotilla
+            flyway migrate -configFiles=./.migrations/dev.conf \
+              -locations=filesystem:/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
+              -user=flotilla \
+              -password=flotilla
       - run: go get -u github.com/kardianos/govendor
       - run: govendor sync
       - run: go test -v ./...
