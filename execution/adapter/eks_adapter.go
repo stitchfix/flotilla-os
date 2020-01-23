@@ -96,6 +96,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 		Command:   cmdSlice,
 		Resources: resourceRequirements,
 		Env:       a.envOverrides(definition, run),
+		Ports:     a.constructContainerPorts(definition),
 	}
 
 	affinity := a.constructAffinity(definition, run)
@@ -133,6 +134,18 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	}
 
 	return eksJob, nil
+}
+
+func (a *eksAdapter) constructContainerPorts(definition state.Definition) []corev1.ContainerPort {
+	var containerPorts []corev1.ContainerPort
+	if definition.Ports != nil && len(*definition.Ports) > 0 {
+		for _, port := range *definition.Ports {
+			containerPorts = append(containerPorts, corev1.ContainerPort{
+				ContainerPort: int32(port),
+			})
+		}
+	}
+	return containerPorts
 }
 
 func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
