@@ -40,8 +40,11 @@ func setUp() Manager {
 }
 
 func insertDefinitions(db *sqlx.DB) {
+	templateSQL := `
+		INSERT INTO definition_template VALUES ($1, $2, $3, $4, $5)
+	`
 	defsql := `
-    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged)
+    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged, template_id, template_payload)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `
 
@@ -59,20 +62,22 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, alias, image, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name, env
+			started_at, finished_at, instance_id, instance_dns_name, group_name, env,
+			template_id, template_payload
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
     )
     `
 
+	db.MustExec(templateSQL, "template_a", "shell_task", "{}", "", "imageA")
 	db.MustExec(defsql,
-		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true)
+		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true, "template_a", "{}")
 	db.MustExec(defsql,
 		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
-		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil)
-	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil)
-	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false)
-	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true)
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil, "template_a", "{}")
+	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil, "template_a", "{}")
+	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false, "template_a", "{}")
+	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true, "template_a", "{}")
 
 	db.MustExec(portsql, "A", 10000)
 	db.MustExec(portsql, "C", 10001)
@@ -94,19 +99,19 @@ func insertDefinitions(db *sqlx.DB) {
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
 	db.MustExec(taskSQL,
-		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`)
+		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, "template_a", "{}")
 	db.MustExec(
-		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`)
+		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, "template_a", "{}")
 
 	db.MustExec(
-		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`)
+		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, "template_a", "{}")
 
 	db.MustExec(taskSQL,
 		"run3", "C", "clusta", "aliasC", "imgC", nil, StatusQueued, nil, nil, "", "", "groupX",
-		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`)
+		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, "template_a", "{}")
 
-	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil)
-	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil)
+	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, "template_a", "{}")
+	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, "template_a", "{}")
 }
 
 func tearDown() {
