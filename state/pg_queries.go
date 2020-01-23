@@ -184,6 +184,8 @@ const definitionTemplateSelect = `
   SELECT id as templateid, type, version, schema, template, image
   FROM definition_template
 `
+
+// ListDefinitionTemplateLatestOnlySQL retrives the latest version for each template type.
 const ListDefinitionTemplateLatestOnlySQL = `
   SELECT DISTINCT ON (type)
     id as templateid, type, version, schema, template, image
