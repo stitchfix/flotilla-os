@@ -39,6 +39,7 @@ type EKSExecutionEngine struct {
 	jobNamespace    string
 	jobTtl          int
 	jobSA           string
+	jobARAEnabled   bool
 	schedulerName   string
 	serializer      *k8sJson.Serializer
 	s3Client        *s3.S3
@@ -86,6 +87,11 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.jobSA = conf.GetString("eks.service_account")
+	if conf.IsSet("eks.ara_enabled") {
+		ee.jobARAEnabled = conf.GetBool("eks.ara_enabled")
+	} else {
+		ee.jobARAEnabled = false
+	}
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -113,7 +119,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
