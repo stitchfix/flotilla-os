@@ -211,16 +211,19 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
-func (es *executionService) generateTaskTypeCommand(definition state.Definition) (string, error) {
-	var taskType state.DefinitionTemplate
-	taskType, err := es.stateManager.GetDefinitionTemplateByID(definition.TemplateID)
+func (es *executionService) generateTemplateCmd(definition state.Definition) (string, error) {
+	// Retrieve definition template.
+	dt, err := es.stateManager.GetDefinitionTemplateByID(definition.TemplateID)
 
 	if err != nil {
 		return "", err
 	}
 
-	var CommandTemplate, _ = template.New("command").Parse(taskType.Template)
+	// Create a new template string based on the template.Template.
+	var CommandTemplate, _ = template.New("command").Parse(dt.Template)
 	var result bytes.Buffer
+
+	// Dump definition.TemplatePayload into the template.
 	if err := CommandTemplate.Execute(&result, definition.TemplatePayload); err != nil {
 		return "", err
 	}
@@ -238,12 +241,13 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		return run, err
 	}
 
+	// If the definition has a TemplateID, generate the templated command.
 	if len(definition.TemplateID) > 0 {
-		ptr, err := es.generateTaskTypeCommand(definition)
-		command = &ptr
+		ptr, err := es.generateTemplateCmd(definition)
 		if err != nil {
 			return run, err
 		}
+		command = &ptr
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
