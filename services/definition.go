@@ -55,25 +55,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, exceptions.MalformedInput{ErrorString: strings.Join(reasons, "\n")}
 	}
 
-	// Task template validation.
-	if len(definition.TemplateID) > 0 {
-		taskType, err := ds.sm.GetDefinitionTemplateByID(definition.TemplateID)
-
-		if err != nil {
-			return state.Definition{}, err
-		}
-
-		schemaLoader := gojsonschema.NewStringLoader(taskType.Schema)
-		documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", definition.TemplatePayload))
-		result, err := gojsonschema.Validate(schemaLoader, documentLoader)
-
-		fmt.Println(result)
-
-		if err != nil {
-			return state.Definition{}, err
-		}
-	}
-
+	// Validate unique alias.
 	exists, err := ds.aliasExists(definition.Alias)
 	if err != nil {
 		return state.Definition{}, err
@@ -83,9 +65,31 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, exceptions.ConflictingResource{
 			ErrorString: fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
 	}
+
+	// Set ARA, default to false.
 	ara := false
 	if definition.AdaptiveResourceAllocation == nil {
 		definition.AdaptiveResourceAllocation = &ara
+	}
+
+	// If the task was created with a template_id, ensure that 1. the template
+	// exists and 2. the `template_payload` conforms to the template's JSON
+	// schema.
+	if len(definition.TemplateID) > 0 {
+		// Retrieve template.
+		dt, err := ds.sm.GetDefinitionTemplateByID(definition.TemplateID)
+
+		if err != nil {
+			return state.Definition{}, err
+		}
+
+		schemaLoader := gojsonschema.NewStringLoader(dt.Schema)
+		documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", definition.TemplatePayload))
+
+		// Perform validation.
+		if _, err = gojsonschema.Validate(schemaLoader, documentLoader); err != nil {
+			return state.Definition{}, err
+		}
 	}
 
 	// Attach definition id here
