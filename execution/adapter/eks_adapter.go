@@ -14,7 +14,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -24,7 +24,6 @@ type eksAdapter struct{}
 //
 func NewEKSAdapter() (EKSAdapter, error) {
 	adapter := eksAdapter{}
-
 	return &adapter, nil
 }
 
@@ -75,7 +74,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 	if len(definition.Command) > 0 {
 		cmd = definition.Command
@@ -88,7 +87,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
-	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager)
+	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager, araEnabled)
 
 	container := corev1.Container{
 		Name:      run.RunID,
@@ -204,10 +203,10 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager) (corev1.ResourceRequirements, state.Run) {
+func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
-	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(definition, run, manager)
+	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(definition, run, manager, araEnabled)
 
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
@@ -237,14 +236,14 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager) (int64, int64, int64, int64) {
+func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	cpuLimit, memLimit := a.getResourceDefaults(run, definition)
 	cpuRequest, memRequest := a.getResourceDefaults(run, definition)
-	if definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
+	if araEnabled && definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
 		// Check if last run was a OOM, in that case only increase memory
 		lastRun := a.getLastRun(manager, run)
 		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
-			memRequest = int64(float64(*lastRun.Memory) * 1.5)
+			memRequest = int64(float64(*lastRun.Memory) * 1.75)
 			cpuRequest = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
