@@ -33,6 +33,12 @@ export type DefinitionTemplate = {
   image: string
 }
 
+export type ListDefinitionTemplatesRequest = {}
+export type ListDefinitionTemplatesResponse = {
+  total: number
+  definition_templates: DefinitionTemplate[]
+}
+
 export type CreateDefinitionTemplatePayload = Pick<
   DefinitionTemplate,
   "type" | "schema" | "template" | "image"
