@@ -477,10 +477,8 @@ func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 			"operation", "StopRun",
 			"error", fmt.Sprintf("%+v", err),
 			"run_id", vars["run_id"])
-		ep.encodeError(w, err)
-	} else {
-		ep.encodeResponse(w, map[string]bool{"terminated": true})
 	}
+	ep.encodeResponse(w, map[string]bool{"terminated": true})
 }
 
 func (ep *endpoints) ExtractUserInfo(r *http.Request) state.UserInfo {
