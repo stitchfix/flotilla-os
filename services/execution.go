@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
 	"time"
@@ -263,6 +264,10 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 
 	if engine == nil {
 		engine = &state.DefaultEngine
+	}
+
+	if (command == nil || len(*command) == 0) && (len(definition.Command) > 0) {
+		command = aws.String(definition.Command)
 	}
 
 	runID, err := state.NewRunID(engine)
