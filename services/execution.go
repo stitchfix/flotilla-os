@@ -270,6 +270,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		command = aws.String(definition.Command)
 	}
 
+	
 	runID, err := state.NewRunID(engine)
 	if err != nil {
 		return run, err
