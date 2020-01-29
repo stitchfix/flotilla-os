@@ -1,3 +1,4 @@
+---
 version: 2
 jobs:
   build:
@@ -15,10 +16,10 @@ jobs:
           POSTGRES_DB: flotilla
           POSTGRES_PASSWORD: flotilla
     steps:
-	  - checkout
-	  - run:
-	     name: zzzz
-		 command: sleep 180
+      - run:
+          name: zzz
+          command: sleep 180
+      - checkout
       - run:
           name: Installing Flyway
           command: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.0.7/flyway-commandline-6.0.7-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-6.0.7/flyway /usr/local/bin
