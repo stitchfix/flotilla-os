@@ -12,7 +12,6 @@ import (
 type TemplateService interface {
 	List(limit int, offset int, latestOnly bool) (state.DefinitionTemplateList, error)
 	GetByID(id string) (state.DefinitionTemplate, error)
-	Create(t *state.DefinitionTemplate) (state.DefinitionTemplate, error)
 }
 
 type templateService struct {
@@ -33,10 +32,4 @@ func (ts *templateService) List(limit int, offset int, latestOnly bool) (state.D
 
 func (ts *templateService) GetByID(id string) (state.DefinitionTemplate, error) {
 	return ts.sm.GetDefinitionTemplateByID(id)
-}
-
-func (ts *templateService) Create(t *state.DefinitionTemplate) (state.DefinitionTemplate, error) {
-	templateID, _ := state.NewDefinitionTemplateID()
-	t.TemplateID = templateID
-	return ts.sm.CreateDefinitionTemplate(*t)
 }
