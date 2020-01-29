@@ -1,3 +1,4 @@
+---
 version: 2
 jobs:
   build:
@@ -15,6 +16,9 @@ jobs:
           POSTGRES_DB: flotilla
           POSTGRES_PASSWORD: flotilla
     steps:
+      - run:
+          name: zzz
+          command: sleep 180
       - checkout
 
       # Note: this is to ensure that the DB is up before Flyway attempts to

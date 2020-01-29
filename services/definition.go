@@ -66,12 +66,6 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 			ErrorString: fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
 	}
 
-	// Set ARA, default to false.
-	ara := false
-	if definition.AdaptiveResourceAllocation == nil {
-		definition.AdaptiveResourceAllocation = &ara
-	}
-
 	// If the task was created with a template_id, ensure that 1. the template
 	// exists and 2. the `template_payload` conforms to the template's JSON
 	// schema.
@@ -99,6 +93,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 	}
 	definition.DefinitionID = definitionID
 	defined, err := ds.ecsExecutionEngine.Define(*definition)
+
 	if err != nil {
 		return state.Definition{}, err
 	}

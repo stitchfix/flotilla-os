@@ -17,6 +17,8 @@ var EKSEngine = "eks"
 
 var DefaultEngine = ECSEngine
 
+var DefaultARA = true
+
 var MinCPU = int64(512)
 
 var MaxCPU = int64(32000)
