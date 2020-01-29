@@ -778,26 +778,6 @@ func (ep *endpoints) GetDefinitionTemplate(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (ep *endpoints) CreateDefinitionTemplate(w http.ResponseWriter, r *http.Request) {
-	var template state.DefinitionTemplate
-	err := ep.decodeRequest(r, &template)
-	if err != nil {
-		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
-		return
-	}
-
-	created, err := ep.templateService.Create(&template)
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem creating definition template",
-			"operation", "CreateDefinitionTemplate",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-	} else {
-		ep.encodeResponse(w, created)
-	}
-}
-
 func (ep *endpoints) getStringBoolVal(s string) bool {
 	l := strings.ToLower(s)
 
