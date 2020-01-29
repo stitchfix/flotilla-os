@@ -62,9 +62,8 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, exceptions.ConflictingResource{
 			fmt.Sprintf("definition with alias [%s] aleady exists", definition.Alias)}
 	}
-	ara := false
 	if definition.AdaptiveResourceAllocation == nil {
-		definition.AdaptiveResourceAllocation = &ara
+		definition.AdaptiveResourceAllocation = &state.DefaultARA
 	}
 
 	// Attach definition id here
@@ -128,7 +127,7 @@ func (ds *definitionService) Update(definitionID string, updates state.Definitio
 		return definition, err
 	}
 
-	if definition.AdaptiveResourceAllocation!=nil{
+	if definition.AdaptiveResourceAllocation != nil {
 		defined.AdaptiveResourceAllocation = definition.AdaptiveResourceAllocation
 	}
 
