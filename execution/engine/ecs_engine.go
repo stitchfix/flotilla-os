@@ -386,6 +386,13 @@ func (ee *ECSExecutionEngine) Define(definition state.Definition) (state.Definit
 	if definition.Gpu != nil {
 		defined.Gpu = definition.Gpu
 	}
+
+	if definition.AdaptiveResourceAllocation == nil {
+		defined.AdaptiveResourceAllocation = &state.DefaultARA
+	} else {
+		defined.AdaptiveResourceAllocation = definition.AdaptiveResourceAllocation
+	}
+
 	return defined, nil
 }
 
