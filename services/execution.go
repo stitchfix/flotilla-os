@@ -102,6 +102,9 @@ func NewExecutionService(conf config.Config,
 		"FLOTILLA_RUN_ID": func(run state.Run) string {
 			return run.RunID
 		},
+		"AWS_ROLE_SESSION_NAME": func(run state.Run) string {
+			return run.RunID
+		},
 		ownerKey: func(run state.Run) string {
 			return run.User
 		},
@@ -300,7 +303,7 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		command = aws.String(definition.Command)
 	}
 
-	
+
 	runID, err := state.NewRunID(engine)
 	if err != nil {
 		return run, err
