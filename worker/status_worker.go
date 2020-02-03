@@ -85,17 +85,17 @@ func (sw *statusWorker) runOnceEKS() {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	sw.processRuns(rl.Runs)
+	runs := rl.Runs
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(runs), func(i, j int) { runs[i], runs[j] = runs[j], runs[i] })
+	sw.processRuns(runs)
 }
 
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
-		if sw.acquireLock(run, "status", 15*time.Second) == true {
+		if sw.acquireLock(run, "status", 10*time.Second) == true {
 			sw.processRun(run)
-
-		}
-
-		if sw.acquireLock(run, "metrics", 5*time.Second) == true {
 			sw.processRunMetrics(run)
 		}
 	}
