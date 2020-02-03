@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -14,16 +18,13 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	"io/ioutil"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
-	"strings"
-	"time"
 )
 
 //
@@ -168,6 +169,12 @@ func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manage
 	run, _ = ee.getPodName(run)
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 
+	if err != nil {
+		return adaptedRun, false, err
+	}
+
+	// Set status to running.
+	adaptedRun.Status = state.StatusRunning
 	return adaptedRun, false, nil
 }
 
