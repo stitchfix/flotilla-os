@@ -94,9 +94,12 @@ func (sw *statusWorker) runOnceEKS() {
 
 func (sw *statusWorker) processRuns(runs []state.Run) {
 	for _, run := range runs {
-		if sw.acquireLock(run, "status", 10*time.Second) == true {
-			sw.processRun(run)
-			sw.processRunMetrics(run)
+		reloadRun, err := sw.sm.GetRun(run.RunID)
+		if err == nil && reloadRun.Status != state.StatusStopped {
+			if sw.acquireLock(run, "status", 10*time.Second) == true {
+				sw.processRun(run)
+				sw.processRunMetrics(run)
+			}
 		}
 	}
 }
