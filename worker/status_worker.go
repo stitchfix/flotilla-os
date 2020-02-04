@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/stitchfix/flotilla-os/queue"
 	"math/rand"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ type statusWorker struct {
 	workerId     string
 }
 
-func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
+func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm

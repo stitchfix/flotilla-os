@@ -6,6 +6,7 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
 	"time"
@@ -22,7 +23,7 @@ type submitWorker struct {
 	redisClient  *redis.Client
 }
 
-func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
+func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm

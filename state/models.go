@@ -603,3 +603,82 @@ type TaskResources struct {
 	Cpu    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
 }
+
+type CloudTrailS3File struct {
+	S3Bucket    string   `json:"s3Bucket"`
+	S3ObjectKey []string `json:"s3ObjectKey"`
+	Done        func() error
+}
+
+func UnmarshalCloudTrailNotification(data []byte) (CloudTrailNotifications, error) {
+	var r CloudTrailNotifications
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *CloudTrailNotifications) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type CloudTrailNotifications struct {
+	Records []Record `json:"Records"`
+}
+
+type Record struct {
+	EventVersion       string            `json:"eventVersion"`
+	UserIdentity       UserIdentity      `json:"userIdentity"`
+	EventTime          string            `json:"eventTime"`
+	EventSource        string            `json:"eventSource"`
+	EventName          string            `json:"eventName"`
+	AwsRegion          string            `json:"awsRegion"`
+	SourceIPAddress    string            `json:"sourceIPAddress"`
+	UserAgent          string            `json:"userAgent"`
+	RequestParameters  RequestParameters `json:"requestParameters"`
+	ResponseElements   interface{}       `json:"responseElements"`
+	RequestID          string            `json:"requestID"`
+	EventID            string            `json:"eventID"`
+	ReadOnly           bool              `json:"readOnly"`
+	Resources          []Resource        `json:"resources"`
+	EventType          string            `json:"eventType"`
+	APIVersion         string            `json:"apiVersion"`
+	ManagementEvent    bool              `json:"managementEvent"`
+	RecipientAccountID string            `json:"recipientAccountId"`
+}
+
+type RequestParameters struct {
+	TableName string `json:"tableName"`
+}
+
+type Resource struct {
+	AccountID string `json:"accountId"`
+	Type      string `json:"type"`
+	Arn       string `json:"ARN"`
+}
+
+type UserIdentity struct {
+	Type           string         `json:"type"`
+	PrincipalID    string         `json:"principalId"`
+	Arn            string         `json:"arn"`
+	AccountID      string         `json:"accountId"`
+	AccessKeyID    string         `json:"accessKeyId"`
+	SessionContext SessionContext `json:"sessionContext"`
+	InvokedBy      string         `json:"invokedBy"`
+}
+
+type SessionContext struct {
+	SessionIssuer SessionIssuer `json:"sessionIssuer"`
+	Attributes    Attributes    `json:"attributes"`
+}
+
+type Attributes struct {
+	CreationDate     string `json:"creationDate"`
+	MfaAuthenticated string `json:"mfaAuthenticated"`
+}
+
+type SessionIssuer struct {
+	Type        string `json:"type"`
+	PrincipalID string `json:"principalId"`
+	Arn         string `json:"arn"`
+	AccountID   string `json:"accountId"`
+	UserName    string `json:"userName"`
+}
