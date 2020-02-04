@@ -13,6 +13,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
+	"strings"
 	"time"
 )
 
@@ -104,5 +105,19 @@ func (ctw *cloudtrailWorker) runOnce() {
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
+	sa := ctw.conf.GetString("eks.service_account")
+	for _, record := range ctn.Records {
+		if strings.Contains(record.UserIdentity.Arn, sa) {
+			ctw.processCloudTrailRecord(record)
+		}
+	}
+}
+func (ctw *cloudtrailWorker) processCloudTrailRecord(record state.Record) {
+	splits := strings.Split(record.UserIdentity.Arn, "/")[:1]
+	runId := splits[len(splits)-1]
+	_, err := ctw.sm.GetRun(runId)
+	if err != nil {
+		return
+	}
 
 }
