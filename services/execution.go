@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
 	"text/template"
 	"time"
+
+	"github.com/Masterminds/sprig"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/stitchfix/flotilla-os/log"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/registry"
@@ -224,13 +226,14 @@ func (es *executionService) generateTemplateCmd(definition state.Definition) (st
 	}
 
 	// Create a new template string based on the template.Template.
-	var CommandTemplate, _ = template.New("command").Parse(dt.CommandTemplate)
+	var CommandTemplate, _ = template.New("command").Funcs(sprig.TxtFuncMap()).Parse(dt.CommandTemplate)
 	var result bytes.Buffer
 
 	// Dump definition.TemplatePayload into the template.
 	if err := CommandTemplate.Execute(&result, definition.TemplatePayload); err != nil {
 		return "", err
 	}
+
 	return result.String(), nil
 }
 
