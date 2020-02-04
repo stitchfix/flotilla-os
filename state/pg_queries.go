@@ -181,14 +181,14 @@ const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
 // definitionTemplateSelect retrives definition template data.
 const definitionTemplateSelect = `
-  SELECT id as templateid, type, version, schema, template, image
+  SELECT id, type, version, schema, command_template as commandtemplate, image
   FROM definition_template
 `
 
 // ListDefinitionTemplateLatestOnlySQL retrives the latest version for each template type.
 const ListDefinitionTemplateLatestOnlySQL = `
   SELECT DISTINCT ON (type)
-    id as templateid, type, version, schema, template, image
+    id, type, version, schema, command_template as commandtemplate, image
   FROM definition_template
   ORDER BY type, version DESC, id
   LIMIT $1 OFFSET $2;
