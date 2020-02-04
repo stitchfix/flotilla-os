@@ -21,6 +21,22 @@
 			"revisionTime": "2019-11-19T16:37:52Z"
 		},
 		{
+			"checksumSHA1": "ibWF963SkfidmZlwAUxnMHuPAx4=",
+			"path": "github.com/Masterminds/goutils",
+			"revision": "41ac8693c5c10a92ea1ff5ac3a7f95646f6123b0",
+			"revisionTime": "2018-12-03T09:12:26Z"
+		},
+		{
+			"path": "github.com/Masterminds/semver/v3",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "pN1pjQFaM/cGUvSylJhKs7qPf6o=",
+			"path": "github.com/Masterminds/sprig",
+			"revision": "3c4c60440a40b962bd9949f90a547bd24566158c",
+			"revisionTime": "2020-01-24T04:12:03Z"
+		},
+		{
 			"checksumSHA1": "9vIkKNaaSRELM/2nCkWOAdHD21M=",
 			"path": "github.com/Microsoft/go-winio",
 			"revision": "881e3d46423d592d11da9873ff6581dc577a1d0f",
@@ -755,6 +771,12 @@
 			"revisionTime": "2019-10-28T17:48:53Z"
 		},
 		{
+			"checksumSHA1": "s5tdcjh84+tiKS3oSq77mzjB970=",
+			"path": "github.com/google/uuid",
+			"revision": "c2e93f3ae59f2904160ceaab466009f965df46d6",
+			"revisionTime": "2019-04-16T17:24:45Z"
+		},
+		{
 			"checksumSHA1": "Fi3jI3hMZspTZ/AcWWbm32aAdY8=",
 			"path": "github.com/googleapis/gnostic/OpenAPIv2",
 			"revision": "dde5565d98663c4c06e162ffd3fb829ec84a46d8",
@@ -845,10 +867,16 @@
 			"revisionTime": "2019-06-11T12:32:18Z"
 		},
 		{
-			"checksumSHA1": "Krmcp9xkjW8RL0WOF+2ECVllrHw=",
+			"checksumSHA1": "XA5Cb6SjffDe9iHph4QAB502azI=",
+			"path": "github.com/huandu/xstrings",
+			"revision": "73cc8800d807c1a3393060290e46ab19b565d584",
+			"revisionTime": "2020-01-12T23:16:33Z"
+		},
+		{
+			"checksumSHA1": "dfPXxr/eCN1OWLrMUVqDerFwACM=",
 			"path": "github.com/imdario/mergo",
-			"revision": "1afb36080aec31e0d1528973ebe6721b191b0369",
-			"revisionTime": "2019-10-03T07:39:17Z"
+			"revision": "4c8d33afe3b211a221b8ae2f06f510d974e5991f",
+			"revisionTime": "2020-01-20T10:21:09Z"
 		},
 		{
 			"checksumSHA1": "blwbl9vPvRLtL5QlZgfpLvsFiZ4=",
@@ -923,10 +951,22 @@
 			"revisionTime": "2018-12-31T17:19:20Z"
 		},
 		{
+			"checksumSHA1": "gpgfDOKGUOP/h+j1cM7T36NZFTQ=",
+			"path": "github.com/mitchellh/copystructure",
+			"revision": "9a1b6f44e8da0e0e374624fb0a825a231b00c537",
+			"revisionTime": "2018-08-24T00:35:38Z"
+		},
+		{
 			"checksumSHA1": "J+g0oZePWp2zSIISD2dZZKTxmgg=",
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "3536a929edddb9a5b34bd6861dc4a9647cb459fe",
 			"revisionTime": "2018-10-05T04:51:35Z"
+		},
+		{
+			"checksumSHA1": "3GoWH/9S8qEa6qZLPaZD5ZjrorM=",
+			"path": "github.com/mitchellh/reflectwalk",
+			"revision": "3e2c75dfad4fbf904b58782a80fd595c760ad185",
+			"revisionTime": "2019-05-02T16:13:28Z"
 		},
 		{
 			"checksumSHA1": "3USSG271c9uQOOhFM1uOeZQFFF4=",
@@ -1085,10 +1125,10 @@
 			"revisionTime": "2019-03-02T02:18:57Z"
 		},
 		{
-			"checksumSHA1": "YodSIERfO54v528HWIgxW9em7Wc=",
+			"checksumSHA1": "F+hVO+9tHsRvFKkEy5/v7QIi+fI=",
 			"path": "github.com/spf13/cast",
-			"revision": "c01685bb8421cecb276fa517e91f757215f980b3",
-			"revisionTime": "2019-05-31T09:26:28Z"
+			"revision": "1ffadf551085444af981432dd0f6d1160c11ec64",
+			"revisionTime": "2019-12-17T18:07:01Z"
 		},
 		{
 			"checksumSHA1": "kmcWtDErtMPA3+o7+B4MDC3z+T0=",
@@ -1131,6 +1171,30 @@
 			"path": "github.com/xeipuuv/gojsonschema",
 			"revision": "b537c054d4b486d62f64a76b8d48fdf38a0ea99d",
 			"revisionTime": "2020-01-18T19:54:51Z"
+		},
+		{
+			"checksumSHA1": "oCH3J96RWvO8W4xjix47PModpio=",
+			"path": "golang.org/x/crypto/bcrypt",
+			"revision": "c9f3fb736b729628ec1e9c1a6b4313e883f452f9",
+			"revisionTime": "2019-11-17T23:16:46Z"
+		},
+		{
+			"checksumSHA1": "q+XI9g44wd9mYvf3S5Wo8YZjAus=",
+			"path": "golang.org/x/crypto/blowfish",
+			"revision": "c9f3fb736b729628ec1e9c1a6b4313e883f452f9",
+			"revisionTime": "2019-11-17T23:16:46Z"
+		},
+		{
+			"checksumSHA1": "1MGpGDQqnUoRpv7VEcQrXOBydXE=",
+			"path": "golang.org/x/crypto/pbkdf2",
+			"revision": "c9f3fb736b729628ec1e9c1a6b4313e883f452f9",
+			"revisionTime": "2019-11-17T23:16:46Z"
+		},
+		{
+			"checksumSHA1": "o8ysWPosGVxkSVMZHfp2tYHBTu8=",
+			"path": "golang.org/x/crypto/scrypt",
+			"revision": "c9f3fb736b729628ec1e9c1a6b4313e883f452f9",
+			"revisionTime": "2019-11-17T23:16:46Z"
 		},
 		{
 			"checksumSHA1": "Zsm3tvgRFJOt3afwwhrGymcSZgg=",
