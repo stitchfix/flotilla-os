@@ -26,8 +26,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
-	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
+	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string, templatePayload *state.DefinitionTemplatePayload) (state.Run, error)
+	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string, templatePayload *state.DefinitionTemplatePayload) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -142,8 +142,7 @@ func contains(s []string, e string) bool {
 //
 // Create constructs and queues a new Run on the cluster specified
 //
-func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
-
+func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string, templatePayload *state.DefinitionTemplatePayload) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
 	if err != nil {
@@ -177,13 +176,13 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 		}
 	}
 
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage, templatePayload)
 }
 
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
-func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
+func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string, templatePayload *state.DefinitionTemplatePayload) (state.Run, error) {
 
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
@@ -217,10 +216,10 @@ func (es *executionService) CreateByAlias(alias string, clusterName string, env 
 			clusterName = es.eksClusterOverride
 		}
 	}
-	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
+	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage, templatePayload)
 }
 
-func (es *executionService) generateTemplateCmd(definition state.Definition) (string, error) {
+func (es *executionService) generateTemplateCmd(definition state.Definition, templatePayload *state.DefinitionTemplatePayload) (string, error) {
 	// Retrieve definition template.
 	dt, err := es.stateManager.GetDefinitionTemplateByID(definition.TemplateID)
 
@@ -233,14 +232,20 @@ func (es *executionService) generateTemplateCmd(definition state.Definition) (st
 	var result bytes.Buffer
 
 	// Dump definition.TemplatePayload into the template.
-	if err := CommandTemplate.Execute(&result, definition.TemplatePayload); err != nil {
+	payload := definition.TemplatePayload
+
+	if templatePayload != nil {
+		payload = templatePayload
+	}
+
+	if err := CommandTemplate.Execute(&result, payload); err != nil {
 		return "", err
 	}
 
 	return result.String(), nil
 }
 
-func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
+func (es *executionService) createFromDefinition(definition state.Definition, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64, templatePayload *state.DefinitionTemplatePayload) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -253,7 +258,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 
 	// If the definition has a TemplateID, generate the templated command.
 	if len(definition.TemplateID) > 0 {
-		ptr, err := es.generateTemplateCmd(definition)
+		ptr, err := es.generateTemplateCmd(definition, templatePayload)
 		if err != nil {
 			return run, err
 		}
@@ -261,7 +266,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
+	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage, templatePayload)
 	if err != nil {
 		return run, err
 	}
@@ -294,7 +299,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	return run, nil
 }
 
-func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
+func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64, templatePayload *state.DefinitionTemplatePayload) (state.Run, error) {
 
 	var (
 		run state.Run
@@ -334,7 +339,12 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 
 	if len(definition.TemplateID) > 0 {
 		run.TemplateID = definition.TemplateID
-		run.TemplatePayload = definition.TemplatePayload
+
+		if templatePayload != nil {
+			run.TemplatePayload = templatePayload
+		} else {
+			run.TemplatePayload = definition.TemplatePayload
+		}
 	}
 
 	runEnv := es.constructEnviron(run, env)
