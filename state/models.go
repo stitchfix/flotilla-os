@@ -148,6 +148,8 @@ type Tags []string
 
 type DefinitionTemplatePayload map[string]interface{}
 
+var DefaultDefinitionTemplatePayload = DefinitionTemplatePayload{}
+
 // Definition represents a definition of a job
 // - roughly 1-1 with an AWS ECS task definition
 //

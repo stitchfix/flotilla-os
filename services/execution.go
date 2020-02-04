@@ -55,6 +55,7 @@ type executionService struct {
 	eksOverridePercent       int
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
+	logger                   log.Logger
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -88,6 +89,8 @@ func NewExecutionService(conf config.Config,
 	if len(ownerKey) == 0 {
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
+
+	es.logger = log
 
 	es.eksClusterOverride = conf.GetString("eks.cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
