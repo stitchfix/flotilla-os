@@ -639,12 +639,12 @@ type TaskResources struct {
 }
 
 type DefinitionTemplate struct {
-	TemplateID string `json:"template_id"`
-	Type       string `json:"type"`
-	Version    int64  `json:"version"`
-	Schema     string `json:"schema"` // todo: parse
-	Template   string `json:"template"`
-	Image      string `json:"image"`
+	ID              string `json:"id"`
+	Type            string `json:"type"`
+	Version         int64  `json:"version"`
+	Schema          string `json:"schema"`
+	CommandTemplate string `json:"command_template"`
+	Image           string `json:"image"`
 }
 
 type DefinitionTemplateList struct {

@@ -224,7 +224,7 @@ func (es *executionService) generateTemplateCmd(definition state.Definition) (st
 	}
 
 	// Create a new template string based on the template.Template.
-	var CommandTemplate, _ = template.New("command").Parse(dt.Template)
+	var CommandTemplate, _ = template.New("command").Parse(dt.CommandTemplate)
 	var result bytes.Buffer
 
 	// Dump definition.TemplatePayload into the template.
@@ -302,7 +302,6 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 	if (command == nil || len(*command) == 0) && (len(definition.Command) > 0) {
 		command = aws.String(definition.Command)
 	}
-
 
 	runID, err := state.NewRunID(engine)
 	if err != nil {

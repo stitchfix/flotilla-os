@@ -934,10 +934,10 @@ func (sm *SQLStateManager) CreateDefinitionTemplate(t DefinitionTemplate) (Defin
 		t.Version = prevMaxVersion.Int64 + 1
 	}
 
-	if _, err = tx.Exec(insertSQL, t.TemplateID, t.Type, t.Version, t.Schema, t.Template, t.Image); err != nil {
+	if _, err = tx.Exec(insertSQL, t.ID, t.Type, t.Version, t.Schema, t.CommandTemplate, t.Image); err != nil {
 		tx.Rollback()
 		return t, errors.Wrapf(
-			err, "issue creating new definition template with type [%s] and id [%s]", t.Type, t.TemplateID)
+			err, "issue creating new definition template with type [%s] and id [%s]", t.Type, t.ID)
 	}
 
 	if err = tx.Commit(); err != nil {
