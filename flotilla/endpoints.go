@@ -770,7 +770,7 @@ func (ep *endpoints) ListDefinitionTemplates(w http.ResponseWriter, r *http.Requ
 
 func (ep *endpoints) GetDefinitionTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	template, err := ep.templateService.GetByID(vars["template_id"])
+	template, err := ep.templateService.GetByID(vars["id"])
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
