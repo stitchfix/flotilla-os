@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -83,7 +82,11 @@ func (ctw *cloudtrailWorker) runOnce() {
 
 func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3File) {
 	var ctn state.CloudTrailNotifications
+	defaultRegion := ctw.conf.GetString("aws_default_region")
 	for _, keyName := range cloudTrailS3File.S3ObjectKey {
+		if !strings.Contains(keyName, defaultRegion) {
+			continue
+		}
 		getObjectOutput, err := ctw.s3Client.GetObject(&s3.GetObjectInput{
 			Bucket: aws.String(cloudTrailS3File.S3Bucket),
 			Key:    aws.String(keyName),
@@ -93,34 +96,31 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 			_ = ctw.log.Log("message", "Error receiving CloudTrail file - no object", "error", fmt.Sprintf("%+v", err))
 			return
 		}
-		body := getObjectOutput.Body
-		gz, err := gzip.NewReader(body)
-		defer gz.Close()
-		defer body.Close()
-		if err == nil {
-			err = json.NewDecoder(gz).Decode(&ctn)
-		}
 
+		err = json.NewDecoder(getObjectOutput.Body).Decode(&ctn)
+
+		_ = ctw.log.Log("message", "CloudTrail processing file", "key", fmt.Sprintf("s3://%s/%s", cloudTrailS3File.S3Bucket, keyName), "len", len(ctn.Records))
 		ctw.processCloudTrailNotifications(ctn)
+
+		getObjectOutput.Body.Close()
 	}
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
 	sa := ctw.conf.GetString("eks.service_account")
-
 	runIdRecordMap := make(map[string][]state.Record)
 	for _, record := range ctn.Records {
-		if strings.Contains(record.UserIdentity.Arn, sa) {
+		if strings.Contains(record.UserIdentity.Arn, sa) && strings.Contains(record.UserIdentity.Arn, "eks-") {
 			runId := ctw.getRunId(record)
 			runIdRecordMap[runId] = append(runIdRecordMap[runId], record)
 		}
 	}
 
 	for runId, records := range runIdRecordMap {
+		_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
 		run, err := ctw.sm.GetRun(runId)
 		if err == nil {
 			run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, records...)
-			_ = ctw.log.Log("message", "Saving CloudTrail Events", "runId", runId)
 			_, err = ctw.sm.UpdateRun(runId, run)
 			if err != nil {
 				_ = ctw.log.Log("message", "Error updating run", "error", fmt.Sprintf("%+v", err))
@@ -129,7 +129,7 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 	}
 }
 func (ctw *cloudtrailWorker) getRunId(record state.Record) string {
-	splits := strings.Split(record.UserIdentity.Arn, "/")[:1]
+	splits := strings.Split(record.UserIdentity.Arn, "/")
 	runId := splits[len(splits)-1]
 	return runId
 }
