@@ -565,7 +565,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       instance_dns_name = $14,
 	  group_name = $15, env = $16,
 	  command = $17, memory = $18, cpu = $19, gpu = $20, engine = $21, ephemeral_storage = $22, node_lifecycle = $23,
-	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29
+	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29,
+	  cloudtrail_notifications = $30
     WHERE run_id = $1;
     `
 
@@ -582,7 +583,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Memory, existing.Cpu, existing.Gpu,
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
 		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed,
-		existing.MaxMemoryUsed, existing.PodEvents); err != nil {
+		existing.MaxMemoryUsed, existing.PodEvents, existing.CloudTrailNotifications); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}

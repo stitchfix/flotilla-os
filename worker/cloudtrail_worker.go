@@ -67,7 +67,6 @@ func (ctw *cloudtrailWorker) Run() error {
 }
 
 func (ctw *cloudtrailWorker) runOnce() {
-	var ctn state.CloudTrailNotifications
 	qurl, err := ctw.qm.QurlFor(ctw.queue, false)
 	if err != nil {
 		_ = ctw.log.Log("message", "Error receiving CloudTrail queue", "error", fmt.Sprintf("%+v", err))
@@ -79,45 +78,51 @@ func (ctw *cloudtrailWorker) runOnce() {
 		return
 	}
 
-	if len(cloudTrailS3File.S3ObjectKey) == 0 {
-		_ = ctw.log.Log("message", "Error receiving CloudTrail file - no keys", "error", fmt.Sprintf("%+v", err))
-		return
-	}
+	ctw.processS3Keys(cloudTrailS3File)
+}
 
-	getObjectOutput, err := ctw.s3Client.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(cloudTrailS3File.S3Bucket),
-		Key:    aws.String(cloudTrailS3File.S3ObjectKey[0]),
-	})
+func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3File) {
+	var ctn state.CloudTrailNotifications
+	for _, keyName := range cloudTrailS3File.S3ObjectKey {
+		getObjectOutput, err := ctw.s3Client.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(cloudTrailS3File.S3Bucket),
+			Key:    aws.String(keyName),
+		})
 
-	if err != nil {
-		_ = ctw.log.Log("message", "Error receiving CloudTrail file - no object", "error", fmt.Sprintf("%+v", err))
-		return
-	}
-	body := getObjectOutput.Body
-	gz, err := gzip.NewReader(body)
-	defer gz.Close()
-	defer body.Close()
-	if err == nil {
-		err = json.NewDecoder(gz).Decode(&ctn)
-	}
+		if err != nil {
+			_ = ctw.log.Log("message", "Error receiving CloudTrail file - no object", "error", fmt.Sprintf("%+v", err))
+			return
+		}
+		body := getObjectOutput.Body
+		gz, err := gzip.NewReader(body)
+		defer gz.Close()
+		defer body.Close()
+		if err == nil {
+			err = json.NewDecoder(gz).Decode(&ctn)
+		}
 
-	ctw.processCloudTrailNotifications(ctn)
+		ctw.processCloudTrailNotifications(ctn)
+	}
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
 	sa := ctw.conf.GetString("eks.service_account")
 	for _, record := range ctn.Records {
 		if strings.Contains(record.UserIdentity.Arn, sa) {
-			ctw.processCloudTrailRecord(record)
+			ctw.processRun(record)
 		}
 	}
 }
-func (ctw *cloudtrailWorker) processCloudTrailRecord(record state.Record) {
+func (ctw *cloudtrailWorker) processRun(record state.Record) {
 	splits := strings.Split(record.UserIdentity.Arn, "/")[:1]
 	runId := splits[len(splits)-1]
-	_, err := ctw.sm.GetRun(runId)
-	if err != nil {
-		return
-	}
+	run, err := ctw.sm.GetRun(runId)
+	if err == nil {
+		run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, record)
+		run, err = ctw.sm.UpdateRun(runId, run)
 
+		if err != nil {
+			_ = ctw.log.Log("message", "Error writing cloud tail events to task table", "error", fmt.Sprintf("%+v", err))
+		}
+	}
 }
