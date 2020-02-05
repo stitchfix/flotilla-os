@@ -389,8 +389,8 @@ type Run struct {
 	MaxMemoryUsed    *int64         `json:"max_memory_used,omitempty"`
 	MaxCpuUsed       *int64         `json:"max_cpu_used,omitempty"`
 	PodEvents        *PodEvents     `json:"pod_events,omitempty"`
-	ExecutableID     string         `json:"executable_id"`
-	ExecutableType   ExecutableType `json:"executable_type"`
+	ExecutableID     string         `json:"executable_id,omitempty"`
+	ExecutableType   ExecutableType `json:"executable_type,omitempty"`
 }
 
 //
