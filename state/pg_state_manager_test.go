@@ -256,15 +256,17 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 		GroupName:     "group:cupcake",
 		ContainerName: "container:cupcake",
 		User:          "noone",
-		Memory:        &memory,
 		Alias:         "cupcake",
-		Image:         "image:cupcake",
 		Command:       "echo 'hi'",
-		Env: &EnvList{
-			{Name: "E1", Value: "V1"},
+		Ports:         &PortsList{12345, 6789},
+		Tags:          &Tags{"apple", "orange", "tiger"},
+		Executable: Executable{
+			Memory: &memory,
+			Image:  "image:cupcake",
+			Env: &EnvList{
+				{Name: "E1", Value: "V1"},
+			},
 		},
-		Ports: &PortsList{12345, 6789},
-		Tags:  &Tags{"apple", "orange", "tiger"},
 	}
 
 	err = sm.CreateDefinition(d)
@@ -299,10 +301,12 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 		"cupcake",
 	}
 	updates := Definition{
-		Image: "updated",
-		Env:   &env,
 		Tags:  &tags,
 		Ports: &PortsList{}, // <---- empty, set ports to empty list
+		Executable: Executable{
+			Image: "updated",
+			Env:   &env,
+		},
 	}
 	_, err := sm.UpdateDefinition("A", updates)
 	if err != nil {

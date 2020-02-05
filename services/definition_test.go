@@ -15,7 +15,7 @@ func setUpDefinitionServiceTest(t *testing.T) (DefinitionService, *testutils.Imp
 		Definitions: map[string]state.Definition{
 			"A": {DefinitionID: "A"},
 			"B": {DefinitionID: "B"},
-			"C": {DefinitionID: "C", Image: "invalidimage"},
+			"C": {DefinitionID: "C", Executable: state.Executable{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A", GroupName: "A", RunID: "runA"},
@@ -38,11 +38,14 @@ func TestDefinitionService_Create(t *testing.T) {
 	memory := int64(512)
 	newValidDef := state.Definition{
 		Alias:     "cupcake",
-		Image:     "image:cupcake",
 		GroupName: "group-cupcake",
-		Memory:    &memory,
 		Command:   "echo 'hi'",
+		Executable: state.Executable{
+			Image:  "image:cupcake",
+			Memory: &memory,
+		},
 	}
+
 	created, _ := ds.Create(&newValidDef)
 	if len(created.DefinitionID) == 0 {
 		t.Errorf("Expected non-empty definition id")
@@ -73,9 +76,9 @@ func TestDefinitionService_Create2(t *testing.T) {
 	var err error
 	memory := int64(512)
 	invalid1 := state.Definition{
-		Alias:     "cupcake",
-		Image:     "image:cupcake",
-		GroupName: "group-cupcake",
+		Alias:      "cupcake",
+		GroupName:  "group-cupcake",
+		Executable: state.Executable{Image: "image:cupcake"},
 	}
 
 	_, err = ds.Create(&invalid1)
@@ -85,9 +88,9 @@ func TestDefinitionService_Create2(t *testing.T) {
 
 	invalid2 := state.Definition{
 		Alias:     "cupcake",
-		Image:     "image:cupcake",
-		Memory:    &memory,
 		GroupName: `YUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGETOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBIIIIIIIIIIIIIIIIIIIIIIIIIGGGGGGGGGGGGYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGETOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBIIIIIIIIIIIIIIIIIIIIIIIIIGGGGGGGGGGGG`,
+		Executable: state.Executable{Image: "image:cupcake",
+			Memory: &memory},
 	}
 	_, err = ds.Create(&invalid2)
 	if err == nil {
@@ -95,9 +98,9 @@ func TestDefinitionService_Create2(t *testing.T) {
 	}
 
 	invalid3 := state.Definition{
-		Image:     "image:cupcake",
-		Memory:    &memory,
 		GroupName: "group-cupcake",
+		Executable: state.Executable{Image: "image:cupcake",
+			Memory: &memory},
 	}
 	_, err = ds.Create(&invalid3)
 	if err == nil {
@@ -105,9 +108,9 @@ func TestDefinitionService_Create2(t *testing.T) {
 	}
 
 	invalid4 := state.Definition{
-		Alias:     "cupcake",
-		Memory:    &memory,
-		GroupName: "group-cupcake",
+		Alias:      "cupcake",
+		GroupName:  "group-cupcake",
+		Executable: state.Executable{Memory: &memory},
 	}
 	_, err = ds.Create(&invalid4)
 	if err == nil {
@@ -116,9 +119,9 @@ func TestDefinitionService_Create2(t *testing.T) {
 
 	invalid5 := state.Definition{
 		Alias:     "cupcake",
-		Image:     "image:cupcake",
-		Memory:    &memory,
 		GroupName: "cant.have.dots",
+		Executable: state.Executable{Image: "image:cupcake",
+			Memory: &memory},
 	}
 	_, err = ds.Create(&invalid5)
 	if err == nil {
@@ -130,7 +133,7 @@ func TestDefinitionService_Update(t *testing.T) {
 	ds, imp := setUpDefinitionServiceTest(t)
 	memory := int64(512)
 	d := state.Definition{
-		Memory: &memory,
+		Executable: state.Executable{Memory: &memory},
 	}
 	ds.Update("A", d)
 

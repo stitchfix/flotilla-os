@@ -16,7 +16,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 		Definitions: map[string]state.Definition{
 			"A": {DefinitionID: "A", Alias: "aliasA"},
 			"B": {DefinitionID: "B", Alias: "aliasB"},
-			"C": {DefinitionID: "C", Alias: "aliasC", Image: "invalidimage"},
+			"C": {DefinitionID: "C", Alias: "aliasC", Executable: state.Executable{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A", GroupName: "A", RunID: "runA"},
