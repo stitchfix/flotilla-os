@@ -121,7 +121,12 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 		_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
 		run, err := ctw.sm.GetRun(runId)
 		if err == nil {
-			run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, records...)
+			if run.CloudTrailNotifications == nil || len((*run.CloudTrailNotifications).Records) == 0 {
+				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: records}
+			} else {
+				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: append((*run.CloudTrailNotifications).Records, records...)}
+			}
+
 			_, err = ctw.sm.UpdateRun(runId, run)
 			if err != nil {
 				_ = ctw.log.Log("message", "Error updating run", "error", fmt.Sprintf("%+v", err))
