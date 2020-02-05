@@ -15,7 +15,7 @@ func (EKSClusterClient) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (EKSClusterClient) CanBeRun(clusterName string, definition state.Definition) (bool, error) {
+func (EKSClusterClient) CanBeRun(clusterName string, executable state.Executable) (bool, error) {
 	return true, nil
 }
 

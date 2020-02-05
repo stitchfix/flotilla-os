@@ -161,11 +161,11 @@ func TestECSClusterClient_CanBeRun(t *testing.T) {
 	tooMuch := int64(100)
 	justRight := int64(99)
 
-	unrunnable := state.Definition{
-		Executable: state.Executable{Memory: &tooMuch},
+	unrunnable := state.Executable{
+		Memory: &tooMuch,
 	}
-	runnable := state.Definition{
-		Executable: state.Executable{Memory: &justRight},
+	runnable := state.Executable{
+		Memory: &justRight,
 	}
 
 	trc := &testResourceClient{

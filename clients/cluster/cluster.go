@@ -17,7 +17,7 @@ import (
 type Client interface {
 	Name() string
 	Initialize(conf config.Config) error
-	CanBeRun(clusterName string, definition state.Definition) (bool, error)
+	CanBeRun(clusterName string, executable state.Executable) (bool, error)
 	ListClusters() ([]string, error)
 }
 

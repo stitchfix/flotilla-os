@@ -220,7 +220,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	)
 
 	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(clusterName, definition, env, *engine); err != nil {
+	if err = es.canBeRun(clusterName, definition.Executable, env, *engine); err != nil {
 		return run, err
 	}
 
@@ -273,7 +273,6 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		command = aws.String(definition.Command)
 	}
 
-
 	runID, err := state.NewRunID(engine)
 	if err != nil {
 		return run, err
@@ -324,7 +323,7 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 	return state.EnvList(runEnv)
 }
 
-func (es *executionService) canBeRun(clusterName string, definition state.Definition, env *state.EnvList, engine string) error {
+func (es *executionService) canBeRun(clusterName string, executable state.Executable, env *state.EnvList, engine string) error {
 	if env != nil {
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
@@ -337,22 +336,22 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 	var ok bool
 	var err error
 	if es.checkImageValidity {
-		ok, err = es.registryClient.IsImageValid(definition.Image)
+		ok, err = es.registryClient.IsImageValid(executable.Image)
 		if err != nil {
 			return err
 		}
 		if !ok {
 			return exceptions.MissingResource{
 				ErrorString: fmt.Sprintf(
-					"image [%s] was not found in any of the configured repositories", definition.Image)}
+					"image [%s] was not found in any of the configured repositories", executable.Image)}
 		}
 	}
 
 	if engine == state.ECSEngine {
-		ok, err = es.ecsClusterClient.CanBeRun(clusterName, definition)
+		ok, err = es.ecsClusterClient.CanBeRun(clusterName, executable)
 	}
 	if engine == state.EKSEngine {
-		if *definition.Privileged == true {
+		if *executable.Privileged == true {
 			ok, err = false, errors.New("eks cannot run containers with privileged mode")
 		} else {
 			ok, err = true, nil
@@ -365,7 +364,7 @@ func (es *executionService) canBeRun(clusterName string, definition state.Defini
 	if !ok {
 		return exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf(
-				"definition [%s] cannot be run on cluster [%s]", definition.DefinitionID, clusterName)}
+				"executable cannot be run on cluster [%s]", clusterName)}
 	}
 	return nil
 }
