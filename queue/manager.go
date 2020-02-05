@@ -17,6 +17,7 @@ type Manager interface {
 	Enqueue(qURL string, run state.Run) error
 	ReceiveRun(qURL string) (RunReceipt, error)
 	ReceiveStatus(qURL string) (StatusReceipt, error)
+	ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, error)
 	List() ([]string, error)
 }
 

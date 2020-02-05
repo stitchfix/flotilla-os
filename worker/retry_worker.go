@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/stitchfix/flotilla-os/queue"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -21,7 +22,7 @@ type retryWorker struct {
 	engine       *string
 }
 
-func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
+func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
 	rw.pollInterval = pollInterval
 	rw.conf = conf
 	rw.sm = sm

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/stitchfix/flotilla-os/queue"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,7 +17,7 @@ import (
 // Worker defines a background worker process
 //
 type Worker interface {
-	Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error
+	Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error
 	Run() error
 	GetTomb() *tomb.Tomb
 }
@@ -24,7 +25,7 @@ type Worker interface {
 //
 // NewWorker instantiates a new worker.
 //
-func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee engine.Engine, sm state.Manager, engine *string) (Worker, error) {
+func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee engine.Engine, sm state.Manager, engine *string, qm queue.Manager) (Worker, error) {
 	var worker Worker
 
 	switch workerType {
@@ -36,12 +37,14 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee
 		worker = &statusWorker{engine: engine}
 	case "worker_manager":
 		worker = &workerManager{engine: engine}
+	case "cloudtrail":
+		worker = &cloudtrailWorker{engine: engine}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	if err = worker.Initialize(conf, sm, ee, log, pollInterval, engine); err != nil {
+	if err = worker.Initialize(conf, sm, ee, log, pollInterval, engine, qm); err != nil {
 		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
 	}
 	return worker, nil
