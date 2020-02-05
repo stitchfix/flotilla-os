@@ -397,9 +397,11 @@ func (a *ecsAdapter) constructCmdSlice(cmdString string) []string {
 //
 func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	adapted := state.Definition{
-		Arn:           *taskDef.TaskDefinitionArn,
-		DefinitionID:  *taskDef.Family, // Family==ContainerName==DefinitionID
-		ContainerName: *taskDef.Family,
+		Arn:          *taskDef.TaskDefinitionArn,
+		DefinitionID: *taskDef.Family, // Family==ContainerName==DefinitionID
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: *taskDef.Family,
+		},
 	}
 
 	if len(taskDef.ContainerDefinitions) == 1 {

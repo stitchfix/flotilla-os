@@ -251,21 +251,21 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	var err error
 	memory := int64(512)
 	d := Definition{
-		Arn:           "arn:cupcake",
-		DefinitionID:  "id:cupcake",
-		GroupName:     "group:cupcake",
-		ContainerName: "container:cupcake",
-		User:          "noone",
-		Alias:         "cupcake",
-		Command:       "echo 'hi'",
-		Ports:         &PortsList{12345, 6789},
-		Tags:          &Tags{"apple", "orange", "tiger"},
+		Arn:          "arn:cupcake",
+		DefinitionID: "id:cupcake",
+		GroupName:    "group:cupcake",
+		User:         "noone",
+		Alias:        "cupcake",
+		Command:      "echo 'hi'",
+		Ports:        &PortsList{12345, 6789},
+		Tags:         &Tags{"apple", "orange", "tiger"},
 		ExecutableResources: ExecutableResources{
 			Memory: &memory,
 			Image:  "image:cupcake",
 			Env: &EnvList{
 				{Name: "E1", Value: "V1"},
 			},
+			ContainerName: "container:cupcake",
 		},
 	}
 

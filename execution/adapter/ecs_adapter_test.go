@@ -77,9 +77,11 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	adapter := setUp(t)
 
 	definition := state.Definition{
-		Arn:           "darn",
-		GroupName:     "groupa",
-		ContainerName: "mynameiswhat",
+		Arn:       "darn",
+		GroupName: "groupa",
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: "mynameiswhat",
+		},
 	}
 
 	cmd := "_overridden_cmd"
@@ -161,9 +163,11 @@ func TestEcsAdapter_AdaptRun2(t *testing.T) {
 	adapter.taskRoleArn = &taskRoleArn
 
 	definition := state.Definition{
-		Arn:           "darn",
-		GroupName:     "groupa",
-		ContainerName: "mynameiswhat",
+		Arn:       "darn",
+		GroupName: "groupa",
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: "mynameiswhat",
+		},
 	}
 
 	cmd := "_overridden_cmd"

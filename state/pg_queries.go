@@ -102,7 +102,9 @@ select
   max_cpu_used as maxcpuused,
   max_memory_used as maxmemoryused,
   pod_events::TEXT as podevents,
-  command_hash as commandhash
+  command_hash as commandhash,
+  executable_id as executableid,
+  executable_type as executabletype
 from task t
 `
 
