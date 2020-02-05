@@ -545,7 +545,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
 			&existing.Cpu, &existing.Gpu, &existing.Engine, &existing.EphemeralStorage, &existing.NodeLifecycle,
 			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed,
-			&existing.PodEvents, &existing.CommandHash)
+			&existing.PodEvents, &existing.CommandHash, &existing.CloudTrailNotifications)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
