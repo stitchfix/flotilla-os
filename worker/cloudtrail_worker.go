@@ -78,6 +78,7 @@ func (ctw *cloudtrailWorker) runOnce() {
 	}
 
 	ctw.processS3Keys(cloudTrailS3File)
+	_ = cloudTrailS3File.Done()
 }
 
 func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3File) {
