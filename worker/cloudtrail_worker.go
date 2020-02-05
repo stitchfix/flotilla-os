@@ -107,22 +107,29 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
 	sa := ctw.conf.GetString("eks.service_account")
+
+	runIdRecordMap := make(map[string][]state.Record)
 	for _, record := range ctn.Records {
 		if strings.Contains(record.UserIdentity.Arn, sa) {
-			ctw.processRun(record)
+			runId := ctw.getRunId(record)
+			runIdRecordMap[runId] = append(runIdRecordMap[runId], record)
+		}
+	}
+
+	for runId, records := range runIdRecordMap {
+		run, err := ctw.sm.GetRun(runId)
+		if err == nil {
+			run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, records...)
+			_ = ctw.log.Log("message", "Saving CloudTrail Events", "runId", runId)
+			_, err = ctw.sm.UpdateRun(runId, run)
+			if err != nil {
+				_ = ctw.log.Log("message", "Error updating run", "error", fmt.Sprintf("%+v", err))
+			}
 		}
 	}
 }
-func (ctw *cloudtrailWorker) processRun(record state.Record) {
+func (ctw *cloudtrailWorker) getRunId(record state.Record) string {
 	splits := strings.Split(record.UserIdentity.Arn, "/")[:1]
 	runId := splits[len(splits)-1]
-	run, err := ctw.sm.GetRun(runId)
-	if err == nil {
-		run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, record)
-		run, err = ctw.sm.UpdateRun(runId, run)
-
-		if err != nil {
-			_ = ctw.log.Log("message", "Error writing cloud tail events to task table", "error", fmt.Sprintf("%+v", err))
-		}
-	}
+	return runId
 }
