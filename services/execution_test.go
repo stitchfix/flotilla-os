@@ -31,7 +31,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 	return es, &imp
 }
 
-func TestExecutionService_Create(t *testing.T) {
+func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 	// Tests valid create
 	es, imp := setUp(t)
 	env := &state.EnvList{
@@ -49,7 +49,7 @@ func TestExecutionService_Create(t *testing.T) {
 	cmd := "_test_cmd_"
 	cpu := int64(512)
 	engine := state.DefaultEngine
-	run, err := es.Create("B", "clusta", env, "somebody", &cmd, nil, &cpu, &engine, nil, nil)
+	run, err := es.CreateDefinitionRunByDefinitionID("B", "clusta", env, "somebody", &cmd, nil, &cpu, &engine, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -126,7 +126,7 @@ func TestExecutionService_Create(t *testing.T) {
 	}
 }
 
-func TestExecutionService_CreateByAlias(t *testing.T) {
+func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	// Tests valid create
 	es, imp := setUp(t)
 	env := &state.EnvList{
@@ -142,7 +142,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine
-	run, err := es.CreateByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil, &engine, nil, nil)
+	run, err := es.CreateDefinitionRunByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil, &engine, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -211,7 +211,7 @@ func TestExecutionService_CreateByAlias(t *testing.T) {
 	}
 }
 
-func TestExecutionService_Create2(t *testing.T) {
+func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 	// Tests invalid paths
 	es, _ := setUp(t)
 	env := &state.EnvList{
@@ -222,19 +222,19 @@ func TestExecutionService_Create2(t *testing.T) {
 
 	// Invalid environment
 	engine := state.DefaultEngine
-	_, err = es.Create("A", "clusta", env, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("A", "clusta", env, "somebody", nil, nil, nil, &engine, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
 	// Invalid image
-	_, err = es.Create("C", "clusta", nil, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("C", "clusta", nil, "somebody", nil, nil, nil, &engine, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
 	// Invalid cluster
-	_, err = es.Create("A", "invalidcluster", nil, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("A", "invalidcluster", nil, "somebody", nil, nil, nil, &engine, nil, nil)
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
 	}

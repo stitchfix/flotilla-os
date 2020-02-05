@@ -22,8 +22,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
-	CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
+	CreateDefinitionRunByDefinitionID(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
+	CreateDefinitionRunByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -133,41 +133,13 @@ func contains(s []string, e string) bool {
 }
 
 //
-// Create constructs and queues a new Run on the cluster specified
+// Create constructs and queues a new Run on the cluster specified.
 //
-func (es *executionService) Create(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
-
+func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
 	if err != nil {
 		return state.Run{}, err
-	}
-
-	if engine == nil {
-		engine = &state.DefaultEngine
-	}
-
-	// Handle the case the cluster name was of type EKS but engine was not set to EKS.
-	if clusterName == es.eksClusterOverride {
-		engine = &state.EKSEngine
-	}
-
-	if *engine == state.EKSEngine {
-		clusterName = es.eksClusterOverride
-	}
-
-	// Added to facilitate migration of ECS jobs to EKS.
-	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
-		modulo := 100 / es.eksOverridePercent
-		if rand.Int()%modulo == 0 {
-			engine = &state.EKSEngine
-			if contains(es.clusterOndemandWhitelist, clusterName) {
-				nodeLifecycle = &state.OndemandLifecycle
-			} else {
-				nodeLifecycle = &state.SpotLifecycle
-			}
-			clusterName = es.eksClusterOverride
-		}
 	}
 
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
@@ -176,40 +148,13 @@ func (es *executionService) Create(definitionID string, clusterName string, env 
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
-func (es *executionService) CreateByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
-
+func (es *executionService) CreateDefinitionRunByAlias(alias string, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, ephemeralStorage *int64, nodeLifecycle *string) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
 	if err != nil {
 		return state.Run{}, err
 	}
 
-	if engine == nil {
-		engine = &state.DefaultEngine
-	}
-
-	// Handle the case the cluster name was of type EKS but engine was not set to EKS.
-	if clusterName == es.eksClusterOverride {
-		engine = &state.EKSEngine
-	}
-
-	if *engine == state.EKSEngine {
-		clusterName = es.eksClusterOverride
-	}
-
-	// Added to facilitate migration of ECS jobs to EKS.
-	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
-		modulo := 100 / es.eksOverridePercent
-		if rand.Int()%modulo == 0 {
-			engine = &state.EKSEngine
-			if contains(es.clusterOndemandWhitelist, clusterName) {
-				nodeLifecycle = &state.OndemandLifecycle
-			} else {
-				nodeLifecycle = &state.SpotLifecycle
-			}
-			clusterName = es.eksClusterOverride
-		}
-	}
 	return es.createFromDefinition(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 }
 
@@ -219,13 +164,40 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 		err error
 	)
 
+	if engine == nil {
+		engine = &state.DefaultEngine
+	}
+
+	// Handle the case the cluster name was of type EKS but engine was not set to EKS.
+	if clusterName == es.eksClusterOverride {
+		engine = &state.EKSEngine
+	}
+
+	if *engine == state.EKSEngine {
+		clusterName = es.eksClusterOverride
+	}
+
+	// Added to facilitate migration of ECS jobs to EKS.
+	if engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
+		modulo := 100 / es.eksOverridePercent
+		if rand.Int()%modulo == 0 {
+			engine = &state.EKSEngine
+			if contains(es.clusterOndemandWhitelist, clusterName) {
+				nodeLifecycle = &state.OndemandLifecycle
+			} else {
+				nodeLifecycle = &state.SpotLifecycle
+			}
+			clusterName = es.eksClusterOverride
+		}
+	}
+
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(clusterName, &definition, env, *engine); err != nil {
 		return run, err
 	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRun(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
+	run, err = es.constructRunFromDefinition(clusterName, definition, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 	if err != nil {
 		return run, err
 	}
@@ -258,8 +230,22 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	return run, nil
 }
 
-func (es *executionService) constructRun(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
+func (es *executionService) constructRunFromDefinition(clusterName string, definition state.Definition, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
+	run, err := es.constructBaseRunFromExecutable(definition, clusterName, env, ownerID, command, memory, cpu, engine, nodeLifecycle, ephemeralStorage)
 
+	if err != nil {
+		return run, err
+	}
+
+	run.DefinitionID = definition.DefinitionID
+	run.Alias = definition.Alias
+	run.GroupName = definition.GroupName
+
+	return run, nil
+}
+
+func (es *executionService) constructBaseRunFromExecutable(executable state.Executable, clusterName string, env *state.EnvList, ownerID string, command *string, memory *int64, cpu *int64, engine *string, nodeLifecycle *string, ephemeralStorage *int64) (state.Run, error) {
+	resources := executable.GetExecutableResources()
 	var (
 		run state.Run
 		err error
@@ -269,8 +255,8 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 		engine = &state.DefaultEngine
 	}
 
-	if (command == nil || len(*command) == 0) && (len(definition.Command) > 0) {
-		command = aws.String(definition.Command)
+	if (command == nil || len(*command) == 0) && (len(executable.GetExecutableCommand()) > 0) {
+		command = aws.String(executable.GetExecutableCommand())
 	}
 
 	runID, err := state.NewRunID(engine)
@@ -281,19 +267,18 @@ func (es *executionService) constructRun(clusterName string, definition state.De
 	run = state.Run{
 		RunID:            runID,
 		ClusterName:      clusterName,
-		GroupName:        definition.GroupName,
-		DefinitionID:     definition.DefinitionID,
-		Alias:            definition.Alias,
-		Image:            definition.Image,
+		Image:            resources.Image,
 		Status:           state.StatusQueued,
 		User:             ownerID,
 		Command:          command,
 		Memory:           memory,
 		Cpu:              cpu,
-		Gpu:              definition.Gpu,
+		Gpu:              resources.Gpu,
 		Engine:           engine,
 		NodeLifecycle:    nodeLifecycle,
 		EphemeralStorage: ephemeralStorage,
+		ExecutableID:     executable.GetExecutableID(),
+		ExecutableType:   executable.GetExecutableType(),
 	}
 
 	runEnv := es.constructEnviron(run, env)
