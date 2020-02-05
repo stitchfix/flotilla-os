@@ -147,18 +147,20 @@ type ExecutableResources struct {
 	Env                        *EnvList `json:"env"`
 	Privileged                 *bool    `json:"privileged,omitempty"`
 	AdaptiveResourceAllocation *bool    `json:"adaptive_resource_allocation,omitempty"`
+	ContainerName              string   `json:"container_name"`
 }
 
 type ExecutableType string
 
 const (
-	ExecutableTypeDefinition ExecutableType = "EXECUTABLE_TYPE_DEFINITION"
+	ExecutableTypeDefinition ExecutableType = "task_definition"
 )
 
 type Executable interface {
 	GetExecutableID() string
 	GetExecutableType() ExecutableType
 	GetExecutableResources() ExecutableResources
+	GetExecutableCommand() string
 }
 
 // Definition represents a definition of a job - roughly 1-1 with an AWS ECS
@@ -167,7 +169,6 @@ type Definition struct {
 	Arn              string     `json:"arn"`
 	DefinitionID     string     `json:"definition_id"`
 	GroupName        string     `json:"group_name"`
-	ContainerName    string     `json:"container_name"`
 	User             string     `json:"user,omitempty"`
 	Alias            string     `json:"alias"`
 	Command          string     `json:"command,omitempty"`
@@ -188,6 +189,10 @@ func (d Definition) GetExecutableType() ExecutableType {
 
 func (d Definition) GetExecutableResources() ExecutableResources {
 	return d.ExecutableResources
+}
+
+func (d Definition) GetExecutableCommand() string {
+	return d.Command
 }
 
 var commandWrapper = `
@@ -352,38 +357,40 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn          string     `json:"task_arn"`
-	RunID            string     `json:"run_id"`
-	DefinitionID     string     `json:"definition_id"`
-	Alias            string     `json:"alias"`
-	Image            string     `json:"image"`
-	ClusterName      string     `json:"cluster"`
-	ExitCode         *int64     `json:"exit_code,omitempty"`
-	Status           string     `json:"status"`
-	QueuedAt         *time.Time `json:"queued_at,omitempty"`
-	StartedAt        *time.Time `json:"started_at,omitempty"`
-	FinishedAt       *time.Time `json:"finished_at,omitempty"`
-	InstanceID       string     `json:"-"`
-	InstanceDNSName  string     `json:"-"`
-	GroupName        string     `json:"group_name"`
-	User             string     `json:"user,omitempty"`
-	TaskType         string     `json:"-"`
-	Env              *EnvList   `json:"env,omitempty"`
-	Command          *string    `json:"command,omitempty"`
-	CommandHash      *string    `json:"command_hash,omitempty"`
-	Memory           *int64     `json:"memory,omitempty"`
-	Cpu              *int64     `json:"cpu,omitempty"`
-	Gpu              *int64     `json:"gpu,omitempty"`
-	ExitReason       *string    `json:"exit_reason,omitempty"`
-	Engine           *string    `json:"engine,omitempty"`
-	NodeLifecycle    *string    `json:"node_lifecycle,omitempty"`
-	EphemeralStorage *int64     `json:"ephemeral_storage,omitempty"`
-	PodName          *string    `json:"pod_name,omitempty"`
-	Namespace        *string    `json:"namespace,omitempty"`
-	ContainerName    *string    `json:"container_name,omitempty"`
-	MaxMemoryUsed    *int64     `json:"max_memory_used,omitempty"`
-	MaxCpuUsed       *int64     `json:"max_cpu_used,omitempty"`
-	PodEvents        *PodEvents `json:"pod_events,omitempty"`
+	TaskArn          string         `json:"task_arn"`
+	RunID            string         `json:"run_id"`
+	DefinitionID     string         `json:"definition_id"`
+	Alias            string         `json:"alias"`
+	Image            string         `json:"image"`
+	ClusterName      string         `json:"cluster"`
+	ExitCode         *int64         `json:"exit_code,omitempty"`
+	Status           string         `json:"status"`
+	QueuedAt         *time.Time     `json:"queued_at,omitempty"`
+	StartedAt        *time.Time     `json:"started_at,omitempty"`
+	FinishedAt       *time.Time     `json:"finished_at,omitempty"`
+	InstanceID       string         `json:"-"`
+	InstanceDNSName  string         `json:"-"`
+	GroupName        string         `json:"group_name"`
+	User             string         `json:"user,omitempty"`
+	TaskType         string         `json:"-"`
+	Env              *EnvList       `json:"env,omitempty"`
+	Command          *string        `json:"command,omitempty"`
+	CommandHash      *string        `json:"command_hash,omitempty"`
+	Memory           *int64         `json:"memory,omitempty"`
+	Cpu              *int64         `json:"cpu,omitempty"`
+	Gpu              *int64         `json:"gpu,omitempty"`
+	ExitReason       *string        `json:"exit_reason,omitempty"`
+	Engine           *string        `json:"engine,omitempty"`
+	NodeLifecycle    *string        `json:"node_lifecycle,omitempty"`
+	EphemeralStorage *int64         `json:"ephemeral_storage,omitempty"`
+	PodName          *string        `json:"pod_name,omitempty"`
+	Namespace        *string        `json:"namespace,omitempty"`
+	ContainerName    *string        `json:"container_name,omitempty"`
+	MaxMemoryUsed    *int64         `json:"max_memory_used,omitempty"`
+	MaxCpuUsed       *int64         `json:"max_cpu_used,omitempty"`
+	PodEvents        *PodEvents     `json:"pod_events,omitempty"`
+	ExecutableID     string         `json:"executable_id"`
+	ExecutableType   ExecutableType `json:"executable_type"`
 }
 
 //
@@ -497,6 +504,14 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.PodEvents != nil {
 		d.PodEvents = other.PodEvents
+	}
+
+	if len(other.ExecutableID) > 0 {
+		d.ExecutableID = other.ExecutableID
+	}
+
+	if len(other.ExecutableType) > 0 {
+		d.ExecutableType = other.ExecutableType
 	}
 
 	//
