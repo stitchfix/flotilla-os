@@ -294,7 +294,7 @@ func (iatt *ImplementsAllTheThings) FetchPodMetrics(run state.Run) (state.Run, e
 }
 
 // CanBeRun - Cluster Client
-func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, executable state.Executable) (bool, error) {
+func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, executableResources state.ExecutableResources) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "CanBeRun")
 	if clusterName == "invalidcluster" {
 		return false, nil

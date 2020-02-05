@@ -368,7 +368,7 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 		Command:      "echo 'hi'",
 		Ports:        &state.PortsList{12345, 6789},
 		Tags:         &state.Tags{"apple", "orange", "tiger"},
-		Executable: state.Executable{
+		ExecutableResources: state.ExecutableResources{
 			Image:  "image:cupcake",
 			Memory: &memory,
 			Env: &state.EnvList{

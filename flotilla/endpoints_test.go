@@ -21,7 +21,7 @@ func setUp(t *testing.T) *mux.Router {
 		Definitions: map[string]state.Definition{
 			"A": {DefinitionID: "A", Alias: "aliasA"},
 			"B": {DefinitionID: "B", Alias: "aliasB"},
-			"C": {DefinitionID: "C", Alias: "aliasC", Executable: state.Executable{Image: "invalidimage"}},
+			"C": {DefinitionID: "C", Alias: "aliasC", ExecutableResources: state.ExecutableResources{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A",

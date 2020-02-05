@@ -79,7 +79,7 @@ func (ecc *ECSClusterClient) Initialize(conf config.Config) error {
 // CanBeRun determines whether a task formed from the specified definition
 // can be run on clusterName
 //
-func (ecc *ECSClusterClient) CanBeRun(clusterName string, executable state.Executable) (bool, error) {
+func (ecc *ECSClusterClient) CanBeRun(clusterName string, executableResources state.ExecutableResources) (bool, error) {
 	var (
 		resources *instanceResources
 		err       error
@@ -96,7 +96,7 @@ func (ecc *ECSClusterClient) CanBeRun(clusterName string, executable state.Execu
 		ecc.clusters.setInstanceResources(clusterName, resources)
 	}
 
-	return ecc.validate(resources, executable), nil
+	return ecc.validate(resources, executableResources), nil
 }
 
 //
@@ -147,14 +147,14 @@ func (ecc *ECSClusterClient) getClusterNamesFromApi() ([]string, error) {
 	return clusterNames, nil
 }
 
-func (ecc *ECSClusterClient) validate(resources *instanceResources, executable state.Executable) bool {
-	if (resources != nil && executable.Memory != nil && int64(*executable.Memory) < resources.memory) ||
-		(resources != nil && executable.Cpu != nil && int64(*executable.Cpu) < resources.cpu) {
+func (ecc *ECSClusterClient) validate(resources *instanceResources, executableResources state.ExecutableResources) bool {
+	if (resources != nil && executableResources.Memory != nil && int64(*executableResources.Memory) < resources.memory) ||
+		(resources != nil && executableResources.Cpu != nil && int64(*executableResources.Cpu) < resources.cpu) {
 
-		if executable.Gpu == nil {
+		if executableResources.Gpu == nil {
 			return true
 		} else {
-			return int64(*executable.Gpu) < resources.gpu
+			return int64(*executableResources.Gpu) < resources.gpu
 		}
 	}
 	return false

@@ -18,7 +18,7 @@ func setUpRetryWorkerTest(t *testing.T) (*retryWorker, *testutils.ImplementsAllT
 		Definitions: map[string]state.Definition{
 			"A": {DefinitionID: "A"},
 			"B": {DefinitionID: "B"},
-			"C": {DefinitionID: "C", Executable: state.Executable{Image: "invalidimage"}},
+			"C": {DefinitionID: "C", ExecutableResources: state.ExecutableResources{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
 			"runA": {

@@ -137,7 +137,9 @@ type EnvVar struct {
 //
 type Tags []string
 
-type Executable struct {
+// ExecutableResources define the resources and flags required to run an
+// executable.
+type ExecutableResources struct {
 	Image                      string   `json:"image"`
 	Memory                     *int64   `json:"memory"`
 	Gpu                        *int64   `json:"gpu,omitempty"`
@@ -147,9 +149,20 @@ type Executable struct {
 	AdaptiveResourceAllocation *bool    `json:"adaptive_resource_allocation,omitempty"`
 }
 
-// Definition represents a definition of a job
-// - roughly 1-1 with an AWS ECS task definition
-//
+type ExecutableType string
+
+const (
+	ExecutableTypeDefinition ExecutableType = "EXECUTABLE_TYPE_DEFINITION"
+)
+
+type Executable interface {
+	GetExecutableID() string
+	GetExecutableType() ExecutableType
+	GetExecutableResources() ExecutableResources
+}
+
+// Definition represents a definition of a job - roughly 1-1 with an AWS ECS
+// task definition. It implements the `Executable` interface.
 type Definition struct {
 	Arn              string     `json:"arn"`
 	DefinitionID     string     `json:"definition_id"`
@@ -162,7 +175,19 @@ type Definition struct {
 	Ports            *PortsList `json:"ports,omitempty"`
 	Tags             *Tags      `json:"tags,omitempty"`
 	SharedMemorySize *int64     `json:"shared_memory_size,omitempty"`
-	Executable
+	ExecutableResources
+}
+
+func (d Definition) GetExecutableID() string {
+	return d.DefinitionID
+}
+
+func (d Definition) GetExecutableType() ExecutableType {
+	return ExecutableTypeDefinition
+}
+
+func (d Definition) GetExecutableResources() ExecutableResources {
+	return d.ExecutableResources
 }
 
 var commandWrapper = `

@@ -220,7 +220,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, cl
 	)
 
 	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(clusterName, definition.Executable, env, *engine); err != nil {
+	if err = es.canBeRun(clusterName, &definition, env, *engine); err != nil {
 		return run, err
 	}
 
@@ -324,6 +324,8 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 }
 
 func (es *executionService) canBeRun(clusterName string, executable state.Executable, env *state.EnvList, engine string) error {
+	resources := executable.GetExecutableResources()
+
 	if env != nil {
 		for _, e := range *env {
 			_, usingRestricted := es.reservedEnv[e.Name]
@@ -336,22 +338,22 @@ func (es *executionService) canBeRun(clusterName string, executable state.Execut
 	var ok bool
 	var err error
 	if es.checkImageValidity {
-		ok, err = es.registryClient.IsImageValid(executable.Image)
+		ok, err = es.registryClient.IsImageValid(resources.Image)
 		if err != nil {
 			return err
 		}
 		if !ok {
 			return exceptions.MissingResource{
 				ErrorString: fmt.Sprintf(
-					"image [%s] was not found in any of the configured repositories", executable.Image)}
+					"image [%s] was not found in any of the configured repositories", resources.Image)}
 		}
 	}
 
 	if engine == state.ECSEngine {
-		ok, err = es.ecsClusterClient.CanBeRun(clusterName, executable)
+		ok, err = es.ecsClusterClient.CanBeRun(clusterName, resources)
 	}
 	if engine == state.EKSEngine {
-		if *executable.Privileged == true {
+		if *resources.Privileged == true {
 			ok, err = false, errors.New("eks cannot run containers with privileged mode")
 		} else {
 			ok, err = true, nil
