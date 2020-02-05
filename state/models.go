@@ -137,28 +137,32 @@ type EnvVar struct {
 //
 type Tags []string
 
+type Executable struct {
+	Image                      string   `json:"image"`
+	Memory                     *int64   `json:"memory"`
+	Gpu                        *int64   `json:"gpu,omitempty"`
+	Cpu                        *int64   `json:"cpu,omitempty"`
+	Env                        *EnvList `json:"env"`
+	Privileged                 *bool    `json:"privileged,omitempty"`
+	AdaptiveResourceAllocation *bool    `json:"adaptive_resource_allocation,omitempty"`
+}
+
 // Definition represents a definition of a job
 // - roughly 1-1 with an AWS ECS task definition
 //
 type Definition struct {
-	Arn                        string     `json:"arn"`
-	DefinitionID               string     `json:"definition_id"`
-	Image                      string     `json:"image"`
-	GroupName                  string     `json:"group_name"`
-	ContainerName              string     `json:"container_name"`
-	User                       string     `json:"user,omitempty"`
-	Alias                      string     `json:"alias"`
-	Memory                     *int64     `json:"memory"`
-	Gpu                        *int64     `json:"gpu,omitempty"`
-	Cpu                        *int64     `json:"cpu,omitempty"`
-	Command                    string     `json:"command,omitempty"`
-	TaskType                   string     `json:"-"`
-	Env                        *EnvList   `json:"env"`
-	Ports                      *PortsList `json:"ports,omitempty"`
-	Tags                       *Tags      `json:"tags,omitempty"`
-	Privileged                 *bool      `json:"privileged,omitempty"`
-	SharedMemorySize           *int64     `json:"shared_memory_size,omitempty"`
-	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
+	Arn              string     `json:"arn"`
+	DefinitionID     string     `json:"definition_id"`
+	GroupName        string     `json:"group_name"`
+	ContainerName    string     `json:"container_name"`
+	User             string     `json:"user,omitempty"`
+	Alias            string     `json:"alias"`
+	Command          string     `json:"command,omitempty"`
+	TaskType         string     `json:"-"`
+	Ports            *PortsList `json:"ports,omitempty"`
+	Tags             *Tags      `json:"tags,omitempty"`
+	SharedMemorySize *int64     `json:"shared_memory_size,omitempty"`
+	Executable
 }
 
 var commandWrapper = `
