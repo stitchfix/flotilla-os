@@ -718,19 +718,19 @@ type CloudTrailNotifications struct {
 }
 
 type Record struct {
-	UserIdentity      UserIdentity      `json:"userIdentity"`
-	EventTime         string            `json:"eventTime"`
-	EventSource       string            `json:"eventSource"`
-	EventName         string            `json:"eventName"`
-	Resources         []Resource        `json:"resources"`
-}
-
-type Resource struct {
-	AccountID string `json:"accountId"`
-	Type      string `json:"type"`
-	Arn       string `json:"ARN"`
+	UserIdentity UserIdentity `json:"userIdentity"`
+	EventSource  string       `json:"eventSource"`
+	EventName    string       `json:"eventName"`
 }
 
 type UserIdentity struct {
 	Arn string `json:"arn"`
+}
+
+func (w *Record) Equal(other Record) bool {
+	return w.EventName == other.EventName && w.EventSource == other.EventSource
+}
+
+func (w *Record) String() string {
+	return fmt.Sprintf("%s-%s", w.EventSource, w.EventName)
 }
