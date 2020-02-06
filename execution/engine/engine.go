@@ -14,28 +14,15 @@ import (
 //
 type Engine interface {
 	Initialize(conf config.Config) error
-	// v0
 	Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error)
-
-	// v1 - once runs contain a copy of relevant definition info
-	// Execute(run state.Run) error
-
 	Define(definition state.Definition) (state.Definition, error)
-
 	Deregister(definition state.Definition) error
-
 	Terminate(run state.Run) error
-
 	Enqueue(run state.Run) error
-
 	PollRuns() ([]RunReceipt, error)
-
 	PollStatus() (RunReceipt, error)
-
 	GetEvents(run state.Run) (state.PodEventList, error)
-
 	FetchUpdateStatus(run state.Run) (state.Run, error)
-
 	FetchPodMetrics(run state.Run) (state.Run, error)
 }
 
