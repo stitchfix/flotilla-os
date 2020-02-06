@@ -162,7 +162,7 @@ const (
 type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
-	GetExecutableResources() ExecutableResources
+	GetExecutableResources() *ExecutableResources
 	GetExecutableCommand(req ExecutionRequest) string
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
@@ -220,8 +220,8 @@ func (d Definition) GetExecutableType() *ExecutableType {
 	return &t
 }
 
-func (d Definition) GetExecutableResources() ExecutableResources {
-	return d.ExecutableResources
+func (d Definition) GetExecutableResources() *ExecutableResources {
+	return &d.ExecutableResources
 }
 
 func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
@@ -720,20 +720,20 @@ type CloudTrailNotifications struct {
 
 type Record struct {
 	UserIdentity UserIdentity `json:"userIdentity"`
-	EventTime    string       `json:"eventTime"`
 	EventSource  string       `json:"eventSource"`
 	EventName    string       `json:"eventName"`
-	Resources    []Resource   `json:"resources"`
-}
-
-type Resource struct {
-	AccountID string `json:"accountId"`
-	Type      string `json:"type"`
-	Arn       string `json:"ARN"`
 }
 
 type UserIdentity struct {
 	Arn string `json:"arn"`
+}
+
+func (w *Record) Equal(other Record) bool {
+	return w.EventName == other.EventName && w.EventSource == other.EventSource
+}
+
+func (w *Record) String() string {
+	return fmt.Sprintf("%s-%s", w.EventSource, w.EventName)
 }
 
 const TemplatePayloadKey = "template_payload"

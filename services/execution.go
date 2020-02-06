@@ -343,7 +343,7 @@ func (es *executionService) canBeRun(clusterName string, executable state.Execut
 	}
 
 	if engine == state.ECSEngine {
-		ok, err = es.ecsClusterClient.CanBeRun(clusterName, resources)
+		ok, err = es.ecsClusterClient.CanBeRun(clusterName, *resources)
 	}
 	if engine == state.EKSEngine {
 		if *resources.Privileged == true {

@@ -119,13 +119,15 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 	for runId, records := range runIdRecordMap {
 		run, err := ctw.sm.GetRun(runId)
 		if err == nil {
+			var rawRecords []state.Record
 			_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
-			if run.CloudTrailNotifications == nil || len((*run.CloudTrailNotifications).Records) == 0 {
-				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: records}
-			} else {
-				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: append((*run.CloudTrailNotifications).Records, records...)}
-			}
 
+			if run.CloudTrailNotifications == nil || len((*run.CloudTrailNotifications).Records) == 0 {
+				rawRecords = records
+			} else {
+				rawRecords = append((*run.CloudTrailNotifications).Records, records...)
+			}
+			run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: ctw.makeSet(rawRecords)}
 			_, err = ctw.sm.UpdateRun(runId, run)
 			if err != nil {
 				_ = ctw.log.Log("message", "Error updating run", "error", fmt.Sprintf("%+v", err))
@@ -133,6 +135,19 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 		}
 	}
 }
+
+func (ctw *cloudtrailWorker) makeSet(records []state.Record) []state.Record {
+	keys := make(map[string]bool)
+	var set []state.Record
+	for _, record := range records {
+		if _, value := keys[record.String()]; !value {
+			keys[record.String()] = true
+			set = append(set, record)
+		}
+	}
+	return set
+}
+
 func (ctw *cloudtrailWorker) getRunId(record state.Record) string {
 	splits := strings.Split(record.UserIdentity.Arn, "/")
 	runId := splits[len(splits)-1]
