@@ -11,7 +11,7 @@ const createS3LogsUrl = (runID: string): string => {
 
 const createEC2Url = (dns: string): string => {
   const prefix = process.env.REACT_APP_EC2_INSTANCE_URL_PREFIX || ""
-  return `${prefix}${dns}`
+  return urljoin(prefix, dns)
 }
 
 const createS3ManifestUrl = (runID: string): string => {
