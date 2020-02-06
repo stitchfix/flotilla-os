@@ -62,7 +62,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 			NodeLifecycle:    nil,
 		},
 	}
-	run, err := es.CreateDefinitionRunByDefinitionID("B", req)
+	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -168,7 +168,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 			NodeLifecycle:    nil,
 		},
 	}
-	run, err := es.CreateDefinitionRunByAlias("aliasB", req)
+	run, err := es.CreateDefinitionRunByAlias("aliasB", &req)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -248,7 +248,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 
 	// Invalid environment
 	engine := state.DefaultEngine
-	_, err = es.CreateDefinitionRunByDefinitionID("A", state.DefinitionExecutionRequest{
+	_, err = es.CreateDefinitionRunByDefinitionID("A", &state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              env,
@@ -266,7 +266,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 	}
 
 	// Invalid image
-	_, err = es.CreateDefinitionRunByDefinitionID("C", state.DefinitionExecutionRequest{
+	_, err = es.CreateDefinitionRunByDefinitionID("C", &state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              nil,
@@ -284,7 +284,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 	}
 
 	// Invalid cluster
-	_, err = es.CreateDefinitionRunByDefinitionID("A", state.DefinitionExecutionRequest{
+	_, err = es.CreateDefinitionRunByDefinitionID("A", &state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      "invalidcluster",
 			Env:              nil,

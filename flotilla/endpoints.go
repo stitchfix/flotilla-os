@@ -320,7 +320,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    nil,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run",
@@ -370,7 +370,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    nil,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V2 run",
@@ -438,7 +438,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -498,7 +498,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    lr.NodeLifecycle,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], req)
+	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",

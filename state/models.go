@@ -179,19 +179,19 @@ type ExecutionRequestCommon struct {
 }
 
 type ExecutionRequest interface {
-	GetExecutionRequestCommon() ExecutionRequestCommon
-	GetExecutionRequestCustom() map[string]interface{}
+	GetExecutionRequestCommon() *ExecutionRequestCommon
+	GetExecutionRequestCustom() *map[string]interface{}
 }
 
 type DefinitionExecutionRequest struct {
 	ExecutionRequestCommon
 }
 
-func (d DefinitionExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
-	return d.ExecutionRequestCommon
+func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
+	return &d.ExecutionRequestCommon
 }
 
-func (d DefinitionExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
+func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
 	return nil
 }
 
