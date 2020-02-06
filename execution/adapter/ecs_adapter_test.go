@@ -77,9 +77,11 @@ func TestEcsAdapter_AdaptRun(t *testing.T) {
 	adapter := setUp(t)
 
 	definition := state.Definition{
-		Arn:           "darn",
-		GroupName:     "groupa",
-		ContainerName: "mynameiswhat",
+		Arn:       "darn",
+		GroupName: "groupa",
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: "mynameiswhat",
+		},
 	}
 
 	cmd := "_overridden_cmd"
@@ -161,9 +163,11 @@ func TestEcsAdapter_AdaptRun2(t *testing.T) {
 	adapter.taskRoleArn = &taskRoleArn
 
 	definition := state.Definition{
-		Arn:           "darn",
-		GroupName:     "groupa",
-		ContainerName: "mynameiswhat",
+		Arn:       "darn",
+		GroupName: "groupa",
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: "mynameiswhat",
+		},
 	}
 
 	cmd := "_overridden_cmd"
@@ -364,15 +368,17 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 	d := state.Definition{
 		DefinitionID: "id:cupcake",
 		GroupName:    "group:cupcake",
-		Memory:       &memory,
 		Alias:        "cupcake",
-		Image:        "image:cupcake",
 		Command:      "echo 'hi'",
-		Env: &state.EnvList{
-			{Name: "E1", Value: "V1"},
+		Tags:         &state.Tags{"apple", "orange", "tiger"},
+		ExecutableResources: state.ExecutableResources{
+			Image:  "image:cupcake",
+			Memory: &memory,
+			Env: &state.EnvList{
+				{Name: "E1", Value: "V1"},
+			},
+			Ports: &state.PortsList{12345, 6789},
 		},
-		Ports: &state.PortsList{12345, 6789},
-		Tags:  &state.Tags{"apple", "orange", "tiger"},
 	}
 
 	adapted := adapter.AdaptDefinition(d)

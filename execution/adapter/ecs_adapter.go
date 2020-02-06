@@ -15,7 +15,7 @@ import (
 //
 type ECSAdapter interface {
 	AdaptTask(task ecs.Task) state.Run
-	AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput
+	AdaptRun(executable state.Executable, run state.Run) ecs.RunTaskInput
 	AdaptDefinition(definition state.Definition) ecs.RegisterTaskDefinitionInput
 	AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition
 }
@@ -190,21 +190,23 @@ func (a *ecsAdapter) needsRetried(run state.Run, task ecs.Task) bool {
 //    onto the run we will make use of these overrides since it's important to run what
 //    we asked for -at the time- of run creation
 //
-func (a *ecsAdapter) AdaptRun(definition state.Definition, run state.Run) ecs.RunTaskInput {
+func (a *ecsAdapter) AdaptRun(executable state.Executable, run state.Run) ecs.RunTaskInput {
 	n := int64(1)
 	overrides := ecs.TaskOverride{
-		ContainerOverrides: []*ecs.ContainerOverride{a.overrides(definition, run)},
+		ContainerOverrides: []*ecs.ContainerOverride{a.overrides(executable, run)},
 	}
 
 	if a.taskRoleArn != nil {
 		overrides.TaskRoleArn = a.taskRoleArn
 	}
 
+	arn := executable.GetExecutableResourceName()
+
 	rti := ecs.RunTaskInput{
 		Cluster:        &run.ClusterName,
 		Count:          &n,
 		StartedBy:      aws.String("flotilla"),
-		TaskDefinition: &definition.Arn,
+		TaskDefinition: &arn,
 		Overrides:      &overrides,
 	}
 
@@ -233,8 +235,8 @@ func (a *ecsAdapter) gpuPlacementConstraints(definition state.Definition, run st
 	}
 }
 
-func (a *ecsAdapter) overrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
-	overrides := a.envOverrides(definition, run)
+func (a *ecsAdapter) overrides(executable state.Executable, run state.Run) *ecs.ContainerOverride {
+	overrides := a.envOverrides(executable, run)
 
 	if run.Command != nil {
 		cmds := a.constructCmdSlice(*run.Command)
@@ -248,7 +250,7 @@ func (a *ecsAdapter) overrides(definition state.Definition, run state.Run) *ecs.
 
 }
 
-func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *ecs.ContainerOverride {
+func (a *ecsAdapter) envOverrides(executable state.Executable, run state.Run) *ecs.ContainerOverride {
 	if run.Env == nil {
 		return nil
 	}
@@ -266,13 +268,16 @@ func (a *ecsAdapter) envOverrides(definition state.Definition, run state.Run) *e
 	//
 	// Support legacy case of differing container name and definition id
 	//
-	containerName := definition.DefinitionID
-	if definition.ContainerName != definition.DefinitionID {
-		containerName = definition.ContainerName
+	executableID := executable.GetExecutableID()
+	executableResources := executable.GetExecutableResources()
+
+	containerName := executableID
+	if executableResources.ContainerName != *executableID {
+		containerName = &executableResources.ContainerName
 	}
 
 	res := ecs.ContainerOverride{
-		Name:        &containerName,
+		Name:        containerName,
 		Environment: pairs,
 	}
 	return &res
@@ -397,9 +402,11 @@ func (a *ecsAdapter) constructCmdSlice(cmdString string) []string {
 //
 func (a *ecsAdapter) AdaptTaskDef(taskDef ecs.TaskDefinition) state.Definition {
 	adapted := state.Definition{
-		Arn:           *taskDef.TaskDefinitionArn,
-		DefinitionID:  *taskDef.Family, // Family==ContainerName==DefinitionID
-		ContainerName: *taskDef.Family,
+		Arn:          *taskDef.TaskDefinitionArn,
+		DefinitionID: *taskDef.Family, // Family==ContainerName==DefinitionID
+		ExecutableResources: state.ExecutableResources{
+			ContainerName: *taskDef.Family,
+		},
 	}
 
 	if len(taskDef.ContainerDefinitions) == 1 {

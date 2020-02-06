@@ -160,7 +160,9 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	expectedNextTok := "next!"
 	tlc.nextTok = expectedNextTok
 
-	d := state.Definition{ContainerName: "container"}
+	d := state.Definition{
+		ExecutableResources: state.ExecutableResources{ContainerName: "container"},
+	}
 	r := state.Run{TaskArn: "a/b/c"}
 
 	// StreamName == cupcake/container/c

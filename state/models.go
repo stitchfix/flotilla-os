@@ -137,28 +137,98 @@ type EnvVar struct {
 //
 type Tags []string
 
-// Definition represents a definition of a job
-// - roughly 1-1 with an AWS ECS task definition
-//
-type Definition struct {
-	Arn                        string     `json:"arn"`
-	DefinitionID               string     `json:"definition_id"`
+// ExecutableResources define the resources and flags required to run an
+// executable.
+type ExecutableResources struct {
 	Image                      string     `json:"image"`
-	GroupName                  string     `json:"group_name"`
-	ContainerName              string     `json:"container_name"`
-	User                       string     `json:"user,omitempty"`
-	Alias                      string     `json:"alias"`
 	Memory                     *int64     `json:"memory"`
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
-	Command                    string     `json:"command,omitempty"`
-	TaskType                   string     `json:"-"`
 	Env                        *EnvList   `json:"env"`
-	Ports                      *PortsList `json:"ports,omitempty"`
-	Tags                       *Tags      `json:"tags,omitempty"`
 	Privileged                 *bool      `json:"privileged,omitempty"`
-	SharedMemorySize           *int64     `json:"shared_memory_size,omitempty"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
+	ContainerName              string     `json:"container_name"`
+	Ports                      *PortsList `json:"ports,omitempty"`
+}
+
+type ExecutableType string
+
+const (
+	ExecutableTypeDefinition ExecutableType = "task_definition"
+)
+
+type Executable interface {
+	GetExecutableID() *string
+	GetExecutableType() *ExecutableType
+	GetExecutableResources() ExecutableResources
+	GetExecutableCommand(req ExecutionRequest) string
+	GetExecutableResourceName() string // This will typically be an ARN.
+}
+
+// Common fields required to execute any Executable.
+type ExecutionRequestCommon struct {
+	ClusterName      string   `json:"cluster_name"`
+	Env              *EnvList `json:"env"`
+	OwnerID          string   `json:"owner_id"`
+	Command          *string  `json:"command"`
+	Memory           *int64   `json:"memory"`
+	Cpu              *int64   `json:"cpu"`
+	Engine           *string  `json:"engine"`
+	EphemeralStorage *int64   `json:"ephemeral_storage"`
+	NodeLifecycle    *string  `json:"node_lifecycle"`
+}
+
+type ExecutionRequest interface {
+	GetExecutionRequestCommon() ExecutionRequestCommon
+	GetExecutionRequestCustom() map[string]interface{}
+}
+
+type DefinitionExecutionRequest struct {
+	ExecutionRequestCommon
+}
+
+func (d DefinitionExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
+	return d.ExecutionRequestCommon
+}
+
+func (d DefinitionExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
+	return nil
+}
+
+// Definition represents a definition of a job - roughly 1-1 with an AWS ECS
+// task definition. It implements the `Executable` interface.
+type Definition struct {
+	Arn              string `json:"arn"`
+	DefinitionID     string `json:"definition_id"`
+	GroupName        string `json:"group_name"`
+	User             string `json:"user,omitempty"`
+	Alias            string `json:"alias"`
+	Command          string `json:"command,omitempty"`
+	TaskType         string `json:"-"`
+	Tags             *Tags  `json:"tags,omitempty"`
+	SharedMemorySize *int64 `json:"shared_memory_size,omitempty"`
+	ExecutableResources
+}
+
+func (d Definition) GetExecutableID() *string {
+	return &d.DefinitionID
+}
+
+func (d Definition) GetExecutableType() *ExecutableType {
+	t := ExecutableTypeDefinition
+	return &t
+}
+
+func (d Definition) GetExecutableResources() ExecutableResources {
+	return d.ExecutableResources
+}
+
+func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
+	return d.Command
+}
+
+func (d Definition) GetExecutableResourceName() string {
+	return d.Arn
 }
 
 var commandWrapper = `
@@ -356,6 +426,8 @@ type Run struct {
 	MaxCpuUsed              *int64                   `json:"max_cpu_used,omitempty"`
 	PodEvents               *PodEvents               `json:"pod_events,omitempty"`
 	CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications,omitempty"`
+	ExecutableID            *string                  `json:"executable_id,omitempty"`
+	ExecutableType          *ExecutableType          `json:"executable_type,omitempty"`
 }
 
 //
@@ -469,6 +541,14 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.PodEvents != nil {
 		d.PodEvents = other.PodEvents
+	}
+
+	if other.ExecutableID != nil {
+		d.ExecutableID = other.ExecutableID
+	}
+
+	if other.ExecutableType != nil {
+		d.ExecutableType = other.ExecutableType
 	}
 
 	if other.CloudTrailNotifications != nil && len((*other.CloudTrailNotifications).Records) > 0 {
