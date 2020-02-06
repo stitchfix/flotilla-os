@@ -286,12 +286,8 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 		body := response.Messages[0].Body
 
 		err = json.Unmarshal([]byte(*body), &receipt)
+		_ = qm.ack(qURL, response.Messages[0].ReceiptHandle)
 
-		if err == nil {
-			receipt.Done = func() error {
-				return qm.ack(qURL, response.Messages[0].ReceiptHandle)
-			}
-		}
 	}
 	return receipt, nil
 }

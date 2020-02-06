@@ -104,10 +104,6 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 
 		getObjectOutput.Body.Close()
 	}
-	err := cloudTrailS3File.Done()
-	if err != nil {
-		_ = ctw.log.Log("message", "Error ack-ing CloudTrail SQS", "error", fmt.Sprintf("%+v", err))
-	}
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
