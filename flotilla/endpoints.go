@@ -361,7 +361,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerEmail,
+			OwnerID:          lr.RunTags.OwnerID,
 			Command:          nil,
 			Memory:           nil,
 			Cpu:              nil,
@@ -428,7 +428,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerEmail,
+			OwnerID:          lr.RunTags.OwnerID,
 			Command:          lr.Command,
 			Memory:           lr.Memory,
 			Cpu:              lr.Cpu,
@@ -437,6 +437,9 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    lr.NodeLifecycle,
 		},
 	}
+
+	fmt.Println("Received request; owner id:")
+	fmt.Println(req.OwnerID)
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], req)
 	if err != nil {
 		ep.logger.Log(
@@ -488,7 +491,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerEmail,
+			OwnerID:          lr.RunTags.OwnerID,
 			Command:          lr.Command,
 			Memory:           lr.Memory,
 			Cpu:              lr.Cpu,
