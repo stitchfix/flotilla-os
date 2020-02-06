@@ -161,7 +161,7 @@ func TestCloudWatchLogsClient_Logs(t *testing.T) {
 	tlc.nextTok = expectedNextTok
 
 	d := state.Definition{
-		ExecutableResources: state.ExecutableResources{ContainerName: "container"}
+		ExecutableResources: state.ExecutableResources{ContainerName: "container"},
 	}
 	r := state.Run{TaskArn: "a/b/c"}
 
