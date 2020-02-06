@@ -271,9 +271,6 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		return run, err
 	}
 
-	fmt.Println("Owner ID:")
-	fmt.Println(fields.OwnerID)
-
 	run = state.Run{
 		RunID:            runID,
 		ClusterName:      fields.ClusterName,

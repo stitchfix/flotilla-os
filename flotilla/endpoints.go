@@ -361,7 +361,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		ExecutionRequestCommon: state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerID,
+			OwnerID:          lr.RunTags.OwnerEmail,
 			Command:          nil,
 			Memory:           nil,
 			Cpu:              nil,
@@ -438,8 +438,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	fmt.Println("Received request; owner id:")
-	fmt.Println(req.OwnerID)
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], req)
 	if err != nil {
 		ep.logger.Log(
