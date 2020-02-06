@@ -179,3 +179,34 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 // worker type; locks the row.
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
+
+//
+// DefinitionSelect postgres specific query for definitions
+//
+const TemplateSelect = `
+SELECT
+  template_id as templateid,
+  type,
+  version,
+  schema,
+  command_template as commandtemplate,
+  adaptive_resource_allocation as adaptiveresourceallocation,
+  image,
+  container_name as containername,
+  memory,
+  env::TEXT as env,
+  privileged
+  cpu,
+  gpu
+FROM template
+`
+
+//
+// ListTemplatesSQL postgres specific query for listing definitions
+//
+const ListTemplatesSQL = TemplateSelect + "\n%s %s limit $1 offset $2"
+
+//
+// GetTemplateSQL postgres specific query for getting a single definition
+//
+const GetTemplateSQL = TemplateSelect + "\nwhere template_id = $1"

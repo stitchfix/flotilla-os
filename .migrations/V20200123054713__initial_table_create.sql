@@ -71,8 +71,7 @@ CREATE TABLE IF NOT EXISTS task (
   namespace text,
   max_cpu_used integer,
   max_memory_used integer,
-  pod_events jsonb,
-  cloudtrail_notifications jsonb
+  pod_events jsonb
 );
 CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_cluster_name ON task(cluster_name);

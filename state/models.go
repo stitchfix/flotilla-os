@@ -149,12 +149,14 @@ type ExecutableResources struct {
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 	ContainerName              string     `json:"container_name"`
 	Ports                      *PortsList `json:"ports,omitempty"`
+	Tags                       *Tags      `json:"tags,omitempty"`
 }
 
 type ExecutableType string
 
 const (
 	ExecutableTypeDefinition ExecutableType = "task_definition"
+	ExecutableTypeTemplate   ExecutableType = "template"
 )
 
 type Executable interface {
@@ -205,7 +207,6 @@ type Definition struct {
 	Alias            string `json:"alias"`
 	Command          string `json:"command,omitempty"`
 	TaskType         string `json:"-"`
-	Tags             *Tags  `json:"tags,omitempty"`
 	SharedMemorySize *int64 `json:"shared_memory_size,omitempty"`
 	ExecutableResources
 }
@@ -718,11 +719,11 @@ type CloudTrailNotifications struct {
 }
 
 type Record struct {
-	UserIdentity      UserIdentity      `json:"userIdentity"`
-	EventTime         string            `json:"eventTime"`
-	EventSource       string            `json:"eventSource"`
-	EventName         string            `json:"eventName"`
-	Resources         []Resource        `json:"resources"`
+	UserIdentity UserIdentity `json:"userIdentity"`
+	EventTime    string       `json:"eventTime"`
+	EventSource  string       `json:"eventSource"`
+	EventName    string       `json:"eventName"`
+	Resources    []Resource   `json:"resources"`
 }
 
 type Resource struct {
@@ -733,4 +734,61 @@ type Resource struct {
 
 type UserIdentity struct {
 	Arn string `json:"arn"`
+}
+
+const TemplatePayloadKey = "template_payload"
+
+type TemplatePayload map[string]interface{}
+
+type TemplateExecutionRequest struct {
+	TemplatePayload TemplatePayload `json:"template_payload"`
+	ExecutionRequestCommon
+}
+
+func (t TemplateExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
+	return t.ExecutionRequestCommon
+}
+
+func (t TemplateExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
+	return map[string]interface{}{
+		TemplatePayloadKey: t.TemplatePayload,
+	}
+}
+
+type Template struct {
+	TemplateID      string `json:"template_id"`
+	Type            string `json:"type"`
+	Version         int64  `json:"version"`
+	Schema          string `json:"schema"`
+	CommandTemplate string `json:"command_template"`
+	ExecutableResources
+}
+
+func (t Template) GetExecutableID() *string {
+	return &t.TemplateID
+}
+
+func (t Template) GetExecutableType() *ExecutableType {
+	et := ExecutableTypeTemplate
+	return &et
+}
+
+func (t Template) GetExecutableResources() ExecutableResources {
+	return t.ExecutableResources
+}
+
+func (t Template) GetExecutableCommand(req ExecutionRequest) string {
+	custom := req.GetExecutionRequestCustom()
+	tpl := custom[TemplatePayloadKey]
+
+	if tpl == nil {
+		// throw error
+	}
+	// do jsonschema validation / template string dump here.
+	// tplPayload := req.TemplatePayload
+	return t.CommandTemplate
+}
+
+func (t Template) GetExecutableResourceName() string {
+	return t.TemplateID
 }

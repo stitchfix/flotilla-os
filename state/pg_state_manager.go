@@ -954,3 +954,21 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
+
+//
+// GetDefinition returns a single definition by id
+//
+func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateSQL, templateID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return tpl, exceptions.MissingResource{
+				fmt.Sprintf("Template with ID %s not found", templateID)}
+		} else {
+			return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
+		}
+	}
+	return tpl, nil
+}
