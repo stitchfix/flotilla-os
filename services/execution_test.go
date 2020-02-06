@@ -49,7 +49,20 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 	cmd := "_test_cmd_"
 	cpu := int64(512)
 	engine := state.DefaultEngine
-	run, err := es.CreateDefinitionRunByDefinitionID("B", "clusta", env, "somebody", &cmd, nil, &cpu, &engine, nil, nil)
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: state.ExecutionRequestCommon{
+			ClusterName:      "clusta",
+			Env:              env,
+			OwnerID:          "somebody",
+			Command:          &cmd,
+			Memory:           nil,
+			Cpu:              &cpu,
+			Engine:           &engine,
+			EphemeralStorage: nil,
+			NodeLifecycle:    nil,
+		},
+	}
+	run, err := es.CreateDefinitionRunByDefinitionID("B", req)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -142,7 +155,20 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine
-	run, err := es.CreateDefinitionRunByAlias("aliasB", "clusta", env, "somebody", nil, &mem, nil, &engine, nil, nil)
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: state.ExecutionRequestCommon{
+			ClusterName:      "clusta",
+			Env:              env,
+			OwnerID:          "somebody",
+			Command:          nil,
+			Memory:           &mem,
+			Cpu:              nil,
+			Engine:           &engine,
+			EphemeralStorage: nil,
+			NodeLifecycle:    nil,
+		},
+	}
+	run, err := es.CreateDefinitionRunByAlias("aliasB", req)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -222,19 +248,55 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 
 	// Invalid environment
 	engine := state.DefaultEngine
-	_, err = es.CreateDefinitionRunByDefinitionID("A", "clusta", env, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("A", state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: state.ExecutionRequestCommon{
+			ClusterName:      "clusta",
+			Env:              env,
+			OwnerID:          "somebody",
+			Command:          nil,
+			Memory:           nil,
+			Cpu:              nil,
+			Engine:           &engine,
+			EphemeralStorage: nil,
+			NodeLifecycle:    nil,
+		},
+	})
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid environment")
 	}
 
 	// Invalid image
-	_, err = es.CreateDefinitionRunByDefinitionID("C", "clusta", nil, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("C", state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: state.ExecutionRequestCommon{
+			ClusterName:      "clusta",
+			Env:              nil,
+			OwnerID:          "somebody",
+			Command:          nil,
+			Memory:           nil,
+			Cpu:              nil,
+			Engine:           &engine,
+			EphemeralStorage: nil,
+			NodeLifecycle:    nil,
+		},
+	})
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid image")
 	}
 
 	// Invalid cluster
-	_, err = es.CreateDefinitionRunByDefinitionID("A", "invalidcluster", nil, "somebody", nil, nil, nil, &engine, nil, nil)
+	_, err = es.CreateDefinitionRunByDefinitionID("A", state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: state.ExecutionRequestCommon{
+			ClusterName:      "invalidcluster",
+			Env:              nil,
+			OwnerID:          "somebody",
+			Command:          nil,
+			Memory:           nil,
+			Cpu:              nil,
+			Engine:           &engine,
+			EphemeralStorage: nil,
+			NodeLifecycle:    nil,
+		},
+	})
 	if err == nil {
 		t.Errorf("Expected non-nil error for invalid cluster")
 	}

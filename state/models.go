@@ -161,8 +161,38 @@ type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
 	GetExecutableResources() ExecutableResources
-	GetExecutableCommand() string
+	GetExecutableCommand(req ExecutionRequest) string
 	GetExecutableResourceName() string // This will typically be an ARN.
+}
+
+// Common fields required to execute any Executable.
+type ExecutionRequestCommon struct {
+	ClusterName      string   `json:"cluster_name"`
+	Env              *EnvList `json:"env"`
+	OwnerID          string   `json:"owner_id"`
+	Command          *string  `json:"command"`
+	Memory           *int64   `json:"memory"`
+	Cpu              *int64   `json:"cpu"`
+	Engine           *string  `json:"engine"`
+	EphemeralStorage *int64   `json:"ephemeral_storage"`
+	NodeLifecycle    *string  `json:"node_lifecycle"`
+}
+
+type ExecutionRequest interface {
+	GetExecutionRequestCommon() ExecutionRequestCommon
+	GetExecutionRequestCustom() map[string]interface{}
+}
+
+type DefinitionExecutionRequest struct {
+	ExecutionRequestCommon
+}
+
+func (d DefinitionExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
+	return d.ExecutionRequestCommon
+}
+
+func (d DefinitionExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
+	return nil
 }
 
 // Definition represents a definition of a job - roughly 1-1 with an AWS ECS
@@ -193,7 +223,7 @@ func (d Definition) GetExecutableResources() ExecutableResources {
 	return d.ExecutableResources
 }
 
-func (d Definition) GetExecutableCommand() string {
+func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
 	return d.Command
 }
 
