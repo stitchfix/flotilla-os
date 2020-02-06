@@ -90,7 +90,7 @@ func (sw *submitWorker) runOnce() {
 		if executableType == nil {
 			executable, err = sw.sm.GetDefinition(run.DefinitionID)
 		} else {
-			switch *run.ExecutableType {
+			switch *executableType {
 			case state.ExecutableTypeDefinition:
 			default:
 				executable, err = sw.sm.GetDefinition(run.DefinitionID)
