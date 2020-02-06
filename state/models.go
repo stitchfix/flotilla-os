@@ -642,12 +642,7 @@ type Record struct {
 	EventTime         string            `json:"eventTime"`
 	EventSource       string            `json:"eventSource"`
 	EventName         string            `json:"eventName"`
-	RequestParameters RequestParameters `json:"requestParameters"`
 	Resources         []Resource        `json:"resources"`
-}
-
-type RequestParameters struct {
-	TableName string `json:"tableName"`
 }
 
 type Resource struct {
