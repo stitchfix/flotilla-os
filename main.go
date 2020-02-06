@@ -135,7 +135,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, ecsLogsClient, eksLogsClient, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient)
+	app, err := flotilla.NewApp(c, logger, ecsLogsClient, eksLogsClient, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient, ecsQueueManager, eksQueueManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

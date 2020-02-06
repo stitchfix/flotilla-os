@@ -1,6 +1,7 @@
 package flotilla
 
 import (
+	"github.com/stitchfix/flotilla-os/queue"
 	"net/http"
 	"strings"
 	"time"
@@ -50,7 +51,10 @@ func NewApp(conf config.Config,
 	stateManager state.Manager,
 	ecsClusterClient cluster.Client,
 	eksClusterClient cluster.Client,
-	registryClient registry.Client) (App, error) {
+	registryClient registry.Client,
+	ecsQueueManager queue.Manager,
+	eksQueueManager queue.Manager,
+) (App, error) {
 	var app App
 	app.logger = log
 	app.configure(conf)
@@ -88,11 +92,11 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager); err != nil {
+	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager, ecsQueueManager); err != nil {
 		return app, errors.Wrap(err, "problem ecs initializing workers")
 	}
 
-	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager); err != nil {
+	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager, eksQueueManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
 
@@ -140,10 +144,10 @@ func (app *App) initializeECSWorkers(
 	conf config.Config,
 	log flotillaLog.Logger,
 	ee engine.Engine,
-	sm state.Manager) error {
-	engine := state.ECSEngine
-	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &engine)
-	app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	sm state.Manager,
+	qm queue.Manager) error {
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.ECSEngine, qm)
+	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
 	}
@@ -155,10 +159,10 @@ func (app *App) initializeEKSWorkers(
 	conf config.Config,
 	log flotillaLog.Logger,
 	ee engine.Engine,
-	sm state.Manager) error {
-	engine := state.EKSEngine
-	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &engine)
-	app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	sm state.Manager,
+	qm queue.Manager) error {
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.EKSEngine, qm)
+	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
 	}

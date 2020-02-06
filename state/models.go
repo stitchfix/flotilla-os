@@ -358,40 +358,41 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn          string          `json:"task_arn"`
-	RunID            string          `json:"run_id"`
-	DefinitionID     string          `json:"definition_id"`
-	Alias            string          `json:"alias"`
-	Image            string          `json:"image"`
-	ClusterName      string          `json:"cluster"`
-	ExitCode         *int64          `json:"exit_code,omitempty"`
-	Status           string          `json:"status"`
-	QueuedAt         *time.Time      `json:"queued_at,omitempty"`
-	StartedAt        *time.Time      `json:"started_at,omitempty"`
-	FinishedAt       *time.Time      `json:"finished_at,omitempty"`
-	InstanceID       string          `json:"-"`
-	InstanceDNSName  string          `json:"-"`
-	GroupName        string          `json:"group_name"`
-	User             string          `json:"user,omitempty"`
-	TaskType         string          `json:"-"`
-	Env              *EnvList        `json:"env,omitempty"`
-	Command          *string         `json:"command,omitempty"`
-	CommandHash      *string         `json:"command_hash,omitempty"`
-	Memory           *int64          `json:"memory,omitempty"`
-	Cpu              *int64          `json:"cpu,omitempty"`
-	Gpu              *int64          `json:"gpu,omitempty"`
-	ExitReason       *string         `json:"exit_reason,omitempty"`
-	Engine           *string         `json:"engine,omitempty"`
-	NodeLifecycle    *string         `json:"node_lifecycle,omitempty"`
-	EphemeralStorage *int64          `json:"ephemeral_storage,omitempty"`
-	PodName          *string         `json:"pod_name,omitempty"`
-	Namespace        *string         `json:"namespace,omitempty"`
-	ContainerName    *string         `json:"container_name,omitempty"`
-	MaxMemoryUsed    *int64          `json:"max_memory_used,omitempty"`
-	MaxCpuUsed       *int64          `json:"max_cpu_used,omitempty"`
-	PodEvents        *PodEvents      `json:"pod_events,omitempty"`
-	ExecutableID     *string         `json:"executable_id,omitempty"`
-	ExecutableType   *ExecutableType `json:"executable_type,omitempty"`
+	TaskArn                 string                   `json:"task_arn"`
+	RunID                   string                   `json:"run_id"`
+	DefinitionID            string                   `json:"definition_id"`
+	Alias                   string                   `json:"alias"`
+	Image                   string                   `json:"image"`
+	ClusterName             string                   `json:"cluster"`
+	ExitCode                *int64                   `json:"exit_code,omitempty"`
+	Status                  string                   `json:"status"`
+	QueuedAt                *time.Time               `json:"queued_at,omitempty"`
+	StartedAt               *time.Time               `json:"started_at,omitempty"`
+	FinishedAt              *time.Time               `json:"finished_at,omitempty"`
+	InstanceID              string                   `json:"-"`
+	InstanceDNSName         string                   `json:"-"`
+	GroupName               string                   `json:"group_name"`
+	User                    string                   `json:"user,omitempty"`
+	TaskType                string                   `json:"-"`
+	Env                     *EnvList                 `json:"env,omitempty"`
+	Command                 *string                  `json:"command,omitempty"`
+	CommandHash             *string                  `json:"command_hash,omitempty"`
+	Memory                  *int64                   `json:"memory,omitempty"`
+	Cpu                     *int64                   `json:"cpu,omitempty"`
+	Gpu                     *int64                   `json:"gpu,omitempty"`
+	ExitReason              *string                  `json:"exit_reason,omitempty"`
+	Engine                  *string                  `json:"engine,omitempty"`
+	NodeLifecycle           *string                  `json:"node_lifecycle,omitempty"`
+	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty"`
+	PodName                 *string                  `json:"pod_name,omitempty"`
+	Namespace               *string                  `json:"namespace,omitempty"`
+	ContainerName           *string                  `json:"container_name,omitempty"`
+	MaxMemoryUsed           *int64                   `json:"max_memory_used,omitempty"`
+	MaxCpuUsed              *int64                   `json:"max_cpu_used,omitempty"`
+	PodEvents               *PodEvents               `json:"pod_events,omitempty"`
+	CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications,omitempty"`
+	ExecutableID            *string                  `json:"executable_id,omitempty"`
+	ExecutableType          *ExecutableType          `json:"executable_type,omitempty"`
 }
 
 //
@@ -513,6 +514,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.ExecutableType != nil {
 		d.ExecutableType = other.ExecutableType
+	}
+
+	if other.CloudTrailNotifications != nil && len((*other.CloudTrailNotifications).Records) > 0 {
+		d.CloudTrailNotifications = other.CloudTrailNotifications
 	}
 
 	//
@@ -647,4 +652,47 @@ type UserInfo struct {
 type TaskResources struct {
 	Cpu    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
+}
+
+type CloudTrailS3File struct {
+	S3Bucket    string   `json:"s3Bucket"`
+	S3ObjectKey []string `json:"s3ObjectKey"`
+	Done        func() error
+}
+
+func UnmarshalCloudTrailNotification(data []byte) (CloudTrailNotifications, error) {
+	var r CloudTrailNotifications
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *CloudTrailNotifications) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type CloudTrailNotifications struct {
+	Records []Record `json:"Records"`
+}
+
+type Record struct {
+	UserIdentity      UserIdentity      `json:"userIdentity"`
+	EventTime         string            `json:"eventTime"`
+	EventSource       string            `json:"eventSource"`
+	EventName         string            `json:"eventName"`
+	RequestParameters RequestParameters `json:"requestParameters"`
+	Resources         []Resource        `json:"resources"`
+}
+
+type RequestParameters struct {
+	TableName string `json:"tableName"`
+}
+
+type Resource struct {
+	AccountID string `json:"accountId"`
+	Type      string `json:"type"`
+	Arn       string `json:"ARN"`
+}
+
+type UserIdentity struct {
+	Arn string `json:"arn"`
 }

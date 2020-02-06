@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/queue"
 	"gopkg.in/tomb.v2"
 	"time"
 
@@ -21,13 +22,15 @@ type workerManager struct {
 	workers      map[string][]Worker
 	t            tomb.Tomb
 	engine       *string
+	qm           queue.Manager
 }
 
-func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string) error {
+func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
 	wm.conf = conf
 	wm.log = log
 	wm.ee = ee
 	wm.sm = sm
+	wm.qm = qm
 	wm.pollInterval = pollInterval
 	wm.engine = engine
 	if err := wm.InitializeWorkers(); err != nil {
@@ -60,7 +63,7 @@ func (wm *workerManager) InitializeWorkers() error {
 		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
-			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine)
+			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine, wm.qm)
 
 			if err != nil {
 				return err
@@ -152,7 +155,7 @@ func (wm *workerManager) removeWorker(workerType string) error {
 }
 
 func (wm *workerManager) addWorker(workerType string) error {
-	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine)
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine, wm.qm)
 
 	if err != nil {
 		return err
