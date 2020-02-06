@@ -514,14 +514,22 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		podEvents = &PodEvents{}
 	}
 
+	cloudTrailNotifications := r.CloudTrailNotifications
+
+	if cloudTrailNotifications == nil {
+		cloudTrailNotifications = &CloudTrailNotifications{}
+	}
+
 	return json.Marshal(&struct {
-		Instance  map[string]string `json:"instance"`
-		PodEvents *PodEvents        `json:"pod_events"`
+		Instance                map[string]string        `json:"instance"`
+		PodEvents               *PodEvents               `json:"pod_events"`
+		CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications"`
 		Alias
 	}{
-		Instance:  instance,
-		PodEvents: podEvents,
-		Alias:     (Alias)(r),
+		Instance:                instance,
+		PodEvents:               podEvents,
+		CloudTrailNotifications: cloudTrailNotifications,
+		Alias:                   (Alias)(r),
 	})
 }
 
