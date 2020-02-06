@@ -629,8 +629,8 @@ func UnmarshalCloudTrailNotification(data []byte) (CloudTrailNotifications, erro
 	return r, err
 }
 
-func (r *CloudTrailNotifications) Marshal() ([]byte, error) {
-	return json.Marshal(r)
+func (e *CloudTrailNotifications) Marshal() ([]byte, error) {
+	return json.Marshal(e)
 }
 
 type CloudTrailNotifications struct {

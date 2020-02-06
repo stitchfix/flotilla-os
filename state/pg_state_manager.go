@@ -937,3 +937,18 @@ func (e Tags) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
+
+// Scan from db
+func (e *CloudTrailNotifications) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
+// Value to db
+func (e CloudTrailNotifications) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
