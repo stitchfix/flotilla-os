@@ -103,7 +103,9 @@ select
   max_memory_used as maxmemoryused,
   pod_events::TEXT as podevents,
   command_hash as commandhash,
-  cloudtrail_notifications::TEXT as cloudtrailnotifications
+  cloudtrail_notifications::TEXT as cloudtrailnotifications,
+  coalesce(executable_id,'') as executableid,
+  coalesce(executable_type,'') as executabletype
 from task t
 `
 

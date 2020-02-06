@@ -251,20 +251,22 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	var err error
 	memory := int64(512)
 	d := Definition{
-		Arn:           "arn:cupcake",
-		DefinitionID:  "id:cupcake",
-		GroupName:     "group:cupcake",
-		ContainerName: "container:cupcake",
-		User:          "noone",
-		Memory:        &memory,
-		Alias:         "cupcake",
-		Image:         "image:cupcake",
-		Command:       "echo 'hi'",
-		Env: &EnvList{
-			{Name: "E1", Value: "V1"},
+		Arn:          "arn:cupcake",
+		DefinitionID: "id:cupcake",
+		GroupName:    "group:cupcake",
+		User:         "noone",
+		Alias:        "cupcake",
+		Command:      "echo 'hi'",
+		Tags:         &Tags{"apple", "orange", "tiger"},
+		ExecutableResources: ExecutableResources{
+			Memory: &memory,
+			Image:  "image:cupcake",
+			Env: &EnvList{
+				{Name: "E1", Value: "V1"},
+			},
+			ContainerName: "container:cupcake",
+			Ports:         &PortsList{12345, 6789},
 		},
-		Ports: &PortsList{12345, 6789},
-		Tags:  &Tags{"apple", "orange", "tiger"},
 	}
 
 	err = sm.CreateDefinition(d)
@@ -299,10 +301,12 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 		"cupcake",
 	}
 	updates := Definition{
-		Image: "updated",
-		Env:   &env,
-		Tags:  &tags,
-		Ports: &PortsList{}, // <---- empty, set ports to empty list
+		Tags: &tags,
+		ExecutableResources: ExecutableResources{
+			Image: "updated",
+			Env:   &env,
+			Ports: &PortsList{}, // <---- empty, set ports to empty list
+		},
 	}
 	_, err := sm.UpdateDefinition("A", updates)
 	if err != nil {

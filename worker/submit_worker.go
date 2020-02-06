@@ -82,7 +82,21 @@ func (sw *submitWorker) runOnce() {
 		//
 		// * Will not be necessary once we copy relevant run information from definition onto the run itself
 		//
-		definition, err := sw.sm.GetDefinition(run.DefinitionID)
+		var executable state.Executable
+		executableType := run.ExecutableType
+
+		// If the executable type is not set, safe to assume that it is a legacy
+		// definition.
+		if executableType == nil {
+			executable, err = sw.sm.GetDefinition(run.DefinitionID)
+		} else {
+			switch *executableType {
+			case state.ExecutableTypeDefinition:
+			default:
+				executable, err = sw.sm.GetDefinition(run.DefinitionID)
+			}
+		}
+
 		if err != nil {
 			sw.log.Log(
 				"message", "Error fetching definition for run",
@@ -104,7 +118,7 @@ func (sw *submitWorker) runOnce() {
 			// Execute the run using the execution engine
 			//
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
-			launched, retryable, err := sw.ee.Execute(definition, run, sw.sm)
+			launched, retryable, err := sw.ee.Execute(executable, run, sw.sm)
 			if err != nil {
 				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
@@ -119,7 +133,7 @@ func (sw *submitWorker) runOnce() {
 			//
 			// Emit event with current definition
 			//
-			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", definition, "run_id", run.RunID)
+			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", executable, "run_id", run.RunID)
 			if err != nil {
 				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}

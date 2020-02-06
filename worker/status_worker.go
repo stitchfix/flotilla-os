@@ -250,7 +250,9 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"group_name", update.GroupName,
 			"user", update.User,
 			"task_type", update.TaskType,
-			"env", env)
+			"env", env,
+			"executable_id", update.ExecutableID,
+			"executable_type", update.ExecutableType)
 	} else {
 		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
@@ -267,7 +269,9 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"group_name", update.GroupName,
 			"user", update.User,
 			"task_type", update.TaskType,
-			"env", env)
+			"env", env,
+			"executable_id", update.ExecutableID,
+			"executable_type", update.ExecutableType)
 	}
 
 	if err != nil {
