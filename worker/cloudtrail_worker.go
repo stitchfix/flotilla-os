@@ -78,7 +78,6 @@ func (ctw *cloudtrailWorker) runOnce() {
 	}
 
 	ctw.processS3Keys(cloudTrailS3File)
-	_ = cloudTrailS3File.Done()
 }
 
 func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3File) {
@@ -118,10 +117,15 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 	}
 
 	for runId, records := range runIdRecordMap {
-		_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
 		run, err := ctw.sm.GetRun(runId)
 		if err == nil {
-			run.CloudTrailNotifications.Records = append(run.CloudTrailNotifications.Records, records...)
+			_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
+			if run.CloudTrailNotifications == nil || len((*run.CloudTrailNotifications).Records) == 0 {
+				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: records}
+			} else {
+				run.CloudTrailNotifications = &state.CloudTrailNotifications{Records: append((*run.CloudTrailNotifications).Records, records...)}
+			}
+
 			_, err = ctw.sm.UpdateRun(runId, run)
 			if err != nil {
 				_ = ctw.log.Log("message", "Error updating run", "error", fmt.Sprintf("%+v", err))

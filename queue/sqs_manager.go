@@ -282,13 +282,12 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 		return receipt, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
-	if len(response.Messages) > 0 && response.Messages[0].Body != nil {
-		err = json.Unmarshal([]byte(*response.Messages[0].Body), &receipt)
-		if err == nil {
-			receipt.Done = func() error {
-				return qm.ack(qURL, response.Messages[0].ReceiptHandle)
-			}
-		}
+	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
+		body := response.Messages[0].Body
+
+		err = json.Unmarshal([]byte(*body), &receipt)
+		_ = qm.ack(qURL, response.Messages[0].ReceiptHandle)
+
 	}
 	return receipt, nil
 }
