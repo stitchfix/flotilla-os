@@ -14,7 +14,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(td state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -74,11 +74,8 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definition, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
-	cmd := ""
-	if len(definition.Command) > 0 {
-		cmd = definition.Command
-	}
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+	cmd := executable.GetExecutableCommand()
 
 	if run.Command != nil && len(*run.Command) > 0 {
 		cmd = *run.Command
@@ -87,18 +84,18 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
-	resourceRequirements, run := a.constructResourceRequirements(definition, run, manager, araEnabled)
+	resourceRequirements, run := a.constructResourceRequirements(executable, run, manager, araEnabled)
 
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
 		Command:   cmdSlice,
 		Resources: resourceRequirements,
-		Env:       a.envOverrides(definition, run),
-		Ports:     a.constructContainerPorts(definition),
+		Env:       a.envOverrides(executable, run),
+		Ports:     a.constructContainerPorts(executable),
 	}
 
-	affinity := a.constructAffinity(definition, run)
+	affinity := a.constructAffinity(executable, run)
 	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
 	activeDeadlineSeconds := state.SpotActiveDeadlineSeconds
@@ -135,10 +132,11 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(definition state.Definit
 	return eksJob, nil
 }
 
-func (a *eksAdapter) constructContainerPorts(definition state.Definition) []corev1.ContainerPort {
+func (a *eksAdapter) constructContainerPorts(executable state.Executable) []corev1.ContainerPort {
 	var containerPorts []corev1.ContainerPort
-	if definition.Ports != nil && len(*definition.Ports) > 0 {
-		for _, port := range *definition.Ports {
+	executableResources := executable.GetExecutableResources()
+	if executableResources.Ports != nil && len(*executableResources.Ports) > 0 {
+		for _, port := range *executableResources.Ports {
 			containerPorts = append(containerPorts, corev1.ContainerPort{
 				ContainerPort: int32(port),
 			})
@@ -147,8 +145,9 @@ func (a *eksAdapter) constructContainerPorts(definition state.Definition) []core
 	return containerPorts
 }
 
-func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Run) *corev1.Affinity {
+func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
+	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
@@ -161,7 +160,7 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 		nodeLifecycle = append(nodeLifecycle, "spot")
 	}
 
-	if definition.Gpu == nil || *definition.Gpu <= 0 {
+	if executableResources.Gpu == nil || *executableResources.Gpu <= 0 {
 		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
@@ -203,10 +202,10 @@ func (a *eksAdapter) constructAffinity(definition state.Definition, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(definition state.Definition, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
-	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(definition, run, manager, araEnabled)
+	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
 
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
@@ -220,9 +219,10 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	requests[corev1.ResourceCPU] = cpuRequestQuantity
 	requests[corev1.ResourceMemory] = memRequestQuantity
 
-	if definition.Gpu != nil && *definition.Gpu > 0 {
-		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
-		requests["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *definition.Gpu))
+	executableResources := executable.GetExecutableResources()
+	if executableResources.Gpu != nil && *executableResources.Gpu > 0 {
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *executableResources.Gpu))
+		requests["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *executableResources.Gpu))
 		run.NodeLifecycle = &state.OndemandLifecycle
 	}
 
@@ -236,10 +236,11 @@ func (a *eksAdapter) constructResourceRequirements(definition state.Definition, 
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
-	cpuLimit, memLimit := a.getResourceDefaults(run, definition)
-	cpuRequest, memRequest := a.getResourceDefaults(run, definition)
-	if araEnabled && definition.AdaptiveResourceAllocation != nil && *definition.AdaptiveResourceAllocation == true {
+func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
+	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
+	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
+	executableResources := executable.GetExecutableResources()
+	if araEnabled && executableResources.AdaptiveResourceAllocation != nil && *executableResources.AdaptiveResourceAllocation == true {
 		// Check if last run was a OOM, in that case only increase memory
 		lastRun := a.getLastRun(manager, run)
 		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
@@ -247,7 +248,7 @@ func (a *eksAdapter) adaptiveResources(definition state.Definition, run state.Ru
 			cpuRequest = *lastRun.Cpu
 		} else {
 			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(definition.DefinitionID, run.RunID)
+			estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
 			if err == nil {
 				cpuRequest = estimatedResources.Cpu
 				memRequest = estimatedResources.Memory
@@ -285,30 +286,31 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
 	return cpu, mem
 }
 
-func (a *eksAdapter) getResourceDefaults(run state.Run, definition state.Definition) (int64, int64) {
+func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executable) (int64, int64) {
 	// 1. Init with the global defaults
 	cpu := state.MinCPU
 	mem := state.MinMem
+	executableResources := executable.GetExecutableResources()
 
 	// 2. Look up Run level
 	// 3. If not at Run level check Definitions
 	if run.Cpu != nil && *run.Cpu != 0 {
 		cpu = *run.Cpu
 	} else {
-		if definition.Cpu != nil && *definition.Cpu != 0 {
-			cpu = *definition.Cpu
+		if executableResources.Cpu != nil && *executableResources.Cpu != 0 {
+			cpu = *executableResources.Cpu
 		}
 	}
 	if run.Memory != nil && *run.Memory != 0 {
 		mem = *run.Memory
 	} else {
-		if definition.Memory != nil && *definition.Memory != 0 {
-			mem = *definition.Memory
+		if executableResources.Memory != nil && *executableResources.Memory != 0 {
+			mem = *executableResources.Memory
 		}
 	}
 	// 4. Override for very large memory requests.
 	// Remove after migration.
-	if mem >= 36864 && mem < 131072 && (definition.Gpu == nil || *definition.Gpu == 0) {
+	if mem >= 36864 && mem < 131072 && (executableResources.Gpu == nil || *executableResources.Gpu == 0) {
 		// using the 8x ratios between cpu and memory ~ r5 class of instances
 		cpuOverride := mem / 8
 		if cpuOverride > cpu {
@@ -342,9 +344,10 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 	return []string{bashCmd, optLogin, optStr, cmdString}
 }
 
-func (a *eksAdapter) envOverrides(definition state.Definition, run state.Run) []corev1.EnvVar {
+func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []corev1.EnvVar {
 	pairs := make(map[string]string)
-	for _, ev := range *definition.Env {
+	resources := executable.GetExecutableResources()
+	for _, ev := range *resources.Env {
 		name := a.sanitizeEnvVar(ev.Name)
 		value := ev.Value
 		pairs[name] = value

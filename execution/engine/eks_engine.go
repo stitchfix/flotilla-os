@@ -119,8 +119,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(td state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(td, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
+func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {

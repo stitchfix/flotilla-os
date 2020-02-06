@@ -310,9 +310,9 @@ func (ee *ECSExecutionEngine) Enqueue(run state.Run) error {
 // Execute takes a pre-configured run and definition and submits them for execution
 // to AWS ECS
 //
-func (ee *ECSExecutionEngine) Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
+func (ee *ECSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	var executed state.Run
-	rti := ee.toRunTaskInput(definition, run)
+	rti := ee.toRunTaskInput(executable, run)
 	result, err := ee.ecsClient.RunTask(&rti)
 	if err != nil {
 		retryable := false
@@ -408,8 +408,8 @@ func (ee *ECSExecutionEngine) Deregister(definition state.Definition) error {
 	return nil
 }
 
-func (ee *ECSExecutionEngine) toRunTaskInput(definition state.Definition, run state.Run) ecs.RunTaskInput {
-	return ee.adapter.AdaptRun(definition, run)
+func (ee *ECSExecutionEngine) toRunTaskInput(executable state.Executable, run state.Run) ecs.RunTaskInput {
+	return ee.adapter.AdaptRun(executable, run)
 }
 
 func (ee *ECSExecutionEngine) translateTask(task ecs.Task) state.Run {

@@ -360,7 +360,7 @@ func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
 }
 
 // Execute - Execution Engine
-func (iatt *ImplementsAllTheThings) Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error) {
+func (iatt *ImplementsAllTheThings) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	iatt.Calls = append(iatt.Calls, "Execute")
 	return state.Run{}, iatt.ExecuteErrorIsRetryable, iatt.ExecuteError
 }

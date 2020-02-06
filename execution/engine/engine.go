@@ -14,9 +14,7 @@ import (
 //
 type Engine interface {
 	Initialize(conf config.Config) error
-	Execute(definition state.Definition, run state.Run, manager state.Manager) (state.Run, bool, error)
-	Define(definition state.Definition) (state.Definition, error)
-	Deregister(definition state.Definition) error
+	Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error)
 	Terminate(run state.Run) error
 	Enqueue(run state.Run) error
 	PollRuns() ([]RunReceipt, error)
@@ -24,6 +22,10 @@ type Engine interface {
 	GetEvents(run state.Run) (state.PodEventList, error)
 	FetchUpdateStatus(run state.Run) (state.Run, error)
 	FetchPodMetrics(run state.Run) (state.Run, error)
+
+	// Legacy methods from the ECS era. Here for backwards compatibility.
+	Define(definition state.Definition) (state.Definition, error)
+	Deregister(definition state.Definition) error
 }
 
 type RunReceipt struct {

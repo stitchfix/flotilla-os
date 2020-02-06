@@ -140,14 +140,15 @@ type Tags []string
 // ExecutableResources define the resources and flags required to run an
 // executable.
 type ExecutableResources struct {
-	Image                      string   `json:"image"`
-	Memory                     *int64   `json:"memory"`
-	Gpu                        *int64   `json:"gpu,omitempty"`
-	Cpu                        *int64   `json:"cpu,omitempty"`
-	Env                        *EnvList `json:"env"`
-	Privileged                 *bool    `json:"privileged,omitempty"`
-	AdaptiveResourceAllocation *bool    `json:"adaptive_resource_allocation,omitempty"`
-	ContainerName              string   `json:"container_name"`
+	Image                      string     `json:"image"`
+	Memory                     *int64     `json:"memory"`
+	Gpu                        *int64     `json:"gpu,omitempty"`
+	Cpu                        *int64     `json:"cpu,omitempty"`
+	Env                        *EnvList   `json:"env"`
+	Privileged                 *bool      `json:"privileged,omitempty"`
+	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
+	ContainerName              string     `json:"container_name"`
+	Ports                      *PortsList `json:"ports,omitempty"`
 }
 
 type ExecutableType string
@@ -161,21 +162,21 @@ type Executable interface {
 	GetExecutableType() *ExecutableType
 	GetExecutableResources() ExecutableResources
 	GetExecutableCommand() string
+	GetExecutableResourceName() string // This will typically be an ARN.
 }
 
 // Definition represents a definition of a job - roughly 1-1 with an AWS ECS
 // task definition. It implements the `Executable` interface.
 type Definition struct {
-	Arn              string     `json:"arn"`
-	DefinitionID     string     `json:"definition_id"`
-	GroupName        string     `json:"group_name"`
-	User             string     `json:"user,omitempty"`
-	Alias            string     `json:"alias"`
-	Command          string     `json:"command,omitempty"`
-	TaskType         string     `json:"-"`
-	Ports            *PortsList `json:"ports,omitempty"`
-	Tags             *Tags      `json:"tags,omitempty"`
-	SharedMemorySize *int64     `json:"shared_memory_size,omitempty"`
+	Arn              string `json:"arn"`
+	DefinitionID     string `json:"definition_id"`
+	GroupName        string `json:"group_name"`
+	User             string `json:"user,omitempty"`
+	Alias            string `json:"alias"`
+	Command          string `json:"command,omitempty"`
+	TaskType         string `json:"-"`
+	Tags             *Tags  `json:"tags,omitempty"`
+	SharedMemorySize *int64 `json:"shared_memory_size,omitempty"`
 	ExecutableResources
 }
 
@@ -194,6 +195,10 @@ func (d Definition) GetExecutableResources() ExecutableResources {
 
 func (d Definition) GetExecutableCommand() string {
 	return d.Command
+}
+
+func (d Definition) GetExecutableResourceName() string {
+	return d.Arn
 }
 
 var commandWrapper = `
