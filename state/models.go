@@ -160,7 +160,7 @@ const (
 type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
-	GetExecutableResources() ExecutableResources
+	GetExecutableResources() *ExecutableResources
 	GetExecutableCommand(req ExecutionRequest) string
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
@@ -219,8 +219,8 @@ func (d Definition) GetExecutableType() *ExecutableType {
 	return &t
 }
 
-func (d Definition) GetExecutableResources() ExecutableResources {
-	return d.ExecutableResources
+func (d Definition) GetExecutableResources() *ExecutableResources {
+	return &d.ExecutableResources
 }
 
 func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
