@@ -75,7 +75,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 }
 
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
-	cmd := executable.GetExecutableCommand()
+	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
 		cmd = *run.Command
