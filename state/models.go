@@ -618,8 +618,8 @@ type TaskResources struct {
 }
 
 type CloudTrailS3File struct {
-	S3Bucket    string   `json:"s3Bucket"`
-	S3ObjectKey []string `json:"s3ObjectKey"`
+	S3Bucket    string   `json:"s3_bucket"`
+	S3ObjectKey []string `json:"s3_object_key"`
 	Done        func() error
 }
 
@@ -634,26 +634,26 @@ func (r *CloudTrailNotifications) Marshal() ([]byte, error) {
 }
 
 type CloudTrailNotifications struct {
-	Records []Record `json:"Records"`
+	Records []Record `json:"records"`
 }
 
 type Record struct {
-	UserIdentity      UserIdentity      `json:"userIdentity"`
-	EventTime         string            `json:"eventTime"`
-	EventSource       string            `json:"eventSource"`
-	EventName         string            `json:"eventName"`
-	RequestParameters RequestParameters `json:"requestParameters"`
+	UserIdentity      UserIdentity      `json:"user_identity"`
+	EventTime         string            `json:"event_time"`
+	EventSource       string            `json:"event_source"`
+	EventName         string            `json:"event_name"`
+	RequestParameters RequestParameters `json:"request_parameters"`
 	Resources         []Resource        `json:"resources"`
 }
 
 type RequestParameters struct {
-	TableName string `json:"tableName"`
+	TableName string `json:"table_name"`
 }
 
 type Resource struct {
-	AccountID string `json:"accountId"`
+	AccountID string `json:"account_id"`
 	Type      string `json:"type"`
-	Arn       string `json:"ARN"`
+	Arn       string `json:"arn"`
 }
 
 type UserIdentity struct {
