@@ -69,6 +69,6 @@ func NewRouter(ep endpoints) *mux.Router {
 	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
-	v7.HandleFunc("/template/{template_id}/execute", ep.CreateRunV4).Methods("PUT")
+	v7.HandleFunc("/template/{template_id}/execute", ep.CreateTemplateRun).Methods("PUT")
 	return r
 }

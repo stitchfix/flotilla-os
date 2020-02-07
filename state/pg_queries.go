@@ -195,7 +195,7 @@ SELECT
   container_name as containername,
   memory,
   env::TEXT as env,
-  privileged
+  privileged,
   cpu,
   gpu
 FROM template
