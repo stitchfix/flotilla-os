@@ -8,6 +8,7 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -348,7 +349,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
@@ -381,14 +382,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, run)
 	}
 }
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
+
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -404,7 +398,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *lr.Engine)})
 			return
@@ -414,7 +408,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.NodeLifecycle != nil {
-		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
 			return
@@ -465,7 +459,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
@@ -475,7 +469,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.NodeLifecycle != nil {
-		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
 			return

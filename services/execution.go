@@ -14,6 +14,7 @@ import (
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 )
 
 //
@@ -123,14 +124,6 @@ func (es *executionService) ReservedVariables() []string {
 		keys = append(keys, k)
 	}
 	return keys
-}
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 //
