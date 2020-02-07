@@ -809,7 +809,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Engine != nil {
-		if !stringInSlice(*req.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *req.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *req.Engine)})
 			return
@@ -819,7 +819,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.NodeLifecycle != nil {
-		if !stringInSlice(*req.NodeLifecycle, state.NodeLifeCycles) {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *req.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
 			return
@@ -829,7 +829,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 
-	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], req)
+	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template run",

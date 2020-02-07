@@ -745,12 +745,12 @@ type TemplateExecutionRequest struct {
 	ExecutionRequestCommon
 }
 
-func (t TemplateExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
-	return t.ExecutionRequestCommon
+func (t TemplateExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
+	return &t.ExecutionRequestCommon
 }
 
-func (t TemplateExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
-	return map[string]interface{}{
+func (t TemplateExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
+	return &map[string]interface{}{
 		TemplatePayloadKey: t.TemplatePayload,
 	}
 }
@@ -773,17 +773,18 @@ func (t Template) GetExecutableType() *ExecutableType {
 	return &et
 }
 
-func (t Template) GetExecutableResources() ExecutableResources {
-	return t.ExecutableResources
+func (t Template) GetExecutableResources() *ExecutableResources {
+	return &t.ExecutableResources
 }
 
 func (t Template) GetExecutableCommand(req ExecutionRequest) string {
-	custom := req.GetExecutionRequestCustom()
+	custom := *req.GetExecutionRequestCustom()
 	tpl := custom[TemplatePayloadKey]
 
 	if tpl == nil {
 		// throw error
 	}
+
 	// do jsonschema validation / template string dump here.
 	// tplPayload := req.TemplatePayload
 	return t.CommandTemplate
@@ -792,3 +793,6 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) string {
 func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
 }
+
+// GetExecutableResources() *ExecutableResources
+// GetExecutableCommand(req *ExecutionRequest) string

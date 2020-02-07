@@ -38,7 +38,7 @@ type ExecutionService interface {
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
 	GetEvents(run state.Run) (state.PodEventList, error)
-	CreateTemplateRunByTemplateID(templateID string, req state.TemplateExecutionRequest) (state.Run, error)
+	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 }
 
 type executionService struct {
@@ -159,33 +159,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 
 	fields := req.GetExecutionRequestCommon()
-
-	if fields.Engine == nil {
-		fields.Engine = &state.DefaultEngine
-	}
-
-	// Handle the case the cluster name was of type EKS but fields.Engine was not set to EKS.
-	if fields.ClusterName == es.eksClusterOverride {
-		fields.Engine = &state.EKSEngine
-	}
-
-	if *fields.Engine == state.EKSEngine {
-		fields.ClusterName = es.eksClusterOverride
-	}
-
-	// Added to facilitate migration of ECS jobs to EKS.
-	if fields.Engine != &state.EKSEngine && es.eksOverridePercent > 0 && *definition.Privileged == false {
-		modulo := 100 / es.eksOverridePercent
-		if rand.Int()%modulo == 0 {
-			fields.Engine = &state.EKSEngine
-			if contains(es.clusterOndemandWhitelist, fields.ClusterName) {
-				fields.NodeLifecycle = &state.OndemandLifecycle
-			} else {
-				fields.NodeLifecycle = &state.SpotLifecycle
-			}
-			fields.ClusterName = es.eksClusterOverride
-		}
-	}
+	es.sanitizeExecutionRequestCommonFields(fields, *definition.Privileged)
 
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &definition, fields.Env, *fields.Engine); err != nil {
@@ -198,32 +172,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		return run, err
 	}
 
-	// Save run to source of state - it is *CRITICAL* to do this
-	// -before- queuing to avoid processing unsaved runs
-	if err = es.stateManager.CreateRun(run); err != nil {
-		return run, err
-	}
-
-	// ECS Queue run
-	if *fields.Engine == state.ECSEngine {
-		err = es.ecsExecutionEngine.Enqueue(run)
-	}
-	if *fields.Engine == state.EKSEngine {
-		err = es.eksExecutionEngine.Enqueue(run)
-	}
-
-	queuedAt := time.Now()
-
-	if err != nil {
-		return run, err
-	}
-
-	// UpdateStatus the run's QueuedAt field
-	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
-		return run, err
-	}
-
-	return run, nil
+	return es.createAndEnqueueRun(run)
 }
 
 func (es *executionService) constructRunFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
@@ -470,26 +419,10 @@ func (es *executionService) ListClusters() ([]string, error) {
 }
 
 //
-// Constructs and queues a new Template Executable on the cluster specified.
+// sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
+// several common request fields (mostly around ECS/EKS differences).
 //
-func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req state.TemplateExecutionRequest) (state.Run, error) {
-	// Ensure definition exists
-	tpl, err := es.stateManager.GetTemplate(templateID)
-	if err != nil {
-		return state.Run{}, err
-	}
-
-	return es.createFromTemplate(tpl, req)
-}
-
-func (es *executionService) createFromTemplate(template state.Template, req state.TemplateExecutionRequest) (state.Run, error) {
-	var (
-		run state.Run
-		err error
-	)
-
-	fields := req.GetExecutionRequestCommon()
-
+func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged bool) {
 	if fields.Engine == nil {
 		fields.Engine = &state.DefaultEngine
 	}
@@ -504,11 +437,11 @@ func (es *executionService) createFromTemplate(template state.Template, req stat
 	}
 
 	// Added to facilitate migration of ECS jobs to EKS.
-	if fields.Engine != &state.EKSEngine && es.eksOverridePercent > 0 && *template.Privileged == false {
+	if fields.Engine != &state.EKSEngine && es.eksOverridePercent > 0 && privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
 			fields.Engine = &state.EKSEngine
-			if contains(es.clusterOndemandWhitelist, fields.ClusterName) {
+			if utils.StringSliceContains(es.clusterOndemandWhitelist, fields.ClusterName) {
 				fields.NodeLifecycle = &state.OndemandLifecycle
 			} else {
 				fields.NodeLifecycle = &state.SpotLifecycle
@@ -516,18 +449,14 @@ func (es *executionService) createFromTemplate(template state.Template, req stat
 			fields.ClusterName = es.eksClusterOverride
 		}
 	}
+}
 
-	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {
-		return run, err
-	}
-
-	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRunFromTemplate(template, req)
-	if err != nil {
-		return run, err
-	}
-
+//
+// createAndEnqueueRun creates a run object in the DB, enqueues it, then
+// updates the db's run object with a new `queued_at` field.
+//
+func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error) {
+	var err error
 	// Save run to source of state - it is *CRITICAL* to do this
 	// -before- queuing to avoid processing unsaved runs
 	if err = es.stateManager.CreateRun(run); err != nil {
@@ -535,10 +464,9 @@ func (es *executionService) createFromTemplate(template state.Template, req stat
 	}
 
 	// ECS Queue run
-	if *fields.Engine == state.ECSEngine {
+	if *run.Engine == state.ECSEngine {
 		err = es.ecsExecutionEngine.Enqueue(run)
-	}
-	if *fields.Engine == state.EKSEngine {
+	} else if *run.Engine == state.EKSEngine {
 		err = es.eksExecutionEngine.Enqueue(run)
 	}
 
@@ -556,12 +484,53 @@ func (es *executionService) createFromTemplate(template state.Template, req stat
 	return run, nil
 }
 
-func (es *executionService) constructRunFromTemplate(template state.Template, req state.TemplateExecutionRequest) (state.Run, error) {
+//
+// Create constructs and queues a new Run on the cluster specified.
+//
+func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
+	// Ensure template exists
+	template, err := es.stateManager.GetTemplate(templateID)
+	if err != nil {
+		return state.Run{}, err
+	}
+
+	return es.createFromTemplate(template, req)
+}
+
+func (es *executionService) createFromTemplate(template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
+	var (
+		run state.Run
+		err error
+	)
+
+	fields := req.GetExecutionRequestCommon()
+	es.sanitizeExecutionRequestCommonFields(fields, *template.Privileged)
+
+	// Validate that template can be run (image exists, cluster has resources)
+	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {
+		return run, err
+	}
+
+	// Construct run object with StatusQueued and new UUID4 run id
+	run, err = es.constructRunFromTemplate(template, req)
+	if err != nil {
+		return run, err
+	}
+
+	return es.createAndEnqueueRun(run)
+}
+
+func (es *executionService) constructRunFromTemplate(template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
 	run, err := es.constructBaseRunFromExecutable(template, req)
 
 	if err != nil {
 		return run, err
 	}
+
+	// @TODO: how to handle these.
+	run.DefinitionID = template.TemplateID
+	run.Alias = template.TemplateID
+	run.GroupName = template.TemplateID
 
 	return run, nil
 }

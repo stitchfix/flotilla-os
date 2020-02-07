@@ -30,6 +30,7 @@ type ImplementsAllTheThings struct {
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+	Templates               map[string]state.Template
 }
 
 func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
@@ -388,4 +389,15 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", nil, nil
+}
+
+// GetDefinition - StateManager
+func (iatt *ImplementsAllTheThings) GetTemplate(templateID string) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplate")
+	var err error
+	d, ok := iatt.Templates[templateID]
+	if !ok {
+		err = fmt.Errorf("No template %s", templateID)
+	}
+	return d, err
 }
