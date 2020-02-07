@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"regexp"
 	"text/template"
 	"time"
@@ -786,15 +785,21 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 		result bytes.Buffer
 	)
 
-	custom := *req.GetExecutionRequestCustom()
-	payload := custom[TemplatePayloadKey]
+	// Get the request's custom fields.
+	customFields := *req.GetExecutionRequestCustom()
+	executionPayload := customFields[TemplatePayloadKey]
+	if executionPayload == nil {
+		return "", err
+	}
 
-	if payload == nil {
-		return "", errors.Errorf("empty payload in ExecutionRequest sent to template.GetExecutableCommand()")
+	// JSON.parse the payload for validation.
+	jsonPayload, err := json.Marshal(executionPayload)
+	if err != nil {
+		return "", err
 	}
 
 	schemaLoader := gojsonschema.NewStringLoader(t.Schema)
-	documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", payload))
+	documentLoader := gojsonschema.NewBytesLoader(jsonPayload)
 
 	// Perform JSON schema validation to ensure that the request's template
 	// payload conforms to the template's JSON schema.
@@ -804,13 +809,12 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 
 	// Create a new template string based on the template.Template.
 	textTemplate, err := template.New("command").Funcs(sprig.TxtFuncMap()).Parse(t.CommandTemplate)
-
 	if err != nil {
 		return "", err
 	}
 
 	// Dump payload into the template string.
-	if err = textTemplate.Execute(&result, payload); err != nil {
+	if err = textTemplate.Execute(&result, executionPayload); err != nil {
 		return "", err
 	}
 
