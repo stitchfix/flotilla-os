@@ -204,7 +204,12 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
 	// `executableCmd` as the Run's Command.
-	executableCmd := executable.GetExecutableCommand(req)
+	executableCmd, err := executable.GetExecutableCommand(req)
+
+	if err != nil {
+		return run, err
+	}
+
 	if (fields.Command == nil || len(*fields.Command) == 0) && (len(executableCmd) > 0) {
 		fields.Command = aws.String(executableCmd)
 	}

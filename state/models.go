@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"regexp"
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	uuid "github.com/nu7hatch/gouuid"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var ECSEngine = "ecs"
@@ -163,7 +166,7 @@ type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
 	GetExecutableResources() *ExecutableResources
-	GetExecutableCommand(req ExecutionRequest) string
+	GetExecutableCommand(req ExecutionRequest) (string, error)
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
 
@@ -224,8 +227,8 @@ func (d Definition) GetExecutableResources() *ExecutableResources {
 	return &d.ExecutableResources
 }
 
-func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
-	return d.Command
+func (d Definition) GetExecutableCommand(req ExecutionRequest) (string, error) {
+	return d.Command, nil
 }
 
 func (d Definition) GetExecutableResourceName() string {
@@ -777,22 +780,43 @@ func (t Template) GetExecutableResources() *ExecutableResources {
 	return &t.ExecutableResources
 }
 
-func (t Template) GetExecutableCommand(req ExecutionRequest) string {
-	custom := *req.GetExecutionRequestCustom()
-	tpl := custom[TemplatePayloadKey]
+func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
+	var (
+		err    error
+		result bytes.Buffer
+	)
 
-	if tpl == nil {
-		// throw error
+	custom := *req.GetExecutionRequestCustom()
+	payload := custom[TemplatePayloadKey]
+
+	if payload == nil {
+		return "", errors.Errorf("empty payload in ExecutionRequest sent to template.GetExecutableCommand()")
 	}
 
-	// do jsonschema validation / template string dump here.
-	// tplPayload := req.TemplatePayload
-	return t.CommandTemplate
+	schemaLoader := gojsonschema.NewStringLoader(t.Schema)
+	documentLoader := gojsonschema.NewStringLoader(fmt.Sprintf("%v", payload))
+
+	// Perform JSON schema validation to ensure that the request's template
+	// payload conforms to the template's JSON schema.
+	if _, err = gojsonschema.Validate(schemaLoader, documentLoader); err != nil {
+		return "", err
+	}
+
+	// Create a new template string based on the template.Template.
+	textTemplate, err := template.New("command").Funcs(sprig.TxtFuncMap()).Parse(t.CommandTemplate)
+
+	if err != nil {
+		return "", err
+	}
+
+	// Dump payload into the template string.
+	if err = textTemplate.Execute(&result, payload); err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
 }
 
 func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
 }
-
-// GetExecutableResources() *ExecutableResources
-// GetExecutableCommand(req *ExecutionRequest) string
