@@ -22,8 +22,8 @@ import (
 // * Acts as an intermediary layer between state and the execution engine
 //
 type ExecutionService interface {
-	CreateDefinitionRunByDefinitionID(definitionID string, req state.DefinitionExecutionRequest) (state.Run, error)
-	CreateDefinitionRunByAlias(alias string, req state.DefinitionExecutionRequest) (state.Run, error)
+	CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error)
+	CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error)
 	List(
 		limit int,
 		offset int,
@@ -136,7 +136,7 @@ func contains(s []string, e string) bool {
 //
 // Create constructs and queues a new Run on the cluster specified.
 //
-func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID string, req state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
 	if err != nil {
@@ -149,7 +149,7 @@ func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID strin
 //
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 //
-func (es *executionService) CreateDefinitionRunByAlias(alias string, req state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
 	if err != nil {
@@ -159,7 +159,7 @@ func (es *executionService) CreateDefinitionRunByAlias(alias string, req state.D
 	return es.createFromDefinition(definition, req)
 }
 
-func (es *executionService) createFromDefinition(definition state.Definition, req state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) createFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -233,7 +233,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	return run, nil
 }
 
-func (es *executionService) constructRunFromDefinition(definition state.Definition, req state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) constructRunFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	run, err := es.constructBaseRunFromExecutable(definition, req)
 
 	if err != nil {
