@@ -110,7 +110,23 @@ func (sw *submitWorker) runOnce() {
 			// Execute the run using the execution engine
 			//
 			sw.log.Log("message", "Submitting", "run_id", run.RunID)
-			launched, retryable, err := sw.ee.Execute(executable, run, sw.sm)
+			var (
+				launched  state.Run
+				retryable bool
+			)
+			if run.ExecutableType == nil || *run.ExecutableType == state.ExecutableTypeDefinition {
+				definition, _ := sw.sm.GetDefinition(*run.ExecutableID)
+				launched, retryable, err = sw.ee.Execute(definition, run, sw.sm)
+			} else {
+				switch *run.ExecutableType {
+				case state.ExecutableTypeTemplate:
+					tpl, _ := sw.sm.GetTemplate(*run.ExecutableID)
+					launched, retryable, err = sw.ee.Execute(tpl, run, sw.sm)
+				default:
+					sw.log.Log("message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
+				}
+			}
+
 			if err != nil {
 				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
