@@ -180,9 +180,7 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
-//
-// DefinitionSelect postgres specific query for definitions
-//
+// TemplateSelect selects a template
 const TemplateSelect = `
 SELECT
   template_id as templateid,
@@ -201,12 +199,8 @@ SELECT
 FROM template
 `
 
-//
-// ListTemplatesSQL postgres specific query for listing definitions
-//
-const ListTemplatesSQL = TemplateSelect + "\n%s %s limit $1 offset $2"
+// ListTemplatesSQL postgres specific query for listing templates
+const ListTemplatesSQL = TemplateSelect + "\n%s limit $1 offset $2"
 
-//
-// GetTemplateSQL postgres specific query for getting a single definition
-//
+// GetTemplateSQL postgres specific query for getting a single template
 const GetTemplateSQL = TemplateSelect + "\nwhere template_id = $1"

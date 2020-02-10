@@ -880,6 +880,20 @@ func (r *Run) validOrderFields() []string {
 	return []string{"run_id", "cluster_name", "status", "started_at", "finished_at", "group_name"}
 }
 
+func (t *Template) validOrderField(field string) bool {
+	for _, f := range t.validOrderFields() {
+		if field == f {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Template) validOrderFields() []string {
+	// @TODO: figure what fields should be orderable.
+	return []string{"type", "version"}
+}
+
 // Scan from db
 func (e *EnvList) Scan(value interface{}) error {
 	if value != nil {
@@ -956,7 +970,7 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 }
 
 //
-// GetDefinition returns a single definition by id
+// GetTemplate returns a single template by id
 //
 func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
 	var err error
@@ -965,27 +979,148 @@ func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return tpl, exceptions.MissingResource{
-				fmt.Sprintf("Template with ID %s not found", templateID)}
-		} else {
-			return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
+				ErrorString: fmt.Sprintf("Template with ID %s not found", templateID)}
 		}
+
+		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
 	}
 	return tpl, nil
 }
 
+// ListTemplates returns list of templates from the database.
 func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error) {
-	return TemplateList{}, nil
+	var err error
+	var result TemplateList
+	var orderQuery string
+
+	orderQuery, err = sm.orderBy(&Template{}, sortBy, order)
+	if err != nil {
+		return result, errors.WithStack(err)
+	}
+
+	sql := fmt.Sprintf(ListTemplatesSQL, orderQuery)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+	err = sm.db.Select(&result.Templates, sql, limit, offset)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates sql")
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates count sql")
+	}
+
+	return result, nil
 }
 
+// CreateTemplate creates a new template.
 func (sm *SQLStateManager) CreateTemplate(t Template) error {
+	var err error
+	insert := `
+    INSERT INTO template(
+			template_id, type, version, schema, command_template,
+			adaptive_resource_allocation, image, container_name, memory, env,
+			privileged, cpu, gpu
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+    `
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(insert,
+		t.TemplateID, t.Type, t.Version, t.Schema, t.CommandTemplate,
+		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
+		t.Privileged, t.Cpu, t.Gpu); err != nil {
+		tx.Rollback()
+		return errors.Wrapf(
+			err, "issue creating new template with type [%s] and version [%d]", t.Type, t.Version)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
 
+// UpdateTemplate updates an existing template.
 func (sm *SQLStateManager) UpdateTemplate(templateID string, updates Template) (Template, error) {
-	return updates, nil
+	var (
+		err error
+		t   Template
+	)
+	t, err = sm.GetTemplate(templateID)
+	if err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	t.UpdateWith(updates)
+
+	selectForUpdate := `SELECT * FROM template WHERE template_id = $1 FOR UPDATE;`
+	update := `
+    UPDATE template SET
+			schema = $2,
+			command_template = $3,
+			adaptive_resource_allocation = $4,
+			image = $5,
+			container_name = $6,
+			memory = $7,
+			env = $8,
+			privileged = $9,
+			cpu = $10,
+			gpu = $11
+    WHERE template_id = $1;
+    `
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(selectForUpdate, templateID); err != nil {
+		return t, errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(update, templateID, t.Schema, t.CommandTemplate,
+		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
+		t.Privileged, t.Cpu, t.Gpu); err != nil {
+		return t, errors.Wrapf(err, "issue updating template [%s]", templateID)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return t, errors.WithStack(err)
+	}
+	return t, nil
 }
 
+// DeleteTemplate deletes an existing template and associated runs.
 func (sm *SQLStateManager) DeleteTemplate(templateID string) error {
+	var err error
+
+	statements := []string{
+		"DELETE FROM task WHERE executable_id = $1",
+		"DELETE FROM template WHERE template_id = $1",
+	}
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	for _, stmt := range statements {
+		if _, err = tx.Exec(stmt, templateID); err != nil {
+			tx.Rollback()
+			return errors.Wrapf(err, "issue deleting template with id [%s]", templateID)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
 

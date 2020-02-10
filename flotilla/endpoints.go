@@ -18,6 +18,7 @@ import (
 type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
+	templateService   services.TemplateService
 	ecsLogService     services.LogService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
@@ -96,6 +97,8 @@ func (ep *endpoints) decodeListRequest(r *http.Request) listRequest {
 
 	lr.limit, _ = strconv.Atoi(ep.getURLParam(params, "limit", "1024"))
 	lr.offset, _ = strconv.Atoi(ep.getURLParam(params, "offset", "0"))
+
+	// @TODO not every entity that can be listed has a group name...
 	lr.sortBy = ep.getURLParam(params, "sort_by", "group_name")
 	lr.order = ep.getURLParam(params, "order", "asc")
 	lr.filters, lr.envFilters = ep.getFilters(params, map[string]bool{
@@ -838,5 +841,103 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, err)
 	} else {
 		ep.encodeResponse(w, run)
+	}
+}
+
+func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+
+	tl, err := ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+	if tl.Templates == nil {
+		tl.Templates = []state.Template{}
+	}
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing templates",
+			"operation", "ListTemplates",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = tl.Total
+		response["templates"] = tl.Templates
+		response["limit"] = lr.limit
+		response["offset"] = lr.offset
+		response["sort_by"] = lr.sortBy
+		response["order"] = lr.order
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tpl, err := ep.templateService.Get(vars["template_id"])
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting templates",
+			"operation", "GetTemplate",
+			"error", fmt.Sprintf("%+v", err),
+			"template_id", vars["template_id"])
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, tpl)
+	}
+}
+
+func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
+	var template state.Template
+	err := ep.decodeRequest(r, &template)
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	created, err := ep.templateService.Create(&template)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating template",
+			"operation", "CreateTemplate",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, created)
+	}
+}
+
+func (ep *endpoints) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
+	var template state.Template
+	err := ep.decodeRequest(r, &template)
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	vars := mux.Vars(r)
+	updated, err := ep.templateService.Update(vars["template_id"], template)
+
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem updating template",
+			"operation", "UpdateTemplate",
+			"error", fmt.Sprintf("%+v", err),
+			"template_id", vars["template_id"])
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, updated)
+	}
+}
+
+func (ep *endpoints) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	err := ep.templateService.Delete(vars["template_id"])
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem deleting template",
+			"operation", "DeleteTemplate",
+			"error", fmt.Sprintf("%+v", err),
+			"template_id", vars["template_id"])
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, map[string]bool{"deleted": true})
 	}
 }

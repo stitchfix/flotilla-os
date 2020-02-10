@@ -841,6 +841,57 @@ func (t *Template) IsValid() (bool, []string) {
 }
 
 //
+// UpdateWith updates this definition with information from another
+//
+func (t *Template) UpdateWith(other Template) {
+	if len(other.TemplateID) > 0 {
+		t.TemplateID = other.TemplateID
+	}
+	if len(other.Type) > 0 {
+		t.Type = other.Type
+	}
+	if &other.Version != nil {
+		t.Version = other.Version
+	}
+	if len(other.Schema) > 0 {
+		t.Schema = other.Schema
+	}
+	if len(other.CommandTemplate) > 0 {
+		t.CommandTemplate = other.CommandTemplate
+	}
+	if len(other.Image) > 0 {
+		t.Image = other.Image
+	}
+	if len(other.ContainerName) > 0 {
+		t.ContainerName = other.ContainerName
+	}
+	if other.Memory != nil {
+		t.Memory = other.Memory
+	}
+	if other.Gpu != nil {
+		t.Gpu = other.Gpu
+	}
+	if other.Cpu != nil {
+		t.Cpu = other.Cpu
+	}
+	if other.AdaptiveResourceAllocation != nil {
+		t.AdaptiveResourceAllocation = other.AdaptiveResourceAllocation
+	}
+	if other.Env != nil {
+		t.Env = other.Env
+	}
+	if other.Ports != nil {
+		t.Ports = other.Ports
+	}
+	if other.Tags != nil {
+		t.Tags = other.Tags
+	}
+	if other.Privileged != nil {
+		t.Privileged = other.Privileged
+	}
+}
+
+//
 // TemplateList wraps a list of Templates
 //
 type TemplateList struct {
@@ -848,9 +899,9 @@ type TemplateList struct {
 	Templates []Template `json:"templates"`
 }
 
-func (dl *TemplateList) MarshalJSON() ([]byte, error) {
+func (tl *TemplateList) MarshalJSON() ([]byte, error) {
 	type Alias TemplateList
-	l := dl.Templates
+	l := tl.Templates
 	if l == nil {
 		l = []Template{}
 	}
@@ -859,6 +910,6 @@ func (dl *TemplateList) MarshalJSON() ([]byte, error) {
 		*Alias
 	}{
 		Templates: l,
-		Alias:     (*Alias)(dl),
+		Alias:     (*Alias)(tl),
 	})
 }

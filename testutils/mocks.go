@@ -391,17 +391,6 @@ func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.
 	return "", nil, nil
 }
 
-// GetTemplate - StateManager
-func (iatt *ImplementsAllTheThings) GetTemplate(templateID string) (state.Template, error) {
-	iatt.Calls = append(iatt.Calls, "GetTemplate")
-	var err error
-	d, ok := iatt.Templates[templateID]
-	if !ok {
-		err = fmt.Errorf("No template %s", templateID)
-	}
-	return d, err
-}
-
 // GetExecutableByTypeAndID - StateManager
 func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableType, id string) (state.Executable, error) {
 	iatt.Calls = append(iatt.Calls, "GetExecutableByTypeAndID")
@@ -413,4 +402,48 @@ func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableT
 	default:
 		return nil, fmt.Errorf("Invalid executable type %s", t)
 	}
+}
+
+// ListTemplates - StateManager
+func (iatt *ImplementsAllTheThings) ListTemplates(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	iatt.Calls = append(iatt.Calls, "ListTemplates")
+	tl := state.TemplateList{Total: len(iatt.Templates)}
+	for _, t := range iatt.Templates {
+		tl.Templates = append(tl.Templates, t)
+	}
+	return tl, nil
+}
+
+// GetTemplate - StateManager
+func (iatt *ImplementsAllTheThings) GetTemplate(id string) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplate")
+	var err error
+	t, ok := iatt.Templates[id]
+	if !ok {
+		err = fmt.Errorf("No template %s", id)
+	}
+	return t, err
+}
+
+// UpdateTemplate - StateManager
+func (iatt *ImplementsAllTheThings) UpdateTemplate(id string, updates state.Template) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "UpdateTemplate")
+	tpl := iatt.Templates[id]
+	tpl.UpdateWith(updates)
+	iatt.Templates[id] = tpl
+	return tpl, nil
+}
+
+// CreateTemplate - StateManager
+func (iatt *ImplementsAllTheThings) CreateTemplate(t state.Template) error {
+	iatt.Calls = append(iatt.Calls, "CreateTemplate")
+	iatt.Templates[t.TemplateID] = t
+	return nil
+}
+
+// DeleteTemplate - StateManager
+func (iatt *ImplementsAllTheThings) DeleteTemplate(id string) error {
+	iatt.Calls = append(iatt.Calls, "DeleteTemplate")
+	delete(iatt.Templates, id)
+	return nil
 }

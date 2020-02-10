@@ -70,5 +70,10 @@ func NewRouter(ep endpoints) *mux.Router {
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
 	v7.HandleFunc("/template/{template_id}/execute", ep.CreateTemplateRun).Methods("PUT")
+	v7.HandleFunc("/template", ep.ListTemplates).Methods("GET")
+	v7.HandleFunc("/template", ep.CreateTemplate).Methods("POST")
+	v7.HandleFunc("/template/{template_id}", ep.GetTemplate).Methods("GET")
+	v7.HandleFunc("/template/{template_id}", ep.UpdateTemplate).Methods("PUT")
+	v7.HandleFunc("/template/{template_id}", ep.DeleteTemplate).Methods("DELETE")
 	return r
 }
