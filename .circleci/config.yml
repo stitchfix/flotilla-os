@@ -36,6 +36,5 @@ jobs:
               -locations=filesystem:/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
               -user=flotilla \
               -password=flotilla
-      - run: go get -u github.com/kardianos/govendor
-      - run: govendor sync
+      - run: go mod download
       - run: go test -v ./...
