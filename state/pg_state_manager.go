@@ -972,3 +972,19 @@ func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
 	}
 	return tpl, nil
 }
+
+//
+// GetExecutableByExecutableType returns a single executable by id.
+//
+func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string) (Executable, error) {
+	switch t {
+	case ExecutableTypeDefinition:
+		return sm.GetDefinition(id)
+	case ExecutableTypeTemplate:
+		return sm.GetTemplate(id)
+	default:
+		return nil, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("executable type of [%s] not valid.", t),
+		}
+	}
+}

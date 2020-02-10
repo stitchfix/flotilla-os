@@ -391,7 +391,7 @@ func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.
 	return "", nil, nil
 }
 
-// GetDefinition - StateManager
+// GetTemplate - StateManager
 func (iatt *ImplementsAllTheThings) GetTemplate(templateID string) (state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetTemplate")
 	var err error
@@ -400,4 +400,17 @@ func (iatt *ImplementsAllTheThings) GetTemplate(templateID string) (state.Templa
 		err = fmt.Errorf("No template %s", templateID)
 	}
 	return d, err
+}
+
+// GetExecutableByTypeAndID - StateManager
+func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableType, id string) (state.Executable, error) {
+	iatt.Calls = append(iatt.Calls, "GetExecutableByTypeAndID")
+	switch t {
+	case state.ExecutableTypeDefinition:
+		return iatt.GetDefinition(id)
+	case state.ExecutableTypeTemplate:
+		return iatt.GetTemplate(id)
+	default:
+		return nil, fmt.Errorf("Invalid executable type %s", t)
+	}
 }

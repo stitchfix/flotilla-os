@@ -39,6 +39,7 @@ type Manager interface {
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
 
 	GetTemplate(templateID string) (Template, error)
+	GetExecutableByTypeAndID(executableType ExecutableType, executableID string) (Executable, error)
 }
 
 //
