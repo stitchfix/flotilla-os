@@ -19,7 +19,7 @@ jobs:
     steps:
       - run:
           name: zzz
-          command: sleep 180
+          command: sleep 60
       - checkout
       - run:
           name: Installing Flyway
