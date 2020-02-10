@@ -90,16 +90,16 @@ func (sw *statusWorker) runOnceEKS() {
 
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(runs), func(i, j int) { runs[i], runs[j] = runs[j], runs[i] })
-	sw.processRuns(runs)
+	sw.processEKSRuns(runs)
 }
 
-func (sw *statusWorker) processRuns(runs []state.Run) {
+func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	for _, run := range runs {
 		reloadRun, err := sw.sm.GetRun(run.RunID)
 		if err == nil && reloadRun.Status != state.StatusStopped {
 			if sw.acquireLock(run, "status", 10*time.Second) == true {
-				sw.processRun(run)
-				sw.processRunMetrics(run)
+				sw.processEKSRun(run)
+				sw.processEKSRunMetrics(run)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 	return set
 }
 
-func (sw *statusWorker) processRun(run state.Run) {
+func (sw *statusWorker) processEKSRun(run state.Run) {
 	reloadRun, err := sw.sm.GetRun(run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
@@ -161,7 +161,7 @@ func (sw *statusWorker) processRun(run state.Run) {
 	}
 }
 
-func (sw *statusWorker) processRunMetrics(run state.Run) {
+func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
 	updatedRun, err := sw.ee.FetchPodMetrics(run)
 	if err == nil {
 		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
