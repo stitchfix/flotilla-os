@@ -107,7 +107,10 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
 	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
 	if err != nil {
-		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		// Turn off in dev mode; too noisy.
+		if sw.conf.GetString("flotilla_mode") != "dev" {
+			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		}
 		return false
 	}
 	return set
@@ -209,7 +212,9 @@ func (sw *statusWorker) runOnceECS() {
 			sw.logStatusUpdate(*update)
 		}
 
-		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
+		if sw.conf.GetString("flotilla_mode") != "dev" {
+			_ = sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
+		}
 		if err = runReceipt.Done(); err != nil {
 			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", fmt.Sprintf("%+v", err))
 		}
