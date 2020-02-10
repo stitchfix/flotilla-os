@@ -129,7 +129,7 @@ func TestSubmitWorker_Run2(t *testing.T) {
 	worker.runOnce()
 
 	// Importantly, execute is NOT called and it -is- acked
-	expected := []string{"PollRuns", "GetRun", "GetDefinition", "RunReceipt.Done"}
+	expected := []string{"PollRuns", "GetRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

@@ -56,7 +56,11 @@ func (sw *submitWorker) Run() error {
 }
 
 func (sw *submitWorker) runOnce() {
-	receipts, err := sw.ee.PollRuns()
+	var receipts []engine.RunReceipt
+	var run state.Run
+	var err error
+
+	receipts, err = sw.ee.PollRuns()
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
@@ -68,7 +72,7 @@ func (sw *submitWorker) runOnce() {
 		//
 		// Fetch run from state manager to ensure its existence
 		//
-		run, err := sw.sm.GetRun(runReceipt.Run.RunID)
+		run, err = sw.sm.GetRun(runReceipt.Run.RunID)
 		if err != nil {
 			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
 			if err = runReceipt.Done(); err != nil {
@@ -103,7 +107,8 @@ func (sw *submitWorker) runOnce() {
 			// 3. Switch by executable type.
 			switch *run.ExecutableType {
 			case state.ExecutableTypeDefinition:
-				definition, err := sw.sm.GetDefinition(*run.ExecutableID)
+				var d state.Definition
+				d, err = sw.sm.GetDefinition(*run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -114,10 +119,11 @@ func (sw *submitWorker) runOnce() {
 				}
 
 				// Execute the run using the execution engine.
-				launched, retryable, err = sw.ee.Execute(definition, run, sw.sm)
+				launched, retryable, err = sw.ee.Execute(d, run, sw.sm)
 				break
 			case state.ExecutableTypeTemplate:
-				tpl, _ := sw.sm.GetTemplate(*run.ExecutableID)
+				var tpl state.Template
+				tpl, err = sw.sm.GetTemplate(*run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -152,7 +158,7 @@ func (sw *submitWorker) runOnce() {
 			//
 			// Emit event with current definition
 			//
-			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "executable_id", run.ExecutableID, "run_id", run.RunID)
+			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "executable_id", *run.ExecutableID, "run_id", run.RunID)
 			if err != nil {
 				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
