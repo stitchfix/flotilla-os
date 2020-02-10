@@ -759,7 +759,7 @@ func (t TemplateExecutionRequest) GetExecutionRequestCustom() *map[string]interf
 
 type Template struct {
 	TemplateID      string `json:"template_id"`
-	Type            string `json:"type"`
+	TemplateName    string `json:"template_name"`
 	Version         int64  `json:"version"`
 	Schema          string `json:"schema"`
 	CommandTemplate string `json:"command_template"`
@@ -847,8 +847,8 @@ func (t *Template) UpdateWith(other Template) {
 	if len(other.TemplateID) > 0 {
 		t.TemplateID = other.TemplateID
 	}
-	if len(other.Type) > 0 {
-		t.Type = other.Type
+	if len(other.TemplateName) > 0 {
+		t.TemplateName = other.TemplateName
 	}
 	if &other.Version != nil {
 		t.Version = other.Version

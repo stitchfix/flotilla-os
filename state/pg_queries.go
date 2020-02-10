@@ -184,7 +184,7 @@ const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 const TemplateSelect = `
 SELECT
   template_id as templateid,
-  type,
+  template_name as templatename,
   version,
   schema,
   command_template as commandtemplate,

@@ -900,11 +900,11 @@ func (t *Template) ValidOrderField(field string) bool {
 
 func (t *Template) ValidOrderFields() []string {
 	// @TODO: figure what fields should be orderable.
-	return []string{"type", "version"}
+	return []string{"template_name", "version"}
 }
 
 func (t *Template) DefaultOrderField() string {
-	return "type"
+	return "template_name"
 }
 
 // Scan from db
@@ -1031,7 +1031,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	var err error
 	insert := `
     INSERT INTO template(
-			template_id, type, version, schema, command_template,
+			template_id, template_name, version, schema, command_template,
 			adaptive_resource_allocation, image, container_name, memory, env,
 			privileged, cpu, gpu
     )
@@ -1044,12 +1044,12 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	}
 
 	if _, err = tx.Exec(insert,
-		t.TemplateID, t.Type, t.Version, t.Schema, t.CommandTemplate,
+		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
 		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
 		t.Privileged, t.Cpu, t.Gpu); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
-			err, "issue creating new template with type [%s] and version [%d]", t.Type, t.Version)
+			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)
 	}
 
 	err = tx.Commit()
