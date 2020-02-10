@@ -82,13 +82,19 @@ func (sw *submitWorker) runOnce() {
 		//
 		// * Will not be necessary once we copy relevant run information from definition onto the run itself
 		//
-		executable, err := sw.sm.GetDefinition(run.DefinitionID)
+		var executable state.Executable
+		if run.ExecutableType == nil {
+			executable, err = sw.sm.GetExecutableByTypeAndID(state.ExecutableTypeDefinition, *run.ExecutableID)
+		} else {
+			executable, err = sw.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
+		}
 
 		if err != nil {
 			sw.log.Log(
-				"message", "Error fetching definition for run",
+				"message", "Error fetching executable for run",
 				"run_id", run.RunID,
-				"definition_id", run.DefinitionID,
+				"executable_id", run.ExecutableID,
+				"executable_type", run.ExecutableType,
 				"error", err.Error())
 			if err = runReceipt.Done(); err != nil {
 				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
@@ -100,7 +106,6 @@ func (sw *submitWorker) runOnce() {
 		// Only valid to process if it's in the StatusQueued state
 		//
 		if run.Status == state.StatusQueued {
-
 			//
 			// Execute the run using the execution engine
 			//
