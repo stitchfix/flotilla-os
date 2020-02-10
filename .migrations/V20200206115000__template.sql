@@ -16,5 +16,4 @@ CREATE TABLE template (
 );
 
 ALTER TABLE task
-  ADD COLUMN IF NOT EXISTS cloudtrail_notifications JSONB
   ADD COLUMN IF NOT EXISTS executable_request_custom JSONB;
