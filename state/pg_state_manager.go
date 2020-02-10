@@ -145,14 +145,14 @@ func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []strin
 	return wc
 }
 
-func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (string, error) {
+func (sm *SQLStateManager) orderBy(obj IOrderable, field string, order string) (string, error) {
 	if order == "asc" || order == "desc" {
-		if obj.validOrderField(field) {
+		if obj.ValidOrderField(field) {
 			return fmt.Sprintf("order by %s %s NULLS LAST", field, order), nil
 		}
 		return "", errors.Errorf("Invalid field to order by [%s], must be one of [%s]",
 			field,
-			strings.Join(obj.validOrderFields(), ", "))
+			strings.Join(obj.ValidOrderFields(), ", "))
 	}
 	return "", errors.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
 }
@@ -849,13 +849,14 @@ func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
-type orderable interface {
-	validOrderField(field string) bool
-	validOrderFields() []string
+type IOrderable interface {
+	ValidOrderField(field string) bool
+	ValidOrderFields() []string
+	DefaultOrderField() string
 }
 
-func (d *Definition) validOrderField(field string) bool {
-	for _, f := range d.validOrderFields() {
+func (d *Definition) ValidOrderField(field string) bool {
+	for _, f := range d.ValidOrderFields() {
 		if field == f {
 			return true
 		}
@@ -863,12 +864,16 @@ func (d *Definition) validOrderField(field string) bool {
 	return false
 }
 
-func (d *Definition) validOrderFields() []string {
+func (d *Definition) ValidOrderFields() []string {
 	return []string{"alias", "image", "group_name", "memory"}
 }
 
-func (r *Run) validOrderField(field string) bool {
-	for _, f := range r.validOrderFields() {
+func (d *Definition) DefaultOrderField() string {
+	return "group_name"
+}
+
+func (r *Run) ValidOrderField(field string) bool {
+	for _, f := range r.ValidOrderFields() {
 		if field == f {
 			return true
 		}
@@ -876,12 +881,16 @@ func (r *Run) validOrderField(field string) bool {
 	return false
 }
 
-func (r *Run) validOrderFields() []string {
+func (r *Run) ValidOrderFields() []string {
 	return []string{"run_id", "cluster_name", "status", "started_at", "finished_at", "group_name"}
 }
 
-func (t *Template) validOrderField(field string) bool {
-	for _, f := range t.validOrderFields() {
+func (r *Run) DefaultOrderField() string {
+	return "group_name"
+}
+
+func (t *Template) ValidOrderField(field string) bool {
+	for _, f := range t.ValidOrderFields() {
 		if field == f {
 			return true
 		}
@@ -889,9 +898,13 @@ func (t *Template) validOrderField(field string) bool {
 	return false
 }
 
-func (t *Template) validOrderFields() []string {
+func (t *Template) ValidOrderFields() []string {
 	// @TODO: figure what fields should be orderable.
 	return []string{"type", "version"}
+}
+
+func (t *Template) DefaultOrderField() string {
+	return "type"
 }
 
 // Scan from db

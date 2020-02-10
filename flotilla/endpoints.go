@@ -97,9 +97,24 @@ func (ep *endpoints) decodeListRequest(r *http.Request) listRequest {
 
 	lr.limit, _ = strconv.Atoi(ep.getURLParam(params, "limit", "1024"))
 	lr.offset, _ = strconv.Atoi(ep.getURLParam(params, "offset", "0"))
-
-	// @TODO not every entity that can be listed has a group name...
 	lr.sortBy = ep.getURLParam(params, "sort_by", "group_name")
+	lr.order = ep.getURLParam(params, "order", "asc")
+	lr.filters, lr.envFilters = ep.getFilters(params, map[string]bool{
+		"limit":   true,
+		"offset":  true,
+		"sort_by": true,
+		"order":   true,
+	})
+	return lr
+}
+
+func (ep *endpoints) decodeOrderableListRequest(r *http.Request, orderable state.IOrderable) listRequest {
+	var lr listRequest
+	params := r.URL.Query()
+
+	lr.limit, _ = strconv.Atoi(ep.getURLParam(params, "limit", "1024"))
+	lr.offset, _ = strconv.Atoi(ep.getURLParam(params, "offset", "0"))
+	lr.sortBy = ep.getURLParam(params, "sort_by", orderable.DefaultOrderField())
 	lr.order = ep.getURLParam(params, "order", "asc")
 	lr.filters, lr.envFilters = ep.getFilters(params, map[string]bool{
 		"limit":   true,
@@ -845,7 +860,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
-	lr := ep.decodeListRequest(r)
+	lr := ep.decodeOrderableListRequest(r, &state.Template{})
 
 	tl, err := ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
 	if tl.Templates == nil {
