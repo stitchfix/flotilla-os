@@ -36,5 +36,5 @@ jobs:
               -locations=filesystem:/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
               -user=flotilla \
               -password=flotilla
-      - run: go mod download
+      - run: go get ./...
       - run: go test -v ./...
