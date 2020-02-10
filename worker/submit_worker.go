@@ -78,53 +78,64 @@ func (sw *submitWorker) runOnce() {
 		}
 
 		//
-		// Fetch run's definition from state manager
-		//
-		// * Will not be necessary once we copy relevant run information from definition onto the run itself
-		//
-		var executable state.Executable
-		if run.ExecutableType == nil {
-			executable, err = sw.sm.GetExecutableByTypeAndID(state.ExecutableTypeDefinition, *run.ExecutableID)
-		} else {
-			executable, err = sw.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
-		}
-
-		if err != nil {
-			sw.log.Log(
-				"message", "Error fetching executable for run",
-				"run_id", run.RunID,
-				"executable_id", run.ExecutableID,
-				"executable_type", run.ExecutableType,
-				"error", err.Error())
-			if err = runReceipt.Done(); err != nil {
-				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
-			}
-			continue
-		}
-
-		//
 		// Only valid to process if it's in the StatusQueued state
 		//
 		if run.Status == state.StatusQueued {
-			//
-			// Execute the run using the execution engine
-			//
-			sw.log.Log("message", "Submitting", "run_id", run.RunID)
 			var (
 				launched  state.Run
 				retryable bool
 			)
-			if run.ExecutableType == nil || *run.ExecutableType == state.ExecutableTypeDefinition {
-				definition, _ := sw.sm.GetDefinition(*run.ExecutableID)
-				launched, retryable, err = sw.ee.Execute(definition, run, sw.sm)
-			} else {
-				switch *run.ExecutableType {
-				case state.ExecutableTypeTemplate:
-					tpl, _ := sw.sm.GetTemplate(*run.ExecutableID)
-					launched, retryable, err = sw.ee.Execute(tpl, run, sw.sm)
-				default:
-					sw.log.Log("message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
+
+			// 1. Check for existence of run.ExecutableType; set to `task_definition`
+			// if not set.
+			if run.ExecutableType == nil {
+				defaultExecutableType := state.ExecutableTypeDefinition
+				run.ExecutableType = &defaultExecutableType
+			}
+
+			// 2. Check for existence of run.ExecutableID; set to run.DefinitionID if
+			// not set.
+			if run.ExecutableID == nil {
+				defID := run.DefinitionID
+				run.ExecutableID = &defID
+			}
+
+			// 3. Switch by executable type.
+			switch *run.ExecutableType {
+			case state.ExecutableTypeDefinition:
+				definition, err := sw.sm.GetDefinition(*run.ExecutableID)
+
+				if err != nil {
+					sw.logFailedToGetExecutableMessage(run, err)
+					if err = runReceipt.Done(); err != nil {
+						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+					}
+					continue
 				}
+
+				// Execute the run using the execution engine.
+				launched, retryable, err = sw.ee.Execute(definition, run, sw.sm)
+				break
+			case state.ExecutableTypeTemplate:
+				tpl, _ := sw.sm.GetTemplate(*run.ExecutableID)
+
+				if err != nil {
+					sw.logFailedToGetExecutableMessage(run, err)
+					if err = runReceipt.Done(); err != nil {
+						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+					}
+					continue
+				}
+
+				// Execute the run using the execution engine.
+				sw.log.Log("message", "Submitting", "run_id", run.RunID)
+				launched, retryable, err = sw.ee.Execute(tpl, run, sw.sm)
+				break
+			default:
+				// If executable type is invalid; log message and continue processing
+				// other runs.
+				sw.log.Log("message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
+				continue
 			}
 
 			if err != nil {
@@ -141,7 +152,7 @@ func (sw *submitWorker) runOnce() {
 			//
 			// Emit event with current definition
 			//
-			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", executable, "run_id", run.RunID)
+			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "executable_id", run.ExecutableID, "run_id", run.RunID)
 			if err != nil {
 				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
@@ -161,4 +172,13 @@ func (sw *submitWorker) runOnce() {
 			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 		}
 	}
+}
+
+func (sw *submitWorker) logFailedToGetExecutableMessage(run state.Run, err error) {
+	sw.log.Log(
+		"message", "Error fetching executable for run",
+		"run_id", run.RunID,
+		"executable_id", run.ExecutableID,
+		"executable_type", run.ExecutableType,
+		"error", err.Error())
 }
