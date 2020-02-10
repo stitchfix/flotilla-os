@@ -15,4 +15,6 @@ CREATE TABLE template (
   CONSTRAINT template_type_version UNIQUE(type, version)
 );
 
-ALTER TABLE task ADD COLUMN IF NOT EXISTS cloudtrail_notifications JSONB;
+ALTER TABLE task
+  ADD COLUMN IF NOT EXISTS cloudtrail_notifications JSONB
+  ADD COLUMN IF NOT EXISTS executable_request_custom JSONB;
