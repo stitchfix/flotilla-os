@@ -973,6 +973,22 @@ func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
 	return tpl, nil
 }
 
+func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	return TemplateList{}, nil
+}
+
+func (sm *SQLStateManager) CreateTemplate(t Template) error {
+	return nil
+}
+
+func (sm *SQLStateManager) UpdateTemplate(templateID string, updates Template) (Template, error) {
+	return updates, nil
+}
+
+func (sm *SQLStateManager) DeleteTemplate(templateID string) error {
+	return nil
+}
+
 //
 // GetExecutableByExecutableType returns a single executable by id.
 //

@@ -824,3 +824,41 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
 }
+
+// NewTemplateID returns a new uuid for a Template
+func NewTemplateID(t Template) (string, error) {
+	uuid4, err := newUUIDv4()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("tpl-%s", uuid4), nil
+}
+
+func (t *Template) IsValid() (bool, []string) {
+	// TODO: validate that json schema can be dumped into the command template
+	// with no <no value> values.
+	return false, []string{}
+}
+
+//
+// TemplateList wraps a list of Templates
+//
+type TemplateList struct {
+	Total     int        `json:"total"`
+	Templates []Template `json:"templates"`
+}
+
+func (dl *TemplateList) MarshalJSON() ([]byte, error) {
+	type Alias TemplateList
+	l := dl.Templates
+	if l == nil {
+		l = []Template{}
+	}
+	return json.Marshal(&struct {
+		Templates []Template `json:"templates"`
+		*Alias
+	}{
+		Templates: l,
+		Alias:     (*Alias)(dl),
+	})
+}
