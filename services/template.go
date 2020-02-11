@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -177,7 +176,6 @@ func (ts *templateService) diff(prev state.Template, curr state.Template) bool {
 	}
 
 	if reflect.DeepEqual(prev.Schema, curr.Schema) == false {
-		fmt.Println("M")
 		return true
 	}
 
