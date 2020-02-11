@@ -11,9 +11,7 @@ import (
 type TemplateService interface {
 	Get(id string) (state.Template, error)
 	List(limit int, offset int, sortBy string, order string) (state.TemplateList, error)
-	Update(id string, updates state.Template) (state.Template, error)
 	Create(tpl *state.Template) (state.Template, error)
-	Delete(id string) error
 }
 
 type templateService struct {
@@ -50,25 +48,4 @@ func (ts *templateService) Get(id string) (state.Template, error) {
 // List lists templates.
 func (ts *templateService) List(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
 	return ts.sm.ListTemplates(limit, offset, sortBy, order)
-}
-
-// Update updates the template specified by id with the given updates.
-func (ts *templateService) Update(id string, updates state.Template) (state.Template, error) {
-	tpl, err := ts.sm.GetTemplate(id)
-	if err != nil {
-		return tpl, err
-	}
-
-	tpl.UpdateWith(updates)
-
-	return ts.sm.UpdateTemplate(id, tpl)
-}
-
-// Delete deletes the template specified by id.
-func (ts *templateService) Delete(id string) error {
-	_, err := ts.sm.GetTemplate(id)
-	if err != nil {
-		return err
-	}
-	return ts.sm.DeleteTemplate(id)
 }

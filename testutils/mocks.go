@@ -425,25 +425,9 @@ func (iatt *ImplementsAllTheThings) GetTemplate(id string) (state.Template, erro
 	return t, err
 }
 
-// UpdateTemplate - StateManager
-func (iatt *ImplementsAllTheThings) UpdateTemplate(id string, updates state.Template) (state.Template, error) {
-	iatt.Calls = append(iatt.Calls, "UpdateTemplate")
-	tpl := iatt.Templates[id]
-	tpl.UpdateWith(updates)
-	iatt.Templates[id] = tpl
-	return tpl, nil
-}
-
 // CreateTemplate - StateManager
 func (iatt *ImplementsAllTheThings) CreateTemplate(t state.Template) error {
 	iatt.Calls = append(iatt.Calls, "CreateTemplate")
 	iatt.Templates[t.TemplateID] = t
-	return nil
-}
-
-// DeleteTemplate - StateManager
-func (iatt *ImplementsAllTheThings) DeleteTemplate(id string) error {
-	iatt.Calls = append(iatt.Calls, "DeleteTemplate")
-	delete(iatt.Templates, id)
 	return nil
 }

@@ -42,9 +42,7 @@ type Manager interface {
 
 	GetTemplate(templateID string) (Template, error)
 	ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error)
-	UpdateTemplate(templateID string, updates Template) (Template, error)
 	CreateTemplate(t Template) error
-	DeleteTemplate(templateID string) error
 }
 
 //
