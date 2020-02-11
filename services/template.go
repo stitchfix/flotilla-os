@@ -16,7 +16,7 @@ type TemplateService interface {
 	GetLatestByName(templateName string) (bool, state.Template, error)
 	List(limit int, offset int, sortBy string, order string) (state.TemplateList, error)
 	ListLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error)
-	Create(tpl *state.CreateTemplateRequest) (state.Template, error)
+	Create(tpl *state.CreateTemplateRequest) (state.CreateTemplateResponse, error)
 }
 
 type templateService struct {
@@ -30,18 +30,22 @@ func NewTemplateService(conf config.Config, sm state.Manager) (TemplateService, 
 }
 
 // Create fully initialize and save the new template.
-func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Template, error) {
+func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.CreateTemplateResponse, error) {
+	res := state.CreateTemplateResponse{
+		DidCreate: false,
+		Template:  state.Template{},
+	}
 	curr, err := ts.constructTemplateFromCreateTemplateRequest(req)
 
 	// 1. Check validity.
 	if valid, reasons := curr.IsValid(); !valid {
-		return curr, exceptions.MalformedInput{ErrorString: strings.Join(reasons, "\n")}
+		return res, exceptions.MalformedInput{ErrorString: strings.Join(reasons, "\n")}
 	}
 
 	// 2. Attach template id.
 	templateID, err := state.NewTemplateID(curr)
 	if err != nil {
-		return state.Template{}, err
+		return res, err
 	}
 	curr.TemplateID = templateID
 
@@ -53,23 +57,28 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Templ
 	doesExist, prev, err := ts.sm.GetLatestTemplateByTemplateName(curr.TemplateName)
 
 	if err != nil {
-		return state.Template{}, err
+		return res, err
 	}
 
 	// No previous template with the same name; write it.
 	if doesExist == false {
 		curr.Version = 1
-		return curr, ts.sm.CreateTemplate(curr)
+		res.Template = curr
+		res.DidCreate = true
+		return res, ts.sm.CreateTemplate(curr)
 	}
 
 	// Check if prev and curr are diff, if they are, write curr to DB (increment)
 	// version number by 1. Otherwise, return prev.
 	if ts.diff(prev, curr) == true {
 		curr.Version = prev.Version + 1
-		return curr, ts.sm.CreateTemplate(curr)
+		res.Template = curr
+		res.DidCreate = true
+		return res, ts.sm.CreateTemplate(curr)
 	}
 
-	return prev, nil
+	res.Template = prev
+	return res, nil
 }
 
 // Get returns the template specified by id.

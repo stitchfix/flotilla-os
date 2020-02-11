@@ -775,6 +775,11 @@ type CreateTemplateRequest struct {
 	ExecutableResources
 }
 
+type CreateTemplateResponse struct {
+	DidCreate bool     `json:"did_create"`
+	Template  Template `json:"template,omitempty"`
+}
+
 type TemplateUpdateRequest struct {
 	Schema          string `json:"schema"`
 	CommandTemplate string `json:"command_template"`
@@ -844,8 +849,23 @@ func NewTemplateID(t Template) (string, error) {
 }
 
 func (t *Template) IsValid() (bool, []string) {
-	// TODO: validate that json schema can be dumped into the command template
-	// with no <no value> values.
+	conditions := []validationCondition{
+		{len(t.TemplateName) == 0, "string [template_name] must be specified"},
+		{len(t.Schema) == 0, "schema must be specified"},
+		{len(t.CommandTemplate) == 0, "string [command_template] must be specified"},
+		{len(t.Image) == 0, "string [image] must be specified"},
+		{t.Memory == nil, "int [memory] must be specified"},
+	}
+
+	valid := true
+	var reasons []string
+	for _, cond := range conditions {
+		if cond.condition {
+			valid = false
+			reasons = append(reasons, cond.reason)
+		}
+	}
+	return valid, reasons
 	return true, []string{}
 }
 
