@@ -82,20 +82,7 @@ func (sw *submitWorker) runOnce() {
 		//
 		// * Will not be necessary once we copy relevant run information from definition onto the run itself
 		//
-		var executable state.Executable
-		executableType := run.ExecutableType
-
-		// If the executable type is not set, safe to assume that it is a legacy
-		// definition.
-		if executableType == nil {
-			executable, err = sw.sm.GetDefinition(run.DefinitionID)
-		} else {
-			switch *executableType {
-			case state.ExecutableTypeDefinition:
-			default:
-				executable, err = sw.sm.GetDefinition(run.DefinitionID)
-			}
-		}
+		executable, err := sw.sm.GetDefinition(run.DefinitionID)
 
 		if err != nil {
 			sw.log.Log(

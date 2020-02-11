@@ -160,7 +160,7 @@ const (
 type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
-	GetExecutableResources() ExecutableResources
+	GetExecutableResources() *ExecutableResources
 	GetExecutableCommand(req ExecutionRequest) string
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
@@ -179,19 +179,19 @@ type ExecutionRequestCommon struct {
 }
 
 type ExecutionRequest interface {
-	GetExecutionRequestCommon() ExecutionRequestCommon
-	GetExecutionRequestCustom() map[string]interface{}
+	GetExecutionRequestCommon() *ExecutionRequestCommon
+	GetExecutionRequestCustom() *map[string]interface{}
 }
 
 type DefinitionExecutionRequest struct {
 	ExecutionRequestCommon
 }
 
-func (d DefinitionExecutionRequest) GetExecutionRequestCommon() ExecutionRequestCommon {
-	return d.ExecutionRequestCommon
+func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
+	return &d.ExecutionRequestCommon
 }
 
-func (d DefinitionExecutionRequest) GetExecutionRequestCustom() map[string]interface{} {
+func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
 	return nil
 }
 
@@ -219,8 +219,8 @@ func (d Definition) GetExecutableType() *ExecutableType {
 	return &t
 }
 
-func (d Definition) GetExecutableResources() ExecutableResources {
-	return d.ExecutableResources
+func (d Definition) GetExecutableResources() *ExecutableResources {
+	return &d.ExecutableResources
 }
 
 func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
