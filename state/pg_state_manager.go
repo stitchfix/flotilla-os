@@ -982,13 +982,11 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	return res, nil
 }
 
-//
-// GetTemplate returns a single template by id
-//
-func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
+// GetTemplateByID returns a single template by id.
+func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
 	var err error
 	var tpl Template
-	err = sm.db.Get(&tpl, GetTemplateSQL, templateID)
+	err = sm.db.Get(&tpl, GetTemplateByIDSQL, templateID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return tpl, exceptions.MissingResource{
@@ -996,6 +994,23 @@ func (sm *SQLStateManager) GetTemplate(templateID string) (Template, error) {
 		}
 
 		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
+	}
+	return tpl, nil
+}
+
+// GetLatestTemplateByTemplateName returns the latest version of a template
+// of a specific template name.
+func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateLatestOnlySQL, templateName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return tpl, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Template with ID %s not found", templateName)}
+		}
+
+		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
 	}
 	return tpl, nil
 }
@@ -1015,6 +1030,25 @@ func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, o
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
 	err = sm.db.Select(&result.Templates, sql, limit, offset)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates sql")
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates count sql")
+	}
+
+	return result, nil
+}
+
+// ListTemplates returns list of templates from the database.
+func (sm *SQLStateManager) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	var err error
+	var result TemplateList
+
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListTemplatesLatestOnlySQL)
+
+	err = sm.db.Select(&result.Templates, ListTemplatesLatestOnlySQL, limit, offset)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list templates sql")
 	}
@@ -1067,7 +1101,7 @@ func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string)
 	case ExecutableTypeDefinition:
 		return sm.GetDefinition(id)
 	case ExecutableTypeTemplate:
-		return sm.GetTemplate(id)
+		return sm.GetTemplateByID(id)
 	default:
 		return nil, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("executable type of [%s] not valid.", t),

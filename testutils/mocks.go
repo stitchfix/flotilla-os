@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"testing"
 
@@ -398,7 +399,7 @@ func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableT
 	case state.ExecutableTypeDefinition:
 		return iatt.GetDefinition(id)
 	case state.ExecutableTypeTemplate:
-		return iatt.GetTemplate(id)
+		return iatt.GetTemplateByID(id)
 	default:
 		return nil, fmt.Errorf("Invalid executable type %s", t)
 	}
@@ -414,15 +415,49 @@ func (iatt *ImplementsAllTheThings) ListTemplates(limit int, offset int, sortBy 
 	return tl, nil
 }
 
-// GetTemplate - StateManager
-func (iatt *ImplementsAllTheThings) GetTemplate(id string) (state.Template, error) {
-	iatt.Calls = append(iatt.Calls, "GetTemplate")
+// ListTemplatesLatestOnly - StateManager
+func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	// TODO: this is not actually implemented correctly - but also we're never
+	// using it.
+	iatt.Calls = append(iatt.Calls, "ListTemplatesLatestOnly")
+	tl := state.TemplateList{Total: len(iatt.Templates)}
+	for _, t := range iatt.Templates {
+		tl.Templates = append(tl.Templates, t)
+	}
+	return tl, nil
+}
+
+// GetTemplateByID - StateManager
+func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplateByID")
 	var err error
 	t, ok := iatt.Templates[id]
 	if !ok {
 		err = fmt.Errorf("No template %s", id)
 	}
 	return t, err
+}
+
+// GetLatestTemplateByTemplateName - StateManager
+func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName string) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetLatestTemplateByTemplateName")
+	var err error
+	var tpl *state.Template
+	var maxVersion int64 = int64(math.Inf(-1))
+
+	// Iterate over templates to find max version.
+	for _, t := range iatt.Templates {
+		if t.TemplateName == templateName && t.Version > maxVersion {
+			tpl = &t
+			maxVersion = t.Version
+		}
+	}
+
+	if tpl == nil {
+		err = fmt.Errorf("No template with name: %s", templateName)
+	}
+
+	return *tpl, err
 }
 
 // CreateTemplate - StateManager

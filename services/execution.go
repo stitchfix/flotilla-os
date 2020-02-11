@@ -497,7 +497,7 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 //
 func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
 	// Ensure template exists
-	template, err := es.stateManager.GetTemplate(templateID)
+	template, err := es.stateManager.GetTemplateByID(templateID)
 	if err != nil {
 		return state.Run{}, err
 	}

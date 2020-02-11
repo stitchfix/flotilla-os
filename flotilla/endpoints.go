@@ -900,14 +900,14 @@ func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
-	var template state.Template
-	err := ep.decodeRequest(r, &template)
+	var req state.CreateTemplateRequest
+	err := ep.decodeRequest(r, &req)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
-	created, err := ep.templateService.Create(&template)
+	created, err := ep.templateService.Create(&req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template",

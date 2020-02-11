@@ -766,6 +766,13 @@ type Template struct {
 	ExecutableResources
 }
 
+type CreateTemplateRequest struct {
+	TemplateName    string `json:"template_name"`
+	Schema          string `json:"schema"`
+	CommandTemplate string `json:"command_template"`
+	ExecutableResources
+}
+
 type TemplateUpdateRequest struct {
 	Schema          string `json:"schema"`
 	CommandTemplate string `json:"command_template"`

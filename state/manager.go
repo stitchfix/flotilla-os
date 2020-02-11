@@ -40,8 +40,10 @@ type Manager interface {
 
 	GetExecutableByTypeAndID(executableType ExecutableType, executableID string) (Executable, error)
 
-	GetTemplate(templateID string) (Template, error)
+	GetTemplateByID(templateID string) (Template, error)
+	GetLatestTemplateByTemplateName(templateName string) (Template, error)
 	ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error)
+	ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error)
 	CreateTemplate(t Template) error
 }
 
