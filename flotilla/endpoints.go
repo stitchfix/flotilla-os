@@ -278,8 +278,12 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 		lr.filters["definition_id"] = []string{definitionID}
 	}
 
-	runList, err := ep.executionService.List(
-		lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	tplID, ok := vars["template_id"]
+	if ok {
+		lr.filters["template_id"] = []string{tplID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing runs",
@@ -300,6 +304,65 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 		}
 		ep.encodeResponse(w, response)
 	}
+}
+
+func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+
+	vars := mux.Vars(r)
+	definitionID, ok := vars["definition_id"]
+	if ok {
+		lr.filters["definition_id"] = []string{definitionID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing definition runs",
+			"operation", "ListDefinitionRuns",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := ep.createListRunsResponse(runList, lr)
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+
+	vars := mux.Vars(r)
+	tplID, ok := vars["template_id"]
+	if ok {
+		lr.filters["template_id"] = []string{tplID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing runs for template",
+			"operation", "ListTemplateRuns",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := ep.createListRunsResponse(runList, lr)
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) createListRunsResponse(runList state.RunList, req listRequest) map[string]interface{} {
+	response := make(map[string]interface{})
+	response["total"] = runList.Total
+	response["history"] = runList.Runs
+	response["limit"] = req.limit
+	response["offset"] = req.offset
+	response["sort_by"] = req.sortBy
+	response["order"] = req.order
+	response["env_filters"] = req.envFilters
+	for k, v := range req.filters {
+		response[k] = v
+	}
+	return response
 }
 
 func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {

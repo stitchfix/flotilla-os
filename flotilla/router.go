@@ -21,7 +21,7 @@ func NewRouter(ep endpoints) *mux.Router {
 	v1.HandleFunc("/history", ep.ListRuns).Methods("GET")
 	v1.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
 	v1.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
-	v1.HandleFunc("/task/{definition_id}/history", ep.ListRuns).Methods("GET")
+	v1.HandleFunc("/task/{definition_id}/history", ep.ListDefinitionRuns).Methods("GET")
 	v1.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
 	v1.HandleFunc("/task/{definition_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
 
@@ -57,7 +57,7 @@ func NewRouter(ep endpoints) *mux.Router {
 	v6.HandleFunc("/history", ep.ListRuns).Methods("GET")
 	v6.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
 	v6.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
-	v6.HandleFunc("/task/{definition_id}/history", ep.ListRuns).Methods("GET")
+	v6.HandleFunc("/task/{definition_id}/history", ep.ListDefinitionRuns).Methods("GET")
 	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
 	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
 
@@ -73,5 +73,9 @@ func NewRouter(ep endpoints) *mux.Router {
 	v7.HandleFunc("/template", ep.ListTemplates).Methods("GET")
 	v7.HandleFunc("/template", ep.CreateTemplate).Methods("POST")
 	v7.HandleFunc("/template/{template_id}", ep.GetTemplate).Methods("GET")
+	v7.HandleFunc("/template/history/{run_id}", ep.GetRun).Methods("GET")
+	v7.HandleFunc("/template/{template_id}/history", ep.ListTemplateRuns).Methods("GET")
+	v7.HandleFunc("/template/{template_id}/history/{run_id}", ep.GetRun).Methods("GET")
+	v7.HandleFunc("/template/{template_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
 	return r
 }
