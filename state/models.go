@@ -845,7 +845,7 @@ func NewTemplateID(t Template) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("tpl-%s", uuid4), nil
+	return fmt.Sprintf("tpl-%s", uuid4[4:]), nil
 }
 
 func (t *Template) IsValid() (bool, []string) {
