@@ -428,7 +428,6 @@ func (es *executionService) ListClusters() ([]string, error) {
 // several common request fields (mostly around ECS/EKS differences).
 //
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) {
-	fmt.Println("hi")
 	if fields.Engine == nil {
 		fields.Engine = &state.DefaultEngine
 	}
@@ -455,8 +454,6 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 			fields.ClusterName = es.eksClusterOverride
 		}
 	}
-
-	fmt.Println(fields)
 }
 
 //
