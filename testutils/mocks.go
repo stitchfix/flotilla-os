@@ -439,7 +439,7 @@ func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, 
 }
 
 // GetLatestTemplateByTemplateName - StateManager
-func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName string) (state.Template, error) {
+func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName string) (bool, state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetLatestTemplateByTemplateName")
 	var err error
 	var tpl *state.Template
@@ -454,10 +454,10 @@ func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName
 	}
 
 	if tpl == nil {
-		err = fmt.Errorf("No template with name: %s", templateName)
+		return false, *tpl, fmt.Errorf("No template with name: %s", templateName)
 	}
 
-	return *tpl, err
+	return true, *tpl, err
 }
 
 // CreateTemplate - StateManager

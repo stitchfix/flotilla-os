@@ -982,6 +982,21 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	return res, nil
 }
 
+// Scan from db
+func (tjs TemplateJSONSchema) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.([]uint8))
+		json.Unmarshal(s, &tjs)
+	}
+	return nil
+}
+
+// Value to db
+func (tjs TemplateJSONSchema) Value() (driver.Value, error) {
+	res, _ := json.Marshal(tjs)
+	return res, nil
+}
+
 // GetTemplateByID returns a single template by id.
 func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
 	var err error
@@ -1000,19 +1015,18 @@ func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) 
 
 // GetLatestTemplateByTemplateName returns the latest version of a template
 // of a specific template name.
-func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (Template, error) {
+func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (bool, Template, error) {
 	var err error
 	var tpl Template
 	err = sm.db.Get(&tpl, GetTemplateLatestOnlySQL, templateName)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return tpl, exceptions.MissingResource{
-				ErrorString: fmt.Sprintf("Template with ID %s not found", templateName)}
+			return false, tpl, nil
 		}
 
-		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
+		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
 	}
-	return tpl, nil
+	return true, tpl, nil
 }
 
 // ListTemplates returns list of templates from the database.

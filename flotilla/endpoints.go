@@ -886,7 +886,7 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	tpl, err := ep.templateService.Get(vars["template_id"])
+	tpl, err := ep.templateService.GetByID(vars["template_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting templates",

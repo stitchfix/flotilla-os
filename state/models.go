@@ -757,19 +757,21 @@ func (t TemplateExecutionRequest) GetExecutionRequestCustom() *map[string]interf
 	}
 }
 
+type TemplateJSONSchema map[string]interface{}
+
 type Template struct {
-	TemplateID      string `json:"template_id"`
-	TemplateName    string `json:"template_name"`
-	Version         int64  `json:"version"`
-	Schema          string `json:"schema"`
-	CommandTemplate string `json:"command_template"`
+	TemplateID      string             `json:"template_id"`
+	TemplateName    string             `json:"template_name"`
+	Version         int64              `json:"version"`
+	Schema          TemplateJSONSchema `json:"schema"`
+	CommandTemplate string             `json:"command_template"`
 	ExecutableResources
 }
 
 type CreateTemplateRequest struct {
-	TemplateName    string `json:"template_name"`
-	Schema          string `json:"schema"`
-	CommandTemplate string `json:"command_template"`
+	TemplateName    string             `json:"template_name"`
+	Schema          TemplateJSONSchema `json:"schema"`
+	CommandTemplate string             `json:"command_template"`
 	ExecutableResources
 }
 
@@ -805,14 +807,8 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 		return "", err
 	}
 
-	// JSON.parse the payload for validation.
-	jsonPayload, err := json.Marshal(executionPayload)
-	if err != nil {
-		return "", err
-	}
-
-	schemaLoader := gojsonschema.NewStringLoader(t.Schema)
-	documentLoader := gojsonschema.NewBytesLoader(jsonPayload)
+	schemaLoader := gojsonschema.NewGoLoader(t.Schema)
+	documentLoader := gojsonschema.NewGoLoader(executionPayload)
 
 	// Perform JSON schema validation to ensure that the request's template
 	// payload conforms to the template's JSON schema.
@@ -850,7 +846,7 @@ func NewTemplateID(t Template) (string, error) {
 func (t *Template) IsValid() (bool, []string) {
 	// TODO: validate that json schema can be dumped into the command template
 	// with no <no value> values.
-	return false, []string{}
+	return true, []string{}
 }
 
 //

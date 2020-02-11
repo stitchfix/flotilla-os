@@ -123,7 +123,7 @@ func (sw *submitWorker) runOnce() {
 				break
 			case state.ExecutableTypeTemplate:
 				var tpl state.Template
-				tpl, err = sw.sm.GetTemplate(*run.ExecutableID)
+				tpl, err = sw.sm.GetTemplateByID(*run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
