@@ -90,16 +90,16 @@ func (sw *statusWorker) runOnceEKS() {
 
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(runs), func(i, j int) { runs[i], runs[j] = runs[j], runs[i] })
-	sw.processRuns(runs)
+	sw.processEKSRuns(runs)
 }
 
-func (sw *statusWorker) processRuns(runs []state.Run) {
+func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	for _, run := range runs {
 		reloadRun, err := sw.sm.GetRun(run.RunID)
 		if err == nil && reloadRun.Status != state.StatusStopped {
 			if sw.acquireLock(run, "status", 10*time.Second) == true {
-				sw.processRun(run)
-				sw.processRunMetrics(run)
+				sw.processEKSRun(run)
+				sw.processEKSRunMetrics(run)
 			}
 		}
 	}
@@ -107,13 +107,16 @@ func (sw *statusWorker) processRuns(runs []state.Run) {
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
 	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
 	if err != nil {
-		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		// Turn off in dev mode; too noisy.
+		if sw.conf.GetString("flotilla_mode") != "dev" {
+			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		}
 		return false
 	}
 	return set
 }
 
-func (sw *statusWorker) processRun(run state.Run) {
+func (sw *statusWorker) processEKSRun(run state.Run) {
 	reloadRun, err := sw.sm.GetRun(run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
@@ -158,7 +161,7 @@ func (sw *statusWorker) processRun(run state.Run) {
 	}
 }
 
-func (sw *statusWorker) processRunMetrics(run state.Run) {
+func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
 	updatedRun, err := sw.ee.FetchPodMetrics(run)
 	if err == nil {
 		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
@@ -209,7 +212,9 @@ func (sw *statusWorker) runOnceECS() {
 			sw.logStatusUpdate(*update)
 		}
 
-		sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
+		if sw.conf.GetString("flotilla_mode") != "dev" {
+			_ = sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
+		}
 		if err = runReceipt.Done(); err != nil {
 			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", fmt.Sprintf("%+v", err))
 		}

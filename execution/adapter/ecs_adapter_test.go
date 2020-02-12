@@ -370,7 +370,6 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 		GroupName:    "group:cupcake",
 		Alias:        "cupcake",
 		Command:      "echo 'hi'",
-		Tags:         &state.Tags{"apple", "orange", "tiger"},
 		ExecutableResources: state.ExecutableResources{
 			Image:  "image:cupcake",
 			Memory: &memory,
@@ -378,6 +377,7 @@ func TestEcsAdapter_AdaptDefinition(t *testing.T) {
 				{Name: "E1", Value: "V1"},
 			},
 			Ports: &state.PortsList{12345, 6789},
+			Tags:  &state.Tags{"apple", "orange", "tiger"},
 		},
 	}
 

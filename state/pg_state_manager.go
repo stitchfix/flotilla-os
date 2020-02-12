@@ -145,14 +145,14 @@ func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []strin
 	return wc
 }
 
-func (sm *SQLStateManager) orderBy(obj orderable, field string, order string) (string, error) {
+func (sm *SQLStateManager) orderBy(obj IOrderable, field string, order string) (string, error) {
 	if order == "asc" || order == "desc" {
-		if obj.validOrderField(field) {
+		if obj.ValidOrderField(field) {
 			return fmt.Sprintf("order by %s %s NULLS LAST", field, order), nil
 		}
 		return "", errors.Errorf("Invalid field to order by [%s], must be one of [%s]",
 			field,
-			strings.Join(obj.validOrderFields(), ", "))
+			strings.Join(obj.ValidOrderFields(), ", "))
 	}
 	return "", errors.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
 }
@@ -545,7 +545,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.GroupName, &existing.User, &existing.TaskType, &existing.Env, &existing.Command, &existing.Memory,
 			&existing.Cpu, &existing.Gpu, &existing.Engine, &existing.EphemeralStorage, &existing.NodeLifecycle,
 			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed,
-			&existing.PodEvents, &existing.CommandHash, &existing.CloudTrailNotifications, &existing.ExecutableID, &existing.ExecutableType)
+			&existing.PodEvents, &existing.CommandHash, &existing.CloudTrailNotifications, &existing.ExecutableID,
+			&existing.ExecutableType, &existing.ExecutionRequestCustom)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -566,7 +567,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	  group_name = $15, env = $16,
 	  command = $17, memory = $18, cpu = $19, gpu = $20, engine = $21, ephemeral_storage = $22, node_lifecycle = $23,
 	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29,
-	  cloudtrail_notifications = $30, executable_id = $31, executable_type = $32
+	  cloudtrail_notifications = $30, executable_id = $31, executable_type = $32, execution_request_custom = $33
     WHERE run_id = $1;
     `
 
@@ -584,7 +585,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
 		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed,
 		existing.MaxMemoryUsed, existing.PodEvents, existing.CloudTrailNotifications,
-		existing.ExecutableID, existing.ExecutableType); err != nil {
+		existing.ExecutableID, existing.ExecutableType, existing.ExecutionRequestCustom); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -607,10 +608,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
       env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
 			container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash,
-			executable_id, executable_type
+			executable_id, executable_type, execution_request_custom
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31);
+      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31, $32);
     `
 
 	tx, err := sm.db.Begin()
@@ -624,8 +625,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.ExitCode, r.ExitReason, r.Status,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.InstanceID, r.InstanceDNSName, r.GroupName,
-		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle, r.EphemeralStorage,
-		r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed, r.MaxMemoryUsed, r.PodEvents, r.ExecutableID, r.ExecutableType); err != nil {
+		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle,
+		r.EphemeralStorage, r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed,
+		r.MaxMemoryUsed, r.PodEvents, r.ExecutableID, r.ExecutableType,
+		r.ExecutionRequestCustom); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -849,13 +852,14 @@ func (sm *SQLStateManager) Cleanup() error {
 	return sm.db.Close()
 }
 
-type orderable interface {
-	validOrderField(field string) bool
-	validOrderFields() []string
+type IOrderable interface {
+	ValidOrderField(field string) bool
+	ValidOrderFields() []string
+	DefaultOrderField() string
 }
 
-func (d *Definition) validOrderField(field string) bool {
-	for _, f := range d.validOrderFields() {
+func (d *Definition) ValidOrderField(field string) bool {
+	for _, f := range d.ValidOrderFields() {
 		if field == f {
 			return true
 		}
@@ -863,12 +867,16 @@ func (d *Definition) validOrderField(field string) bool {
 	return false
 }
 
-func (d *Definition) validOrderFields() []string {
+func (d *Definition) ValidOrderFields() []string {
 	return []string{"alias", "image", "group_name", "memory"}
 }
 
-func (r *Run) validOrderField(field string) bool {
-	for _, f := range r.validOrderFields() {
+func (d *Definition) DefaultOrderField() string {
+	return "group_name"
+}
+
+func (r *Run) ValidOrderField(field string) bool {
+	for _, f := range r.ValidOrderFields() {
 		if field == f {
 			return true
 		}
@@ -876,8 +884,30 @@ func (r *Run) validOrderField(field string) bool {
 	return false
 }
 
-func (r *Run) validOrderFields() []string {
+func (r *Run) ValidOrderFields() []string {
 	return []string{"run_id", "cluster_name", "status", "started_at", "finished_at", "group_name"}
+}
+
+func (r *Run) DefaultOrderField() string {
+	return "group_name"
+}
+
+func (t *Template) ValidOrderField(field string) bool {
+	for _, f := range t.ValidOrderFields() {
+		if field == f {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Template) ValidOrderFields() []string {
+	// @TODO: figure what fields should be orderable.
+	return []string{"template_name", "version"}
+}
+
+func (t *Template) DefaultOrderField() string {
+	return "template_name"
 }
 
 // Scan from db
@@ -953,4 +983,160 @@ func (e *CloudTrailNotifications) Scan(value interface{}) error {
 func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
+}
+
+// Scan from db
+func (e *ExecutionRequestCustom) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
+// Value to db
+func (e ExecutionRequestCustom) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+// Scan from db
+func (tjs *TemplateJSONSchema) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.([]uint8))
+		json.Unmarshal(s, &tjs)
+	}
+	return nil
+}
+
+// Value to db
+func (tjs TemplateJSONSchema) Value() (driver.Value, error) {
+	res, _ := json.Marshal(tjs)
+	return res, nil
+}
+
+// GetTemplateByID returns a single template by id.
+func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateByIDSQL, templateID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return tpl, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Template with ID %s not found", templateID)}
+		}
+
+		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
+	}
+	return tpl, nil
+}
+
+// GetLatestTemplateByTemplateName returns the latest version of a template
+// of a specific template name.
+func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (bool, Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateLatestOnlySQL, templateName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, tpl, nil
+		}
+
+		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
+	}
+	return true, tpl, nil
+}
+
+// ListTemplates returns list of templates from the database.
+func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	var err error
+	var result TemplateList
+	var orderQuery string
+
+	orderQuery, err = sm.orderBy(&Template{}, sortBy, order)
+	if err != nil {
+		return result, errors.WithStack(err)
+	}
+
+	sql := fmt.Sprintf(ListTemplatesSQL, orderQuery)
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
+
+	err = sm.db.Select(&result.Templates, sql, limit, offset)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates sql")
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates count sql")
+	}
+
+	return result, nil
+}
+
+// ListTemplates returns list of templates from the database.
+func (sm *SQLStateManager) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	var err error
+	var result TemplateList
+
+	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListTemplatesLatestOnlySQL)
+
+	err = sm.db.Select(&result.Templates, ListTemplatesLatestOnlySQL, limit, offset)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates sql")
+	}
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	if err != nil {
+		return result, errors.Wrap(err, "issue running list templates count sql")
+	}
+
+	return result, nil
+}
+
+// CreateTemplate creates a new template.
+func (sm *SQLStateManager) CreateTemplate(t Template) error {
+	var err error
+	insert := `
+    INSERT INTO template(
+			template_id, template_name, version, schema, command_template,
+			adaptive_resource_allocation, image, container_name, memory, env,
+			privileged, cpu, gpu
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+    `
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if _, err = tx.Exec(insert,
+		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
+		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
+		t.Privileged, t.Cpu, t.Gpu); err != nil {
+		tx.Rollback()
+		return errors.Wrapf(
+			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+//
+// GetExecutableByExecutableType returns a single executable by id.
+//
+func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string) (Executable, error) {
+	switch t {
+	case ExecutableTypeDefinition:
+		return sm.GetDefinition(id)
+	case ExecutableTypeTemplate:
+		return sm.GetTemplateByID(id)
+	default:
+		return nil, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("executable type of [%s] not valid.", t),
+		}
+	}
 }

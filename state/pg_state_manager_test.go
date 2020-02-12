@@ -257,7 +257,6 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 		User:         "noone",
 		Alias:        "cupcake",
 		Command:      "echo 'hi'",
-		Tags:         &Tags{"apple", "orange", "tiger"},
 		ExecutableResources: ExecutableResources{
 			Memory: &memory,
 			Image:  "image:cupcake",
@@ -266,6 +265,7 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 			},
 			ContainerName: "container:cupcake",
 			Ports:         &PortsList{12345, 6789},
+			Tags:          &Tags{"apple", "orange", "tiger"},
 		},
 	}
 
@@ -301,8 +301,8 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 		"cupcake",
 	}
 	updates := Definition{
-		Tags: &tags,
 		ExecutableResources: ExecutableResources{
+			Tags:  &tags,
 			Image: "updated",
 			Env:   &env,
 			Ports: &PortsList{}, // <---- empty, set ports to empty list

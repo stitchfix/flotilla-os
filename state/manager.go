@@ -37,6 +37,14 @@ type Manager interface {
 	BatchUpdateWorkers(updates []Worker) (WorkersList, error)
 	GetWorker(workerType string, engine string) (Worker, error)
 	UpdateWorker(workerType string, updates Worker) (Worker, error)
+
+	GetExecutableByTypeAndID(executableType ExecutableType, executableID string) (Executable, error)
+
+	GetTemplateByID(templateID string) (Template, error)
+	GetLatestTemplateByTemplateName(templateName string) (bool, Template, error)
+	ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error)
+	ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error)
+	CreateTemplate(t Template) error
 }
 
 //

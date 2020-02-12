@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"testing"
 
@@ -30,6 +31,7 @@ type ImplementsAllTheThings struct {
 	ExecuteErrorIsRetryable bool                        // Execution Engine - is the run retryable?
 	Groups                  []string
 	Tags                    []string
+	Templates               map[string]state.Template
 }
 
 func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
@@ -388,4 +390,79 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", nil, nil
+}
+
+// GetExecutableByTypeAndID - StateManager
+func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableType, id string) (state.Executable, error) {
+	iatt.Calls = append(iatt.Calls, "GetExecutableByTypeAndID")
+	switch t {
+	case state.ExecutableTypeDefinition:
+		return iatt.GetDefinition(id)
+	case state.ExecutableTypeTemplate:
+		return iatt.GetTemplateByID(id)
+	default:
+		return nil, fmt.Errorf("Invalid executable type %s", t)
+	}
+}
+
+// ListTemplates - StateManager
+func (iatt *ImplementsAllTheThings) ListTemplates(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	iatt.Calls = append(iatt.Calls, "ListTemplates")
+	tl := state.TemplateList{Total: len(iatt.Templates)}
+	for _, t := range iatt.Templates {
+		tl.Templates = append(tl.Templates, t)
+	}
+	return tl, nil
+}
+
+// ListTemplatesLatestOnly - StateManager
+func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	// TODO: this is not actually implemented correctly - but also we're never
+	// using it.
+	iatt.Calls = append(iatt.Calls, "ListTemplatesLatestOnly")
+	tl := state.TemplateList{Total: len(iatt.Templates)}
+	for _, t := range iatt.Templates {
+		tl.Templates = append(tl.Templates, t)
+	}
+	return tl, nil
+}
+
+// GetTemplateByID - StateManager
+func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplateByID")
+	var err error
+	t, ok := iatt.Templates[id]
+	if !ok {
+		err = fmt.Errorf("No template %s", id)
+	}
+	return t, err
+}
+
+// GetLatestTemplateByTemplateName - StateManager
+func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName string) (bool, state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetLatestTemplateByTemplateName")
+	var err error
+	var tpl *state.Template
+	var maxVersion int64 = int64(math.Inf(-1))
+
+	// Iterate over templates to find max version.
+	for _, t := range iatt.Templates {
+		if t.TemplateName == templateName && t.Version > maxVersion {
+			tpl = &t
+			maxVersion = t.Version
+		}
+	}
+
+	if tpl == nil {
+		return false, *tpl, fmt.Errorf("No template with name: %s", templateName)
+	}
+
+	return true, *tpl, err
+}
+
+// CreateTemplate - StateManager
+func (iatt *ImplementsAllTheThings) CreateTemplate(t state.Template) error {
+	iatt.Calls = append(iatt.Calls, "CreateTemplate")
+	iatt.Templates[t.TemplateID] = t
+	return nil
 }

@@ -105,7 +105,8 @@ select
   command_hash as commandhash,
   cloudtrail_notifications::TEXT as cloudtrailnotifications,
   coalesce(executable_id,'') as executableid,
-  coalesce(executable_type,'') as executabletype
+  coalesce(executable_type,'') as executabletype,
+  execution_request_custom::TEXT as executionrequestcustom
 from task t
 `
 
@@ -179,3 +180,53 @@ const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 // worker type; locks the row.
 //
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
+
+// TemplateSelect selects a template
+const TemplateSelect = `
+SELECT
+  template_id as templateid,
+  template_name as templatename,
+  version,
+  schema,
+  command_template as commandtemplate,
+  adaptive_resource_allocation as adaptiveresourceallocation,
+  image,
+  container_name as containername,
+  memory,
+  env::TEXT as env,
+  privileged,
+  cpu,
+  gpu
+FROM template
+`
+
+// ListTemplatesSQL postgres specific query for listing templates
+const ListTemplatesSQL = TemplateSelect + "\n%s limit $1 offset $2"
+
+// GetTemplateByIDSQL postgres specific query for getting a single template
+const GetTemplateByIDSQL = TemplateSelect + "\nwhere template_id = $1"
+
+// ListTemplatesLatestOnlySQL lists the latest version of each distinct
+// template name.
+const ListTemplatesLatestOnlySQL = `
+  SELECT DISTINCT ON (template_name)
+    template_id as templateid,
+    template_name as templatename,
+    version,
+    schema,
+    command_template as commandtemplate,
+    adaptive_resource_allocation as adaptiveresourceallocation,
+    image,
+    container_name as containername,
+    memory,
+    env::TEXT as env,
+    privileged,
+    cpu,
+    gpu
+  FROM template
+  ORDER BY template_name, version DESC, template_id
+  LIMIT $1 OFFSET $2;
+`
+
+// GetTemplateLatestOnlySQL get the latest version of a specific template name.
+const GetTemplateLatestOnlySQL = TemplateSelect + "\nWHERE template_name = $1 ORDER BY version DESC LIMIT 1;"
