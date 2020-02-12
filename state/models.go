@@ -182,9 +182,10 @@ type ExecutionRequestCommon struct {
 	NodeLifecycle    *string  `json:"node_lifecycle"`
 }
 
+type ExecutionRequestCustom map[string]interface{}
 type ExecutionRequest interface {
 	GetExecutionRequestCommon() *ExecutionRequestCommon
-	GetExecutionRequestCustom() *map[string]interface{}
+	GetExecutionRequestCustom() *ExecutionRequestCustom
 }
 
 type DefinitionExecutionRequest struct {
@@ -195,7 +196,7 @@ func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionReque
 	return &d.ExecutionRequestCommon
 }
 
-func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
+func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
 	return nil
 }
 
@@ -431,6 +432,7 @@ type Run struct {
 	CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications,omitempty"`
 	ExecutableID            *string                  `json:"executable_id,omitempty"`
 	ExecutableType          *ExecutableType          `json:"executable_type,omitempty"`
+	ExecutionRequestCustom  *ExecutionRequestCustom  `json:"execution_request_custom,omitempty"`
 }
 
 //
@@ -558,6 +560,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.CloudTrailNotifications = other.CloudTrailNotifications
 	}
 
+	if other.ExecutionRequestCustom != nil {
+		d.ExecutionRequestCustom = other.ExecutionRequestCustom
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
@@ -601,6 +607,12 @@ func (r Run) MarshalJSON() ([]byte, error) {
 
 	if cloudTrailNotifications == nil {
 		cloudTrailNotifications = &CloudTrailNotifications{}
+	}
+
+	executionRequestCustom := r.ExecutionRequestCustom
+
+	if executionRequestCustom == nil {
+		executionRequestCustom = &ExecutionRequestCustom{}
 	}
 
 	return json.Marshal(&struct {
@@ -751,8 +763,8 @@ func (t TemplateExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestC
 	return &t.ExecutionRequestCommon
 }
 
-func (t TemplateExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
-	return &map[string]interface{}{
+func (t TemplateExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
+	return &ExecutionRequestCustom{
 		TemplatePayloadKey: t.TemplatePayload,
 	}
 }

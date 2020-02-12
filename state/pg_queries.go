@@ -105,7 +105,8 @@ select
   command_hash as commandhash,
   cloudtrail_notifications::TEXT as cloudtrailnotifications,
   coalesce(executable_id,'') as executableid,
-  coalesce(executable_type,'') as executabletype
+  coalesce(executable_type,'') as executabletype,
+  execution_request_custom::TEXT as executionrequestcustom
 from task t
 `
 

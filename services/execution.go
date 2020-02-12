@@ -532,10 +532,10 @@ func (es *executionService) constructRunFromTemplate(template state.Template, re
 		return run, err
 	}
 
-	// @TODO: how to handle these.
 	run.DefinitionID = template.TemplateID
 	run.Alias = template.TemplateID
-	run.GroupName = template.TemplateID
+	run.GroupName = "template_group_name"
+	run.ExecutionRequestCustom = req.GetExecutionRequestCustom()
 
 	return run, nil
 }

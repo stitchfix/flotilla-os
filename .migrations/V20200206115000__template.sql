@@ -15,5 +15,4 @@ CREATE TABLE template (
   CONSTRAINT template_type_version UNIQUE(type, version)
 );
 
-ALTER TABLE task
-  ADD COLUMN IF NOT EXISTS executable_request_custom JSONB;
+ALTER TABLE task ADD COLUMN IF NOT EXISTS executable_request_custom JSONB;
