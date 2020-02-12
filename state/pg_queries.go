@@ -196,7 +196,9 @@ SELECT
   env::TEXT as env,
   privileged,
   cpu,
-  gpu
+  gpu,
+  default_payload as defaultpayload,
+  avatar_uri as avataruri
 FROM template
 `
 
@@ -222,7 +224,9 @@ const ListTemplatesLatestOnlySQL = `
     env::TEXT as env,
     privileged,
     cpu,
-    gpu
+    gpu,
+    default_payload as defaultpayload,
+    avatar_uri as avataruri
   FROM template
   ORDER BY template_name, version DESC, template_id
   LIMIT $1 OFFSET $2

@@ -778,8 +778,8 @@ type Template struct {
 	Version         int64              `json:"version"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
-	DefaultPayload  TemplatePayload    `json:"default_payload;omitempty"`
-	AvatarURI       string             `json:"avatar_uri;omitempty"`
+	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
 
@@ -787,18 +787,14 @@ type CreateTemplateRequest struct {
 	TemplateName    string             `json:"template_name"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
+	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
 
 type CreateTemplateResponse struct {
 	DidCreate bool     `json:"did_create"`
 	Template  Template `json:"template,omitempty"`
-}
-
-type TemplateUpdateRequest struct {
-	Schema          string `json:"schema"`
-	CommandTemplate string `json:"command_template"`
-	ExecutableResources
 }
 
 func (t Template) GetExecutableID() *string {

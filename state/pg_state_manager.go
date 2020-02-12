@@ -1015,6 +1015,21 @@ func (tjs TemplateJSONSchema) Value() (driver.Value, error) {
 	return res, nil
 }
 
+// Scan from db
+func (tjs *TemplatePayload) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.([]uint8))
+		json.Unmarshal(s, &tjs)
+	}
+	return nil
+}
+
+// Value to db
+func (tjs TemplatePayload) Value() (driver.Value, error) {
+	res, _ := json.Marshal(tjs)
+	return res, nil
+}
+
 // GetTemplateByID returns a single template by id.
 func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
 	var err error
@@ -1099,9 +1114,9 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
     INSERT INTO template(
 			template_id, template_name, version, schema, command_template,
 			adaptive_resource_allocation, image, container_name, memory, env,
-			privileged, cpu, gpu
+			privileged, cpu, gpu, default_payload, avatar_uri
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
     `
 
 	tx, err := sm.db.Begin()
@@ -1112,7 +1127,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	if _, err = tx.Exec(insert,
 		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
 		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
-		t.Privileged, t.Cpu, t.Gpu); err != nil {
+		t.Privileged, t.Cpu, t.Gpu, t.DefaultPayload, t.AvatarURI); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)

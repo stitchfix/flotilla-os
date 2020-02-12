@@ -143,7 +143,12 @@ func (ts *templateService) diff(prev state.Template, curr state.Template) bool {
 	if *prev.AdaptiveResourceAllocation != *curr.AdaptiveResourceAllocation {
 		return true
 	}
-	if prev.ContainerName != curr.ContainerName {
+
+	if reflect.DeepEqual(prev.DefaultPayload, curr.DefaultPayload) == false {
+		return true
+	}
+
+	if prev.AvatarURI != curr.AvatarURI {
 		return true
 	}
 
@@ -234,6 +239,16 @@ func (ts *templateService) constructTemplateFromCreateTemplateRequest(req *state
 	}
 	if req.Tags != nil {
 		tpl.Tags = req.Tags
+	}
+	if req.DefaultPayload != nil {
+		tpl.DefaultPayload = req.DefaultPayload
+	} else {
+		tpl.DefaultPayload = state.TemplatePayload{}
+	}
+	if len(req.AvatarURI) > 0 {
+		tpl.AvatarURI = req.AvatarURI
+	} else {
+		tpl.AvatarURI = ""
 	}
 
 	return tpl, nil
