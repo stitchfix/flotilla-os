@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"fmt"
-	"github.com/pkg/errors"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 // StringSliceContains checks is a string slice contains a particular string.
@@ -28,7 +28,6 @@ func mergeMapsRecursive(a *map[string]interface{}, b map[string]interface{}) err
 	for k, v := range b {
 		// If the value is a map, check recursively.
 		if reflect.TypeOf(v).Kind() == reflect.Map {
-			fmt.Println("UGH")
 			if _, ok := (*a)[k]; !ok {
 				(*a)[k] = v
 			} else {
