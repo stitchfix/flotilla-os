@@ -225,7 +225,7 @@ const ListTemplatesLatestOnlySQL = `
     gpu
   FROM template
   ORDER BY template_name, version DESC, template_id
-  LIMIT $1 OFFSET $2;
+  LIMIT $1 OFFSET $2
 `
 
 // GetTemplateLatestOnlySQL get the latest version of a specific template name.
