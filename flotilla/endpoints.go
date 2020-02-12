@@ -108,6 +108,9 @@ func (ep *endpoints) decodeListRequest(r *http.Request) listRequest {
 	return lr
 }
 
+// Note: the difference between this method and `decodeListRequest` is that
+// this method does not assume that all entities can be sorted by `group_name`.
+// Instead, it relies on the IOrderable interface's DefaultOrderField method.
 func (ep *endpoints) decodeOrderableListRequest(r *http.Request, orderable state.IOrderable) listRequest {
 	var lr listRequest
 	params := r.URL.Query()
@@ -271,18 +274,6 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
-
-	vars := mux.Vars(r)
-	definitionID, ok := vars["definition_id"]
-	if ok {
-		lr.filters["definition_id"] = []string{definitionID}
-	}
-
-	tplID, ok := vars["template_id"]
-	if ok {
-		lr.filters["template_id"] = []string{tplID}
-	}
-
 	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
@@ -334,7 +325,7 @@ func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tplID, ok := vars["template_id"]
 	if ok {
-		lr.filters["template_id"] = []string{tplID}
+		lr.filters["executable_id"] = []string{tplID}
 	}
 
 	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
@@ -923,9 +914,21 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
+	var (
+		tl  state.TemplateList
+		err error
+	)
 	lr := ep.decodeOrderableListRequest(r, &state.Template{})
 
-	tl, err := ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+	params := r.URL.Query()
+	latestOnly := ep.getStringBoolVal(ep.getURLParam(params, "latest_only", "true"))
+
+	if latestOnly == true {
+		tl, err = ep.templateService.ListLatestOnly(lr.limit, lr.offset, lr.sortBy, lr.order)
+	} else {
+		tl, err = ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+	}
+
 	if tl.Templates == nil {
 		tl.Templates = []state.Template{}
 	}
