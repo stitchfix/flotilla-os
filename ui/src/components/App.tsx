@@ -58,6 +58,18 @@ class App extends React.Component<ConnectedProps<typeof connector>> {
             <Route exact path="/tasks/create" component={CreateTaskForm} />
             <Route path="/tasks/:definitionID" component={Task} />
             <Route path="/tasks/alias/:alias" component={Task} />
+
+            <Route
+              exact
+              path="/templates"
+              component={() => <span>tpl list</span>}
+            />
+            <Route
+              exact
+              path="/templates/templateID"
+              component={() => <span>tpl detail</span>}
+            />
+
             <Route exact path="/runs" component={Runs} />
             <Route path="/runs/:runID" component={Run} />
             <Redirect from="/" to="/tasks" />

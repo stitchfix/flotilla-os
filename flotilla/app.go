@@ -67,6 +67,10 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing definition service")
 	}
+	templateService, err := services.NewTemplateService(conf, stateManager)
+	if err != nil {
+		return app, errors.Wrap(err, "problem initializing template service")
+	}
 	ecsLogService, err := services.NewLogService(conf, stateManager, ecsLogsClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing ecs log service")
@@ -88,6 +92,7 @@ func NewApp(conf config.Config,
 		ecsLogService:     ecsLogService,
 		eksLogService:     eksLogService,
 		workerService:     workerService,
+		templateService:   templateService,
 		logger:            log,
 	}
 

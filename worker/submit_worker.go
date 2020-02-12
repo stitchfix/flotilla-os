@@ -56,7 +56,11 @@ func (sw *submitWorker) Run() error {
 }
 
 func (sw *submitWorker) runOnce() {
-	receipts, err := sw.ee.PollRuns()
+	var receipts []engine.RunReceipt
+	var run state.Run
+	var err error
+
+	receipts, err = sw.ee.PollRuns()
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
@@ -68,28 +72,9 @@ func (sw *submitWorker) runOnce() {
 		//
 		// Fetch run from state manager to ensure its existence
 		//
-		run, err := sw.sm.GetRun(runReceipt.Run.RunID)
+		run, err = sw.sm.GetRun(runReceipt.Run.RunID)
 		if err != nil {
 			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
-			if err = runReceipt.Done(); err != nil {
-				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
-			}
-			continue
-		}
-
-		//
-		// Fetch run's definition from state manager
-		//
-		// * Will not be necessary once we copy relevant run information from definition onto the run itself
-		//
-		executable, err := sw.sm.GetDefinition(run.DefinitionID)
-
-		if err != nil {
-			sw.log.Log(
-				"message", "Error fetching definition for run",
-				"run_id", run.RunID,
-				"definition_id", run.DefinitionID,
-				"error", err.Error())
 			if err = runReceipt.Done(); err != nil {
 				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
@@ -100,12 +85,65 @@ func (sw *submitWorker) runOnce() {
 		// Only valid to process if it's in the StatusQueued state
 		//
 		if run.Status == state.StatusQueued {
+			var (
+				launched  state.Run
+				retryable bool
+			)
 
-			//
-			// Execute the run using the execution engine
-			//
-			sw.log.Log("message", "Submitting", "run_id", run.RunID)
-			launched, retryable, err := sw.ee.Execute(executable, run, sw.sm)
+			// 1. Check for existence of run.ExecutableType; set to `task_definition`
+			// if not set.
+			if run.ExecutableType == nil {
+				defaultExecutableType := state.ExecutableTypeDefinition
+				run.ExecutableType = &defaultExecutableType
+			}
+
+			// 2. Check for existence of run.ExecutableID; set to run.DefinitionID if
+			// not set.
+			if run.ExecutableID == nil {
+				defID := run.DefinitionID
+				run.ExecutableID = &defID
+			}
+
+			// 3. Switch by executable type.
+			switch *run.ExecutableType {
+			case state.ExecutableTypeDefinition:
+				var d state.Definition
+				d, err = sw.sm.GetDefinition(*run.ExecutableID)
+
+				if err != nil {
+					sw.logFailedToGetExecutableMessage(run, err)
+					if err = runReceipt.Done(); err != nil {
+						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+					}
+					continue
+				}
+
+				// Execute the run using the execution engine.
+				launched, retryable, err = sw.ee.Execute(d, run, sw.sm)
+				break
+			case state.ExecutableTypeTemplate:
+				var tpl state.Template
+				tpl, err = sw.sm.GetTemplateByID(*run.ExecutableID)
+
+				if err != nil {
+					sw.logFailedToGetExecutableMessage(run, err)
+					if err = runReceipt.Done(); err != nil {
+						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+					}
+					continue
+				}
+
+				// Execute the run using the execution engine.
+				sw.log.Log("message", "Submitting", "run_id", run.RunID)
+				launched, retryable, err = sw.ee.Execute(tpl, run, sw.sm)
+				break
+			default:
+				// If executable type is invalid; log message and continue processing
+				// other runs.
+				sw.log.Log("message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
+				continue
+			}
+
 			if err != nil {
 				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
@@ -120,7 +158,7 @@ func (sw *submitWorker) runOnce() {
 			//
 			// Emit event with current definition
 			//
-			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "definition", executable, "run_id", run.RunID)
+			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "executable_id", *run.ExecutableID, "run_id", run.RunID)
 			if err != nil {
 				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
@@ -140,4 +178,13 @@ func (sw *submitWorker) runOnce() {
 			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 		}
 	}
+}
+
+func (sw *submitWorker) logFailedToGetExecutableMessage(run state.Run, err error) {
+	sw.log.Log(
+		"message", "Error fetching executable for run",
+		"run_id", run.RunID,
+		"executable_id", run.ExecutableID,
+		"executable_type", run.ExecutableType,
+		"error", err.Error())
 }

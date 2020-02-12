@@ -8,7 +8,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	uuid "github.com/nu7hatch/gouuid"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var ECSEngine = "ecs"
@@ -149,19 +151,21 @@ type ExecutableResources struct {
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 	ContainerName              string     `json:"container_name"`
 	Ports                      *PortsList `json:"ports,omitempty"`
+	Tags                       *Tags      `json:"tags,omitempty"`
 }
 
 type ExecutableType string
 
 const (
 	ExecutableTypeDefinition ExecutableType = "task_definition"
+	ExecutableTypeTemplate   ExecutableType = "template"
 )
 
 type Executable interface {
 	GetExecutableID() *string
 	GetExecutableType() *ExecutableType
 	GetExecutableResources() *ExecutableResources
-	GetExecutableCommand(req ExecutionRequest) string
+	GetExecutableCommand(req ExecutionRequest) (string, error)
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
 
@@ -178,9 +182,10 @@ type ExecutionRequestCommon struct {
 	NodeLifecycle    *string  `json:"node_lifecycle"`
 }
 
+type ExecutionRequestCustom map[string]interface{}
 type ExecutionRequest interface {
 	GetExecutionRequestCommon() *ExecutionRequestCommon
-	GetExecutionRequestCustom() *map[string]interface{}
+	GetExecutionRequestCustom() *ExecutionRequestCustom
 }
 
 type DefinitionExecutionRequest struct {
@@ -191,7 +196,7 @@ func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionReque
 	return &d.ExecutionRequestCommon
 }
 
-func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *map[string]interface{} {
+func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
 	return nil
 }
 
@@ -205,7 +210,6 @@ type Definition struct {
 	Alias            string `json:"alias"`
 	Command          string `json:"command,omitempty"`
 	TaskType         string `json:"-"`
-	Tags             *Tags  `json:"tags,omitempty"`
 	SharedMemorySize *int64 `json:"shared_memory_size,omitempty"`
 	ExecutableResources
 }
@@ -223,8 +227,8 @@ func (d Definition) GetExecutableResources() *ExecutableResources {
 	return &d.ExecutableResources
 }
 
-func (d Definition) GetExecutableCommand(req ExecutionRequest) string {
-	return d.Command
+func (d Definition) GetExecutableCommand(req ExecutionRequest) (string, error) {
+	return d.Command, nil
 }
 
 func (d Definition) GetExecutableResourceName() string {
@@ -428,6 +432,7 @@ type Run struct {
 	CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications,omitempty"`
 	ExecutableID            *string                  `json:"executable_id,omitempty"`
 	ExecutableType          *ExecutableType          `json:"executable_type,omitempty"`
+	ExecutionRequestCustom  *ExecutionRequestCustom  `json:"execution_request_custom,omitempty"`
 }
 
 //
@@ -555,6 +560,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.CloudTrailNotifications = other.CloudTrailNotifications
 	}
 
+	if other.ExecutionRequestCustom != nil {
+		d.ExecutionRequestCustom = other.ExecutionRequestCustom
+	}
+
 	//
 	// Runs have a deterministic lifecycle
 	//
@@ -598,6 +607,12 @@ func (r Run) MarshalJSON() ([]byte, error) {
 
 	if cloudTrailNotifications == nil {
 		cloudTrailNotifications = &CloudTrailNotifications{}
+	}
+
+	executionRequestCustom := r.ExecutionRequestCustom
+
+	if executionRequestCustom == nil {
+		executionRequestCustom = &ExecutionRequestCustom{}
 	}
 
 	return json.Marshal(&struct {
@@ -733,4 +748,158 @@ func (w *Record) Equal(other Record) bool {
 
 func (w *Record) String() string {
 	return fmt.Sprintf("%s-%s", w.EventSource, w.EventName)
+}
+
+const TemplatePayloadKey = "template_payload"
+
+type TemplatePayload map[string]interface{}
+
+type TemplateExecutionRequest struct {
+	TemplatePayload TemplatePayload `json:"template_payload"`
+	ExecutionRequestCommon
+}
+
+func (t TemplateExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
+	return &t.ExecutionRequestCommon
+}
+
+func (t TemplateExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
+	return &ExecutionRequestCustom{
+		TemplatePayloadKey: t.TemplatePayload,
+	}
+}
+
+type TemplateJSONSchema map[string]interface{}
+
+type Template struct {
+	TemplateID      string             `json:"template_id"`
+	TemplateName    string             `json:"template_name"`
+	Version         int64              `json:"version"`
+	Schema          TemplateJSONSchema `json:"schema"`
+	CommandTemplate string             `json:"command_template"`
+	ExecutableResources
+}
+
+type CreateTemplateRequest struct {
+	TemplateName    string             `json:"template_name"`
+	Schema          TemplateJSONSchema `json:"schema"`
+	CommandTemplate string             `json:"command_template"`
+	ExecutableResources
+}
+
+type CreateTemplateResponse struct {
+	DidCreate bool     `json:"did_create"`
+	Template  Template `json:"template,omitempty"`
+}
+
+type TemplateUpdateRequest struct {
+	Schema          string `json:"schema"`
+	CommandTemplate string `json:"command_template"`
+	ExecutableResources
+}
+
+func (t Template) GetExecutableID() *string {
+	return &t.TemplateID
+}
+
+func (t Template) GetExecutableType() *ExecutableType {
+	et := ExecutableTypeTemplate
+	return &et
+}
+
+func (t Template) GetExecutableResources() *ExecutableResources {
+	return &t.ExecutableResources
+}
+
+func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
+	var (
+		err    error
+		result bytes.Buffer
+	)
+
+	// Get the request's custom fields.
+	customFields := *req.GetExecutionRequestCustom()
+	executionPayload := customFields[TemplatePayloadKey]
+	if executionPayload == nil {
+		return "", err
+	}
+
+	schemaLoader := gojsonschema.NewGoLoader(t.Schema)
+	documentLoader := gojsonschema.NewGoLoader(executionPayload)
+
+	// Perform JSON schema validation to ensure that the request's template
+	// payload conforms to the template's JSON schema.
+	if _, err = gojsonschema.Validate(schemaLoader, documentLoader); err != nil {
+		return "", err
+	}
+
+	// Create a new template string based on the template.Template.
+	textTemplate, err := template.New("command").Funcs(sprig.TxtFuncMap()).Parse(t.CommandTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	// Dump payload into the template string.
+	if err = textTemplate.Execute(&result, executionPayload); err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
+}
+
+func (t Template) GetExecutableResourceName() string {
+	return t.TemplateID
+}
+
+// NewTemplateID returns a new uuid for a Template
+func NewTemplateID(t Template) (string, error) {
+	uuid4, err := newUUIDv4()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("tpl-%s", uuid4[4:]), nil
+}
+
+func (t *Template) IsValid() (bool, []string) {
+	conditions := []validationCondition{
+		{len(t.TemplateName) == 0, "string [template_name] must be specified"},
+		{len(t.Schema) == 0, "schema must be specified"},
+		{len(t.CommandTemplate) == 0, "string [command_template] must be specified"},
+		{len(t.Image) == 0, "string [image] must be specified"},
+		{t.Memory == nil, "int [memory] must be specified"},
+	}
+
+	valid := true
+	var reasons []string
+	for _, cond := range conditions {
+		if cond.condition {
+			valid = false
+			reasons = append(reasons, cond.reason)
+		}
+	}
+	return valid, reasons
+	return true, []string{}
+}
+
+//
+// TemplateList wraps a list of Templates
+//
+type TemplateList struct {
+	Total     int        `json:"total"`
+	Templates []Template `json:"templates"`
+}
+
+func (tl *TemplateList) MarshalJSON() ([]byte, error) {
+	type Alias TemplateList
+	l := tl.Templates
+	if l == nil {
+		l = []Template{}
+	}
+	return json.Marshal(&struct {
+		Templates []Template `json:"templates"`
+		*Alias
+	}{
+		Templates: l,
+		Alias:     (*Alias)(tl),
+	})
 }

@@ -8,6 +8,7 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
+	templateService   services.TemplateService
 	ecsLogService     services.LogService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
@@ -96,6 +98,23 @@ func (ep *endpoints) decodeListRequest(r *http.Request) listRequest {
 	lr.limit, _ = strconv.Atoi(ep.getURLParam(params, "limit", "1024"))
 	lr.offset, _ = strconv.Atoi(ep.getURLParam(params, "offset", "0"))
 	lr.sortBy = ep.getURLParam(params, "sort_by", "group_name")
+	lr.order = ep.getURLParam(params, "order", "asc")
+	lr.filters, lr.envFilters = ep.getFilters(params, map[string]bool{
+		"limit":   true,
+		"offset":  true,
+		"sort_by": true,
+		"order":   true,
+	})
+	return lr
+}
+
+func (ep *endpoints) decodeOrderableListRequest(r *http.Request, orderable state.IOrderable) listRequest {
+	var lr listRequest
+	params := r.URL.Query()
+
+	lr.limit, _ = strconv.Atoi(ep.getURLParam(params, "limit", "1024"))
+	lr.offset, _ = strconv.Atoi(ep.getURLParam(params, "offset", "0"))
+	lr.sortBy = ep.getURLParam(params, "sort_by", orderable.DefaultOrderField())
 	lr.order = ep.getURLParam(params, "order", "asc")
 	lr.filters, lr.envFilters = ep.getFilters(params, map[string]bool{
 		"limit":   true,
@@ -259,8 +278,12 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 		lr.filters["definition_id"] = []string{definitionID}
 	}
 
-	runList, err := ep.executionService.List(
-		lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	tplID, ok := vars["template_id"]
+	if ok {
+		lr.filters["template_id"] = []string{tplID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing runs",
@@ -281,6 +304,65 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 		}
 		ep.encodeResponse(w, response)
 	}
+}
+
+func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+
+	vars := mux.Vars(r)
+	definitionID, ok := vars["definition_id"]
+	if ok {
+		lr.filters["definition_id"] = []string{definitionID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing definition runs",
+			"operation", "ListDefinitionRuns",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := ep.createListRunsResponse(runList, lr)
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeListRequest(r)
+
+	vars := mux.Vars(r)
+	tplID, ok := vars["template_id"]
+	if ok {
+		lr.filters["template_id"] = []string{tplID}
+	}
+
+	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing runs for template",
+			"operation", "ListTemplateRuns",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := ep.createListRunsResponse(runList, lr)
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) createListRunsResponse(runList state.RunList, req listRequest) map[string]interface{} {
+	response := make(map[string]interface{})
+	response["total"] = runList.Total
+	response["history"] = runList.Runs
+	response["limit"] = req.limit
+	response["offset"] = req.offset
+	response["sort_by"] = req.sortBy
+	response["order"] = req.order
+	response["env_filters"] = req.envFilters
+	for k, v := range req.filters {
+		response[k] = v
+	}
+	return response
 }
 
 func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -348,7 +430,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
@@ -381,14 +463,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, run)
 	}
 }
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
+
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -404,7 +479,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *lr.Engine)})
 			return
@@ -414,7 +489,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.NodeLifecycle != nil {
-		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
 			return
@@ -465,7 +540,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.Engine != nil {
-		if !stringInSlice(*lr.Engine, state.Engines) {
+		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
 			return
@@ -475,7 +550,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if lr.NodeLifecycle != nil {
-		if !stringInSlice(*lr.NodeLifecycle, state.NodeLifeCycles) {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
 				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
 			return
@@ -797,4 +872,112 @@ func (ep *endpoints) getStringBoolVal(s string) bool {
 	}
 
 	return false
+}
+
+func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
+	var req state.TemplateExecutionRequest
+	err := ep.decodeRequest(r, &req)
+
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	if len(req.OwnerID) == 0 {
+		ep.encodeError(w, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("request payload must contain [owner_id]; the run_tags field is deprecated for the v7 endpoint.")})
+		return
+	}
+
+	if req.Engine != nil {
+		if !utils.StringSliceContains(state.Engines, *req.Engine) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *req.Engine)})
+			return
+		}
+	} else {
+		req.Engine = &state.DefaultEngine
+	}
+
+	if req.NodeLifecycle != nil {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *req.NodeLifecycle) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
+			return
+		}
+	} else {
+		req.NodeLifecycle = &state.DefaultLifecycle
+	}
+	vars := mux.Vars(r)
+
+	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], &req)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating template run",
+			"operation", "CreateTemplateRun",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+}
+
+func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
+	lr := ep.decodeOrderableListRequest(r, &state.Template{})
+
+	tl, err := ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+	if tl.Templates == nil {
+		tl.Templates = []state.Template{}
+	}
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing templates",
+			"operation", "ListTemplates",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		response := make(map[string]interface{})
+		response["total"] = tl.Total
+		response["templates"] = tl.Templates
+		response["limit"] = lr.limit
+		response["offset"] = lr.offset
+		response["sort_by"] = lr.sortBy
+		response["order"] = lr.order
+		ep.encodeResponse(w, response)
+	}
+}
+
+func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tpl, err := ep.templateService.GetByID(vars["template_id"])
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting templates",
+			"operation", "GetTemplate",
+			"error", fmt.Sprintf("%+v", err),
+			"template_id", vars["template_id"])
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, tpl)
+	}
+}
+
+func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
+	var req state.CreateTemplateRequest
+	err := ep.decodeRequest(r, &req)
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	created, err := ep.templateService.Create(&req)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating template",
+			"operation", "CreateTemplate",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, created)
+	}
 }
