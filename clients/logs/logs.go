@@ -16,8 +16,8 @@ import (
 type Client interface {
 	Name() string
 	Initialize(config config.Config) error
-	Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error)
-	LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error
+	Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error)
+	LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error
 }
 
 type logsClient interface {
