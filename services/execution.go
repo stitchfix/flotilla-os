@@ -278,9 +278,7 @@ func (es *executionService) canBeRun(clusterName string, executable state.Execut
 	var ok bool
 	var err error
 	if es.checkImageValidity {
-		if len(resources.Image) > 0 {
-			ok, err = es.registryClient.IsImageValid(resources.Image)
-		}
+		ok, err = es.registryClient.IsImageValid(resources.Image)
 		if err != nil {
 			return err
 		}
