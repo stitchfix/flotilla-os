@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/Masterminds/sprig"
+	uuid "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/utils"
+	"github.com/xeipuuv/gojsonschema"
 	"regexp"
 	"text/template"
 	"time"
-
-	"github.com/Masterminds/sprig"
-	uuid "github.com/nu7hatch/gouuid"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 var ECSEngine = "ecs"
@@ -777,6 +778,8 @@ type Template struct {
 	Version         int64              `json:"version"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
+	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
 
@@ -784,18 +787,14 @@ type CreateTemplateRequest struct {
 	TemplateName    string             `json:"template_name"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
+	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
 
 type CreateTemplateResponse struct {
 	DidCreate bool     `json:"did_create"`
 	Template  Template `json:"template,omitempty"`
-}
-
-type TemplateUpdateRequest struct {
-	Schema          string `json:"schema"`
-	CommandTemplate string `json:"command_template"`
-	ExecutableResources
 }
 
 func (t Template) GetExecutableID() *string {
@@ -819,10 +818,12 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 
 	// Get the request's custom fields.
 	customFields := *req.GetExecutionRequestCustom()
-	executionPayload := customFields[TemplatePayloadKey]
-	if executionPayload == nil {
+	executionPayload, ok := customFields[TemplatePayloadKey]
+	if !ok || executionPayload == nil {
 		return "", err
 	}
+
+	executionPayload, err = t.compositeUserAndDefaultPayloads(executionPayload)
 
 	schemaLoader := gojsonschema.NewGoLoader(t.Schema)
 	documentLoader := gojsonschema.NewGoLoader(executionPayload)
@@ -849,6 +850,26 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 
 func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
+}
+
+func (t Template) compositeUserAndDefaultPayloads(userPayload interface{}) (TemplatePayload, error) {
+	var (
+		final map[string]interface{}
+		ok    bool
+	)
+
+	final, ok = userPayload.(TemplatePayload)
+	if !ok {
+		return final, errors.New("unable to cast request payload to TemplatePayload struct")
+	}
+
+	err := utils.MergeMaps(&final, t.DefaultPayload)
+
+	if err != nil {
+		return final, err
+	}
+
+	return final, nil
 }
 
 // NewTemplateID returns a new uuid for a Template
@@ -878,7 +899,6 @@ func (t *Template) IsValid() (bool, []string) {
 		}
 	}
 	return valid, reasons
-	return true, []string{}
 }
 
 //

@@ -329,7 +329,7 @@ func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run 
 		},
 		"status":        {state.StatusStopped},
 		"command":       {strings.Replace(*run.Command, "'", "''", -1)},
-		"definition_id": {run.DefinitionID},
+		"executable_id": {*run.ExecutableID},
 	}, nil, []string{state.EKSEngine})
 	if err == nil && len(runList.Runs) > 0 {
 		lastRun = runList.Runs[0]
