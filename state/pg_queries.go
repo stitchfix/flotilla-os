@@ -55,13 +55,13 @@ SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 
        cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used)) * 1.25  as int)  as cpu
 FROM (SELECT max_memory_used, max_cpu_used
       FROM TASK
-      WHERE definition_id = $1
+      WHERE executable_id = $1
            AND exit_code = 0
            AND engine = 'eks'
            AND max_memory_used is not null
            AND max_cpu_used is not null
            AND command_hash is not NULL
-           AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
 `
