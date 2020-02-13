@@ -26,18 +26,18 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
-func (sm *SQLStateManager) EstimateRunResources(definitionID string, runID string) (TaskResources, error) {
+func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
 
-	err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, definitionID, runID)
+	err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, executableID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return taskResources, exceptions.MissingResource{
-				ErrorString: fmt.Sprintf("Resource usage with definition %s not found", definitionID)}
+				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
 		} else {
-			return taskResources, errors.Wrapf(err, "issue getting resources with definition [%s]", definitionID)
+			return taskResources, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
 		}
 	}
 	return taskResources, err
