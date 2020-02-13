@@ -13,7 +13,6 @@ import { LOCAL_STORAGE_IS_ONBOARDED_KEY } from "../constants"
 import Toaster from "./Toaster"
 import { Intent } from "@blueprintjs/core"
 import { connect, ConnectedProps } from "react-redux"
-import { RootState } from "../state/store"
 import { toggleDialogVisibilityChange } from "../state/settings"
 
 const connector = connect()

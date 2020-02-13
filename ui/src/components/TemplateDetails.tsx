@@ -4,25 +4,21 @@ import {
   Collapse,
   Card,
   ButtonGroup,
-  Pre,
   Classes,
   Button,
   Spinner,
-  Icon,
 } from "@blueprintjs/core"
 import { TemplateContext } from "./Template"
 import Attribute from "./Attribute"
-// import TemplateRuns from "./TemplateRuns"
 import ViewHeader from "./ViewHeader"
 import EnvList from "./EnvList"
 import Toggler from "./Toggler"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
-import ARASwitch from "./ARASwitch"
 
 const TemplateDetails: React.FC<{}> = () => (
   <TemplateContext.Consumer>
-    {({ requestStatus, data, error, templateID, request }) => {
+    {({ requestStatus, data, error, templateID }) => {
       switch (requestStatus) {
         case RequestStatus.ERROR:
           return <ErrorCallout error={error} />
@@ -119,7 +115,7 @@ const TemplateDetails: React.FC<{}> = () => (
                     )}
                   </div>
                   <div className="flotilla-sidebar-view-content">
-                    do me later
+                    {/* do this later */}
                     {/* <TaskRuns definitionID={definitionID} /> */}
                   </div>
                 </div>

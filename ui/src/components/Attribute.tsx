@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Tag, Colors, Tooltip, Icon, Intent } from "@blueprintjs/core"
+import { Tag, Tooltip, Icon, Intent } from "@blueprintjs/core"
 import CopyToClipboard from "react-copy-to-clipboard"
 
 type Props = { rawValue: string }

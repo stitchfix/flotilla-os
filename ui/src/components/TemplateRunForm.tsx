@@ -110,6 +110,22 @@ const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = props => {
 }
 
 class RunForm extends React.Component<Props> {
+  private FORMIK_REF = React.createRef<Formik>()
+
+  // Note: this method is a bit hacky as we have two form elements - Formik (F)
+  // and JSONSchemaForm (J). F does not have a submit button, J does. When J's
+  // submit button is clicked, this method is called. We get the values of the
+  // F form via the `FORMIK_REF` ref binding. Then we take the J form's values
+  // and shove them into F form's `template_payload` field. This request is
+  // then sent to the server.
+  onSubmit(jsonschemaForm: any) {
+    if (this.FORMIK_REF.current) {
+      const formikValues = this.FORMIK_REF.current.state.values
+      formikValues["template_payload"] = jsonschemaForm
+      // this.props.request({ templateID: this.props.templateID, data: formikValues })
+    }
+  }
+
   render() {
     const {
       initialValues,
@@ -122,164 +138,172 @@ class RunForm extends React.Component<Props> {
     } = this.props
 
     return (
-      <Formik
-        isInitialValid={(values: any) =>
-          validationSchema.isValidSync(values.initialValues)
-        }
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={data => {
-          request({ templateID, data })
-        }}
-      >
-        {({ errors, values, setFieldValue, isValid, ...rest }) => {
-          const getEngine = (): ExecutionEngine => values.engine
-          return (
-            <Form className="flotilla-form-container">
-              {requestStatus === RequestStatus.ERROR && error && (
-                <ErrorCallout error={error} />
-              )}
-              {/* Owner ID Field */}
-              <FormGroup
-                label={helpers.ownerIdFieldSpec.label}
-                helperText={helpers.ownerIdFieldSpec.description}
-              >
-                <FastField
-                  name={helpers.ownerIdFieldSpec.name}
-                  value={values.owner_id}
-                  className={Classes.INPUT}
-                />
-                {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
-              </FormGroup>
-              <div className="flotilla-form-section-divider" />
-              {/* Engine Type Field */}
-              <RadioGroup
-                inline
-                label="Engine Type"
-                onChange={(evt: React.FormEvent<HTMLInputElement>) => {
-                  setFieldValue("engine", evt.currentTarget.value)
+      <div className="flotilla-form-container">
+        <Formik
+          ref={this.FORMIK_REF}
+          isInitialValid={(values: any) =>
+            validationSchema.isValidSync(values.initialValues)
+          }
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={data => {}}
+        >
+          {({ errors, values, setFieldValue, isValid, ...rest }) => {
+            const getEngine = (): ExecutionEngine => values.engine
+            return (
+              <Form>
+                {requestStatus === RequestStatus.ERROR && error && (
+                  <ErrorCallout error={error} />
+                )}
+                {/* Owner ID Field */}
+                <FormGroup
+                  label={helpers.ownerIdFieldSpec.label}
+                  helperText={helpers.ownerIdFieldSpec.description}
+                >
+                  <FastField
+                    name={helpers.ownerIdFieldSpec.name}
+                    value={values.owner_id}
+                    className={Classes.INPUT}
+                  />
+                  {errors.owner_id && (
+                    <FieldError>{errors.owner_id}</FieldError>
+                  )}
+                </FormGroup>
+                <div className="flotilla-form-section-divider" />
+                {/* Engine Type Field */}
+                <RadioGroup
+                  inline
+                  label="Engine Type"
+                  onChange={(evt: React.FormEvent<HTMLInputElement>) => {
+                    setFieldValue("engine", evt.currentTarget.value)
 
-                  if (evt.currentTarget.value === ExecutionEngine.EKS) {
-                    setFieldValue(
-                      "cluster",
-                      process.env.REACT_APP_EKS_CLUSTER_NAME || ""
-                    )
-                  } else if (getEngine() === ExecutionEngine.EKS) {
-                    setFieldValue("cluster", "")
-                  }
-                }}
-                selectedValue={values.engine}
-              >
-                <Radio label="EKS" value={ExecutionEngine.EKS} />
-                <Radio label="ECS" value={ExecutionEngine.ECS} />
-              </RadioGroup>
-              <div className="flotilla-form-section-divider" />
+                    if (evt.currentTarget.value === ExecutionEngine.EKS) {
+                      setFieldValue(
+                        "cluster",
+                        process.env.REACT_APP_EKS_CLUSTER_NAME || ""
+                      )
+                    } else if (getEngine() === ExecutionEngine.EKS) {
+                      setFieldValue("cluster", "")
+                    }
+                  }}
+                  selectedValue={values.engine}
+                >
+                  <Radio label="EKS" value={ExecutionEngine.EKS} />
+                  <Radio label="ECS" value={ExecutionEngine.ECS} />
+                </RadioGroup>
+                <div className="flotilla-form-section-divider" />
 
-              {/*
+                {/*
                 Cluster Field. Note: this is a "Field" rather than a
                 "FastField" as it needs to re-render when value.engine is
                 updated.
               */}
-              {getEngine() !== ExecutionEngine.EKS && (
+                {getEngine() !== ExecutionEngine.EKS && (
+                  <FormGroup
+                    label="Cluster"
+                    helperText="Select a cluster for this task to execute on."
+                  >
+                    <Field
+                      name="cluster"
+                      component={ClusterSelect}
+                      value={values.cluster}
+                      onChange={(value: string) => {
+                        setFieldValue("cluster", value)
+                      }}
+                    />
+                    {errors.cluster && (
+                      <FieldError>{errors.cluster}</FieldError>
+                    )}
+                  </FormGroup>
+                )}
+
+                {/* CPU Field */}
                 <FormGroup
-                  label="Cluster"
-                  helperText="Select a cluster for this task to execute on."
+                  label={helpers.cpuFieldSpec.label}
+                  helperText={helpers.cpuFieldSpec.description}
+                >
+                  <FastField
+                    type="number"
+                    name={helpers.cpuFieldSpec.name}
+                    className={Classes.INPUT}
+                    min="512"
+                  />
+                  {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
+                </FormGroup>
+
+                {/* Memory Field */}
+                <FormGroup
+                  label={helpers.memoryFieldSpec.label}
+                  helperText={helpers.memoryFieldSpec.description}
+                >
+                  <FastField
+                    type="number"
+                    name={helpers.memoryFieldSpec.name}
+                    className={Classes.INPUT}
+                  />
+                  {errors.memory && <FieldError>{errors.memory}</FieldError>}
+                </FormGroup>
+                <div className="flotilla-form-section-divider" />
+                {/* Node Lifecycle Field */}
+                <FormGroup
+                  label="Node Lifecycle"
+                  helperText="This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
                 >
                   <Field
-                    name="cluster"
-                    component={ClusterSelect}
-                    value={values.cluster}
+                    name="node_lifecycle"
+                    component={NodeLifecycleSelect}
+                    value={values.node_lifecycle}
                     onChange={(value: string) => {
-                      setFieldValue("cluster", value)
+                      setFieldValue("node_lifecycle", value)
                     }}
+                    isDisabled={getEngine() !== ExecutionEngine.EKS}
                   />
-                  {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
+                  {errors.node_lifecycle && (
+                    <FieldError>{errors.node_lifecycle}</FieldError>
+                  )}
                 </FormGroup>
-              )}
-
-              {/* CPU Field */}
-              <FormGroup
-                label={helpers.cpuFieldSpec.label}
-                helperText={helpers.cpuFieldSpec.description}
-              >
-                <FastField
-                  type="number"
-                  name={helpers.cpuFieldSpec.name}
-                  className={Classes.INPUT}
-                  min="512"
-                />
-                {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
-              </FormGroup>
-
-              {/* Memory Field */}
-              <FormGroup
-                label={helpers.memoryFieldSpec.label}
-                helperText={helpers.memoryFieldSpec.description}
-              >
-                <FastField
-                  type="number"
-                  name={helpers.memoryFieldSpec.name}
-                  className={Classes.INPUT}
-                />
-                {errors.memory && <FieldError>{errors.memory}</FieldError>}
-              </FormGroup>
-              <div className="flotilla-form-section-divider" />
-
-              <JSONSchemaForm
-                schema={template.schema}
-                onChange={evt => {
-                  setFieldValue("template_payload", evt.formData)
-                }}
-                onSubmit={() => console.log("submitted")}
-                onError={() => console.log("errors")}
-                FieldTemplate={FieldTemplate}
-                ArrayFieldTemplate={ArrayFieldTemplate}
-                widgets={{
-                  BaseInput: props => {
-                    return (
-                      <input
-                        className="bp3-input"
-                        value={props.value}
-                        required={props.required}
-                        onChange={evt => props.onChange(evt.target.value)}
-                      />
-                    )
-                  },
-                }}
-              />
-              {/* Node Lifecycle Field */}
-              <FormGroup
-                label="Node Lifecycle"
-                helperText="This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
-              >
-                <Field
-                  name="node_lifecycle"
-                  component={NodeLifecycleSelect}
-                  value={values.node_lifecycle}
-                  onChange={(value: string) => {
-                    setFieldValue("node_lifecycle", value)
+                <div className="flotilla-form-section-divider" />
+                <EnvFieldArray />
+              </Form>
+            )
+          }}
+        </Formik>
+        <div className="flotilla-form-section-divider" />
+        <JSONSchemaForm
+          schema={template.schema}
+          onSubmit={({ formData }) => {
+            this.onSubmit(formData)
+          }}
+          onError={() => console.log("errors")}
+          FieldTemplate={FieldTemplate}
+          ArrayFieldTemplate={ArrayFieldTemplate}
+          widgets={{
+            BaseInput: props => {
+              return (
+                <input
+                  className="bp3-input"
+                  value={props.value}
+                  required={props.required}
+                  onChange={evt => {
+                    props.onChange(evt.target.value)
                   }}
-                  isDisabled={getEngine() !== ExecutionEngine.EKS}
                 />
-                {errors.node_lifecycle && (
-                  <FieldError>{errors.node_lifecycle}</FieldError>
-                )}
-              </FormGroup>
-              <div className="flotilla-form-section-divider" />
-              <EnvFieldArray />
-              <Button
-                intent={Intent.PRIMARY}
-                type="submit"
-                disabled={isLoading || isValid === false}
-                style={{ marginTop: 24 }}
-                large
-              >
-                Submit
-              </Button>
-            </Form>
-          )
-        }}
-      </Formik>
+              )
+            },
+          }}
+        >
+          <Button
+            intent={Intent.PRIMARY}
+            type="submit"
+            disabled={isLoading}
+            style={{ marginTop: 24 }}
+            large
+            fill
+          >
+            Submit
+          </Button>
+        </JSONSchemaForm>
+      </div>
     )
   }
 }

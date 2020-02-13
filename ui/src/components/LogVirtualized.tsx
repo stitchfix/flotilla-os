@@ -5,7 +5,7 @@ import { get } from "lodash"
 import LogRow from "./LogVirtualizedRow"
 import LogVirtualizedSearch from "./LogVirtualizedSearch"
 import { RootState } from "../state/store"
-import { Callout, Spinner } from "@blueprintjs/core"
+import { Callout } from "@blueprintjs/core"
 
 const connected = connect((state: RootState) => ({
   ...state.runView,
@@ -199,9 +199,7 @@ export class LogVirtualized extends React.Component<Props, State> {
     if (hasLogs === false) {
       return (
         <Callout>
-          <div style={{ display: "flex" }}>
-            Fetching logs... <Spinner size={Spinner.SIZE_SMALL} />
-          </div>
+          <div style={{ display: "flex" }}>No logs</div>
         </Callout>
       )
     }

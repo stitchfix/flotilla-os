@@ -1,15 +1,10 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { get, omit } from "lodash"
-import { Spinner } from "@blueprintjs/core"
+import { Spinner, Callout } from "@blueprintjs/core"
 import ListRequest, { ChildProps as ListRequestChildProps } from "./ListRequest"
 import api from "../api"
-import {
-  ListTemplateParams,
-  ListTemplateResponse,
-  SortOrder,
-  Template,
-} from "../types"
+import { ListTemplateParams, ListTemplateResponse, SortOrder } from "../types"
 import pageToOffsetLimit from "../helpers/pageToOffsetLimit"
 import Pagination from "./Pagination"
 import ViewHeader from "./ViewHeader"
@@ -30,14 +25,9 @@ export type Props = ListRequestChildProps<
 
 export const Templates: React.FunctionComponent<Props> = props => {
   const {
-    query,
     data,
-    updateFilter,
     updatePage,
-    updateSort,
     currentPage,
-    currentSortKey,
-    currentSortOrder,
     isLoading,
     requestStatus,
     error,
@@ -59,7 +49,12 @@ export const Templates: React.FunctionComponent<Props> = props => {
                 key={t.template_id}
                 to={`/templates/${t.template_id}`}
               >
-                <img src={t.avatar_uri || ""} width={36} height={36} />
+                <img
+                  src={t.avatar_uri || ""}
+                  width={36}
+                  height={36}
+                  alt="template-logo"
+                />
                 <div style={{ marginTop: 8 }}>
                   {t.template_name} v{t.version}
                 </div>
@@ -68,54 +63,13 @@ export const Templates: React.FunctionComponent<Props> = props => {
           </div>
         )
       } else {
-        content = <span>no tpls found</span>
+        content = (
+          <Callout>
+            No templates found! Please contact your nearest Flotilla customer
+            support agent for assistance.
+          </Callout>
+        )
       }
-      // content = (
-      //   <Table<Template>
-      //     items={get(data, "templates", [])}
-      //     getItemKey={(t: Template) => t.template_id}
-      //     updateSort={updateSort}
-      //     currentSortKey={currentSortKey}
-      //     currentSortOrder={currentSortOrder}
-      //     columns={{
-      //       run: {
-      //         displayName: "",
-      //         render: (t: Template) => (
-      //           <Link
-      //             to={`/templates/${t.template_id}/execute`}
-      //             className={[
-      //               Classes.BUTTON,
-      //               Classes.INTENT_PRIMARY,
-      //               Classes.SMALL,
-      //             ].join(" ")}
-      //           >
-      //             Run
-      //           </Link>
-      //         ),
-      //         isSortable: false,
-      //       },
-      //       template_name: {
-      //         displayName: "Template Name",
-      //         render: (t: Template) => (
-      //           <Link to={`/templates/${t.template_id}`}>
-      //             {t.template_name}
-      //           </Link>
-      //         ),
-      //         isSortable: true,
-      //       },
-      //       version: {
-      //         displayName: "Version",
-      //         render: (t: Template) => t.version,
-      //         isSortable: false,
-      //       },
-      //       avatar_uri: {
-      //         displayName: "Avatar",
-      //         render: (t: Template) => t.avatar_uri,
-      //         isSortable: false,
-      //       },
-      //     }}
-      //   />
-      // )
       break
     case RequestStatus.NOT_READY:
     default:

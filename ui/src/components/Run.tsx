@@ -19,7 +19,13 @@ import Request, {
   RequestStatus,
 } from "./Request"
 import api from "../api"
-import { Run as RunShape, RunStatus, ExecutionEngine, RunTabId } from "../types"
+import {
+  Run as RunShape,
+  RunStatus,
+  ExecutionEngine,
+  RunTabId,
+  ExecutableType,
+} from "../types"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
@@ -39,6 +45,7 @@ import RunDebugAttributes from "./RunDebugAttributes"
 import Helmet from "react-helmet"
 import AutoscrollSwitch from "./AutoscrollSwitch"
 import { RootState } from "../state/store"
+import RecursiveKeyValueRenderer from "./RecursiveKeyValueRenderer"
 
 const connected = connect((state: RootState) => state.runView)
 
@@ -128,6 +135,32 @@ export class Run extends React.Component<Props> {
     this.props.setQuery({ [RUN_TAB_ID_QUERY_KEY]: id })
   }
 
+  getExecutableLinkName(): string {
+    const { data } = this.props
+    if (data) {
+      switch (data.executable_type) {
+        case ExecutableType.ExecutableTypeDefinition:
+          return data.alias
+        case ExecutableType.ExecutableTypeTemplate:
+          return data.executable_id
+      }
+    }
+    return ""
+  }
+
+  getExecutableLinkURL(): string {
+    const { data } = this.props
+    if (data) {
+      switch (data.executable_type) {
+        case ExecutableType.ExecutableTypeDefinition:
+          return `/tasks/${data.definition_id}`
+        case ExecutableType.ExecutableTypeTemplate:
+          return `/templates/${data.executable_id}`
+      }
+    }
+    return ""
+  }
+
   render() {
     const { data, requestStatus, runID, error } = this.props
 
@@ -143,7 +176,7 @@ export class Run extends React.Component<Props> {
               <Link
                 className={Classes.BUTTON}
                 to={{
-                  pathname: `/tasks/${data.definition_id}/execute`,
+                  pathname: `${this.getExecutableLinkURL()}/execute`,
                   state: data,
                 }}
               >
@@ -177,8 +210,8 @@ export class Run extends React.Component<Props> {
                     }
                     breadcrumbs={[
                       {
-                        text: data.alias,
-                        href: `/tasks/${data.definition_id}`,
+                        text: this.getExecutableLinkName(),
+                        href: this.getExecutableLinkURL(),
                       },
                       {
                         text: data.run_id,
@@ -190,6 +223,27 @@ export class Run extends React.Component<Props> {
                   <div className="flotilla-sidebar-view-container">
                     {metadataVisibility.isVisible && (
                       <div className="flotilla-sidebar-view-sidebar">
+                        {data &&
+                          data.executable_type ===
+                            ExecutableType.ExecutableTypeTemplate && (
+                            <Card style={{ marginBottom: 12 }}>
+                              <div className="flotilla-card-header-container">
+                                <div className="flotilla-card-header">
+                                  Template Payload
+                                </div>
+                              </div>
+                              <RecursiveKeyValueRenderer
+                                data={get(
+                                  data,
+                                  [
+                                    "execution_request_custom",
+                                    "template_payload",
+                                  ],
+                                  {}
+                                )}
+                              />
+                            </Card>
+                          )}
                         <RunAttributes data={data} />
                         <Card>
                           <div className="flotilla-card-header-container">

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { isNumber } from "lodash"
 import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
 import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"

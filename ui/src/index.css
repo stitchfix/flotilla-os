@@ -404,9 +404,9 @@ table {
 fieldset {
   border: none;
 }
-.btn.btn-info {
+/* .btn.btn-info {
   display: none;
-}
+} */
 .bp3-spinner-animation {
   animation-duration: 1s;
 }

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { get } from "lodash"
 import { Link } from "react-router-dom"
 import {
   Collapse,
