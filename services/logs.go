@@ -33,7 +33,7 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 	}
 
 	defn, err := ls.sm.GetDefinition(run.DefinitionID)
-	if err != nil {
+	if err != nil && *run.Engine == state.ECSEngine {
 		return "", nil, err
 	}
 
@@ -52,7 +52,7 @@ func (ls *logService) LogsText(runID string, w http.ResponseWriter) error {
 	}
 
 	defn, err := ls.sm.GetDefinition(run.DefinitionID)
-	if err != nil {
+	if err != nil && *run.Engine == state.ECSEngine{
 		return err
 	}
 
