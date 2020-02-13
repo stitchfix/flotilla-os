@@ -36,6 +36,10 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 		defaultExecutableType := state.ExecutableTypeDefinition
 		run.ExecutableType = &defaultExecutableType
 	}
+
+	if run.ExecutableID == nil {
+		run.ExecutableID = &run.DefinitionID
+	}
 	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
 
 	if err != nil && *run.Engine == state.ECSEngine {
@@ -59,6 +63,9 @@ func (ls *logService) LogsText(runID string, w http.ResponseWriter) error {
 	if run.ExecutableType == nil {
 		defaultExecutableType := state.ExecutableTypeDefinition
 		run.ExecutableType = &defaultExecutableType
+	}
+	if run.ExecutableID == nil {
+		run.ExecutableID = &run.DefinitionID
 	}
 	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
 
