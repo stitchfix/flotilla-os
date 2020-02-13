@@ -1,7 +1,14 @@
 import { FormikActions } from "formik"
 import { createMemoryHistory, createLocation } from "history"
 import { RouteComponentProps } from "react-router-dom"
-import { Task, Run, RunStatus, ExecutionEngine, NodeLifecycle } from "../types"
+import {
+  Task,
+  Run,
+  RunStatus,
+  ExecutionEngine,
+  NodeLifecycle,
+  ExecutableType,
+} from "../types"
 
 export function createMockRouteComponentProps<MatchParams>({
   path,
@@ -54,6 +61,8 @@ export const createMockTaskObject = (overrides?: Partial<Task>): Task => ({
   command: "command",
   tags: ["a", "b", "c"],
   privileged: false,
+  gpu: 0,
+  adaptive_resource_allocation: true,
   ...overrides,
 })
 
@@ -81,5 +90,9 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   max_cpu_used: 1,
   max_memory_used: 1,
   pod_name: "pod",
+  cloudtrail_notifications: {},
+  executable_id: "my_executable_id",
+  executable_type: ExecutableType.ExecutableTypeDefinition,
+  execution_request_custom: {},
   ...overrides,
 })

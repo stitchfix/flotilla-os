@@ -379,3 +379,37 @@ table {
 .bp3-tab-panel.bp3-tab-panel-no-margin-top {
   margin-top: 0;
 }
+
+.flotilla-templates-container {
+  display: flex;
+  flex-flow: row wrap;
+  width: 100%;
+}
+.flotilla-template-container {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: center;
+  border: var(--default-border);
+  margin-right: 24px;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+.flotilla-template-container:hover {
+  border-color: #48aff0;
+}
+
+fieldset {
+  border: none;
+}
+.btn.btn-info {
+  display: none;
+}
+.bp3-spinner-animation {
+  animation-duration: 1s;
+}
+.bp3-spinner-track {
+  stroke: #323c4280;
+}
