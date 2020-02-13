@@ -347,16 +347,21 @@ func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []corev1.EnvVar {
 	pairs := make(map[string]string)
 	resources := executable.GetExecutableResources()
-	for _, ev := range *resources.Env {
-		name := a.sanitizeEnvVar(ev.Name)
-		value := ev.Value
-		pairs[name] = value
+
+	if resources.Env != nil && len(*resources.Env) > 0 {
+		for _, ev := range *resources.Env {
+			name := a.sanitizeEnvVar(ev.Name)
+			value := ev.Value
+			pairs[name] = value
+		}
 	}
 
-	for _, ev := range *run.Env {
-		name := a.sanitizeEnvVar(ev.Name)
-		value := ev.Value
-		pairs[name] = value
+	if run.Env != nil && len(*run.Env) > 0 {
+		for _, ev := range *run.Env {
+			name := a.sanitizeEnvVar(ev.Name)
+			value := ev.Value
+			pairs[name] = value
+		}
 	}
 
 	var res []corev1.EnvVar
