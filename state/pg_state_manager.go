@@ -1114,7 +1114,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
     INSERT INTO template(
 			template_id, template_name, version, schema, command_template,
 			adaptive_resource_allocation, image, container_name, memory, env,
-			privileged, cpu, gpu, default_payload, avatar_uri
+			privileged, cpu, gpu, defaults, avatar_uri
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
     `
@@ -1127,7 +1127,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	if _, err = tx.Exec(insert,
 		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
 		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
-		t.Privileged, t.Cpu, t.Gpu, t.DefaultPayload, t.AvatarURI); err != nil {
+		t.Privileged, t.Cpu, t.Gpu, t.Defaults, t.AvatarURI); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)

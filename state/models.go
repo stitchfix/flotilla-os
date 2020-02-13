@@ -778,7 +778,7 @@ type Template struct {
 	Version         int64              `json:"version"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
-	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	Defaults        TemplatePayload    `json:"defaults"`
 	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
@@ -787,7 +787,7 @@ type CreateTemplateRequest struct {
 	TemplateName    string             `json:"template_name"`
 	Schema          TemplateJSONSchema `json:"schema"`
 	CommandTemplate string             `json:"command_template"`
-	DefaultPayload  TemplatePayload    `json:"default_payload"`
+	Defaults        TemplatePayload    `json:"defaults"`
 	AvatarURI       string             `json:"avatar_uri"`
 	ExecutableResources
 }
@@ -823,7 +823,7 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 		return "", err
 	}
 
-	executionPayload, err = t.compositeUserAndDefaultPayloads(executionPayload)
+	executionPayload, err = t.compositeUserAndDefaults(executionPayload)
 
 	schemaLoader := gojsonschema.NewGoLoader(t.Schema)
 	documentLoader := gojsonschema.NewGoLoader(executionPayload)
@@ -852,7 +852,7 @@ func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
 }
 
-func (t Template) compositeUserAndDefaultPayloads(userPayload interface{}) (TemplatePayload, error) {
+func (t Template) compositeUserAndDefaults(userPayload interface{}) (TemplatePayload, error) {
 	var (
 		final map[string]interface{}
 		ok    bool
@@ -863,7 +863,7 @@ func (t Template) compositeUserAndDefaultPayloads(userPayload interface{}) (Temp
 		return final, errors.New("unable to cast request payload to TemplatePayload struct")
 	}
 
-	err := utils.MergeMaps(&final, t.DefaultPayload)
+	err := utils.MergeMaps(&final, t.Defaults)
 
 	if err != nil {
 		return final, err
