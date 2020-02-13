@@ -1,0 +1,1 @@
+ALTER TABLE template RENAME COLUMN default_payload to defaults;

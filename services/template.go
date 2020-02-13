@@ -144,7 +144,7 @@ func (ts *templateService) diff(prev state.Template, curr state.Template) bool {
 		return true
 	}
 
-	if reflect.DeepEqual(prev.DefaultPayload, curr.DefaultPayload) == false {
+	if reflect.DeepEqual(prev.Defaults, curr.Defaults) == false {
 		return true
 	}
 
@@ -240,10 +240,10 @@ func (ts *templateService) constructTemplateFromCreateTemplateRequest(req *state
 	if req.Tags != nil {
 		tpl.Tags = req.Tags
 	}
-	if req.DefaultPayload != nil {
-		tpl.DefaultPayload = req.DefaultPayload
+	if req.Defaults != nil {
+		tpl.Defaults = req.Defaults
 	} else {
-		tpl.DefaultPayload = state.TemplatePayload{}
+		tpl.Defaults = state.TemplatePayload{}
 	}
 	if len(req.AvatarURI) > 0 {
 		tpl.AvatarURI = req.AvatarURI

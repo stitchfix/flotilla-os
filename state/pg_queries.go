@@ -197,7 +197,7 @@ SELECT
   privileged,
   cpu,
   gpu,
-  default_payload as defaultpayload,
+  defaults,
   coalesce(avatar_uri, '') as avataruri
 FROM template
 `
@@ -225,7 +225,7 @@ const ListTemplatesLatestOnlySQL = `
     privileged,
     cpu,
     gpu,
-    default_payload as defaultpayload,
+    defaults,
     coalesce(avatar_uri, '') as avataruri
   FROM template
   ORDER BY template_name, version DESC, template_id
