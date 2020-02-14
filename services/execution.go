@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -39,6 +40,7 @@ type ExecutionService interface {
 	ListClusters() ([]string, error)
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
+	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
 }
 
 type executionService struct {
@@ -487,6 +489,24 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	}
 
 	return run, nil
+}
+func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
+	version, err := strconv.Atoi(templateVersion)
+
+	if err != nil {
+		//use the "latest" template - version not a integer
+		fetch, template, err := es.stateManager.GetLatestTemplateByTemplateName(templateName)
+		if fetch && err == nil {
+			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
+		}
+	} else {
+		fetch, template, err := es.stateManager.GetTemplateByVersion(templateName, int64(version))
+		if fetch && err == nil {
+			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
+		}
+	}
+	return state.Run{},
+		errors.New(fmt.Sprintf("invalid template name or version, template_name: %s, template_version: %s", templateName, templateVersion))
 }
 
 //

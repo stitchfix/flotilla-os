@@ -864,6 +864,56 @@ func (ep *endpoints) getStringBoolVal(s string) bool {
 
 	return false
 }
+func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Request) {
+	var req state.TemplateExecutionRequest
+	err := ep.decodeRequest(r, &req)
+
+	if err != nil {
+		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	if len(req.OwnerID) == 0 {
+		ep.encodeError(w, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("request payload must contain [owner_id]; the run_tags field is deprecated for the v7 endpoint.")})
+		return
+	}
+
+	if req.Engine != nil {
+		if !utils.StringSliceContains(state.Engines, *req.Engine) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *req.Engine)})
+			return
+		}
+	} else {
+		req.Engine = &state.DefaultEngine
+	}
+
+	if req.NodeLifecycle != nil {
+		if !utils.StringSliceContains(state.NodeLifeCycles, *req.NodeLifecycle) {
+			ep.encodeError(w, exceptions.MalformedInput{
+				ErrorString: fmt.Sprintf("Nodelifecyle must be [normal, spot]")})
+			return
+		}
+	} else {
+		req.NodeLifecycle = &state.DefaultLifecycle
+	}
+	vars := mux.Vars(r)
+
+	run, err := ep.executionService.CreateTemplateRunByTemplateName(vars["template_name"], vars["template_version"], &req)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem creating template run",
+			"operation", "CreateTemplateRun",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+	} else {
+		ep.encodeResponse(w, run)
+	}
+
+}
+
+
 
 func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
