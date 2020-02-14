@@ -111,7 +111,7 @@ func (cwl *ECSCloudWatchLogsClient) Logs(executable state.Executable, run state.
 				return "", nil, exceptions.MissingResource{err.Error()}
 			} else if request.IsErrorThrottle(err) {
 				cwl.logger.Printf(
-					"thottled getting logs; executable_id: %s, run_id: %s, error: %+v\n",
+					"thottled getting logs; executable_id: %v, run_id: %s, error: %+v\n",
 					executable.GetExecutableID(), run.RunID, err)
 				return "", lastSeen, nil
 			}
