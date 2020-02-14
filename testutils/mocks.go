@@ -431,13 +431,11 @@ func (iatt *ImplementsAllTheThings) GetTemplateByVersion(templateName string, te
 	iatt.Calls = append(iatt.Calls, "GetTemplateByVersion")
 	var err error
 	var tpl *state.Template
-	var maxVersion int64 = int64(math.Inf(-1))
 
 	// Iterate over templates to find max version.
 	for _, t := range iatt.Templates {
 		if t.TemplateName == templateName && t.Version == templateVersion {
 			tpl = &t
-			maxVersion = t.Version
 		}
 	}
 
