@@ -91,9 +91,9 @@ func (cwl *ECSCloudWatchLogsClient) Initialize(conf config.Config) error {
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (cwl *ECSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (cwl *ECSCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
-	handle := cwl.toStreamName(definition, run)
+	handle := cwl.toStreamName(executable, run)
 	args := &cloudwatchlogs.GetLogEventsInput{
 		LogGroupName:  &cwl.logNamespace,
 		LogStreamName: &handle,
@@ -108,18 +108,11 @@ func (cwl *ECSCloudWatchLogsClient) Logs(definition state.Definition, run state.
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
-				// Fallback logic for legacy container names
-				if strings.HasPrefix(definition.ContainerName, definition.GroupName) {
-					definition.ContainerName = strings.Replace(
-						definition.ContainerName, fmt.Sprintf("%s-", definition.GroupName), "", -1)
-					return cwl.Logs(definition, run, lastSeen)
-				}
-
 				return "", nil, exceptions.MissingResource{err.Error()}
 			} else if request.IsErrorThrottle(err) {
 				cwl.logger.Printf(
-					"thottled getting logs; definition_id: %s, run_id: %s, error: %+v\n",
-					definition.DefinitionID, run.RunID, err)
+					"thottled getting logs; executable_id: %v, run_id: %s, error: %+v\n",
+					executable.GetExecutableID(), run.RunID, err)
 				return "", lastSeen, nil
 			}
 		}
@@ -134,14 +127,14 @@ func (cwl *ECSCloudWatchLogsClient) Logs(definition state.Definition, run state.
 	return message, result.NextForwardToken, nil
 }
 
-func (cwl *ECSCloudWatchLogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+func (cwl *ECSCloudWatchLogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	return errors.Errorf("ECSCloudWatchLogsClient does not support LogsText method.")
 }
 
-func (cwl *ECSCloudWatchLogsClient) toStreamName(definition state.Definition, run state.Run) string {
+func (cwl *ECSCloudWatchLogsClient) toStreamName(executable state.Executable, run state.Run) string {
 	arnSplits := strings.Split(run.TaskArn, "/")
 	return fmt.Sprintf(
-		"%s/%s/%s", cwl.logStreamPrefix, definition.ContainerName, arnSplits[len(arnSplits)-1])
+		"%s/%s/%s", cwl.logStreamPrefix, executable.GetExecutableResources().ContainerName, arnSplits[len(arnSplits)-1])
 }
 
 func (cwl *ECSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
