@@ -34,7 +34,7 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
-func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+func (iatt *ImplementsAllTheThings) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	iatt.Calls = append(iatt.Calls, "LogsText")
 	return nil
 }
@@ -387,7 +387,7 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 }
 
 // Logs - Logs Client
-func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", nil, nil
 }

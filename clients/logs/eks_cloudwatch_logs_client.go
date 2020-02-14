@@ -90,7 +90,7 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 
 	//Pod isn't there yet - dont return a 404
@@ -112,18 +112,11 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
-				// Fallback logic for legacy container names
-				if strings.HasPrefix(definition.ContainerName, definition.GroupName) {
-					definition.ContainerName = strings.Replace(
-						definition.ContainerName, fmt.Sprintf("%s-", definition.GroupName), "", -1)
-					return lc.Logs(definition, run, lastSeen)
-				}
-
 				return "", nil, exceptions.MissingResource{err.Error()}
 			} else if request.IsErrorThrottle(err) {
 				lc.logger.Printf(
-					"thottled getting logs; definition_id: %s, run_id: %s, error: %+v\n",
-					definition.DefinitionID, run.RunID, err)
+					"thottled getting logs; executable_id: %v, run_id: %s, error: %+v\n",
+					executable.GetExecutableID(), run.RunID, err)
 				return "", lastSeen, nil
 			}
 		}
@@ -138,7 +131,7 @@ func (lc *EKSCloudWatchLogsClient) Logs(definition state.Definition, run state.R
 	return message, result.NextForwardToken, nil
 }
 
-func (lc *EKSCloudWatchLogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+func (lc *EKSCloudWatchLogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	return errors.Errorf("EKSCloudWatchLogsClient does not support LogsText method.")
 }
 

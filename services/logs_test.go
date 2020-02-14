@@ -56,9 +56,10 @@ func TestLogService_Logs(t *testing.T) {
 	//
 	ls, imp = setUpLogServiceTest(t)
 	expectedCalls = map[string]bool{
-		"GetRun":        true,
-		"GetDefinition": true,
-		"Logs":          true,
+		"GetRun":                   true,
+		"GetDefinition":            true,
+		"Logs":                     true,
+		"GetExecutableByTypeAndID": true,
 	}
 
 	_, _, err = ls.Logs("running", nil)
