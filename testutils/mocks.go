@@ -427,6 +427,25 @@ func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset in
 	return tl, nil
 }
 
+func (iatt *ImplementsAllTheThings) GetTemplateByVersion(templateName string, templateVersion int64) (bool, state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplateByVersion")
+	var err error
+	var tpl *state.Template
+
+	// Iterate over templates to find max version.
+	for _, t := range iatt.Templates {
+		if t.TemplateName == templateName && t.Version == templateVersion {
+			tpl = &t
+		}
+	}
+
+	if tpl == nil {
+		return false, *tpl, fmt.Errorf("No template with name: %s", templateName)
+	}
+
+	return true, *tpl, err
+}
+
 // GetTemplateByID - StateManager
 func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetTemplateByID")
