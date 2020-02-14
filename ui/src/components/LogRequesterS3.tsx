@@ -114,7 +114,7 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
           logs,
         })
 
-        if (hasLogs === false && logs.length > 0) {
+        if (hasLogs === false && logs.length >= 0) {
           this.props.dispatch(setHasLogs())
         }
       })

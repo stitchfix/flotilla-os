@@ -52,6 +52,7 @@ export type Run = {
   max_cpu_used: number | null | undefined
   max_memory_used: number | null | undefined
   pod_name: string | null | undefined
+  cloudtrail_notifications: CloudtrailRecords
 }
 
 export type RunLog = {
@@ -231,4 +232,27 @@ export type ListRunEventsResponse = {
 export enum RunTabId {
   LOGS = "l",
   EVENTS = "e",
+  CLOUDTRAIL = "ct",
+  METADATA = "md",
 }
+
+export type CloudtrailRecord = {
+  eventSource: string
+  eventName: string
+}
+
+export type CloudtrailRecords = {
+  Records: CloudtrailRecord[] | null
+}
+
+export const EnhancedRunStatusEmojiMap: Map<
+  EnhancedRunStatus,
+  string
+> = new Map([
+  [EnhancedRunStatus.PENDING, "🕒"],
+  [EnhancedRunStatus.QUEUED, "🕒"],
+  [EnhancedRunStatus.RUNNING, "🌀"],
+  [EnhancedRunStatus.SUCCESS, "✅"],
+  [EnhancedRunStatus.FAILED, "❌"],
+  [EnhancedRunStatus.NEEDS_RETRY, "❌"],
+])
