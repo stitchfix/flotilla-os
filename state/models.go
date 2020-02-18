@@ -757,6 +757,7 @@ type TemplatePayload map[string]interface{}
 
 type TemplateExecutionRequest struct {
 	TemplatePayload TemplatePayload `json:"template_payload"`
+
 	ExecutionRequestCommon
 }
 

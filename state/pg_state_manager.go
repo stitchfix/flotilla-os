@@ -1046,6 +1046,20 @@ func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) 
 	return tpl, nil
 }
 
+func (sm *SQLStateManager) GetTemplateByVersion(templateName string, templateVersion int64) (bool, Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateByVersionSQL, templateName, templateVersion)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, tpl, nil
+		}
+
+		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
+	}
+	return true, tpl, nil
+}
+
 // GetLatestTemplateByTemplateName returns the latest version of a template
 // of a specific template name.
 func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (bool, Template, error) {
