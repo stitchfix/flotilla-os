@@ -184,6 +184,7 @@ const runTask = jest.fn(
         max_cpu_used: 1,
         max_memory_used: 1,
         pod_name: "pod",
+        cloudtrail_notifications: { Records: [] },
       })
     })
 )
@@ -232,6 +233,7 @@ const getRun = jest.fn(
         max_cpu_used: 1,
         max_memory_used: 1,
         pod_name: "pod",
+        cloudtrail_notifications: { Records: [] },
       })
     })
 )

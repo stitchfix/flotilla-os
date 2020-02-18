@@ -122,14 +122,14 @@ class LogRequesterCloudWatchLogs extends React.Component<Props, State> {
       prev => {
         const isLoading = false
         const error = false
+        const lastSeen: string | undefined = res.last_seen
 
         // Return if there are no logs.
         if (!has(res, "log") || isEmpty(res.log)) {
-          return { ...prev, isLoading, error }
+          return { ...prev, isLoading, error, lastSeen }
         }
 
         let logs = prev.logs
-        let lastSeen: string | undefined = res.last_seen
 
         // Append logs if necessary.
         if (res.last_seen && res.last_seen !== prev.lastSeen) {

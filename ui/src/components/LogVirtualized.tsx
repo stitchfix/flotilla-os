@@ -193,10 +193,17 @@ export class LogVirtualized extends React.Component<Props, State> {
   }
 
   render() {
-    const { width, height, logs, hasRunFinished, hasLogs } = this.props
+    const {
+      width,
+      height,
+      logs,
+      hasRunFinished,
+      hasLogs,
+      isLogRequestIntervalActive,
+    } = this.props
     const { searchMatches, searchCursor } = this.state
 
-    if (hasLogs === false) {
+    if (hasLogs === false && isLogRequestIntervalActive === true) {
       return (
         <Callout>
           <div style={{ display: "flex" }}>
