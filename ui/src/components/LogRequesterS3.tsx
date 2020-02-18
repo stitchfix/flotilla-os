@@ -9,7 +9,7 @@ import {
 } from "../constants"
 import ErrorCallout from "./ErrorCallout"
 import { RootState } from "../state/store"
-import { setHasLogs } from "../state/runView"
+import { setHasLogs, toggleIsLogRequestIntervalActive } from "../state/runView"
 import Log from "./Log"
 
 const connected = connect((state: RootState) => ({
@@ -53,7 +53,8 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
       prevProps.status !== RunStatus.STOPPED &&
       this.props.status === RunStatus.STOPPED
     ) {
-      // Kill the polling process after n seconds.
+      // Kill the polling process after n seconds after the run transitions
+      // from a non-stopped state to a stopped state.
       this.killPollingTimeout = window.setTimeout(() => {
         this.clearRequestInterval()
       }, KILL_LOG_POLLING_TIMEOUT_MS)
@@ -61,6 +62,8 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
   }
 
   componentWillUnmount() {
+    this.props.dispatch(toggleIsLogRequestIntervalActive(false))
+
     if (this.requestInterval) {
       window.clearInterval(this.requestInterval)
     }
@@ -75,10 +78,12 @@ class LogRequesterS3 extends React.PureComponent<Props, State> {
       this.requestLogs,
       LOG_FETCH_INTERVAL_MS
     )
+    this.props.dispatch(toggleIsLogRequestIntervalActive(true))
   }
 
   clearRequestInterval = () => {
     window.clearInterval(this.requestInterval)
+    this.props.dispatch(toggleIsLogRequestIntervalActive(false))
   }
 
   initialize() {

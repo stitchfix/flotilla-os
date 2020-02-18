@@ -1,13 +1,15 @@
-import { createSlice } from "@reduxjs/toolkit"
+import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 type RunViewReducer = {
   shouldAutoscroll: boolean
   hasLogs: boolean
+  isLogRequestIntervalActive: boolean
 }
 
 const initialState: RunViewReducer = {
   shouldAutoscroll: true,
   hasLogs: false,
+  isLogRequestIntervalActive: false,
 }
 
 const runViewReducer = createSlice({
@@ -21,9 +23,20 @@ const runViewReducer = createSlice({
     setHasLogs(state) {
       state.hasLogs = true
     },
+
+    toggleIsLogRequestIntervalActive(
+      state,
+      { payload }: PayloadAction<boolean>
+    ) {
+      state.isLogRequestIntervalActive = payload
+    },
   },
 })
 
-export const { toggleAutoscroll, setHasLogs } = runViewReducer.actions
+export const {
+  toggleAutoscroll,
+  setHasLogs,
+  toggleIsLogRequestIntervalActive,
+} = runViewReducer.actions
 
 export default runViewReducer.reducer

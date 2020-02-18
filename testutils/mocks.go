@@ -67,6 +67,12 @@ func (iatt *ImplementsAllTheThings) Cleanup() error {
 	return nil
 }
 
+func (iatt *ImplementsAllTheThings) ListFailingNodes() (state.NodeList, error) {
+	var nodeList state.NodeList
+	iatt.Calls = append(iatt.Calls, "ListFailingNodes")
+	return nodeList, nil
+}
+
 // ListDefinitions - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitions(
 	limit int, offset int, sortBy string,

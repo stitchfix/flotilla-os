@@ -81,5 +81,6 @@ export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
   max_cpu_used: 1,
   max_memory_used: 1,
   pod_name: "pod",
+  cloudtrail_notifications: { Records: [] },
   ...overrides,
 })

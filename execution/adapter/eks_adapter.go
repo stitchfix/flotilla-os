@@ -95,7 +95,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		Ports:     a.constructContainerPorts(executable),
 	}
 
-	affinity := a.constructAffinity(executable, run)
+	affinity := a.constructAffinity(executable, run, manager)
 	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
 	activeDeadlineSeconds := state.SpotActiveDeadlineSeconds
@@ -145,7 +145,7 @@ func (a *eksAdapter) constructContainerPorts(executable state.Executable) []core
 	return containerPorts
 }
 
-func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run) *corev1.Affinity {
+func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
@@ -166,6 +166,16 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
+
+		nodeList, err := manager.ListFailingNodes()
+
+		if err == nil && len(nodeList) > 0 {
+			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+				Key:      "kubernetes.io/hostname",
+				Operator: corev1.NodeSelectorOpNotIn,
+				Values:   nodeList,
+			})
+		}
 
 		//For high cpu jobs - assign to c5 node types.
 		if run.Memory != nil &&
