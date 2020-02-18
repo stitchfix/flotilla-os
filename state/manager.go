@@ -46,6 +46,8 @@ type Manager interface {
 	ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error)
 	ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error)
 	CreateTemplate(t Template) error
+
+	ListFailingNodes() (NodeList, error)
 }
 
 //

@@ -26,6 +26,23 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
+func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
+	var err error
+	var nodeList NodeList
+
+	err = sm.db.Get(&nodeList, ListFailingNodesSQL)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nodeList, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching node list")}
+		} else {
+			return nodeList, errors.Wrapf(err, "Error fetching node list")
+		}
+	}
+	return nodeList, err
+}
+
 func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
