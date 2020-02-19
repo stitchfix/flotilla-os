@@ -230,7 +230,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		Command:          fields.Command,
 		Memory:           fields.Memory,
 		Cpu:              fields.Cpu,
-		Gpu:              resources.Gpu,
+		Gpu:              fields.Gpu,
 		Engine:           fields.Engine,
 		NodeLifecycle:    fields.NodeLifecycle,
 		EphemeralStorage: fields.EphemeralStorage,
