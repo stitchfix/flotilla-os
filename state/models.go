@@ -180,6 +180,7 @@ type ExecutionRequestCommon struct {
 	Command          *string  `json:"command"`
 	Memory           *int64   `json:"memory"`
 	Cpu              *int64   `json:"cpu"`
+	Gpu              *int64   `json:"gpu"`
 	Engine           *string  `json:"engine"`
 	EphemeralStorage *int64   `json:"ephemeral_storage"`
 	NodeLifecycle    *string  `json:"node_lifecycle"`
