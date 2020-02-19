@@ -30,7 +30,7 @@ func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
 	var err error
 	var nodeList NodeList
 
-	err = sm.db.Get(&nodeList, ListFailingNodesSQL)
+	err = sm.db.Select(&nodeList, ListFailingNodesSQL)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
