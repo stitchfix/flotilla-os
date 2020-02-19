@@ -20,9 +20,11 @@ export type Props = {
 } & ConnectedProps<typeof connected>
 
 type State = {
+  isSearchProcessing: boolean
   isSearchInputFocused: boolean
   searchMatches: [number, number][] // [line number, char index]
   searchCursor: number
+  searchQuery: string
 }
 
 enum KeyCode {
@@ -51,9 +53,11 @@ export class LogVirtualized extends React.Component<Props, State> {
   }
 
   state: State = {
+    isSearchProcessing: false,
     isSearchInputFocused: false,
     searchMatches: [],
-    searchCursor: 0,
+    searchCursor: -1,
+    searchQuery: "",
   }
 
   componentDidMount() {
@@ -66,7 +70,11 @@ export class LogVirtualized extends React.Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    if (prevState.searchCursor !== this.state.searchCursor) {
+    if (
+      prevState.searchCursor !== this.state.searchCursor ||
+      prevState.searchQuery !== this.state.searchQuery
+    ) {
+      console.log("cdu / state.searchCursor or state.searchQuery changed")
       this.handleCursorChange()
     }
 
@@ -88,23 +96,30 @@ export class LogVirtualized extends React.Component<Props, State> {
    * the query for each line into the `matches` array.
    */
   search(q: string): void {
-    let matches = []
+    this.setState({ isSearchProcessing: true }, () => {
+      let matches = []
 
-    if (q.length > 0) {
-      const { logs } = this.props
+      if (q.length > 0) {
+        const { logs } = this.props
 
-      for (let i = 0; i < logs.length; i++) {
-        const line: string = logs[i]
-        const firstIndex = line.indexOf(q)
-        // todo: search more than first index.
-        if (firstIndex > -1) {
-          const m: [number, number] = [i, firstIndex]
-          matches.push(m)
+        for (let i = 0; i < logs.length; i++) {
+          const line: string = logs[i]
+          const firstIndex = line.indexOf(q)
+          // todo: search more than first index.
+          if (firstIndex > -1) {
+            const m: [number, number] = [i, firstIndex]
+            matches.push(m)
+          }
         }
       }
-    }
 
-    this.setState({ searchMatches: matches, searchCursor: 0 })
+      this.setState({
+        searchMatches: matches,
+        searchCursor: 0,
+        isSearchProcessing: false,
+        searchQuery: q,
+      })
+    })
   }
 
   handleCursorChange(): void {
@@ -170,6 +185,7 @@ export class LogVirtualized extends React.Component<Props, State> {
 
   resetSearchState(): void {
     this.setState({
+      isSearchProcessing: false,
       isSearchInputFocused: false,
       searchMatches: [],
       searchCursor: 0,
@@ -217,6 +233,7 @@ export class LogVirtualized extends React.Component<Props, State> {
       <div className="flotilla-logs-virtualized-container">
         <LogVirtualizedSearch
           onChange={this.search}
+          searchQuery={this.state.searchQuery}
           onFocus={() => {
             this.setState({ isSearchInputFocused: true })
           }}
@@ -228,6 +245,7 @@ export class LogVirtualized extends React.Component<Props, State> {
           inputRef={this.searchInputRef}
           cursorIndex={searchCursor}
           totalMatches={searchMatches.length}
+          isSearchProcessing={this.state.isSearchProcessing}
         />
         <div className="flotilla-logs-container">
           <List

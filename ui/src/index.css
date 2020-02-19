@@ -297,6 +297,16 @@ table {
   flex: 1;
 }
 
+.flotilla-logs-virtualized-search-info {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: center;
+  border-left: var(--default-border);
+  border-right: var(--default-border);
+  padding: 0 var(--spacing);
+}
+
 /**
  * Pre
  */
