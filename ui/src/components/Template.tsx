@@ -23,7 +23,6 @@ export const TemplateContext = React.createContext<TemplateCtx>({
 })
 
 export const Template: React.FunctionComponent<TemplateCtx> = props => {
-  console.log(props.basePath)
   return (
     <TemplateContext.Provider value={props}>
       <Switch>

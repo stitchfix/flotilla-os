@@ -74,7 +74,6 @@ export class LogVirtualized extends React.Component<Props, State> {
       prevState.searchCursor !== this.state.searchCursor ||
       prevState.searchQuery !== this.state.searchQuery
     ) {
-      console.log("cdu / state.searchCursor or state.searchQuery changed")
       this.handleCursorChange()
     }
 
