@@ -77,7 +77,10 @@ export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_ac
 }
 ```
 
-3. Flotilla uses AWS's Elastic Container Service (ECS) as the execution backend. However, Flotilla does not manage ECS clusters. There must be at least one cluster defined in AWS's ECS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
+3. Flotilla uses AWS's Elastic Container Service (ECS) and Elastic Kubernetes Service (EKS) as the execution backend. However, Flotilla does not manage ECS/EKS clusters. There must be at least one cluster defined in AWS's ECS/EKS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
+
+https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html
+
 
 ### Starting the service locally
 
@@ -89,7 +92,7 @@ docker-compose up -d
 
 You'll notice it builds the code in the repo and starts the flotilla service as well as the default postgres backend.
 
-Verify the service is running by making a `GET` request with cURL (or navigating to in a web browser) the url `http://localhost:3000/api/v1/task`. A 200OK response means things are good!
+Verify the service is running by making a `GET` request with cURL (or navigating to in a web browser) the url `http://localhost:5000/api/v6/task`. A 200OK response means things are good!
 
 > Note: The default configuration under `conf` and in the `docker-compose.yml` assume port 3000. You'll have to change it in both places if you don't want to use port 3000 locally.
 
@@ -157,17 +160,17 @@ Let's define it:
 
 
 ```
-curl -XPOST localhost:3000/api/v1/task --data @examples/hello-world.json
+curl -XPOST localhost:5000/api/v6/task --data @examples/hello-world.json
 ```
 
-You'll notice that if you visit the initial url again `http://localhost:3000/api/v1/task` the newly defined definition will be in the list.
+You'll notice that if you visit the initial url again `http://localhost:5000/api/v6/task` the newly defined definition will be in the list.
 
 #### Running your first task
 
 This is the fun part. You'll make a `PUT` request to the execution endpoint for the task you just defined and specify any environment variables.
 
 ```
-curl -XPUT localhost:3000/api/v1/task/alias/hello-flotilla/execute -d '{
+curl -XPUT localhost:5000/api/v6/task/alias/hello-flotilla/execute -d '{
   "cluster":"default",
   "env":[
     {"name":"USERNAME","value":"yourusername"}
@@ -177,10 +180,10 @@ curl -XPUT localhost:3000/api/v1/task/alias/hello-flotilla/execute -d '{
 ```
 > Note: `run_tags` is defined as a way for all runs to have a ownership injected for visibility and is *required*.
 
-You'll get a response that contains a `run_id` field. You can check the status of your task at `http://localhost:3000/api/v1/history/<run_id>`
+You'll get a response that contains a `run_id` field. You can check the status of your task at `http://localhost:5000/api/v6/history/<run_id>`
 
 ```
-curl -XGET localhost:3000/api/v1/history/<run_id>
+curl -XGET localhost:5000/api/v6/history/<run_id>
 
 {
   "instance": {
@@ -214,10 +217,10 @@ curl -XGET localhost:3000/api/v1/history/<run_id>
 }
 ```
 
-and you can get the logs for your task at `http://localhost:3000/api/v1/<run_id>/logs`. You will not see any logs until your task is at least in the `RUNNING` state.
+and you can get the logs for your task at `http://localhost:5000/api/v6/<run_id>/logs`. You will not see any logs until your task is at least in the `RUNNING` state.
 
 ```
-curl -XGET localhost:3000/api/v1/<run_id>/logs
+curl -XGET localhost:5000/api/v6/<run_id>/logs
 
 {
   "last_seen":"<last_seen_token_used_for_paging>",
@@ -292,16 +295,35 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `http.server.listen_address` | The port for the http server to listen on |
 | `owner_id_var` | Which environment variable containing ownership information to inject into the runtime of jobs |
 | `enabled_workers` | This variable is a list of the workers that run. Use this to control what workers run when using a multi-container deployment strategy. Valid list items include (`retry`, `submit`, and `status`) |
-| `log.namespace` | For the default ECS execution engine setup this is the `log-group` to use |
-| `log.retention_days` | For the default ECS execution engine this is the number of days to retain logs |
-| `log.driver.options.*` | For the default ECS execution engine these map to the `awslogs` driver options [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html) |
+| `ecs.log.namespace` | For the default ECS execution engine setup this is the `log-group` to use |
+| `ecs.log.retention_days` | For the default ECS execution engine this is the number of days to retain logs |
+| `ecs.log.driver.options.*` | For the default ECS execution engine these map to the `awslogs` driver options [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html) |
 | `queue.namespace` | For the default ECS execution engine this is the prefix used for SQS to determine which queues to pull job launch messages from |
 | `queue.retention_seconds` | For the default ECS execution engine this configures how long a message will stay in an SQS queue without being consumed |
 | `queue.process_time` | For the default ECS execution engine configures the length of time allowed to process a job launch message |
 | `queue.status` | For the default ECS execution engine this configures which SQS queue to route ECS cluster status updates to |
 | `queue.status_rule` | For the default ECS execution engine this configures the name of the rule for routing ECS cluster status updates |
-
-
+| `metrics.dogstatsd.address` | Statds metrics host in Datadog format |
+| `metrics.dogstatsd.namespace` | Namespace for the metrics - for example `flotilla.` |
+| `redis_address` | Redis host for caching and locks|
+| `redis_db` | Redis db to be used - numeric |
+| `eks.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
+| `eks.kubeconfig_basepath` | folder where the kubeconfigs are stored |
+| `eks.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
+| `eks.cluster_override` | EKS cluster to override ECS traffic |
+| `eks.cluster_override_percent` | Percentage of traffic to send to EKS over ECS - if multiple clusters are configured, default is ECS |
+| `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
+| `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
+| `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name |
+| `eks.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path |
+| `eks.log.namespace.retention_days` | Number of days to store logs |
+| `eks.log.namespace.driver.name` | Logger name |
+| `eks.log.namespace.driver.options.s3_bucket_name` | S3 bucket name |
+| `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path |
+| `eks.job_namespace` | Kubernetes namespace to submit jobs to |
+| `eks.job_ttl` | default job ttl in seconds |
+| `eks.job_queue` | SQS job queue |
+| `eks.service_account` | Kubernetes service account to use |
 
 ## Development
 
@@ -311,8 +333,8 @@ See [API](https://stitchfix.github.io/flotilla-os/api.html)
 
 ### Building
 
-Currently Flotilla is built using `go` 1.9.3 and uses the [`govendor`](https://github.com/kardianos/govendor) to manage dependencies.
+Currently Flotilla is built using `go` 1.9.3 and uses the `go mod` to manage dependencies.
 
 ```
-govendor sync && go build
+go get && go build
 ```
