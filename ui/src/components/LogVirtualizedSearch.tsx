@@ -1,6 +1,6 @@
 import * as React from "react"
 import { DebounceInput } from "react-debounce-input"
-import { ButtonGroup, Button } from "@blueprintjs/core"
+import { ButtonGroup, Button, Spinner, Classes } from "@blueprintjs/core"
 
 type Props = {
   onChange: (value: string) => void
@@ -11,6 +11,8 @@ type Props = {
   inputRef: React.Ref<HTMLInputElement> | null
   cursorIndex: number
   totalMatches: number
+  isSearchProcessing: boolean
+  searchQuery: string
 }
 
 const LogVirtualizedSearch: React.FC<Props> = ({
@@ -22,23 +24,29 @@ const LogVirtualizedSearch: React.FC<Props> = ({
   onDecrement,
   cursorIndex,
   totalMatches,
+  isSearchProcessing,
+  searchQuery,
 }) => (
   <div className="flotilla-logs-virtualized-search-container">
-    <DebounceInput
+    <input
       onChange={evt => {
         onChange(evt.target.value)
       }}
-      debounceTimeout={500}
       className="bp3-input flotilla-logs-virtualized-search-input"
-      inputRef={inputRef}
+      ref={inputRef}
       onFocus={onFocus}
       onBlur={onBlur}
       placeholder="Search..."
+      value={searchQuery}
     />
-    {totalMatches > 0 && (
-      <div className="flotilla-logs-virtualized-search-info">
-        {cursorIndex + 1}/{totalMatches}
-      </div>
+    {isSearchProcessing ? (
+      <Spinner size={Spinner.SIZE_SMALL} />
+    ) : (
+      totalMatches > 0 && (
+        <div className="flotilla-logs-virtualized-search-info">
+          {cursorIndex + 1}/{totalMatches}
+        </div>
+      )
     )}
     <ButtonGroup>
       <Button

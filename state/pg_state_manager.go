@@ -26,6 +26,23 @@ type SQLStateManager struct {
 	db *sqlx.DB
 }
 
+func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
+	var err error
+	var nodeList NodeList
+
+	err = sm.db.Select(&nodeList, ListFailingNodesSQL)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nodeList, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching node list")}
+		} else {
+			return nodeList, errors.Wrapf(err, "Error fetching node list")
+		}
+	}
+	return nodeList, err
+}
+
 func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
@@ -1044,6 +1061,20 @@ func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) 
 		return tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateID)
 	}
 	return tpl, nil
+}
+
+func (sm *SQLStateManager) GetTemplateByVersion(templateName string, templateVersion int64) (bool, Template, error) {
+	var err error
+	var tpl Template
+	err = sm.db.Get(&tpl, GetTemplateByVersionSQL, templateName, templateVersion)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, tpl, nil
+		}
+
+		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
+	}
+	return true, tpl, nil
 }
 
 // GetLatestTemplateByTemplateName returns the latest version of a template

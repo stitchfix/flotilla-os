@@ -42,9 +42,12 @@ type Manager interface {
 
 	GetTemplateByID(templateID string) (Template, error)
 	GetLatestTemplateByTemplateName(templateName string) (bool, Template, error)
+	GetTemplateByVersion(templateName string, templateVersion int64) (bool, Template, error)
 	ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error)
 	ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error)
 	CreateTemplate(t Template) error
+
+	ListFailingNodes() (NodeList, error)
 }
 
 //

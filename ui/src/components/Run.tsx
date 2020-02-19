@@ -25,6 +25,8 @@ import {
   ExecutionEngine,
   RunTabId,
   ExecutableType,
+  EnhancedRunStatusEmojiMap,
+  EnhancedRunStatus,
 } from "../types"
 import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
@@ -34,18 +36,19 @@ import Toggler from "./Toggler"
 import LogRequesterCloudWatchLogs from "./LogRequesterCloudWatchLogs"
 import LogRequesterS3 from "./LogRequesterS3"
 import RunEvents from "./RunEvents"
-import RunAttributes from "./RunAttributes"
 import QueryParams, { ChildProps as QPChildProps } from "./QueryParams"
 import { RUN_TAB_ID_QUERY_KEY } from "../constants"
 import Attribute from "./Attribute"
 import RunTag from "./RunTag"
 import Duration from "./Duration"
 import ErrorCallout from "./ErrorCallout"
-import RunDebugAttributes from "./RunDebugAttributes"
+import RunSidebar from "./RunSidebar"
 import Helmet from "react-helmet"
 import AutoscrollSwitch from "./AutoscrollSwitch"
 import { RootState } from "../state/store"
 import RecursiveKeyValueRenderer from "./RecursiveKeyValueRenderer"
+import CloudtrailRecords from "./CloudtrailRecords"
+import getEnhancedRunStatus from "../helpers/getEnhancedRunStatus"
 
 const connected = connect((state: RootState) => state.runView)
 
@@ -169,6 +172,12 @@ export class Run extends React.Component<Props> {
         return <ErrorCallout error={error} />
       case RequestStatus.READY:
         if (data) {
+          const cloudtrailRecords = get(
+            data,
+            ["cloudtrail_notifications", "Records"],
+            null
+          )
+          const hasCloudtrailRecords = cloudtrailRecords !== null
           let btn: React.ReactNode = null
 
           if (data.status === RunStatus.STOPPED) {
@@ -221,43 +230,7 @@ export class Run extends React.Component<Props> {
                     buttons={btn}
                   />
                   <div className="flotilla-sidebar-view-container">
-                    {metadataVisibility.isVisible && (
-                      <div className="flotilla-sidebar-view-sidebar">
-                        {data &&
-                          data.executable_type ===
-                            ExecutableType.ExecutableTypeTemplate && (
-                            <Card style={{ marginBottom: 12 }}>
-                              <div className="flotilla-card-header-container">
-                                <div className="flotilla-card-header">
-                                  Template Payload
-                                </div>
-                              </div>
-                              <RecursiveKeyValueRenderer
-                                data={get(
-                                  data,
-                                  [
-                                    "execution_request_custom",
-                                    "template_payload",
-                                  ],
-                                  {}
-                                )}
-                              />
-                            </Card>
-                          )}
-                        <RunAttributes data={data} />
-                        <Card>
-                          <div className="flotilla-card-header-container">
-                            <div className="flotilla-card-header">
-                              Environment Variables
-                            </div>
-                          </div>
-                          <EnvList env={data.env} />
-                        </Card>
-                        {data && data.engine === ExecutionEngine.EKS && (
-                          <RunDebugAttributes data={data} />
-                        )}
-                      </div>
-                    )}
+                    {metadataVisibility.isVisible && <RunSidebar data={data} />}
                     <div className="flotilla-sidebar-view-content">
                       <Card style={{ marginBottom: 12 }}>
                         <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
@@ -331,6 +304,33 @@ export class Run extends React.Component<Props> {
                           }
                           disabled={data.engine !== ExecutionEngine.EKS}
                         />
+                        <Tab
+                          id={RunTabId.CLOUDTRAIL}
+                          title={
+                            data.engine !== ExecutionEngine.EKS ? (
+                              <Tooltip content="Cloudtrail records are only available for tasks run on EKS.">
+                                Cloudtrail Records
+                              </Tooltip>
+                            ) : (
+                              `EKS Cloudtrail Records (${
+                                hasCloudtrailRecords
+                                  ? get(
+                                      data,
+                                      ["cloudtrail_notifications", "Records"],
+                                      []
+                                    ).length
+                                  : 0
+                              })`
+                            )
+                          }
+                          panel={
+                            <CloudtrailRecords data={cloudtrailRecords || []} />
+                          }
+                          disabled={
+                            data.engine !== ExecutionEngine.EKS ||
+                            hasCloudtrailRecords === false
+                          }
+                        />
                       </Tabs>
                     </div>
                   </div>
@@ -361,11 +361,16 @@ const Connected: React.FunctionComponent<RouteComponentProps<{
         {props => (
           <>
             <Helmet>
-              <meta name="twitter:label1" content="Run Status" />
-              <meta
-                name="twitter:data1"
-                content={get(props, ["data", "status"], "")}
-              />
+              <title>
+                {`${
+                  props.data
+                    ? EnhancedRunStatusEmojiMap.get(
+                        getEnhancedRunStatus(props.data) as EnhancedRunStatus
+                      )
+                    : ""
+                }
+                ${match.params.runID}`}
+              </title>
             </Helmet>
             <ReduxConnectedRun
               {...props}

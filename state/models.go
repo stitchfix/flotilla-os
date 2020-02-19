@@ -133,6 +133,8 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
+type NodeList []string
+
 //
 // Tags wraps a list of strings
 // - abstraction to make it easier to read
@@ -757,6 +759,7 @@ type TemplatePayload map[string]interface{}
 
 type TemplateExecutionRequest struct {
 	TemplatePayload TemplatePayload `json:"template_payload"`
+
 	ExecutionRequestCommon
 }
 

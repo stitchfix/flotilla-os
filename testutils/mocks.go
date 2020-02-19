@@ -34,7 +34,7 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
-func (iatt *ImplementsAllTheThings) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+func (iatt *ImplementsAllTheThings) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	iatt.Calls = append(iatt.Calls, "LogsText")
 	return nil
 }
@@ -65,6 +65,12 @@ func (iatt *ImplementsAllTheThings) Initialize(conf config.Config) error {
 func (iatt *ImplementsAllTheThings) Cleanup() error {
 	iatt.Calls = append(iatt.Calls, "Cleanup")
 	return nil
+}
+
+func (iatt *ImplementsAllTheThings) ListFailingNodes() (state.NodeList, error) {
+	var nodeList state.NodeList
+	iatt.Calls = append(iatt.Calls, "ListFailingNodes")
+	return nodeList, nil
 }
 
 // ListDefinitions - StateManager
@@ -387,7 +393,7 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 }
 
 // Logs - Logs Client
-func (iatt *ImplementsAllTheThings) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", nil, nil
 }
@@ -425,6 +431,25 @@ func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset in
 		tl.Templates = append(tl.Templates, t)
 	}
 	return tl, nil
+}
+
+func (iatt *ImplementsAllTheThings) GetTemplateByVersion(templateName string, templateVersion int64) (bool, state.Template, error) {
+	iatt.Calls = append(iatt.Calls, "GetTemplateByVersion")
+	var err error
+	var tpl *state.Template
+
+	// Iterate over templates to find max version.
+	for _, t := range iatt.Templates {
+		if t.TemplateName == templateName && t.Version == templateVersion {
+			tpl = &t
+		}
+	}
+
+	if tpl == nil {
+		return false, *tpl, fmt.Errorf("No template with name: %s", templateName)
+	}
+
+	return true, *tpl, err
 }
 
 // GetTemplateByID - StateManager

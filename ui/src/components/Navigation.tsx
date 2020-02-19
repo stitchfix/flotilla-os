@@ -20,14 +20,26 @@ const Navigation: React.FunctionComponent = () => (
       </Link>
       <NavbarDivider />
       <ButtonGroup className={Classes.MINIMAL}>
-        <NavLink exact to="/templates" className={Classes.BUTTON}>
+        <NavLink
+          to="/templates"
+          className={Classes.BUTTON}
+          activeClassName={Classes.ACTIVE}
+        >
           <span>Templates</span>
           <Tag intent={Intent.DANGER}>New!</Tag>
         </NavLink>
-        <NavLink exact to="/tasks" className={Classes.BUTTON}>
+        <NavLink
+          to="/tasks"
+          className={Classes.BUTTON}
+          activeClassName={Classes.ACTIVE}
+        >
           Tasks
         </NavLink>
-        <NavLink exact to="/runs" className={Classes.BUTTON}>
+        <NavLink
+          to="/runs"
+          className={Classes.BUTTON}
+          activeClassName={Classes.ACTIVE}
+        >
           Runs
         </NavLink>
       </ButtonGroup>
@@ -35,12 +47,6 @@ const Navigation: React.FunctionComponent = () => (
     <NavbarGroup align={Alignment.RIGHT}>
       <ButtonGroup>
         <SettingsButton />
-        <a
-          href="https://github.com/stitchfix/flotilla-os"
-          className={Classes.BUTTON}
-        >
-          Github
-        </a>
       </ButtonGroup>
     </NavbarGroup>
   </Navbar>

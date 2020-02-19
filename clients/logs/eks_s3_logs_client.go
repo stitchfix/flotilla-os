@@ -90,7 +90,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	result, err := lc.getS3Object(run)
 	startPosition := int64(0)
 	if lastSeen != nil {
@@ -112,7 +112,7 @@ func (lc *EKSS3LogsClient) Logs(definition state.Definition, run state.Run, last
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *EKSS3LogsClient) LogsText(definition state.Definition, run state.Run, w http.ResponseWriter) error {
+func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	result, err := lc.getS3Object(run)
 
 	if result != nil && err == nil {
