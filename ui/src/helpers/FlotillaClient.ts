@@ -25,6 +25,8 @@ import {
   ListTemplateResponse,
   Template,
   TemplateExecutionRequest,
+  ListTemplateHistoryParams,
+  ListTemplateHistoryResponse,
 } from "../types"
 
 interface IInitOpts {
@@ -268,6 +270,20 @@ class FlotillaClient {
       data,
     })
   }
+
+  /** Requests a task definition's history. */
+  public listTemplateHistory = ({
+    templateID,
+    params,
+  }: {
+    templateID: string
+    params: ListTemplateHistoryParams
+  }): Promise<ListTemplateHistoryResponse> =>
+    this.request<ListTemplateHistoryResponse>({
+      method: HTTPMethod.GET,
+      url: `/v7/template/${templateID}/history`,
+      params,
+    })
 
   /** Returns a new Promise that sends an HTTP request when invoked. */
   private request<T>({ method, url, params, data }: RequestArgs): Promise<T> {

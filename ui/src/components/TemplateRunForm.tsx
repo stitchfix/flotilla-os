@@ -110,7 +110,7 @@ const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = props => {
 }
 
 class RunForm extends React.Component<Props> {
-  private FORMIK_REF = React.createRef<Formik>()
+  private FORMIK_REF = React.createRef<Formik<TemplateExecutionRequest>>()
 
   // Note: this method is a bit hacky as we have two form elements - Formik (F)
   // and JSONSchemaForm (J). F does not have a submit button, J does. When J's
@@ -122,7 +122,10 @@ class RunForm extends React.Component<Props> {
     if (this.FORMIK_REF.current) {
       const formikValues = this.FORMIK_REF.current.state.values
       formikValues["template_payload"] = jsonschemaForm
-      // this.props.request({ templateID: this.props.templateID, data: formikValues })
+      this.props.request({
+        templateID: this.props.templateID,
+        data: formikValues,
+      })
     }
   }
 
@@ -139,7 +142,7 @@ class RunForm extends React.Component<Props> {
 
     return (
       <div className="flotilla-form-container">
-        <Formik
+        <Formik<TemplateExecutionRequest>
           ref={this.FORMIK_REF}
           isInitialValid={(values: any) =>
             validationSchema.isValidSync(values.initialValues)

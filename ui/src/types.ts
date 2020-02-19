@@ -304,3 +304,6 @@ export const EnhancedRunStatusEmojiMap: Map<
   [EnhancedRunStatus.FAILED, "❌"],
   [EnhancedRunStatus.NEEDS_RETRY, "❌"],
 ])
+
+export type ListTemplateHistoryParams = Omit<ListRunParams, "alias">
+export type ListTemplateHistoryResponse = Omit<ListRunResponse, "alias">

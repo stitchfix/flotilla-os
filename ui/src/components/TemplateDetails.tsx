@@ -15,6 +15,7 @@ import EnvList from "./EnvList"
 import Toggler from "./Toggler"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
+import TemplateHistoryTable from "./TemplateHistoryTable"
 
 const TemplateDetails: React.FC<{}> = () => (
   <TemplateContext.Consumer>
@@ -30,8 +31,19 @@ const TemplateDetails: React.FC<{}> = () => (
                   breadcrumbs={[
                     { text: "Templates", href: "/Templates" },
                     {
-                      text:
-                        `${data.template_name} v${data.version}` || templateID,
+                      text: (
+                        <div style={{ display: "flex" }}>
+                          {`${data.template_name} v${data.version}` ||
+                            templateID}{" "}
+                          <img
+                            src={data.avatar_uri || ""}
+                            width={20}
+                            height={20}
+                            alt="template-logo"
+                            style={{ marginLeft: 6 }}
+                          />
+                        </div>
+                      ),
                       href: `/templates/${templateID}`,
                     },
                   ]}
@@ -71,16 +83,17 @@ const TemplateDetails: React.FC<{}> = () => (
                           <Collapse isOpen={isVisible}>
                             <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
                               <Attribute
-                                name="Container Name"
-                                value={data.container_name}
+                                name="Template Name"
+                                value={data.template_name}
                               />
+                              <Attribute name="Version" value={data.version} />
                               <Attribute name="Image" value={data.image} />
                               <Attribute name="CPU (Units)" value={data.cpu} />
                               <Attribute
                                 name="Memory (MB)"
                                 value={data.memory}
                               />
-                              <Attribute name="Tags" value={data.tags} />
+                              <Attribute name="GPU" value={data.gpu} />
                             </div>
                           </Collapse>
                         </Card>
@@ -115,8 +128,7 @@ const TemplateDetails: React.FC<{}> = () => (
                     )}
                   </div>
                   <div className="flotilla-sidebar-view-content">
-                    {/* do this later */}
-                    {/* <TaskRuns definitionID={definitionID} /> */}
+                    <TemplateHistoryTable templateID={templateID} />
                   </div>
                 </div>
               </>
