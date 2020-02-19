@@ -322,8 +322,8 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path |
 | `eks.job_namespace` | Kubernetes namespace to submit jobs to |
 | `eks.job_ttl` | default job ttl in seconds |
-| `eks.job_queue` | SQS job queue |
-| `eks.service_account` | Kubernetes service account to use |
+| `eks.job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
+| `eks.service_account` | Kubernetes service account to use for jobs. |
 
 ## Development
 
