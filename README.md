@@ -314,13 +314,13 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `eks.cluster_override_percent` | Percentage of traffic to send to EKS over ECS - if multiple clusters are configured, default is ECS |
 | `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
 | `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
-| `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name |
-| `eks.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path |
-| `eks.log.namespace.retention_days` | Number of days to store logs |
-| `eks.log.namespace.driver.name` | Logger name |
-| `eks.log.namespace.driver.options.s3_bucket_name` | S3 bucket name |
-| `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path |
-| `eks.job_namespace` | Kubernetes namespace to submit jobs to |
+| `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name for manifest storage. |
+| `eks.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path. |
+| `eks.log.namespace.retention_days` | Number of days to store logs. |
+| `eks.log.namespace.driver.name` | Logger name. |
+| `eks.log.namespace.driver.options.s3_bucket_name` | S3 bucket name to store logs. |
+| `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path within the bucket.|
+| `eks.job_namespace` | Kubernetes namespace to submit jobs to. |
 | `eks.job_ttl` | default job ttl in seconds |
 | `eks.job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
 | `eks.service_account` | Kubernetes service account to use for jobs. |
