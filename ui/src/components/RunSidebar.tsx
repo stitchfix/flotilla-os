@@ -11,9 +11,6 @@ const RunSidebar: React.FC<{ data: Run }> = ({ data }) => (
   <div className="flotilla-sidebar-view-sidebar">
     {data && data.executable_type === ExecutableType.ExecutableTypeTemplate && (
       <Card style={{ marginBottom: 12 }}>
-        <div className="flotilla-card-header-container">
-          <div className="flotilla-card-header">Template Payload</div>
-        </div>
         <RecursiveKeyValueRenderer
           data={get(data, ["execution_request_custom", "template_payload"], {})}
         />

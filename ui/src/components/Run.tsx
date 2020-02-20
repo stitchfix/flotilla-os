@@ -46,7 +46,6 @@ import RunSidebar from "./RunSidebar"
 import Helmet from "react-helmet"
 import AutoscrollSwitch from "./AutoscrollSwitch"
 import { RootState } from "../state/store"
-import RecursiveKeyValueRenderer from "./RecursiveKeyValueRenderer"
 import CloudtrailRecords from "./CloudtrailRecords"
 import getEnhancedRunStatus from "../helpers/getEnhancedRunStatus"
 

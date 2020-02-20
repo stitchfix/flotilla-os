@@ -47,19 +47,6 @@ const TemplateDetails: React.FC<{}> = () => (
                       href: `/templates/${templateID}`,
                     },
                   ]}
-                  buttons={
-                    <ButtonGroup>
-                      <Link
-                        className={[
-                          Classes.BUTTON,
-                          Classes.INTENT_PRIMARY,
-                        ].join(" ")}
-                        to={`/templates/${templateID}/execute`}
-                      >
-                        Run
-                      </Link>
-                    </ButtonGroup>
-                  }
                 />
                 <div className="flotilla-sidebar-view-container">
                   <div className="flotilla-sidebar-view-sidebar">
