@@ -50,7 +50,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 	cpu := int64(512)
 	engine := state.DefaultEngine
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              env,
 			OwnerID:          "somebody",
@@ -156,7 +156,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	mem := int64(1024)
 	engine := state.DefaultEngine
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              env,
 			OwnerID:          "somebody",
@@ -249,7 +249,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 	// Invalid environment
 	engine := state.DefaultEngine
 	_, err = es.CreateDefinitionRunByDefinitionID("A", &state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              env,
 			OwnerID:          "somebody",
@@ -267,7 +267,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 
 	// Invalid image
 	_, err = es.CreateDefinitionRunByDefinitionID("C", &state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      "clusta",
 			Env:              nil,
 			OwnerID:          "somebody",
@@ -285,7 +285,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID2(t *testing.T) {
 
 	// Invalid cluster
 	_, err = es.CreateDefinitionRunByDefinitionID("A", &state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      "invalidcluster",
 			Env:              nil,
 			OwnerID:          "somebody",
