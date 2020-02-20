@@ -161,7 +161,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	es.sanitizeExecutionRequestCommonFields(fields, definition.Privileged)
+	fields = es.sanitizeExecutionRequestCommonFields(fields, definition.Privileged)
 
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &definition, fields.Env, *fields.Engine); err != nil {
@@ -429,7 +429,7 @@ func (es *executionService) ListClusters() ([]string, error) {
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 // several common request fields (mostly around ECS/EKS differences).
 //
-func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) {
+func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) *state.ExecutionRequestCommon {
 	if fields.Engine == nil {
 		fields.Engine = &state.DefaultEngine
 	}
@@ -456,6 +456,8 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 			fields.ClusterName = es.eksClusterOverride
 		}
 	}
+
+	return fields
 }
 
 //
@@ -529,7 +531,7 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	es.sanitizeExecutionRequestCommonFields(fields, template.Privileged)
+	fields = es.sanitizeExecutionRequestCommonFields(fields, template.Privileged)
 
 	// Validate that template can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {
