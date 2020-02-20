@@ -382,7 +382,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          "v1-unknown",
@@ -433,7 +433,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          lr.RunTags.OwnerEmail,
@@ -494,7 +494,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          lr.RunTags.OwnerID,
@@ -556,7 +556,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
-		ExecutionRequestCommon: state.ExecutionRequestCommon{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          lr.RunTags.OwnerID,

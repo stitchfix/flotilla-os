@@ -193,11 +193,11 @@ type ExecutionRequest interface {
 }
 
 type DefinitionExecutionRequest struct {
-	ExecutionRequestCommon
+	*ExecutionRequestCommon
 }
 
 func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
-	return &d.ExecutionRequestCommon
+	return d.ExecutionRequestCommon
 }
 
 func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
@@ -759,13 +759,12 @@ const TemplatePayloadKey = "template_payload"
 type TemplatePayload map[string]interface{}
 
 type TemplateExecutionRequest struct {
+	*ExecutionRequestCommon
 	TemplatePayload TemplatePayload `json:"template_payload"`
-
-	ExecutionRequestCommon
 }
 
 func (t TemplateExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
-	return &t.ExecutionRequestCommon
+	return t.ExecutionRequestCommon
 }
 
 func (t TemplateExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
