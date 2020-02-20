@@ -161,7 +161,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	fields = es.sanitizeExecutionRequestCommonFields(fields, definition.Privileged)
+	es.sanitizeExecutionRequestCommonFields(fields, definition.Privileged)
 
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &definition, fields.Env, *fields.Engine); err != nil {
@@ -429,7 +429,7 @@ func (es *executionService) ListClusters() ([]string, error) {
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 // several common request fields (mostly around ECS/EKS differences).
 //
-func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) *state.ExecutionRequestCommon {
+func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) {
 	if fields.Engine == nil {
 		fields.Engine = &state.DefaultEngine
 	}
@@ -444,7 +444,7 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 	}
 
 	// Added to facilitate migration of ECS jobs to EKS.
-	if fields.Engine != &state.EKSEngine && es.eksOverridePercent > 0 && *privileged == false {
+	if *fields.Engine != state.EKSEngine && es.eksOverridePercent > 0 && *privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
 			fields.Engine = &state.EKSEngine
@@ -456,8 +456,6 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 			fields.ClusterName = es.eksClusterOverride
 		}
 	}
-
-	return fields
 }
 
 //
@@ -531,7 +529,7 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	fields = es.sanitizeExecutionRequestCommonFields(fields, template.Privileged)
+	es.sanitizeExecutionRequestCommonFields(fields, template.Privileged)
 
 	// Validate that template can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {
