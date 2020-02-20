@@ -230,7 +230,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		Command:          fields.Command,
 		Memory:           fields.Memory,
 		Cpu:              fields.Cpu,
-		Gpu:              resources.Gpu,
+		Gpu:              fields.Gpu,
 		Engine:           fields.Engine,
 		NodeLifecycle:    fields.NodeLifecycle,
 		EphemeralStorage: fields.EphemeralStorage,
@@ -444,7 +444,7 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 	}
 
 	// Added to facilitate migration of ECS jobs to EKS.
-	if fields.Engine != &state.EKSEngine && es.eksOverridePercent > 0 && *privileged == false {
+	if *fields.Engine != state.EKSEngine && es.eksOverridePercent > 0 && *privileged == false {
 		modulo := 100 / es.eksOverridePercent
 		if rand.Int()%modulo == 0 {
 			fields.Engine = &state.EKSEngine

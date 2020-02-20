@@ -230,7 +230,11 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	requests[corev1.ResourceMemory] = memRequestQuantity
 
 	executableResources := executable.GetExecutableResources()
-	if executableResources.Gpu != nil && *executableResources.Gpu > 0 {
+	if run.Gpu != nil && *run.Gpu > 0 {
+		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *run.Gpu))
+		requests["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *run.Gpu))
+		run.NodeLifecycle = &state.OndemandLifecycle
+	} else if executableResources.Gpu != nil && *executableResources.Gpu > 0 {
 		limits["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *executableResources.Gpu))
 		requests["nvidia.com/gpu"] = resource.MustParse(fmt.Sprintf("%d", *executableResources.Gpu))
 		run.NodeLifecycle = &state.OndemandLifecycle

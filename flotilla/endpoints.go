@@ -44,6 +44,7 @@ type LaunchRequestV2 struct {
 	Command          *string
 	Memory           *int64
 	Cpu              *int64
+	Gpu              *int64
 	Engine           *string
 	NodeLifecycle    *string `json:"node_lifecycle"`
 	EphemeralStorage *int64  `json:"ephemeral_storage"`
@@ -388,6 +389,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			Command:          nil,
 			Memory:           nil,
 			Cpu:              nil,
+			Gpu:              nil,
 			Engine:           &state.DefaultEngine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
@@ -438,6 +440,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Command:          nil,
 			Memory:           nil,
 			Cpu:              nil,
+			Gpu:              nil,
 			Engine:           lr.Engine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
@@ -498,6 +501,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Command:          lr.Command,
 			Memory:           lr.Memory,
 			Cpu:              lr.Cpu,
+			Gpu:              lr.Gpu,
 			Engine:           lr.Engine,
 			EphemeralStorage: lr.EphemeralStorage,
 			NodeLifecycle:    lr.NodeLifecycle,
@@ -559,6 +563,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Command:          lr.Command,
 			Memory:           lr.Memory,
 			Cpu:              lr.Cpu,
+			Gpu:              lr.Gpu,
 			Engine:           lr.Engine,
 			EphemeralStorage: lr.EphemeralStorage,
 			NodeLifecycle:    lr.NodeLifecycle,
@@ -912,8 +917,6 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 	}
 
 }
-
-
 
 func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
