@@ -21,6 +21,12 @@ import {
   ListTagsResponse,
   ListRunEventsResponse,
   RunLogRaw,
+  ListTemplateParams,
+  ListTemplateResponse,
+  Template,
+  TemplateExecutionRequest,
+  ListTemplateHistoryParams,
+  ListTemplateHistoryResponse,
 } from "../types"
 
 interface IInitOpts {
@@ -225,6 +231,58 @@ class FlotillaClient {
     this.request<ListRunEventsResponse>({
       method: HTTPMethod.GET,
       url: `/v6/${runID}/events`,
+    })
+
+  /** Requests a list of task definitions. */
+  public listTemplates = ({
+    params,
+  }: {
+    params: ListTemplateParams
+  }): Promise<ListTemplateResponse> =>
+    this.request<ListTemplateResponse>({
+      method: HTTPMethod.GET,
+      url: `/v7/template`,
+      params,
+    })
+
+  /** Requests a task definition. */
+  public getTemplate = ({
+    templateID,
+  }: {
+    templateID: string
+  }): Promise<Template> =>
+    this.request<Template>({
+      method: HTTPMethod.GET,
+      url: `/v7/template/${templateID}`,
+    })
+
+  /** Runs a task. */
+  public runTemplate = ({
+    templateID,
+    data,
+  }: {
+    templateID: string
+    data: TemplateExecutionRequest
+  }): Promise<Run> => {
+    return this.request<Run>({
+      method: HTTPMethod.PUT,
+      url: `/v7/template/${templateID}/execute`,
+      data,
+    })
+  }
+
+  /** Requests a task definition's history. */
+  public listTemplateHistory = ({
+    templateID,
+    params,
+  }: {
+    templateID: string
+    params: ListTemplateHistoryParams
+  }): Promise<ListTemplateHistoryResponse> =>
+    this.request<ListTemplateHistoryResponse>({
+      method: HTTPMethod.GET,
+      url: `/v7/template/${templateID}/history`,
+      params,
     })
 
   /** Returns a new Promise that sends an HTTP request when invoked. */

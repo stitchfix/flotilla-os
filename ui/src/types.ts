@@ -9,22 +9,22 @@ export type Task = {
   env: Env[]
   arn: string
   definition_id: string
-  image: string
   group_name: string
-  container_name: string
   alias: string
-  memory: number
-  cpu: number
   command: string
-  tags: string[]
-  privileged: boolean
   shared_memory_size?: number
-  adaptive_resource_allocation?: boolean
-}
+} & ExecutableResources
 
 export type RunInstance = {
   dns_name: string
   instance_id: string
+}
+
+export type CloudTrailNotifications = {}
+
+export enum ExecutableType {
+  ExecutableTypeDefinition = "task_definition",
+  ExecutableTypeTemplate = "template",
 }
 
 export type Run = {
@@ -53,6 +53,9 @@ export type Run = {
   max_memory_used: number | null | undefined
   pod_name: string | null | undefined
   cloudtrail_notifications: CloudtrailRecords
+  executable_id: string
+  executable_type: ExecutableType
+  execution_request_custom: any
 }
 
 export type RunLog = {
@@ -236,6 +239,51 @@ export enum RunTabId {
   METADATA = "md",
 }
 
+export type ExecutableResources = {
+  image: string
+  memory: number
+  gpu: number
+  cpu: number
+  env: Env[]
+  privileged: boolean
+  adaptive_resource_allocation: boolean
+  container_name: string
+  tags: string[]
+}
+
+export type Template = {
+  template_id: string
+  template_name: string
+  version: number
+  schema: object
+  command_template: string
+  defaults: object | null | undefined
+  avatar_uri: string | null | undefined
+} & ExecutableResources
+
+export type ListTemplateParams = ListRequestArgs & {
+  latest_only?: boolean
+}
+
+export type ListTemplateResponse = ListResponse & {
+  templates: Template[]
+}
+
+export type TemplateExecutionRequest = {
+  template_payload: object
+} & ExecutionRequestCommon
+
+export type ExecutionRequestCommon = {
+  cluster?: string
+  env?: Env[]
+  owner_id: string
+  command?: string
+  memory?: number
+  cpu?: number
+  engine: ExecutionEngine
+  ephemeral_storage?: number
+  node_lifecycle?: string
+}
 export type CloudtrailRecord = {
   eventSource: string
   eventName: string
@@ -256,3 +304,6 @@ export const EnhancedRunStatusEmojiMap: Map<
   [EnhancedRunStatus.FAILED, "❌"],
   [EnhancedRunStatus.NEEDS_RETRY, "❌"],
 ])
+
+export type ListTemplateHistoryParams = Omit<ListRunParams, "alias">
+export type ListTemplateHistoryResponse = Omit<ListRunResponse, "alias">

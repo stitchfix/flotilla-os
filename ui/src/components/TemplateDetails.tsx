@@ -4,26 +4,22 @@ import {
   Collapse,
   Card,
   ButtonGroup,
-  Pre,
   Classes,
   Button,
   Spinner,
-  Icon,
 } from "@blueprintjs/core"
-import { TaskContext } from "./Task"
+import { TemplateContext } from "./Template"
 import Attribute from "./Attribute"
-import TaskRuns from "./TaskRuns"
 import ViewHeader from "./ViewHeader"
 import EnvList from "./EnvList"
-import DeleteTaskButton from "./DeleteTaskButton"
 import Toggler from "./Toggler"
 import { RequestStatus } from "./Request"
 import ErrorCallout from "./ErrorCallout"
-import ARASwitch from "./ARASwitch"
+import TemplateHistoryTable from "./TemplateHistoryTable"
 
-const TaskDetails: React.FC<{}> = () => (
-  <TaskContext.Consumer>
-    {({ requestStatus, data, error, definitionID, request }) => {
+const TemplateDetails: React.FC<{}> = () => (
+  <TemplateContext.Consumer>
+    {({ requestStatus, data, error, templateID }) => {
       switch (requestStatus) {
         case RequestStatus.ERROR:
           return <ErrorCallout error={error} />
@@ -33,37 +29,24 @@ const TaskDetails: React.FC<{}> = () => (
               <>
                 <ViewHeader
                   breadcrumbs={[
-                    { text: "Tasks", href: "/tasks" },
+                    { text: "Templates", href: "/Templates" },
                     {
-                      text: data.alias || definitionID,
-                      href: `/tasks/${definitionID}`,
+                      text: (
+                        <div style={{ display: "flex" }}>
+                          {`${data.template_name} v${data.version}` ||
+                            templateID}{" "}
+                          <img
+                            src={data.avatar_uri || ""}
+                            width={20}
+                            height={20}
+                            alt="template-logo"
+                            style={{ marginLeft: 6 }}
+                          />
+                        </div>
+                      ),
+                      href: `/templates/${templateID}`,
                     },
                   ]}
-                  buttons={
-                    <ButtonGroup>
-                      <DeleteTaskButton definitionID={definitionID} />
-                      <Link
-                        className={Classes.BUTTON}
-                        to={`/tasks/${definitionID}/copy`}
-                      >
-                        <div className="bp3-button-text">Copy</div>
-                        <Icon icon="duplicate" />
-                      </Link>
-                      <Link
-                        className={Classes.BUTTON}
-                        to={`/tasks/${definitionID}/update`}
-                      >
-                        <div className="bp3-button-text">Update</div>
-                        <Icon icon="edit" />
-                      </Link>
-                      <Link
-                        className={Classes.BUTTON}
-                        to={`/tasks/${definitionID}/execute`}
-                      >
-                        Run
-                      </Link>
-                    </ButtonGroup>
-                  }
                 />
                 <div className="flotilla-sidebar-view-container">
                   <div className="flotilla-sidebar-view-sidebar">
@@ -87,46 +70,17 @@ const TaskDetails: React.FC<{}> = () => (
                           <Collapse isOpen={isVisible}>
                             <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
                               <Attribute
-                                name="Adaptive Resource Allocation"
-                                value={
-                                  <ARASwitch task={data} request={request} />
-                                }
-                                description={
-                                  <span>
-                                    Adaptive CPU and memory resource allocation
-                                    based on prior run history.
-                                  </span>
-                                }
+                                name="Template Name"
+                                value={data.template_name}
                               />
-                              <Attribute name="Alias" value={data.alias} />
-                              <Attribute
-                                name="Definition ID"
-                                value={data.definition_id}
-                              />
-                              <Attribute
-                                name="Container Name"
-                                value={data.container_name}
-                              />
-                              <Attribute
-                                name="Group Name"
-                                value={data.group_name}
-                              />
+                              <Attribute name="Version" value={data.version} />
                               <Attribute name="Image" value={data.image} />
-                              <Attribute
-                                name="Command"
-                                value={
-                                  <Pre className="flotilla-pre">
-                                    {data.command}
-                                  </Pre>
-                                }
-                              />
                               <Attribute name="CPU (Units)" value={data.cpu} />
                               <Attribute
                                 name="Memory (MB)"
                                 value={data.memory}
                               />
-                              <Attribute name="Arn" value={data.arn} />
-                              <Attribute name="Tags" value={data.tags} />
+                              <Attribute name="GPU" value={data.gpu} />
                             </div>
                           </Collapse>
                         </Card>
@@ -161,7 +115,7 @@ const TaskDetails: React.FC<{}> = () => (
                     )}
                   </div>
                   <div className="flotilla-sidebar-view-content">
-                    <TaskRuns definitionID={definitionID} />
+                    <TemplateHistoryTable templateID={templateID} />
                   </div>
                 </div>
               </>
@@ -173,6 +127,6 @@ const TaskDetails: React.FC<{}> = () => (
           return <Spinner />
       }
     }}
-  </TaskContext.Consumer>
+  </TemplateContext.Consumer>
 )
-export default TaskDetails
+export default TemplateDetails

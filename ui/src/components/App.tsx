@@ -5,13 +5,14 @@ import Task from "./Task"
 import CreateTaskForm from "./CreateTaskForm"
 import Run from "./Run"
 import Runs from "./Runs"
+import Templates from "./Templates"
+import Template from "./Template"
 import Navigation from "./Navigation"
 import ls from "../localstorage"
 import { LOCAL_STORAGE_IS_ONBOARDED_KEY } from "../constants"
 import Toaster from "./Toaster"
 import { Intent } from "@blueprintjs/core"
 import { connect, ConnectedProps } from "react-redux"
-import { RootState } from "../state/store"
 import { toggleDialogVisibilityChange } from "../state/settings"
 
 const connector = connect()
@@ -59,20 +60,12 @@ class App extends React.Component<ConnectedProps<typeof connector>> {
             <Route path="/tasks/:definitionID" component={Task} />
             <Route path="/tasks/alias/:alias" component={Task} />
 
-            <Route
-              exact
-              path="/templates"
-              component={() => <span>tpl list</span>}
-            />
-            <Route
-              exact
-              path="/templates/templateID"
-              component={() => <span>tpl detail</span>}
-            />
+            <Route exact path="/templates" component={Templates} />
+            <Route path="/templates/:templateID" component={Template} />
 
             <Route exact path="/runs" component={Runs} />
             <Route path="/runs/:runID" component={Run} />
-            <Redirect from="/" to="/tasks" />
+            <Redirect from="/" to="/templates" />
           </Switch>
         </BrowserRouter>
       </div>

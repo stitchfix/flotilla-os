@@ -24,9 +24,11 @@ import {
   RunStatus,
   ExecutionEngine,
   RunTabId,
+  ExecutableType,
   EnhancedRunStatusEmojiMap,
   EnhancedRunStatus,
 } from "../types"
+import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"
@@ -135,6 +137,32 @@ export class Run extends React.Component<Props> {
     this.props.setQuery({ [RUN_TAB_ID_QUERY_KEY]: id })
   }
 
+  getExecutableLinkName(): string {
+    const { data } = this.props
+    if (data) {
+      switch (data.executable_type) {
+        case ExecutableType.ExecutableTypeDefinition:
+          return data.alias
+        case ExecutableType.ExecutableTypeTemplate:
+          return data.executable_id
+      }
+    }
+    return ""
+  }
+
+  getExecutableLinkURL(): string {
+    const { data } = this.props
+    if (data) {
+      switch (data.executable_type) {
+        case ExecutableType.ExecutableTypeDefinition:
+          return `/tasks/${data.definition_id}`
+        case ExecutableType.ExecutableTypeTemplate:
+          return `/templates/${data.executable_id}`
+      }
+    }
+    return ""
+  }
+
   render() {
     const { data, requestStatus, runID, error } = this.props
 
@@ -156,7 +184,7 @@ export class Run extends React.Component<Props> {
               <Link
                 className={Classes.BUTTON}
                 to={{
-                  pathname: `/tasks/${data.definition_id}/execute`,
+                  pathname: `${this.getExecutableLinkURL()}/execute`,
                   state: data,
                 }}
               >
@@ -190,8 +218,8 @@ export class Run extends React.Component<Props> {
                     }
                     breadcrumbs={[
                       {
-                        text: data.alias,
-                        href: `/tasks/${data.definition_id}`,
+                        text: this.getExecutableLinkName(),
+                        href: this.getExecutableLinkURL(),
                       },
                       {
                         text: data.run_id,
