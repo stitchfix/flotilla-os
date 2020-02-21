@@ -28,3 +28,11 @@ export const ownerIdFieldSpec: FieldSpec = {
   description: "Please set the Owner ID.",
   initialValue: "",
 }
+
+export const nodeLifecycleFieldSpec: FieldSpec = {
+  name: "node_lifecycle",
+  label: "Node Lifecycle",
+  description:
+    "This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html",
+  initialValue: [],
+}

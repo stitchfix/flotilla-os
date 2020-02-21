@@ -208,15 +208,15 @@ class RunForm extends React.Component<Props, State> {
               <Collapse isOpen={areAdvancedOptionsVisible} keepChildrenMounted>
                 {/* Node Lifecycle Field */}
                 <FormGroup
-                  label="Node Lifecycle"
-                  helperText="This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
+                  label={helpers.nodeLifecycleFieldSpec.label}
+                  helperText={helpers.nodeLifecycleFieldSpec.description}
                 >
                   <Field
-                    name="node_lifecycle"
+                    name={helpers.nodeLifecycleFieldSpec.name}
                     component={NodeLifecycleSelect}
                     value={values.node_lifecycle}
                     onChange={(value: string) => {
-                      setFieldValue("node_lifecycle", value)
+                      setFieldValue(helpers.nodeLifecycleFieldSpec.name, value)
                     }}
                     isDisabled={getEngine() !== ExecutionEngine.EKS}
                   />
