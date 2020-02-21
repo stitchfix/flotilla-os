@@ -1,4 +1,4 @@
-import { get } from "lodash"
+import { get, isObject } from "lodash"
 
 const DEFAULT_ARRAY: any[] = []
 const DEFAULT_STRING = ""
@@ -9,10 +9,9 @@ export default function constructDefaultObjectFromJsonSchema(
   schema: object
 ): object {
   let root: { [k: string]: any } = {}
-  const rootSchemaType: string | null = get(schema, "type", null)
+  const properties = get(schema, "properties", {})
 
-  if (rootSchemaType === "object") {
-    const properties = get(schema, "properties", {})
+  if (isObject(properties)) {
     try {
       helper(properties, root)
     } catch (e) {
