@@ -240,7 +240,7 @@ const ConnectedTaskRuns: React.FunctionComponent<{ templateID: string }> = ({
     ListTemplateHistoryResponse,
     { templateID: string; params: ListTemplateHistoryParams }
   >
-    requestFn={api.listTemplateHistory}
+    requestFn={api.listTemplateHistoryByTemplateID}
     initialQuery={initialQuery}
     // @TODO: this function should be extracted and tested.
     getRequestArgs={params => ({
