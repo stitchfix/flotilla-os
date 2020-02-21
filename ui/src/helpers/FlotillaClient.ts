@@ -272,7 +272,7 @@ class FlotillaClient {
   }
 
   /** Requests a task definition's history. */
-  public listTemplateHistory = ({
+  public listTemplateHistoryByTemplateID = ({
     templateID,
     params,
   }: {
@@ -282,6 +282,20 @@ class FlotillaClient {
     this.request<ListTemplateHistoryResponse>({
       method: HTTPMethod.GET,
       url: `/v7/template/${templateID}/history`,
+      params,
+    })
+
+  /** Requests a task definition's history. */
+  public listTemplateHistoryByTemplateName = ({
+    templateName,
+    params,
+  }: {
+    templateName: string
+    params: ListTemplateHistoryParams
+  }): Promise<ListTemplateHistoryResponse> =>
+    this.request<ListTemplateHistoryResponse>({
+      method: HTTPMethod.GET,
+      url: `/v7/template/name/${templateName}/history`,
       params,
     })
 

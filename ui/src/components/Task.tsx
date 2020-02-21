@@ -6,7 +6,7 @@ import api from "../api"
 import { Task as TaskShape, Task as TaskTypeDef } from "../types"
 import TaskDetails from "./TaskDetails"
 import UpdateTaskForm from "./UpdateTaskForm"
-import RunForm from "./RunForm"
+import TaskExecutionForm from "./TaskExecutionForm"
 import CreateTaskForm from "./CreateTaskForm"
 import ErrorCallout from "./ErrorCallout"
 import { Spinner } from "@blueprintjs/core"
@@ -74,7 +74,11 @@ export const Task: React.FunctionComponent<TaskCtx> = props => {
             </TaskContext.Consumer>
           )}
         />
-        <Route exact path={`${props.basePath}/execute`} component={RunForm} />
+        <Route
+          exact
+          path={`${props.basePath}/execute`}
+          component={TaskExecutionForm}
+        />
       </Switch>
     </TaskContext.Provider>
   )

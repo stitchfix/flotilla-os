@@ -21,19 +21,19 @@ const Navigation: React.FunctionComponent = () => (
       <NavbarDivider />
       <ButtonGroup className={Classes.MINIMAL}>
         <NavLink
+          to="/tasks"
+          className={Classes.BUTTON}
+          activeClassName={Classes.ACTIVE}
+        >
+          Tasks
+        </NavLink>
+        <NavLink
           to="/templates"
           className={Classes.BUTTON}
           activeClassName={Classes.ACTIVE}
         >
           <span>Templates</span>
           <Tag intent={Intent.DANGER}>New!</Tag>
-        </NavLink>
-        <NavLink
-          to="/tasks"
-          className={Classes.BUTTON}
-          activeClassName={Classes.ACTIVE}
-        >
-          Tasks
         </NavLink>
         <NavLink
           to="/runs"
