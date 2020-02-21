@@ -13,6 +13,7 @@ import {
   DefaultNodeLifecycle,
   DefaultExecutionEngine,
 } from "../types"
+import constructDefaultObjectFromJsonSchema from "./constructDefaultObjectFromJsonSchema"
 
 export function getInitialValuesForTaskExecutionForm(
   t: Task,
@@ -37,7 +38,7 @@ export function getInitialValuesForTemplateExecutionForm(
     template_payload: get(
       r,
       ["execution_request_custom", "template_payload"],
-      {}
+      constructDefaultObjectFromJsonSchema(t.schema)
     ),
   }
 
@@ -56,10 +57,12 @@ function getInitialValuesForCommonExecutionFields(
   )
 
   // Set env value.
-  let env: Env[] = r && r.env ? r.env : e.env
+  let env: Env[] | null = r && r.env ? r.env : e.env
 
   // Filter out invalid run env if specified in dotenv file.
-  if (process.env.REACT_APP_INVALID_RUN_ENV !== undefined) {
+  if (env === null) {
+    env = []
+  } else if (process.env.REACT_APP_INVALID_RUN_ENV !== undefined) {
     const invalidEnvs = new Set(
       process.env.REACT_APP_INVALID_RUN_ENV.split(",")
     )
