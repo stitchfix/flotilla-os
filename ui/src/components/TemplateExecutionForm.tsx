@@ -1,9 +1,9 @@
 import * as React from "react"
-import { get } from "lodash"
 import { Formik, Form, FastField, Field } from "formik"
 import * as Yup from "yup"
 import { RouteComponentProps } from "react-router-dom"
 import JSONInput from "react-json-editor-ajrm"
+import locale from "react-json-editor-ajrm/locale/en"
 import {
   FormGroup,
   Button,
@@ -188,10 +188,7 @@ const TemplateExecutionForm: React.FC<Props> = ({
                 <FieldError>{errors.node_lifecycle}</FieldError>
               )}
             </FormGroup>
-            <FormGroup
-              label="Template Payload"
-              // helperText="Override your task definition command."
-            >
+            <FormGroup label="Template Payload">
               <FastField
                 className={Classes.CODE}
                 component={JSONInput}
@@ -210,8 +207,11 @@ const TemplateExecutionForm: React.FC<Props> = ({
                     fontSize: "13px",
                   },
                 }}
+                locale={locale}
               />
-              {errors.command && <FieldError>{errors.command}</FieldError>}
+              {errors.template_payload && (
+                <FieldError>{errors.template_payload}</FieldError>
+              )}
             </FormGroup>
             <EnvFieldArray />
             <Button
