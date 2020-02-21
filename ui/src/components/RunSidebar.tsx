@@ -6,6 +6,7 @@ import { ExecutionEngine, Run, ExecutableType } from "../types"
 import EnvList from "./EnvList"
 import RunAttributes from "./RunAttributes"
 import RunDebugAttributes from "./RunDebugAttributes"
+import { JSON_VIEW_PROPS } from "../constants"
 
 const RunSidebar: React.FC<{ data: Run }> = ({ data }) => {
   const templatePayload = get(
@@ -21,20 +22,7 @@ const RunSidebar: React.FC<{ data: Run }> = ({ data }) => {
           <div className="flotilla-card-header-container">
             <div className="flotilla-card-header">Template Payload</div>
           </div>
-          <JsonView
-            src={templatePayload}
-            name={false}
-            collapsed={2}
-            enableClipboard={false}
-            displayDataTypes={false}
-            displayObjectSize={false}
-            theme="ocean"
-            style={{
-              background: Colors.DARK_GRAY1,
-              fontFamily: "Roboto Mono",
-              fontSize: "0.8rem",
-            }}
-          />
+          <JsonView {...JSON_VIEW_PROPS} src={templatePayload} />
         </Card>
       )}
       <RunAttributes data={data} />
