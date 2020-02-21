@@ -14,7 +14,7 @@ import {
 } from "@blueprintjs/core"
 import api from "../api"
 import { LaunchRequestV2, Run, ExecutionEngine } from "../types"
-import getInitialValuesForTaskRun from "../helpers/getInitialValuesForTaskRun"
+import { getInitialValuesForTaskExecutionForm } from "../helpers/getInitialValuesForExecutionForm"
 import Request, {
   ChildProps as RequestChildProps,
   RequestStatus,
@@ -28,8 +28,6 @@ import FieldError from "./FieldError"
 import NodeLifecycleSelect from "./NodeLifecycleSelect"
 import * as helpers from "../helpers/runFormHelpers"
 import { commandFieldSpec } from "../helpers/taskFormHelpers"
-import { useSelector } from "react-redux"
-import { RootState } from "../state/store"
 
 const validationSchema = Yup.object().shape({
   owner_id: Yup.string(),
@@ -63,257 +61,207 @@ type Props = RequestChildProps<
   initialValues: LaunchRequestV2
 }
 
-type State = {
-  areAdvancedOptionsVisible: boolean
-}
+const TaskExecutionForm: React.FC<Props> = ({
+  initialValues,
+  request,
+  requestStatus,
+  isLoading,
+  error,
+  definitionID,
+}) => (
+  <Formik
+    isInitialValid={(values: any) =>
+      validationSchema.isValidSync(values.initialValues)
+    }
+    initialValues={initialValues}
+    validationSchema={validationSchema}
+    onSubmit={data => {
+      request({ definitionID, data })
+    }}
+  >
+    {({ errors, values, setFieldValue, isValid, ...rest }) => {
+      const getEngine = (): ExecutionEngine => values.engine
+      return (
+        <Form className="flotilla-form-container">
+          {requestStatus === RequestStatus.ERROR && error && (
+            <ErrorCallout error={error} />
+          )}
+          {/* Owner ID Field */}
+          <FormGroup
+            label={helpers.ownerIdFieldSpec.label}
+            helperText={helpers.ownerIdFieldSpec.description}
+          >
+            <FastField
+              name={helpers.ownerIdFieldSpec.name}
+              value={values.owner_id}
+              className={Classes.INPUT}
+            />
+            {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
+          </FormGroup>
+          {/* Engine Type Field */}
+          <RadioGroup
+            inline
+            label="Engine Type"
+            onChange={(evt: React.FormEvent<HTMLInputElement>) => {
+              setFieldValue("engine", evt.currentTarget.value)
 
-class RunForm extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props)
-    this.toggleAdvancedOptionsVisibility = this.toggleAdvancedOptionsVisibility.bind(
-      this
-    )
-  }
-  state = {
-    areAdvancedOptionsVisible: false,
-  }
-
-  toggleAdvancedOptionsVisibility() {
-    this.setState(prev => ({
-      areAdvancedOptionsVisible: !prev.areAdvancedOptionsVisible,
-    }))
-  }
-
-  render() {
-    const {
-      initialValues,
-      request,
-      requestStatus,
-      isLoading,
-      error,
-      definitionID,
-    } = this.props
-    const { areAdvancedOptionsVisible } = this.state
-    return (
-      <Formik
-        isInitialValid={(values: any) =>
-          validationSchema.isValidSync(values.initialValues)
-        }
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={data => {
-          request({ definitionID, data })
-        }}
-      >
-        {({ errors, values, setFieldValue, isValid, ...rest }) => {
-          const getEngine = (): ExecutionEngine => values.engine
-          return (
-            <Form className="flotilla-form-container">
-              {requestStatus === RequestStatus.ERROR && error && (
-                <ErrorCallout error={error} />
-              )}
-              {/* Owner ID Field */}
-              <FormGroup
-                label={helpers.ownerIdFieldSpec.label}
-                helperText={helpers.ownerIdFieldSpec.description}
-              >
-                <FastField
-                  name={helpers.ownerIdFieldSpec.name}
-                  value={values.owner_id}
-                  className={Classes.INPUT}
-                />
-                {errors.owner_id && <FieldError>{errors.owner_id}</FieldError>}
-              </FormGroup>
-              <div className="flotilla-form-section-divider" />
-              {/* Engine Type Field */}
-              <RadioGroup
-                inline
-                label="Engine Type"
-                onChange={(evt: React.FormEvent<HTMLInputElement>) => {
-                  setFieldValue("engine", evt.currentTarget.value)
-
-                  if (evt.currentTarget.value === ExecutionEngine.EKS) {
-                    setFieldValue(
-                      "cluster",
-                      process.env.REACT_APP_EKS_CLUSTER_NAME || ""
-                    )
-                  } else if (getEngine() === ExecutionEngine.EKS) {
-                    setFieldValue("cluster", "")
-                  }
+              if (evt.currentTarget.value === ExecutionEngine.EKS) {
+                setFieldValue(
+                  "cluster",
+                  process.env.REACT_APP_EKS_CLUSTER_NAME || ""
+                )
+              } else if (getEngine() === ExecutionEngine.EKS) {
+                setFieldValue("cluster", "")
+              }
+            }}
+            selectedValue={values.engine}
+          >
+            <Radio label="EKS" value={ExecutionEngine.EKS} />
+            <Radio label="ECS" value={ExecutionEngine.ECS} />
+          </RadioGroup>
+          {/*
+            Cluster Field. Note: this is a "Field" rather than a
+            "FastField" as it needs to re-render when value.engine is
+            updated.
+          */}
+          {getEngine() !== ExecutionEngine.EKS && (
+            <FormGroup
+              label="Cluster"
+              helperText="Select a cluster for this task to execute on."
+            >
+              <Field
+                name="cluster"
+                component={ClusterSelect}
+                value={values.cluster}
+                onChange={(value: string) => {
+                  setFieldValue("cluster", value)
                 }}
-                selectedValue={values.engine}
-              >
-                <Radio label="EKS" value={ExecutionEngine.EKS} />
-                <Radio label="ECS" value={ExecutionEngine.ECS} />
-              </RadioGroup>
-              <div className="flotilla-form-section-divider" />
+              />
+              {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
+            </FormGroup>
+          )}
+          {/* CPU Field */}
+          <FormGroup
+            label={helpers.cpuFieldSpec.label}
+            helperText={helpers.cpuFieldSpec.description}
+          >
+            <FastField
+              type="number"
+              name={helpers.cpuFieldSpec.name}
+              className={Classes.INPUT}
+              min="512"
+            />
+            {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
+          </FormGroup>
+          {/* Memory Field */}
+          <FormGroup
+            label={helpers.memoryFieldSpec.label}
+            helperText={helpers.memoryFieldSpec.description}
+          >
+            <FastField
+              type="number"
+              name={helpers.memoryFieldSpec.name}
+              className={Classes.INPUT}
+            />
+            {errors.memory && <FieldError>{errors.memory}</FieldError>}
+          </FormGroup>
+          <FormGroup
+            label={helpers.nodeLifecycleFieldSpec.label}
+            helperText={helpers.nodeLifecycleFieldSpec.description}
+          >
+            <Field
+              name={helpers.nodeLifecycleFieldSpec.name}
+              component={NodeLifecycleSelect}
+              value={values.node_lifecycle}
+              onChange={(value: string) => {
+                setFieldValue(helpers.nodeLifecycleFieldSpec.name, value)
+              }}
+              isDisabled={getEngine() !== ExecutionEngine.EKS}
+            />
+            {errors.node_lifecycle && (
+              <FieldError>{errors.node_lifecycle}</FieldError>
+            )}
+          </FormGroup>
+          <FormGroup
+            label={commandFieldSpec.label}
+            helperText="Override your task definition command."
+          >
+            <FastField
+              className={`${Classes.INPUT} ${Classes.CODE}`}
+              component="textarea"
+              name={commandFieldSpec.name}
+              rows={14}
+              style={{ fontSize: "0.8rem" }}
+            />
+            {errors.command && <FieldError>{errors.command}</FieldError>}
+          </FormGroup>
+          <EnvFieldArray />
+          <Button
+            intent={Intent.PRIMARY}
+            type="submit"
+            disabled={isLoading || isValid === false}
+            style={{ marginTop: 24 }}
+            large
+          >
+            Submit
+          </Button>
+        </Form>
+      )
+    }}
+  </Formik>
+)
 
-              {/*
-                Cluster Field. Note: this is a "Field" rather than a
-                "FastField" as it needs to re-render when value.engine is
-                updated.
-              */}
-              {getEngine() !== ExecutionEngine.EKS && (
-                <FormGroup
-                  label="Cluster"
-                  helperText="Select a cluster for this task to execute on."
-                >
-                  <Field
-                    name="cluster"
-                    component={ClusterSelect}
-                    value={values.cluster}
-                    onChange={(value: string) => {
-                      setFieldValue("cluster", value)
-                    }}
+const Connected: React.FunctionComponent<RouteComponentProps<
+  any,
+  any,
+  Run
+>> = ({ location, history }) => (
+  <Request<Run, { definitionID: string; data: LaunchRequestV2 }>
+    requestFn={api.runTask}
+    shouldRequestOnMount={false}
+    onSuccess={(data: Run) => {
+      Toaster.show({
+        message: `Run ${data.run_id} submitted successfully!`,
+        intent: Intent.SUCCESS,
+      })
+      history.push(`/runs/${data.run_id}`)
+    }}
+    onFailure={() => {
+      Toaster.show({
+        message: "An error occurred.",
+        intent: Intent.DANGER,
+      })
+    }}
+  >
+    {requestProps => (
+      <TaskContext.Consumer>
+        {(ctx: TaskCtx) => {
+          switch (ctx.requestStatus) {
+            case RequestStatus.ERROR:
+              return <ErrorCallout error={ctx.error} />
+            case RequestStatus.READY:
+              if (ctx.data) {
+                const initialValues: LaunchRequestV2 = getInitialValuesForTaskExecutionForm(
+                  ctx.data,
+                  location.state
+                )
+                return (
+                  <TaskExecutionForm
+                    definitionID={ctx.definitionID}
+                    initialValues={initialValues}
+                    {...requestProps}
                   />
-                  {errors.cluster && <FieldError>{errors.cluster}</FieldError>}
-                </FormGroup>
-              )}
-
-              {/* CPU Field */}
-              <FormGroup
-                label={helpers.cpuFieldSpec.label}
-                helperText={helpers.cpuFieldSpec.description}
-              >
-                <FastField
-                  type="number"
-                  name={helpers.cpuFieldSpec.name}
-                  className={Classes.INPUT}
-                  min="512"
-                />
-                {errors.cpu && <FieldError>{errors.cpu}</FieldError>}
-              </FormGroup>
-
-              {/* Memory Field */}
-              <FormGroup
-                label={helpers.memoryFieldSpec.label}
-                helperText={helpers.memoryFieldSpec.description}
-              >
-                <FastField
-                  type="number"
-                  name={helpers.memoryFieldSpec.name}
-                  className={Classes.INPUT}
-                />
-                {errors.memory && <FieldError>{errors.memory}</FieldError>}
-              </FormGroup>
-              <div className="flotilla-form-section-divider" />
-
-              {/* Advanced Options */}
-              <div className="flotilla-form-section-header-container">
-                <div>Advanced Options</div>
-                <Button onClick={this.toggleAdvancedOptionsVisibility}>
-                  {areAdvancedOptionsVisible ? "Hide" : "Show"}
-                </Button>
-              </div>
-              <Collapse isOpen={areAdvancedOptionsVisible} keepChildrenMounted>
-                {/* Node Lifecycle Field */}
-                <FormGroup
-                  label={helpers.nodeLifecycleFieldSpec.label}
-                  helperText={helpers.nodeLifecycleFieldSpec.description}
-                >
-                  <Field
-                    name={helpers.nodeLifecycleFieldSpec.name}
-                    component={NodeLifecycleSelect}
-                    value={values.node_lifecycle}
-                    onChange={(value: string) => {
-                      setFieldValue(helpers.nodeLifecycleFieldSpec.name, value)
-                    }}
-                    isDisabled={getEngine() !== ExecutionEngine.EKS}
-                  />
-                  {errors.node_lifecycle && (
-                    <FieldError>{errors.node_lifecycle}</FieldError>
-                  )}
-                </FormGroup>
-
-                <FormGroup
-                  label={commandFieldSpec.label}
-                  helperText="Override your task definition command."
-                >
-                  <FastField
-                    className={`${Classes.INPUT} ${Classes.CODE}`}
-                    component="textarea"
-                    name={commandFieldSpec.name}
-                    rows={14}
-                    style={{ fontSize: "0.8rem" }}
-                  />
-                  {errors.command && <FieldError>{errors.command}</FieldError>}
-                </FormGroup>
-              </Collapse>
-              <div className="flotilla-form-section-divider" />
-              <EnvFieldArray />
-              <Button
-                intent={Intent.PRIMARY}
-                type="submit"
-                disabled={isLoading || isValid === false}
-                style={{ marginTop: 24 }}
-                large
-              >
-                Submit
-              </Button>
-            </Form>
-          )
+                )
+              }
+              break
+            case RequestStatus.NOT_READY:
+            default:
+              return <Spinner />
+          }
         }}
-      </Formik>
-    )
-  }
-}
-
-const Connected: React.FunctionComponent<RouteComponentProps> = ({
-  location,
-  history,
-}) => {
-  const { settings } = useSelector((s: RootState) => s.settings)
-  return (
-    <Request<Run, { definitionID: string; data: LaunchRequestV2 }>
-      requestFn={api.runTask}
-      shouldRequestOnMount={false}
-      onSuccess={(data: Run) => {
-        Toaster.show({
-          message: `Run ${data.run_id} submitted successfully!`,
-          intent: Intent.SUCCESS,
-        })
-        history.push(`/runs/${data.run_id}`)
-      }}
-      onFailure={() => {
-        Toaster.show({
-          message: "An error occurred.",
-          intent: Intent.DANGER,
-        })
-      }}
-    >
-      {requestProps => (
-        <TaskContext.Consumer>
-          {(ctx: TaskCtx) => {
-            switch (ctx.requestStatus) {
-              case RequestStatus.ERROR:
-                return <ErrorCallout error={ctx.error} />
-              case RequestStatus.READY:
-                if (ctx.data) {
-                  const initialValues: LaunchRequestV2 = getInitialValuesForTaskRun(
-                    {
-                      task: ctx.data,
-                      routerState: location.state,
-                      settings,
-                    }
-                  )
-                  return (
-                    <RunForm
-                      definitionID={ctx.definitionID}
-                      initialValues={initialValues}
-                      {...requestProps}
-                    />
-                  )
-                }
-                break
-              case RequestStatus.NOT_READY:
-              default:
-                return <Spinner />
-            }
-          }}
-        </TaskContext.Consumer>
-      )}
-    </Request>
-  )
-}
+      </TaskContext.Consumer>
+    )}
+  </Request>
+)
 
 export default Connected

@@ -176,21 +176,25 @@ export enum ExecutionEngine {
   EKS = "eks",
 }
 
+export const DefaultExecutionEngine = ExecutionEngine.EKS
+
 export enum NodeLifecycle {
   SPOT = "spot",
   ON_DEMAND = "ondemand",
 }
 
+export const DefaultNodeLifecycle = NodeLifecycle.SPOT
+
 export type LaunchRequestV2 = {
   cluster: string
-  env?: Env[]
-  run_tags?: { [key: string]: any }
-  cpu?: number
-  memory?: number
-  owner_id?: string
-  engine: ExecutionEngine
-  node_lifecycle?: NodeLifecycle
   command?: string | null
+  cpu?: number
+  engine: ExecutionEngine
+  env?: Env[]
+  memory?: number
+  node_lifecycle?: NodeLifecycle
+  owner_id?: string
+  run_tags?: { [key: string]: any }
 }
 
 export type ListRunParams = ListRequestArgs & {
@@ -274,15 +278,14 @@ export type TemplateExecutionRequest = {
 } & ExecutionRequestCommon
 
 export type ExecutionRequestCommon = {
-  cluster?: string
-  env?: Env[]
-  owner_id: string
+  cluster: string
   command?: string
-  memory?: number
   cpu?: number
   engine: ExecutionEngine
-  ephemeral_storage?: number
-  node_lifecycle?: string
+  env?: Env[]
+  memory?: number
+  node_lifecycle?: NodeLifecycle
+  owner_id: string
 }
 export type CloudtrailRecord = {
   eventSource: string
@@ -307,3 +310,4 @@ export const EnhancedRunStatusEmojiMap: Map<
 
 export type ListTemplateHistoryParams = Omit<ListRunParams, "alias">
 export type ListTemplateHistoryResponse = Omit<ListRunResponse, "alias">
+export type Executable = Template | Task

@@ -4,6 +4,7 @@ import Request, { ChildProps, RequestStatus } from "./Request"
 import api from "../api"
 import { Template as TemplateShape } from "../types"
 import TemplateDetails from "./TemplateDetails"
+import TemplateExecutionForm from "./TemplateExecutionForm"
 
 export type TemplateCtx = ChildProps<TemplateShape, { templateID: string }> & {
   basePath: string
@@ -26,6 +27,11 @@ export const Template: React.FunctionComponent<TemplateCtx> = props => {
     <TemplateContext.Provider value={props}>
       <Switch>
         <Route exact path={props.basePath} component={TemplateDetails} />
+        <Route
+          exact
+          path={`${props.basePath}/execute`}
+          component={TemplateExecutionForm}
+        />
       </Switch>
     </TemplateContext.Provider>
   )

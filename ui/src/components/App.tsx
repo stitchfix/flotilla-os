@@ -65,7 +65,7 @@ class App extends React.Component<ConnectedProps<typeof connector>> {
 
             <Route exact path="/runs" component={Runs} />
             <Route path="/runs/:runID" component={Run} />
-            <Redirect from="/" to="/templates" />
+            <Redirect from="/" to="/tasks" />
           </Switch>
         </BrowserRouter>
       </div>
