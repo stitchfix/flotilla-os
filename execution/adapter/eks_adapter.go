@@ -160,7 +160,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		nodeLifecycle = append(nodeLifecycle, "spot")
 	}
 
-	if executableResources.Gpu == nil || *executableResources.Gpu <= 0 {
+	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
 		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 			Key:      "beta.kubernetes.io/instance-type",
 			Operator: corev1.NodeSelectorOpNotIn,
