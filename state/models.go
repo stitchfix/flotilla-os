@@ -421,7 +421,9 @@ type Run struct {
 	Command                 *string                  `json:"command,omitempty"`
 	CommandHash             *string                  `json:"command_hash,omitempty"`
 	Memory                  *int64                   `json:"memory,omitempty"`
+	MemoryLimit             *int64                   `json:"memory_limit,omitempty"`
 	Cpu                     *int64                   `json:"cpu,omitempty"`
+	CpuLimit                *int64                   `json:"cpu_limit,omitempty"`
 	Gpu                     *int64                   `json:"gpu,omitempty"`
 	ExitReason              *string                  `json:"exit_reason,omitempty"`
 	Engine                  *string                  `json:"engine,omitempty"`
@@ -568,6 +570,13 @@ func (d *Run) UpdateWith(other Run) {
 		d.ExecutionRequestCustom = other.ExecutionRequestCustom
 	}
 
+	if other.CpuLimit != nil {
+		d.CpuLimit = other.CpuLimit
+	}
+
+	if other.MemoryLimit != nil {
+		d.MemoryLimit = other.MemoryLimit
+	}
 	//
 	// Runs have a deterministic lifecycle
 	//

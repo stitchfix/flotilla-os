@@ -563,7 +563,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.Cpu, &existing.Gpu, &existing.Engine, &existing.EphemeralStorage, &existing.NodeLifecycle,
 			&existing.ContainerName, &existing.PodName, &existing.Namespace, &existing.MaxCpuUsed, &existing.MaxMemoryUsed,
 			&existing.PodEvents, &existing.CommandHash, &existing.CloudTrailNotifications, &existing.ExecutableID,
-			&existing.ExecutableType, &existing.ExecutionRequestCustom)
+			&existing.ExecutableType, &existing.ExecutionRequestCustom, &existing.CpuLimit, &existing.MemoryLimit)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -584,7 +584,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	  group_name = $15, env = $16,
 	  command = $17, memory = $18, cpu = $19, gpu = $20, engine = $21, ephemeral_storage = $22, node_lifecycle = $23,
 	  container_name = $24, pod_name = $25, namespace = $26, max_cpu_used = $27, max_memory_used = $28, pod_events = $29,
-	  cloudtrail_notifications = $30, executable_id = $31, executable_type = $32, execution_request_custom = $33
+	  cloudtrail_notifications = $30, executable_id = $31, executable_type = $32, execution_request_custom = $33,
+	  cpu_limit = $34, memory_limit = $35
     WHERE run_id = $1;
     `
 
@@ -602,7 +603,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Engine, existing.EphemeralStorage, existing.NodeLifecycle,
 		existing.ContainerName, existing.PodName, existing.Namespace, existing.MaxCpuUsed,
 		existing.MaxMemoryUsed, existing.PodEvents, existing.CloudTrailNotifications,
-		existing.ExecutableID, existing.ExecutableType, existing.ExecutionRequestCustom); err != nil {
+		existing.ExecutableID, existing.ExecutableType, existing.ExecutionRequestCustom,
+		existing.CpuLimit, existing.MemoryLimit); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -625,10 +627,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
       env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
 			container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash,
-			executable_id, executable_type, execution_request_custom
+			executable_id, executable_type, execution_request_custom, cpu_limit, memory_limit
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31, $32);
+      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31, $32, $33, $34);
     `
 
 	tx, err := sm.db.Begin()
@@ -645,7 +647,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle,
 		r.EphemeralStorage, r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed,
 		r.MaxMemoryUsed, r.PodEvents, r.ExecutableID, r.ExecutableType,
-		r.ExecutionRequestCustom); err != nil {
+		r.ExecutionRequestCustom, r.CpuLimit, r.MemoryLimit); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

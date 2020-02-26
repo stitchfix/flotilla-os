@@ -193,10 +193,14 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			container := pod.Spec.Containers[len(pod.Spec.Containers)-1]
 			run.ContainerName = &container.Name
 			cpu := container.Resources.Requests.Cpu().ScaledValue(resource.Milli)
+			cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
+			run.CpuLimit = &cpuLimit
 			run = ee.getInstanceDetails(pod, run)
 			mem := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
+			memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+			run.MemoryLimit = &memLimit
 			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
@@ -473,6 +477,10 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			run.Cpu = &cpu
 			mem := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
 			run.Memory = &mem
+			cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
+			run.CpuLimit = &cpuLimit
+			memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+			run.Memory = &memLimit
 		}
 	}
 

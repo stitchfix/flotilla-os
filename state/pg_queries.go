@@ -115,7 +115,9 @@ select
   cloudtrail_notifications::TEXT as cloudtrailnotifications,
   coalesce(executable_id,'') as executableid,
   coalesce(executable_type,'') as executabletype,
-  execution_request_custom::TEXT as executionrequestcustom
+  execution_request_custom::TEXT as executionrequestcustom,
+  cpu_limit as cpulimit,
+  memory_limit as memorylimit
 from task t
 `
 

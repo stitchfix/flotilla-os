@@ -243,6 +243,8 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 
 	run.Memory = aws.Int64(memRequestQuantity.ScaledValue(resource.Mega))
 	run.Cpu = aws.Int64(cpuRequestQuantity.ScaledValue(resource.Milli))
+	run.MemoryLimit = aws.Int64(memLimitQuantity.ScaledValue(resource.Mega))
+	run.CpuLimit = aws.Int64(cpuLimitQuantity.ScaledValue(resource.Milli))
 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits:   limits,
