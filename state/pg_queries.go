@@ -101,6 +101,8 @@ select
   command,
   memory,
   cpu,
+  memory_limit as memorylimit,
+  cpu_limit as cpulimit,
   gpu,
   engine,
   ephemeral_storage as ephemeralstorage,
