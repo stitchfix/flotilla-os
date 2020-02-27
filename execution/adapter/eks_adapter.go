@@ -28,6 +28,10 @@ func NewEKSAdapter() (EKSAdapter, error) {
 	return &adapter, nil
 }
 
+//
+// Adapting Kubernetes batch/v1 job to a Flotilla run object.
+// This method maps the exit code & timestamps from Kubernetes to Flotilla's Run object.
+//
 func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
 	updated := run
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
@@ -75,6 +79,15 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
+//
+// Adapting Flotilla run object to Kubernetes batch/v1 job.
+// 1. Construction of the cmd that will be run.
+// 2. Resources associated to a pod (includes Adaptive Resource Allocation)
+// 3. Environment variables to be setup.
+// 4. Port mappings.
+// 5. Node lifecycle.
+// 6. Node affinity and anti-affinity
+//
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 
