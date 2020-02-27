@@ -131,15 +131,17 @@ func (lc *EKSCloudWatchLogsClient) Logs(executable state.Executable, run state.R
 	return message, result.NextForwardToken, nil
 }
 
+// This method doesn't return log string, it is a placeholder only.
 func (lc *EKSCloudWatchLogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	return errors.Errorf("EKSCloudWatchLogsClient does not support LogsText method.")
 }
 
+// Generate stream name
 func (lc *EKSCloudWatchLogsClient) toStreamName(run state.Run) string {
-
 	return fmt.Sprintf("%s", *run.PodName)
 }
 
+// Convert Cloudwatch logs to strings
 func (lc *EKSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
 	sort.Sort(byTimestamp(events))
 
@@ -166,6 +168,7 @@ func (lc *EKSCloudWatchLogsClient) createNamespaceIfNotExists() error {
 	return nil
 }
 
+// Check for the existence of a namespace.
 func (lc *EKSCloudWatchLogsClient) namespaceExists() (bool, error) {
 	result, err := lc.logsClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{
 		LogGroupNamePrefix: &lc.logNamespace,
@@ -185,6 +188,7 @@ func (lc *EKSCloudWatchLogsClient) namespaceExists() (bool, error) {
 	return false, nil
 }
 
+// Creates namespace is not present.
 func (lc *EKSCloudWatchLogsClient) createNamespace() error {
 	_, err := lc.logsClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: &lc.logNamespace,

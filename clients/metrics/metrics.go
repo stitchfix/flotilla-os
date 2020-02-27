@@ -10,20 +10,24 @@ import (
 type Metric string
 
 const (
-	EngineEKSExecuteCPU            Metric = "engine.eks.execute.cpu"
-	EngineEKSExecuteMemory         Metric = "engine.eks.execute.memory"
-	EngineEKSExecuteGpu            Metric = "engine.eks.execute.gpu"
-	EngineEKSExecute               Metric = "engine.eks.execute"
-	EngineEKSEnqueue               Metric = "engine.eks.enqueue"
-	EngineEKSTerminate             Metric = "engine.eks.terminate"
-	EngineEKSRunPodnameChange      Metric = "engine.eks.run_podname_changed"
+	// Metric associated to submission of jobs to EKS
+	EngineEKSExecute Metric = "engine.eks.execute"
+	// Metric associated to submission of jobs to SQS queue, before EKS submission.
+	EngineEKSEnqueue Metric = "engine.eks.enqueue"
+	// Metric associated to termination of jobs via the API.
+	EngineEKSTerminate Metric = "engine.eks.terminate"
+	// Metric associated to termination of pods hopping between hosts.
+	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
+	// Metric associated to pod events where there was a Cluster Autoscale event.
 	EngineEKSNodeTriggeredScaledUp Metric = "engine.eks.triggered_scale_up"
 )
 
 type MetricTag string
 
 const (
+	// Metric tag for job success.
 	StatusSuccess MetricTag = "status:success"
+	// Metric tag for job failure.
 	StatusFailure MetricTag = "status:failure"
 )
 
@@ -46,6 +50,7 @@ type event struct {
 var once sync.Once
 var instance Client
 
+// Instantiating the Metrics Client.
 func InstantiateClient(conf config.Config) error {
 	// Return an error if `metrics_client` isn't set in config.
 	if !conf.IsSet("metrics_client") {
@@ -73,6 +78,7 @@ func InstantiateClient(conf config.Config) error {
 	return err
 }
 
+// Decr is just Count of -1
 func Decrement(name Metric, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Decrement(name, tags, rate)
@@ -81,6 +87,7 @@ func Decrement(name Metric, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Decrement metric.")
 }
 
+// Incr is just Count of -1
 func Increment(name Metric, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Increment(name, tags, rate)
@@ -89,6 +96,9 @@ func Increment(name Metric, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Increment metric.")
 }
 
+//
+// Histogram tracks the statistical distribution of a set of values
+//
 func Histogram(name Metric, value float64, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Histogram(name, value, tags, rate)
@@ -97,6 +107,9 @@ func Histogram(name Metric, value float64, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Histogram metric.")
 }
 
+//
+// Distribution tracks the statistical distribution of a set of values
+//
 func Distribution(name Metric, value float64, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Distribution(name, value, tags, rate)
@@ -105,6 +118,7 @@ func Distribution(name Metric, value float64, tags []string, rate float64) error
 	return errors.Errorf("MetricsClient instance is nil, unable to send Distribution metric.")
 }
 
+// Set counts the number of unique elements in a group
 func Set(name Metric, value string, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Set(name, value, tags, rate)
@@ -113,6 +127,7 @@ func Set(name Metric, value string, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Set metric.")
 }
 
+// NewEvent creates a new event with the given title and text.
 func Event(title string, text string, tags []string) error {
 	if instance != nil {
 		return instance.Event(event{

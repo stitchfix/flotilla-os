@@ -45,26 +45,33 @@ type conf struct {
 	v *viper.Viper
 }
 
+// GetString returns the value associated with the key as a string.
 func (c *conf) GetString(key string) string {
 	return c.v.GetString(key)
 }
 
+// GetInt returns the value associated with the key as an integer.
 func (c *conf) GetInt(key string) int {
 	return c.v.GetInt(key)
 }
 
+// GetBool returns the value associated with the key as a boolean.
 func (c *conf) GetBool(key string) bool {
 	return c.v.GetBool(key)
 }
 
+// GetStringMapString returns the value associated with the key as a map of strings.
 func (c *conf) GetStringMapString(key string) map[string]string {
 	return c.v.GetStringMapString(key)
 }
 
+// GetStringSlice returns the value associated with the key as a slice of strings.
 func (c *conf) GetStringSlice(key string) []string {
 	return c.v.GetStringSlice(key)
 }
 
+// IsSet checks to see if the key has been set in any of the data locations.
+// IsSet is case-insensitive for a key.
 func (c *conf) IsSet(key string) bool {
 	return c.v.IsSet(key)
 }

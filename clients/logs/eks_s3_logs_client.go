@@ -121,7 +121,9 @@ func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, 
 
 	return nil
 }
-
+//
+// Fetch S3Object associated with the pod's log.
+//
 func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
 	//Pod isn't there yet - dont return a 404
 	if run.PodName == nil {
@@ -160,10 +162,17 @@ func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, erro
 	return nil, errors.New("no s3 files associated with the run.")
 }
 
+//
+// Formulate dir name on S3.
+//
 func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
 
+
+//
+// Converts log messages from S3 to strings - returns the contents of the entire file.
+//
 func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
 	reader := bufio.NewReader(result.Body)
 	for {
@@ -188,6 +197,9 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 
 }
 
+//
+// Converts log messages from S3 to strings, takes a starting offset.
+//
 func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
 	acc := ""
 	currentPosition := int64(0)
