@@ -185,6 +185,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Fetches definition from DB using definition id.
 func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	definition, err := ep.definitionService.Get(vars["definition_id"])
@@ -200,6 +201,7 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Fetches definition from DB using definition alias.
 func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	definition, err := ep.definitionService.GetByAlias(vars["alias"])
@@ -215,6 +217,7 @@ func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// Creates new definition.
 func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
@@ -235,6 +238,7 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Updates existing definition.
 func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
@@ -258,6 +262,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Deletes a defiition.
 func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	err := ep.definitionService.Delete(vars["definition_id"])
@@ -273,6 +278,8 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// List all runs, supports filtering based on environment variables.
+// ListRequest is object used here to construct the query.
 func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
@@ -298,6 +305,7 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// List runs for a definition ID.
 func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
@@ -320,6 +328,7 @@ func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// List runs based on a template id.
 func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
@@ -357,6 +366,7 @@ func (ep *endpoints) createListRunsResponse(runList state.RunList, req listReque
 	return response
 }
 
+// Fetches a run based on Run ID.
 func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	run, err := ep.executionService.Get(vars["run_id"])
@@ -372,6 +382,7 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Creates a new Run (deprecated). Only present for legacy support.
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequest
 	err := ep.decodeRequest(r, &lr)
@@ -407,6 +418,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Creates a new Run (deprecated). Only present for legacy support.
 func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -458,6 +470,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Creates a new Run.
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -520,6 +533,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Creates a new Run based on definition alias.
 func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
@@ -582,6 +596,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Stops a run based on run ID.
 func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userInfo := ep.ExtractUserInfo(r)
@@ -596,6 +611,7 @@ func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	ep.encodeResponse(w, map[string]bool{"terminated": true})
 }
 
+// Extracts user info if present in the headers.s
 func (ep *endpoints) ExtractUserInfo(r *http.Request) state.UserInfo {
 	var userInfo state.UserInfo
 	for name, headers := range r.Header {
@@ -614,6 +630,7 @@ func (ep *endpoints) ExtractUserInfo(r *http.Request) state.UserInfo {
 	return userInfo
 }
 
+// Update an existing run.
 func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	var run state.Run
 	err := ep.decodeRequest(r, &run)
@@ -636,6 +653,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get Pod Events (EKS only) for a run ID.
 func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	run, err := ep.executionService.Get(vars["run_id"])
@@ -659,6 +677,7 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get logs for a run.
 func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	params := r.URL.Query()
@@ -726,6 +745,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get list of groups.
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
@@ -751,6 +771,7 @@ func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get listing of tags.
 func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
@@ -776,6 +797,7 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// List ECS clusters associated with Flotilla.
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	clusters, err := ep.executionService.ListClusters()
 	if err != nil {
@@ -791,6 +813,7 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// List active workers.
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 	wl, err := ep.workerService.List(state.ECSEngine)
 	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
@@ -813,6 +836,7 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//Get information about an active worker.
 func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	worker, err := ep.workerService.Get(vars["worker_type"], state.DefaultEngine)
@@ -823,6 +847,7 @@ func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update worker counts.
 func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	var worker state.Worker
 	err := ep.decodeRequest(r, &worker)
@@ -842,6 +867,7 @@ func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Update batches of workers - used to turn on/off in bulk.
 func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) {
 	var wks []state.Worker
 	err := ep.decodeRequest(r, &wks)
@@ -869,6 +895,8 @@ func (ep *endpoints) getStringBoolVal(s string) bool {
 
 	return false
 }
+
+// Create a new template run based on template name/alias.
 func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
 	err := ep.decodeRequest(r, &req)
@@ -918,6 +946,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 
 }
 
+// Create a new template run based on template id.
 func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
 	err := ep.decodeRequest(r, &req)
@@ -966,6 +995,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// List all templates.
 func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	var (
 		tl  state.TemplateList
@@ -1003,6 +1033,7 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get a template.
 func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tpl, err := ep.templateService.GetByID(vars["template_id"])
@@ -1018,6 +1049,7 @@ func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Create a template.
 func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	var req state.CreateTemplateRequest
 	err := ep.decodeRequest(r, &req)

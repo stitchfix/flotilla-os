@@ -22,14 +22,14 @@ type EventSink interface {
 type LocalEventSink struct {
 	logger *log.Logger
 }
-
+// New Logs local sink.
 func NewLocalEventSink() *LocalEventSink {
 	logger := log.New(os.Stderr, "[LocalEventSink] ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
 	return &LocalEventSink{logger}
 }
-
+// Receive Log events.
 func (localSink *LocalEventSink) Receive(keyvals ...interface{}) error {
 	log.Printf("\n%v\n", keyvals)
 	return nil
