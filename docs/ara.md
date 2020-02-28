@@ -1,8 +1,4 @@
-*Adaptive Resource Allocation*
-
-__What is ARA__
-
-Adaptive Resource Allocation for Kubernetes Pods
+*Adaptive Resource Allocation for Kubernetes Pods*
 
 At StitchFix we empower our data scientists to deploy their models and applications end to end without needing engineering skills. To facilitate batch processing we use Flotilla, a task execution service. Flotilla can run jobs on top of Kubernetes or AWS ECS.
 
