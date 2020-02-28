@@ -16,11 +16,11 @@ type logService struct {
 	sm state.Manager
 	lc logs.Client
 }
-
+// Initialize a Log service.
 func NewLogService(conf config.Config, sm state.Manager, lc logs.Client) (LogService, error) {
 	return &logService{sm: sm, lc: lc}, nil
 }
-
+// Returns logs associated with a RunId
 func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, error) {
 	run, err := ls.sm.GetRun(runID)
 	if err != nil {
@@ -48,7 +48,7 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 
 	return ls.lc.Logs(executable, run, lastSeen)
 }
-
+// Returns all the logs as text associated with a runID (supported only for s3 logs).
 func (ls *logService) LogsText(runID string, w http.ResponseWriter) error {
 	run, err := ls.sm.GetRun(runID)
 	if err != nil {

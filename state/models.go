@@ -196,10 +196,12 @@ type DefinitionExecutionRequest struct {
 	*ExecutionRequestCommon
 }
 
+// Returns ExecutionRequestCommon, common between Template and Definition types
 func (d *DefinitionExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
 	return d.ExecutionRequestCommon
 }
 
+// Only relevant to the template type
 func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
 	return nil
 }
@@ -218,15 +220,16 @@ type Definition struct {
 	ExecutableResources
 }
 
+// Return definition or template id
 func (d Definition) GetExecutableID() *string {
 	return &d.DefinitionID
 }
 
+// Returns definition or template
 func (d Definition) GetExecutableType() *ExecutableType {
 	t := ExecutableTypeDefinition
 	return &t
 }
-
 func (d Definition) GetExecutableResources() *ExecutableResources {
 	return &d.ExecutableResources
 }
@@ -715,50 +718,53 @@ type WorkersList struct {
 	Workers []Worker `json:"workers"`
 }
 
+// User information making the API calls
 type UserInfo struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
+// Internal object for tracking cpu / memory resources.
 type TaskResources struct {
 	Cpu    int64 `json:"cpu"`
 	Memory int64 `json:"memory"`
 }
 
+// SQS notification object for CloudTrail S3 files.
 type CloudTrailS3File struct {
 	S3Bucket    string   `json:"s3Bucket"`
 	S3ObjectKey []string `json:"s3ObjectKey"`
 	Done        func() error
 }
 
-func UnmarshalCloudTrailNotification(data []byte) (CloudTrailNotifications, error) {
-	var r CloudTrailNotifications
-	err := json.Unmarshal(data, &r)
-	return r, err
-}
-
+// Marshal method for CloudTrail SQS notifications.
 func (e *CloudTrailNotifications) Marshal() ([]byte, error) {
 	return json.Marshal(e)
 }
 
+// CloudTrail notification object that is persisted into the DB.
 type CloudTrailNotifications struct {
 	Records []Record `json:"Records"`
 }
 
+// CloudTrail notification record.
 type Record struct {
 	UserIdentity UserIdentity `json:"userIdentity"`
 	EventSource  string       `json:"eventSource"`
 	EventName    string       `json:"eventName"`
 }
 
+// User ARN who performed the AWS api action.
 type UserIdentity struct {
 	Arn string `json:"arn"`
 }
 
+// Equals helper method for Record.
 func (w *Record) Equal(other Record) bool {
 	return w.EventName == other.EventName && w.EventSource == other.EventSource
 }
 
+// String helper method for Record.
 func (w *Record) String() string {
 	return fmt.Sprintf("%s-%s", w.EventSource, w.EventName)
 }
@@ -772,18 +778,22 @@ type TemplateExecutionRequest struct {
 	TemplatePayload TemplatePayload `json:"template_payload"`
 }
 
+// Returns ExecutionRequestCommon associated with a Template type.
 func (t TemplateExecutionRequest) GetExecutionRequestCommon() *ExecutionRequestCommon {
 	return t.ExecutionRequestCommon
 }
 
+// Returns ExecutionRequestCustom associated with a Template type.
 func (t TemplateExecutionRequest) GetExecutionRequestCustom() *ExecutionRequestCustom {
 	return &ExecutionRequestCustom{
 		TemplatePayloadKey: t.TemplatePayload,
 	}
 }
 
+// Templates uses JSON Schema types.
 type TemplateJSONSchema map[string]interface{}
 
+// Template Object Type. The CommandTemplate is a Go Template type.
 type Template struct {
 	TemplateID      string             `json:"template_id"`
 	TemplateName    string             `json:"template_name"`
@@ -809,19 +819,23 @@ type CreateTemplateResponse struct {
 	Template  Template `json:"template,omitempty"`
 }
 
+// Returns Template ID
 func (t Template) GetExecutableID() *string {
 	return &t.TemplateID
 }
 
+// Returns Template Type
 func (t Template) GetExecutableType() *ExecutableType {
 	et := ExecutableTypeTemplate
 	return &et
 }
 
+// Returns default resources associated with that Template.
 func (t Template) GetExecutableResources() *ExecutableResources {
 	return &t.ExecutableResources
 }
 
+// Renders the command to be rendered for that Template.
 func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 	var (
 		err    error
@@ -860,6 +874,7 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 	return result.String(), nil
 }
 
+// Returns the Template Id.
 func (t Template) GetExecutableResourceName() string {
 	return t.TemplateID
 }
@@ -893,6 +908,7 @@ func NewTemplateID(t Template) (string, error) {
 	return fmt.Sprintf("tpl-%s", uuid4[4:]), nil
 }
 
+// Checks validity of a template.
 func (t *Template) IsValid() (bool, []string) {
 	conditions := []validationCondition{
 		{len(t.TemplateName) == 0, "string [template_name] must be specified"},
@@ -921,6 +937,7 @@ type TemplateList struct {
 	Templates []Template `json:"templates"`
 }
 
+// Template Marshal method.
 func (tl *TemplateList) MarshalJSON() ([]byte, error) {
 	type Alias TemplateList
 	l := tl.Templates
