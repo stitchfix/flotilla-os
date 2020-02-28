@@ -29,7 +29,7 @@ type App struct {
 	handler            http.Handler
 	workerManager      worker.Worker
 }
-
+// Start the Application.
 func (app *App) Run() error {
 	srv := &http.Server{
 		Addr:         app.address,
@@ -42,6 +42,7 @@ func (app *App) Run() error {
 	return srv.ListenAndServe()
 }
 
+// Function to initialize a new Flotilla app.
 func NewApp(conf config.Config,
 	log flotillaLog.Logger,
 	ecsLogsClient logs.Client,
