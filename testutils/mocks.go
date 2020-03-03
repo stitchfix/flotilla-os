@@ -324,6 +324,11 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 	return true, nil
 }
 
+func (iatt *ImplementsAllTheThings) PollRunStatus() (state.Run, error) {
+	iatt.Calls = append(iatt.Calls, "PollRunStatus")
+	return state.Run{}, nil
+}
+
 // PollRuns - Execution Engine
 func (iatt *ImplementsAllTheThings) PollRuns() ([]engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollRuns")

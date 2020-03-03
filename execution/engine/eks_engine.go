@@ -46,6 +46,7 @@ type EKSExecutionEngine struct {
 	s3Client        *s3.S3
 	s3Bucket        string
 	s3BucketRootDir string
+	statusQueue     string
 }
 
 //
@@ -84,7 +85,9 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	if conf.IsSet("eks.scheduler_name") {
 		ee.schedulerName = conf.GetString("eks.scheduler_name")
 	}
-
+	if conf.IsSet("eks.status_queue") {
+		ee.statusQueue = conf.GetString("eks.status_queue")
+	}
 	ee.jobNamespace = conf.GetString("eks.job_namespace")
 	ee.jobTtl = conf.GetInt("eks.job_ttl")
 	ee.jobSA = conf.GetString("eks.service_account")
@@ -307,19 +310,23 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	return runs, nil
 }
 
-//
 // PollStatus is a dummy function as EKS does not emit task status
 // change events.
 //
 func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
-	//eventList, err:= ee.kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{
-	//	LabelSelector:       "",
-	//})
-	//
-	//if err != nil {
-	//	return RunReceipt{}, errors.Wrapf(err, "problem receiving events from eks")
-	//}
 	return RunReceipt{}, nil
+}
+
+//
+// Reads off SQS queue and generates a Run object based on the runId
+func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
+	var run state.Run
+
+	runId, err := ee.qm.ReceiveKubernetesRun(ee.statusQueue)
+	if err == nil && len(runId) > 0 {
+		run.RunID = runId
+	}
+	return run, err
 }
 
 //

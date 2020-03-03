@@ -426,3 +426,6 @@ func (ee *ECSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 func (ee *ECSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
 	return run, nil
 }
+func (ee *ECSExecutionEngine) PollRunStatus() (state.Run, error) {
+	return state.Run{}, nil
+}

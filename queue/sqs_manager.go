@@ -292,6 +292,35 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 	return receipt, nil
 }
 
+func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {
+	var runId string
+
+	qURL, err := qm.QurlFor(queue, false)
+	if len(qURL) == 0 || err != nil {
+		return runId, errors.Errorf("no queue url specified, can't dequeue")
+	}
+
+	maxMessages := int64(1)
+	visibilityTimeout := int64(45)
+	rmi := sqs.ReceiveMessageInput{
+		QueueUrl:            &qURL,
+		MaxNumberOfMessages: &maxMessages,
+		VisibilityTimeout:   &visibilityTimeout,
+	}
+
+	response, err := qm.qc.ReceiveMessage(&rmi)
+	if err != nil {
+		return runId, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
+	}
+
+	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
+		runId = *response.Messages[0].Body
+		_ = qm.ack(qURL, response.Messages[0].ReceiptHandle)
+
+	}
+	return runId, nil
+}
+
 //
 // Ack acknowledges the receipt -AND- processing of the
 // the message referred to by handle

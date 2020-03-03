@@ -39,6 +39,8 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee
 		worker = &workerManager{engine: engine}
 	case "cloudtrail":
 		worker = &cloudtrailWorker{engine: engine}
+	case "status_eks":
+		worker = &statusEKSWorker{engine: engine}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}

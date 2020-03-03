@@ -18,6 +18,7 @@ type Engine interface {
 	Terminate(run state.Run) error
 	Enqueue(run state.Run) error
 	PollRuns() ([]RunReceipt, error)
+	PollRunStatus() (state.Run, error)
 	PollStatus() (RunReceipt, error)
 	GetEvents(run state.Run) (state.PodEventList, error)
 	FetchUpdateStatus(run state.Run) (state.Run, error)
