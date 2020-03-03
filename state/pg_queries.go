@@ -69,7 +69,7 @@ FROM (SELECT max_memory_used, max_cpu_used
 const ListFailingNodesSQL = `
 SELECT instance_dns_name
       FROM TASK
-      WHERE (exit_code = 128 OR pod_events @> '[{"reason": "Failed"}]')
+      WHERE (exit_code = 128 OR pod_events @> '[{"reason": "Failed"}]' OR pod_events @> '[{"reason": "FailedSync"}]' OR  pod_events @> '[{"reason": "FailedCreatePodSandBox"}]')
            AND engine = 'eks'
            AND queued_at >= NOW() - INTERVAL '12 HOURS'
       GROUP BY 1
