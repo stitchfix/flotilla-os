@@ -75,7 +75,7 @@ func (sw *statusWorker) Run() error {
 }
 
 func (sw *statusWorker) runOnceEKS() {
-	rl, err := sw.sm.ListRuns(1000, 0, "queued_at", "asc", map[string][]string{
+	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -3).Format(time.RFC3339),
 		},
