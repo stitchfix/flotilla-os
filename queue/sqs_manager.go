@@ -314,11 +314,11 @@ func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {
 	}
 
 	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
-		runId = *response.Messages[0].Body
 		_ = qm.ack(qURL, response.Messages[0].ReceiptHandle)
-
+		return *response.Messages[0].Body, nil
 	}
-	return runId, nil
+
+	return runId, errors.Wrapf(err, "no message")
 }
 
 //
