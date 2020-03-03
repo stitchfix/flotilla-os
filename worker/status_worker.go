@@ -75,9 +75,9 @@ func (sw *statusWorker) Run() error {
 }
 
 func (sw *statusWorker) runOnceEKS() {
-	rl, err := sw.sm.ListRuns(1000, 0, "status", "asc", map[string][]string{
+	rl, err := sw.sm.ListRuns(1000, 0, "queued_at", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -3).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
 	}, nil, []string{state.EKSEngine})
@@ -87,9 +87,6 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 	runs := rl.Runs
-
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(runs), func(i, j int) { runs[i], runs[j] = runs[j], runs[i] })
 	sw.processEKSRuns(runs)
 }
 
