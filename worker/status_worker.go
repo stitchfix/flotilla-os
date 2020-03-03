@@ -94,7 +94,7 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	for _, run := range runs {
 		reloadRun, err := sw.sm.GetRun(run.RunID)
 		if err == nil && reloadRun.Status != state.StatusStopped {
-			if sw.acquireLock(run, "status", 10*time.Second) == true {
+			if sw.acquireLock(run, "status", 30*time.Second) == true {
 				sw.processEKSRun(run)
 				sw.processEKSRunMetrics(run)
 			}
@@ -104,11 +104,8 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
 	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
 	if err != nil {
-		// Turn off in dev mode; too noisy.
-		if sw.conf.GetString("flotilla_mode") != "dev" {
-			_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
-		}
-		return false
+		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		return true
 	}
 	return set
 }
