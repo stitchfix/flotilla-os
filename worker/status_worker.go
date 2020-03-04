@@ -87,6 +87,7 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 	runs := rl.Runs
+	sw.log.Log("message", "recieved runs for processing", "count", len(runs))
 	sw.processEKSRuns(runs)
 }
 
