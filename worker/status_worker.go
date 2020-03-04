@@ -93,12 +93,9 @@ func (sw *statusWorker) runOnceEKS() {
 
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	for _, run := range runs {
-		reloadRun, err := sw.sm.GetRun(run.RunID)
-		if err == nil && reloadRun.Status != state.StatusStopped {
-			if sw.acquireLock(run, "status", 30*time.Second) == true {
-				sw.processEKSRun(run)
-				sw.processEKSRunMetrics(run)
-			}
+		if sw.acquireLock(run, "status", 30*time.Second) == true {
+			_ = sw.log.Log("message", "processing run", "workerId", sw.workerId, "runId", run.RunID)
+			sw.processEKSRun(run)
 		}
 	}
 }
@@ -118,6 +115,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		return
 	}
 	updatedRun, err := sw.ee.FetchUpdateStatus(run)
+	updatedRun, err = sw.ee.FetchPodMetrics(updatedRun)
 	if err != nil {
 		message := fmt.Sprintf("%+v", err)
 		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
