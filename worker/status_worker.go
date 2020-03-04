@@ -87,13 +87,13 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 	runs := rl.Runs
-	sw.log.Log("message", "recieved runs for processing", "count", len(runs))
+	//sw.log.Log("message", "recieved runs for processing", "count", len(runs))
 	sw.processEKSRuns(runs)
 }
 
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	for _, run := range runs {
-		if sw.acquireLock(run, "status", 30*time.Second) == true {
+		if sw.acquireLock(run, "status", 15*time.Second) == true {
 			_ = sw.log.Log("message", "processing run", "workerId", sw.workerId, "runId", run.RunID)
 			sw.processEKSRun(run)
 		}
