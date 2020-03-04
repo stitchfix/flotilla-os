@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/queue"
 	"math/rand"
 	"strings"
@@ -35,7 +36,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.ee = ee
 	sw.log = log
 	sw.engine = engine
-	sw.workerId = fmt.Sprintf("%d", rand.Int())
+	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 	sw.setupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
@@ -87,29 +88,33 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 	runs := rl.Runs
-	//sw.log.Log("message", "recieved runs for processing", "count", len(runs))
 	sw.processEKSRuns(runs)
 }
 
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	var lockedRuns []state.Run
 	for _, run := range runs {
-		lock := sw.acquireLock(run, "status", 15*time.Second)
+		duration := time.Duration((rand.Intn(15))+15) * time.Second
+		lock := sw.acquireLock(run, "status", duration)
 		if lock {
 			lockedRuns = append(lockedRuns, run)
 		}
 	}
-	//_ = sw.log.Log("message", "received locked runs for processing", "count", len(lockedRuns))
+	_ = metrics.Increment(metrics.StatusWorkerLockedRuns, []string{sw.workerId}, float64(len(lockedRuns)))
 	for _, run := range lockedRuns {
+		start := time.Now()
 		sw.processEKSRun(run)
+		_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
 	}
 }
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
+	start := time.Now()
 	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
 	if err != nil {
 		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
 		return true
 	}
+	_ = metrics.Timing(metrics.StatusWorkerAcquireLock, time.Since(start), []string{sw.workerId}, 1)
 	return set
 }
 
@@ -119,8 +124,13 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		// Run was updated by another worker process.
 		return
 	}
+	start := time.Now()
 	updatedRunWithMetrics, _ := sw.ee.FetchPodMetrics(run)
+	_ = metrics.Timing(metrics.StatusWorkerFetchPodMetrics, time.Since(start), []string{sw.workerId}, 1)
+
+	start = time.Now()
 	updatedRun, err := sw.ee.FetchUpdateStatus(updatedRunWithMetrics)
+	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 
 	if err != nil {
 		message := fmt.Sprintf("%+v", err)

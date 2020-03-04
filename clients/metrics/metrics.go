@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"sync"
+	"time"
 )
 
 type Metric string
@@ -20,6 +21,16 @@ const (
 	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
 	// Metric associated to pod events where there was a Cluster Autoscale event.
 	EngineEKSNodeTriggeredScaledUp Metric = "engine.eks.triggered_scale_up"
+	// Timing for status worker processEKSRun
+	StatusWorkerProcessEKSRun Metric = "status_worker.timing.process_eks_run"
+	// Timing for acquire lock
+	StatusWorkerAcquireLock Metric = "status_worker.timing.acquire_lock"
+	// Timing for fetch_pod_metrics
+	StatusWorkerFetchPodMetrics Metric = "status_worker.timing.fetch_pod_metrics"
+	// Timing for fetch_update_status
+	StatusWorkerFetchUpdateStatus Metric = "status_worker.timing.fetch_update_status"
+	// Metric for locked runs
+	StatusWorkerLockedRuns Metric = "status_worker.locked_runs"
 )
 
 type MetricTag string
@@ -39,6 +50,7 @@ type Client interface {
 	Distribution(name Metric, value float64, tags []string, rate float64) error
 	Set(name Metric, value string, tags []string, rate float64) error
 	Event(evt event) error
+	Timing(name Metric, value time.Duration, tags []string, rate float64) error
 }
 
 type event struct {
@@ -137,5 +149,15 @@ func Event(title string, text string, tags []string) error {
 		})
 	}
 
+	return errors.Errorf("MetricsClient instance is nil, unable to send Event metric.")
+}
+
+//
+// Timing sends timing information, it is an alias for TimeInMilliseconds
+//
+func Timing(name Metric, value time.Duration, tags []string, rate float64) error {
+	if instance != nil {
+		return instance.Timing(name, value, tags, rate)
+	}
 	return errors.Errorf("MetricsClient instance is nil, unable to send Event metric.")
 }

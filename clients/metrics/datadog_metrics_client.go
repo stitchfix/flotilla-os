@@ -5,6 +5,7 @@ import (
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	"time"
 )
 
 //
@@ -74,6 +75,13 @@ func (dd *DatadogStatsdMetricsClient) Histogram(name Metric, value float64, tags
 //
 func (dd *DatadogStatsdMetricsClient) Distribution(name Metric, value float64, tags []string, rate float64) error {
 	return dd.client.Distribution(string(name), value, tags, rate)
+}
+
+//
+// Timing sends timing information, it is an alias for TimeInMilliseconds
+//
+func (dd *DatadogStatsdMetricsClient) Timing(name Metric, value time.Duration, tags []string, rate float64) error {
+	return dd.client.Timing(string(name), value, tags, rate)
 }
 
 // Set counts the number of unique elements in a group
