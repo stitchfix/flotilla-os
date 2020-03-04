@@ -99,7 +99,7 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 			lockedRuns = append(lockedRuns, run)
 		}
 	}
-	_ = sw.log.Log("message", "received locked runs for processing", "count", len(lockedRuns))
+	//_ = sw.log.Log("message", "received locked runs for processing", "count", len(lockedRuns))
 	for _, run := range lockedRuns {
 		sw.processEKSRun(run)
 	}
