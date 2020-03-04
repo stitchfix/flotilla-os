@@ -400,7 +400,7 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 	if run.PodName != nil {
 		metricsClient, ok := ee.metricsClients[run.ClusterName]
 		if !ok {
-			return state.Run{}, errors.New("Metrics client not defined.")
+			return run, errors.New("Metrics client not defined.")
 		}
 		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
 		if err != nil {

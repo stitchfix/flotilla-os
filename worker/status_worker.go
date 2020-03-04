@@ -114,8 +114,9 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		// Run was updated by another worker process.
 		return
 	}
-	updatedRun, err := sw.ee.FetchUpdateStatus(run)
-	updatedRun, err = sw.ee.FetchPodMetrics(updatedRun)
+	updatedRunWithMetrics, _ := sw.ee.FetchPodMetrics(run)
+	updatedRun, err := sw.ee.FetchUpdateStatus(updatedRunWithMetrics)
+
 	if err != nil {
 		message := fmt.Sprintf("%+v", err)
 		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
