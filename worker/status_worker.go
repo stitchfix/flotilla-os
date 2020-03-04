@@ -92,11 +92,16 @@ func (sw *statusWorker) runOnceEKS() {
 }
 
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
+	var lockedRuns []state.Run
 	for _, run := range runs {
-		if sw.acquireLock(run, "status", 15*time.Second) == true {
-			_ = sw.log.Log("message", "processing run", "workerId", sw.workerId, "runId", run.RunID)
-			sw.processEKSRun(run)
+		lock := sw.acquireLock(run, "status", 15*time.Second)
+		if lock {
+			lockedRuns = append(lockedRuns, run)
 		}
+	}
+	_ = sw.log.Log("message", "received locked runs for processing", "count", len(lockedRuns))
+	for _, run := range lockedRuns {
+		sw.processEKSRun(run)
 	}
 }
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
