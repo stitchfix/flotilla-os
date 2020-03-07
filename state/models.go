@@ -10,6 +10,7 @@ import (
 	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -856,8 +857,16 @@ func (t Template) GetExecutableCommand(req ExecutionRequest) (string, error) {
 
 	// Perform JSON schema validation to ensure that the request's template
 	// payload conforms to the template's JSON schema.
-	if _, err = gojsonschema.Validate(schemaLoader, documentLoader); err != nil {
+	validationResult, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
 		return "", err
+	}
+	if validationResult != nil && validationResult.Valid() != true {
+		var res []string
+		for _, resultError := range validationResult.Errors() {
+			res = append(res, resultError.String())
+		}
+		return "", errors.New(strings.Join(res, "\n"))
 	}
 
 	// Create a new template string based on the template.Template.
