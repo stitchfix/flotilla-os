@@ -55,6 +55,7 @@ type executionService struct {
 	eksOverridePercent       int
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
+	baseUri                  string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -97,12 +98,19 @@ func NewExecutionService(conf config.Config,
 	} else {
 		es.checkImageValidity = true
 	}
+
+	if conf.IsSet("base_uri") {
+		es.baseUri = conf.GetString("base_uri")
+	}
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
 			return conf.GetString("flotilla_mode")
 		},
 		"FLOTILLA_RUN_ID": func(run state.Run) string {
 			return run.RunID
+		},
+		"FLOTILLA_RUN_PAYLOAD": func(run state.Run) string {
+			return fmt.Sprintf("%s/api/v6/history/%s/payload", es.baseUri, run.RunID)
 		},
 		"AWS_ROLE_SESSION_NAME": func(run state.Run) string {
 			return run.RunID
@@ -111,6 +119,7 @@ func NewExecutionService(conf config.Config,
 			return run.User
 		},
 	}
+
 	// Warm cached cluster list
 	_, _ = es.ecsClusterClient.ListClusters()
 	return &es, nil

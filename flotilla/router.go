@@ -56,6 +56,7 @@ func NewRouter(ep endpoints) *mux.Router {
 
 	v6.HandleFunc("/history", ep.ListRuns).Methods("GET")
 	v6.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
+	v6.HandleFunc("/history/{run_id}/payload", ep.GetPayload).Methods("GET")
 	v6.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
 	v6.HandleFunc("/task/{definition_id}/history", ep.ListDefinitionRuns).Methods("GET")
 	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.GetRun).Methods("GET")
