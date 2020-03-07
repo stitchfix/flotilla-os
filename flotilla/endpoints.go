@@ -382,6 +382,26 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Fetches a run based on Run ID.
+func (ep *endpoints) GetPayload(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	run, err := ep.executionService.Get(vars["run_id"])
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting run",
+			"operation", "GetRun",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", vars["run_id"])
+		ep.encodeError(w, err)
+	} else {
+		if run.ExecutionRequestCustom != nil {
+			ep.encodeResponse(w, run.ExecutionRequestCustom)
+		} else {
+			ep.encodeResponse(w, map[string]string{})
+		}
+	}
+}
+
 // Creates a new Run (deprecated). Only present for legacy support.
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	var lr LaunchRequest
