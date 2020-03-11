@@ -39,8 +39,8 @@ type ExecutionService interface {
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
 	GetEvents(run state.Run) (state.PodEventList, error)
-	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest, dryRun bool) (state.Run, error)
-	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest, dryRun bool) (state.Run, error)
+	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
+	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
 }
 
 type executionService struct {
@@ -499,19 +499,19 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 
 	return run, nil
 }
-func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest, dryRun bool) (state.Run, error) {
+func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
 	version, err := strconv.Atoi(templateVersion)
 
 	if err != nil {
 		//use the "latest" template - version not a integer
 		fetch, template, err := es.stateManager.GetLatestTemplateByTemplateName(templateName)
 		if fetch && err == nil {
-			return es.CreateTemplateRunByTemplateID(template.TemplateID, req, dryRun)
+			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
 		}
 	} else {
 		fetch, template, err := es.stateManager.GetTemplateByVersion(templateName, int64(version))
 		if fetch && err == nil {
-			return es.CreateTemplateRunByTemplateID(template.TemplateID, req, dryRun)
+			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
 		}
 	}
 	return state.Run{},
@@ -521,17 +521,17 @@ func (es *executionService) CreateTemplateRunByTemplateName(templateName string,
 //
 // Create constructs and queues a new Run on the cluster specified.
 //
-func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest, dryRun bool) (state.Run, error) {
+func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
 	// Ensure template exists
 	template, err := es.stateManager.GetTemplateByID(templateID)
 	if err != nil {
 		return state.Run{}, err
 	}
 
-	return es.createFromTemplate(template, req, dryRun)
+	return es.createFromTemplate(template, req)
 }
 
-func (es *executionService) createFromTemplate(template state.Template, req *state.TemplateExecutionRequest, dryRun bool) (state.Run, error) {
+func (es *executionService) createFromTemplate(template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -550,7 +550,7 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	if err != nil {
 		return run, err
 	}
-	if ! dryRun {
+	if ! req.DryRun {
 		return es.createAndEnqueueRun(run)
 	}
 	return run, nil
