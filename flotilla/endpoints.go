@@ -919,14 +919,7 @@ func (ep *endpoints) getStringBoolVal(s string) bool {
 // Create a new template run based on template name/alias.
 func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
-	queryParams := r.URL.Query()
-	dryRun, err := strconv.ParseBool(queryParams.Get("dry_run"))
-
-	if err != nil {
-		dryRun = false
-	}
-
-	err = ep.decodeRequest(r, &req)
+	err := ep.decodeRequest(r, &req)
 
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
@@ -960,7 +953,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 	}
 	vars := mux.Vars(r)
 
-	run, err := ep.executionService.CreateTemplateRunByTemplateName(vars["template_name"], vars["template_version"], &req, dryRun)
+	run, err := ep.executionService.CreateTemplateRunByTemplateName(vars["template_name"], vars["template_version"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template run",
@@ -976,14 +969,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 // Create a new template run based on template id.
 func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	var req state.TemplateExecutionRequest
-	queryParams := r.URL.Query()
-	dryRun, err := strconv.ParseBool(queryParams.Get("dry_run"))
-
-	if err != nil {
-		dryRun = false
-	}
-
-	err = ep.decodeRequest(r, &req)
+	err := ep.decodeRequest(r, &req)
 
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
@@ -1017,7 +1003,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 
-	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], &req, dryRun)
+	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template run",

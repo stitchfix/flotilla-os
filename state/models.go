@@ -777,6 +777,7 @@ type TemplatePayload map[string]interface{}
 type TemplateExecutionRequest struct {
 	*ExecutionRequestCommon
 	TemplatePayload TemplatePayload `json:"template_payload"`
+	DryRun          bool            `json:"dry_run,omitempty"`
 }
 
 // Returns ExecutionRequestCommon associated with a Template type.
