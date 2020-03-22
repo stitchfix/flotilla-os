@@ -443,6 +443,7 @@ type Run struct {
 	ExecutableID            *string                  `json:"executable_id,omitempty"`
 	ExecutableType          *ExecutableType          `json:"executable_type,omitempty"`
 	ExecutionRequestCustom  *ExecutionRequestCustom  `json:"execution_request_custom,omitempty"`
+	AttemptCount            *int64                   `json:"attempt_count,omitempty"`
 }
 
 //
@@ -580,6 +581,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.MemoryLimit != nil {
 		d.MemoryLimit = other.MemoryLimit
+	}
+
+	if other.AttemptCount != nil {
+		d.AttemptCount = other.AttemptCount
 	}
 	//
 	// Runs have a deterministic lifecycle
