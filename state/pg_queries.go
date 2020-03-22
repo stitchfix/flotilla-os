@@ -117,7 +117,8 @@ select
   coalesce(executable_type,'') as executabletype,
   execution_request_custom::TEXT as executionrequestcustom,
   cpu_limit as cpulimit,
-  memory_limit as memorylimit
+  memory_limit as memorylimit,
+  attempt_count as attemptcount
 from task t
 `
 

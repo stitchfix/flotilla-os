@@ -511,6 +511,16 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		}
 	}
 
+	if run.PodEvents != nil {
+		attemptCount := int64(0)
+		for _, podEvent := range *run.PodEvents {
+			if strings.Contains(podEvent.Reason, "Scheduled") {
+				attemptCount = attemptCount + 1
+			}
+		}
+		run.AttemptCount = &attemptCount
+	}
+
 	// Handle edge case for dangling jobs.
 	// Run used to have a pod and now it is not there, job is older than 24 hours. Terminate it.
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) == 0 && run.PodName != nil && run.QueuedAt.Before(hoursBack) {
