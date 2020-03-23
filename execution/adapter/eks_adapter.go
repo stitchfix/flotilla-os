@@ -168,7 +168,6 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
 
 	var nodeLifecycle []string
-
 	if *run.NodeLifecycle == state.OndemandLifecycle {
 		nodeLifecycle = append(nodeLifecycle, "normal")
 	} else {

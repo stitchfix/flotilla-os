@@ -75,7 +75,7 @@ func (iatt *ImplementsAllTheThings) ListFailingNodes() (state.NodeList, error) {
 
 func (iatt *ImplementsAllTheThings) GetPodReAttemptRate() (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetPodReAttemptRate")
-	return 0.0, nil
+	return 1.0, nil
 }
 
 // ListDefinitions - StateManager
