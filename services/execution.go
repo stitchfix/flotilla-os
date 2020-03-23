@@ -242,7 +242,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
 	if reAttemptRate >= es.spotReAttemptOverride &&
 		*fields.Engine == state.EKSEngine &&
-		*fields.NodeLifecycle == state.OndemandLifecycle {
+		*fields.NodeLifecycle == state.SpotLifecycle {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
