@@ -56,6 +56,7 @@ type executionService struct {
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
 	baseUri                  string
+	spotReAttemptOverride    float32
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -102,6 +103,14 @@ func NewExecutionService(conf config.Config,
 	if conf.IsSet("base_uri") {
 		es.baseUri = conf.GetString("base_uri")
 	}
+
+	if conf.IsSet("eks.spot_reattempt_override") {
+		es.spotReAttemptOverride = float32(conf.GetFloat64("eks.spot_reattempt_override"))
+	} else {
+		// defaults to 5% override.
+		es.spotReAttemptOverride = float32(0.05)
+	}
+
 	es.reservedEnv = map[string]func(run state.Run) string{
 		"FLOTILLA_SERVER_MODE": func(run state.Run) string {
 			return conf.GetString("flotilla_mode")
@@ -228,6 +237,11 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	runID, err := state.NewRunID(fields.Engine)
 	if err != nil {
 		return run, err
+	}
+
+	reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
+	if reAttemptRate >= es.spotReAttemptOverride {
+		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
 	run = state.Run{

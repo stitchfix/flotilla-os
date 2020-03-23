@@ -75,6 +75,17 @@ SELECT instance_dns_name
       GROUP BY 1
 `
 
+const PodReAttemptRate = `
+SELECT (multiple_attempts / (CASE WHEN single_attempts = 0 THEN 1 ELSE single_attempts END)) AS attempts
+FROM (
+      SELECT COUNT(CASE WHEN attempt_count = 1 THEN 1 END) * 1.0 AS single_attempts,
+             COUNT(CASE WHEN attempt_count != 1 THEN 1 END) * 1.0 AS multiple_attempts
+      FROM task
+      WHERE engine = 'eks' AND
+            queued_at >= NOW() - INTERVAL '3 HOURS' AND
+            node_lifecycle = 'spot') A
+`
+
 //
 // RunSelect postgres specific query for runs
 //

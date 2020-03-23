@@ -48,6 +48,7 @@ type Manager interface {
 	CreateTemplate(t Template) error
 
 	ListFailingNodes() (NodeList, error)
+	GetPodReAttemptRate() (float32, error)
 }
 
 //
