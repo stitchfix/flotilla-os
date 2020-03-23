@@ -152,6 +152,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 		"CanBeRun":             true,
 		"CreateRun":            true,
 		"UpdateRun":            true,
+		"GetPodReAttemptRate":  true,
 		"Enqueue":              true,
 	}
 	mem := int64(1024)
