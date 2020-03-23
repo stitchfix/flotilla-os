@@ -43,6 +43,22 @@ func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
 	return nodeList, err
 }
 
+func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
+	var err error
+	attemptRate := float32(1.0)
+	err = sm.db.Get(&attemptRate, PodReAttemptRate)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return attemptRate, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching attempt rate")}
+		} else {
+			return attemptRate, errors.Wrapf(err, "Error fetching attempt rate")
+		}
+	}
+	return attemptRate, err
+}
+
 func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources

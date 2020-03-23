@@ -15,7 +15,9 @@ type Config interface {
 	GetStringMapString(key string) map[string]string
 	GetInt(key string) int
 	GetBool(key string) bool
+	GetFloat64(key string) float64
 	IsSet(key string) bool
+
 }
 
 //
@@ -48,6 +50,11 @@ type conf struct {
 // GetString returns the value associated with the key as a string.
 func (c *conf) GetString(key string) string {
 	return c.v.GetString(key)
+}
+
+// GetFloat returns the value associated with the key as a float.
+func (c *conf) GetFloat64(key string) float64 {
+	return c.v.GetFloat64(key)
 }
 
 // GetInt returns the value associated with the key as an integer.
