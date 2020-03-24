@@ -121,6 +121,7 @@ func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, 
 
 	return nil
 }
+
 //
 // Fetch S3Object associated with the pod's log.
 //
@@ -144,22 +145,32 @@ func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, erro
 	if result == nil || result.Contents == nil || len(result.Contents) == 0 {
 		return nil, errors.New("no s3 files associated with the run.")
 	}
+	var key *string
+	lastModified := &time.Time{}
 
+	//Find latest log file (could have multiple log files per pod - due to pod retries)
 	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, *run.PodName) {
-			s3Key := content.Key
-			result, err := lc.s3Client.GetObject(&s3.GetObjectInput{
-				Bucket: aws.String(lc.s3Bucket),
-				Key:    aws.String(*s3Key),
-			})
-
-			if err != nil {
-				return nil, err
-			}
-			return result, nil
+		if strings.Contains(*content.Key, *run.PodName) && lastModified.Before(*content.LastModified) {
+			key = content.Key
+			lastModified = content.LastModified
 		}
 	}
-	return nil, errors.New("no s3 files associated with the run.")
+	if key != nil {
+		return lc.getS3Key(key)
+	} else {
+		return nil, errors.New("no s3 files associated with the run.")
+	}
+}
+
+func (lc *EKSS3LogsClient) getS3Key(s3Key *string) (*s3.GetObjectOutput, error) {
+	result, err := lc.s3Client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(lc.s3Bucket),
+		Key:    aws.String(*s3Key),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 //
@@ -168,7 +179,6 @@ func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, erro
 func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
-
 
 //
 // Converts log messages from S3 to strings - returns the contents of the entire file.
