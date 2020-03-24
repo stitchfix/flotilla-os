@@ -150,7 +150,7 @@ func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, erro
 
 	//Find latest log file (could have multiple log files per pod - due to pod retries)
 	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, *run.PodName) && lastModified.Before(*content.LastModified) {
+		if strings.Contains(*content.Key, run.RunID) && lastModified.Before(*content.LastModified) {
 			key = content.Key
 			lastModified = content.LastModified
 		}
