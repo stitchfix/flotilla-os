@@ -57,6 +57,7 @@ type executionService struct {
 	checkImageValidity       bool
 	baseUri                  string
 	spotReAttemptOverride    float32
+	eksSpotOverride          bool
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -109,6 +110,12 @@ func NewExecutionService(conf config.Config,
 	} else {
 		// defaults to 5% override.
 		es.spotReAttemptOverride = float32(0.05)
+	}
+
+	if conf.IsSet("eks.spot_override") {
+		es.eksSpotOverride = conf.GetBool("eks.spot_override")
+	} else {
+		es.eksSpotOverride = false
 	}
 
 	es.reservedEnv = map[string]func(run state.Run) string{
@@ -482,6 +489,10 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 			}
 			fields.ClusterName = es.eksClusterOverride
 		}
+	}
+
+	if es.eksSpotOverride && *fields.Engine == state.EKSEngine {
+		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 }
 
