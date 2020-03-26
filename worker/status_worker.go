@@ -159,12 +159,11 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 				//_ = sw.ee.Terminate(run)
 			}
 		} else {
-			if (updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
+			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 				updatedRun.MaxCpuUsed != run.MaxCpuUsed ||
 				updatedRun.Cpu != run.Cpu ||
 				updatedRun.Memory != run.Memory ||
-				updatedRun.PodEvents != run.PodEvents) &&
-				(updatedRun.Status == run.Status) {
+				updatedRun.PodEvents != run.PodEvents {
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
 		}
