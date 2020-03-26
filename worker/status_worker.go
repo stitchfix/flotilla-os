@@ -147,8 +147,8 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		}
 
 	} else {
-		if run.Status != updatedRun.Status {
-			_ = sw.log.Log("message", "updating eks run", "run", updatedRun.RunID, "status", updatedRun.Status)
+		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
+			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			if err != nil {
 				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
@@ -159,11 +159,12 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 				//_ = sw.ee.Terminate(run)
 			}
 		} else {
-			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
+			if (updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 				updatedRun.MaxCpuUsed != run.MaxCpuUsed ||
 				updatedRun.Cpu != run.Cpu ||
 				updatedRun.Memory != run.Memory ||
-				updatedRun.PodEvents != run.PodEvents {
+				updatedRun.PodEvents != run.PodEvents) &&
+				(updatedRun.Status == run.Status) {
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
 		}
