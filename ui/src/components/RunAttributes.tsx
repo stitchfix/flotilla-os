@@ -26,17 +26,17 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       
       <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
         style={{ marginBottom: 12 }}>
-         <Attribute
+         {data.max_cpu_used && <Attribute
           name="CPU Used"
-          value={data.max_cpu_used ? `${data.max_cpu_used} units` : ""}
-        />
+          value={`${data.max_cpu_used} units`}
+        />}
          <Attribute
           name="CPU Requested"
-          value={data.cpu ? `${data.cpu} units` : ""}
+          value={`${data.cpu} units`}
         />
         <Attribute
           name="CPU Limit"
-          value={data.cpu_limit ? `${data.cpu_limit} units` : ""}
+          value={`${data.cpu_limit} units`}
         />
       </div>
 
@@ -47,17 +47,17 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
 
       <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
         style={{ marginBottom: 12 }}>
-          <Attribute
+          {data.max_memory_used && <Attribute
             name="Memory Used"
-            value={data.max_memory_used ? `${data.max_memory_used} MB` : ""}
-          />
+            value={`${data.max_memory_used} MB`}
+          />}
           <Attribute
             name="Memory Requested"
-            value={data.memory ? `${data.memory} MB` : ""}
+            value={`${data.memory} MB`}
           />
           <Attribute
             name="Memory Limit"
-            value={data.memory_limit ? `${data.memory_limit} MB` : ""}
+            value={`${data.memory_limit} MB`}
           />
     </div>      
 
