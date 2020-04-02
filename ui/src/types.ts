@@ -28,6 +28,7 @@ export enum ExecutableType {
 }
 
 export type Run = {
+  attempt_count: number
   alias: string
   cluster: string
   command?: string
