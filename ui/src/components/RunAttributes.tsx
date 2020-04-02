@@ -28,15 +28,15 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         style={{ marginBottom: 12 }}>
          <Attribute
           name="CPU Used"
-          value={`${data.max_cpu_used} units`}
+          value={data.max_cpu_used ? `${data.max_cpu_used} units` : ""}
         />
          <Attribute
           name="CPU Requested"
-          value={`${data.cpu} units`}
+          value={data.cpu ? `${data.cpu} units` : ""}
         />
         <Attribute
           name="CPU Limit"
-          value={`${data.cpu_limit} units`}
+          value={data.cpu_limit ? `${data.cpu_limit} units` : ""}
         />
       </div>
 
