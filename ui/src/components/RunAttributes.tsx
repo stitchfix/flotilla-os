@@ -28,15 +28,20 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         style={{ marginBottom: 12 }}>
          {data.max_cpu_used && <Attribute
           name="CPU Used"
+<<<<<<< HEAD
           value={`${data.max_cpu_used} units`}
         />}
+=======
+          value={data.max_cpu_used ? `${data.max_cpu_used} units` : ""}
+        />
+>>>>>>> Check if values are there before casting to string
          <Attribute
           name="CPU Requested"
-          value={`${data.cpu} units`}
+          value={data.cpu ? `${data.cpu} units` : ""}
         />
         <Attribute
           name="CPU Limit"
-          value={`${data.cpu_limit} units`}
+          value={data.cpu_limit ? `${data.cpu_limit} units` : ""}
         />
       </div>
 
