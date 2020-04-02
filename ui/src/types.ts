@@ -32,6 +32,7 @@ export type Run = {
   cluster: string
   command?: string
   cpu: number
+  cpu_limit: number
   definition_id: string
   env: Env[]
   exit_code?: number
@@ -42,6 +43,7 @@ export type Run = {
   image: string
   instance: RunInstance
   memory: number
+  memory_limit: number
   queued_at: string | undefined
   run_id: string
   started_at?: string

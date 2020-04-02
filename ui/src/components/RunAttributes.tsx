@@ -58,33 +58,46 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       />
     </div>
     <div className="flotilla-form-section-divider" />
-    <div
-      className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-      style={{ marginBottom: 12 }}
-    >
-      <Attribute
-        name="CPU (Units)"
-        value={
-          <ResourceUsageValue
-            requested={data.cpu}
-            actual={data.max_cpu_used}
-            requestedName="CPU Requested"
-            actualName="Max CPU Used"
+
+    <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+        style={{ marginBottom: 12 }}>
+        <Attribute
+          name="CPU (Units)"
+          value={
+            <ResourceUsageValue
+              requested={data.cpu}
+              actual={data.max_cpu_used}
+              requestedName="CPU Requested"
+              actualName="Max CPU Used"
+            />
+          }
+        />
+        <Attribute
+          name="CPU Limit (Units)"
+          value={data.cpu_limit}
+        />
+      </div>
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+        style={{ marginBottom: 12 }}>
+        <Attribute
+            name="Memory (MB)"
+            value={
+              <ResourceUsageValue
+                requested={data.memory}
+                actual={data.max_memory_used}
+                requestedName="Memory Requested"
+                actualName="Max Memory Used"
+              />
+            }
           />
-        }
-      />
-      <Attribute
-        name="Memory (MB)"
-        value={
-          <ResourceUsageValue
-            requested={data.memory}
-            actual={data.max_memory_used}
-            requestedName="Memory Requested"
-            actualName="Max Memory Used"
+          <Attribute
+            name="Memory Limit (MB)"
+            value={data.memory_limit}
           />
-        }
-      />
+    </div>      
     </div>
+
     {data.gpu && (
       <div
         className="flotilla-attributes-container flotilla-attributes-container-horizontal"
