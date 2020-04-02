@@ -10,7 +10,7 @@ The Flotilla UI is a React application bundled along with the rest of Flotilla. 
 git clone git@github.com:stitchfix/flotilla-os.git
 cd flotilla-os/ui
 npm install
-REACT_APP_BASE_URL=http://my-flotilla.com REACT_APP_BASE_URL_DEV=http://localhost:5000/api npm start
+REACT_APP_BASE_URL=http://my-flotilla.com REACT_APP_BASE_URL_DEV=http://flotilla.staging.vertigo.stitchfix.com/api npm start
 ```
 
 ### Testing
