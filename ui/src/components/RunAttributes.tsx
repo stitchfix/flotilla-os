@@ -49,15 +49,15 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
         style={{ marginBottom: 12 }}>
           <Attribute
             name="Memory Used"
-            value={`${data.max_memory_used} MB`}
+            value={data.max_memory_used ? `${data.max_memory_used} MB` : ""}
           />
           <Attribute
             name="Memory Requested"
-            value={`${data.memory} MB`}
+            value={data.memory ? `${data.memory} MB` : ""}
           />
           <Attribute
             name="Memory Limit"
-            value={`${data.memory_limit} MB`}
+            value={data.memory_limit ? `${data.memory_limit} MB` : ""}
           />
     </div>      
 
