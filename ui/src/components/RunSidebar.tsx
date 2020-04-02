@@ -1,6 +1,6 @@
 import * as React from "react"
 import { get } from "lodash"
-import { Card, Button, Colors } from "@blueprintjs/core"
+import { Card } from "@blueprintjs/core"
 import JsonView from "react-json-view"
 import { ExecutionEngine, Run, ExecutableType } from "../types"
 import EnvList from "./EnvList"

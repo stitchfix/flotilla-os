@@ -1,4 +1,4 @@
-import { get, isObject } from "lodash"
+import { get } from "lodash"
 import getOwnerIdRunTagFromCookies from "./getOwnerIdRunTagFromCookies"
 import {
   Executable,

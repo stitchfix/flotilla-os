@@ -1,6 +1,5 @@
 import * as React from "react"
-import { DebounceInput } from "react-debounce-input"
-import { ButtonGroup, Button, Spinner, Classes } from "@blueprintjs/core"
+import { ButtonGroup, Button, Spinner } from "@blueprintjs/core"
 
 type Props = {
   onChange: (value: string) => void
