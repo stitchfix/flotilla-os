@@ -28,7 +28,6 @@ import {
   EnhancedRunStatusEmojiMap,
   EnhancedRunStatus,
 } from "../types"
-import EnvList from "./EnvList"
 import ViewHeader from "./ViewHeader"
 import StopRunButton from "./StopRunButton"
 import { RUN_FETCH_INTERVAL_MS } from "../constants"

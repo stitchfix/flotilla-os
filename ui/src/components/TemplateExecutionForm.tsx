@@ -12,7 +12,6 @@ import {
   Classes,
   RadioGroup,
   Radio,
-  Collapse,
   Colors,
 } from "@blueprintjs/core"
 import api from "../api"
@@ -29,8 +28,6 @@ import ErrorCallout from "./ErrorCallout"
 import FieldError from "./FieldError"
 import NodeLifecycleSelect from "./NodeLifecycleSelect"
 import * as helpers from "../helpers/runFormHelpers"
-import { useSelector } from "react-redux"
-import { RootState } from "../state/store"
 import { getInitialValuesForTemplateExecutionForm } from "../helpers/getInitialValuesForExecutionForm"
 
 const validationSchema = Yup.object().shape({
@@ -234,7 +231,6 @@ const Connected: React.FunctionComponent<RouteComponentProps> = ({
   location,
   history,
 }) => {
-  const { settings } = useSelector((s: RootState) => s.settings)
   return (
     <Request<Run, { templateID: string; data: TemplateExecutionRequest }>
       requestFn={api.runTemplate}

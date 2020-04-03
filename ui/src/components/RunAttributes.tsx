@@ -1,46 +1,8 @@
 import * as React from "react"
-import { Card, Pre, Tag, Colors, Tooltip } from "@blueprintjs/core"
+import { Card, Pre, Tag} from "@blueprintjs/core"
 import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
-
-const isLessThanPct = (x: number, y: number, pct: number): boolean => {
-  if (x < pct * y) return true
-  return false
-}
-
-const ResourceUsageValue: React.FC<{
-  requested: number | undefined | null
-  actual: number | undefined | null
-  requestedName: string
-  actualName: string
-}> = ({ requested, actual, requestedName, actualName }) => {
-  if (!requested) {
-    return <span>-</span>
-  }
-
-  if (!actual) {
-    return <span>{requested}</span>
-  }
-
-  return (
-    <div>
-      <Tooltip content={actualName}>
-        <span
-          style={{
-            color:
-              actual && isLessThanPct(actual, requested, 0.5)
-                ? Colors.RED5
-                : "",
-          }}
-        >
-          {actual}
-        </span>
-      </Tooltip>{" "}
-      / <Tooltip content={requestedName}>{requested}</Tooltip>
-    </div>
-  )
-}
 
 const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
   <Card style={{ marginBottom: 12 }}>
@@ -58,33 +20,53 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       />
     </div>
     <div className="flotilla-form-section-divider" />
-    <div
-      className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-      style={{ marginBottom: 12 }}
-    >
-      <Attribute
-        name="CPU (Units)"
-        value={
-          <ResourceUsageValue
-            requested={data.cpu}
-            actual={data.max_cpu_used}
-            requestedName="CPU Requested"
-            actualName="Max CPU Used"
+
+    <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
+      
+      
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+        style={{ marginBottom: 12 }}>
+         {data.max_cpu_used && <Attribute
+          name="CPU Used"
+          value={`${data.max_cpu_used} units`}
+        />}
+         <Attribute
+          name="CPU Requested"
+          value={`${data.cpu} units`}
+        />
+        <Attribute
+          name="CPU Limit"
+          value={`${data.cpu_limit} units`}
+        />
+      </div>
+
+      <div className="flotilla-form-section-divider" />
+
+
+
+
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
+        style={{ marginBottom: 12 }}>
+          {data.max_memory_used && <Attribute
+            name="Memory Used"
+            value={`${data.max_memory_used} MB`}
+          />}
+          <Attribute
+            name="Memory Requested"
+            value={`${data.memory} MB`}
           />
-        }
-      />
-      <Attribute
-        name="Memory (MB)"
-        value={
-          <ResourceUsageValue
-            requested={data.memory}
-            actual={data.max_memory_used}
-            requestedName="Memory Requested"
-            actualName="Max Memory Used"
+          <Attribute
+            name="Memory Limit"
+            value={`${data.memory_limit} MB`}
           />
-        }
-      />
+    </div>      
+
+
+
+
+
     </div>
+
     {data.gpu && (
       <div
         className="flotilla-attributes-container flotilla-attributes-container-horizontal"
