@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Card, Pre, Tag} from "@blueprintjs/core"
+import { Card, Pre, Tag } from "@blueprintjs/core"
 import { Run, ExecutionEngine } from "../types"
 import Attribute from "./Attribute"
 import ISO8601AttributeValue from "./ISO8601AttributeValue"
@@ -21,51 +21,43 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
     </div>
     <div className="flotilla-form-section-divider" />
 
-    <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
-      
-      
-      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-        style={{ marginBottom: 12 }}>
-         {data.max_cpu_used && <Attribute
+
+
+
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
+        {data.max_cpu_used && <Attribute
           name="CPU Used"
           value={`${data.max_cpu_used} units`}
         />}
-         <Attribute
+        <Attribute
           name="CPU Requested"
-          value={`${data.cpu} units`}
+          value={data.cpu ? `${data.cpu} units` : ""}
         />
         <Attribute
           name="CPU Limit"
-          value={`${data.cpu_limit} units`}
+          value={data.cpu_limit ? `${data.cpu_limit} units` : ""}
         />
       </div>
 
       <div className="flotilla-form-section-divider" />
 
+      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal">
+        {data.max_memory_used && <Attribute
+          name="Memory Used"
+          value={`${data.max_memory_used} MB`}
+        />}
+        <Attribute
+          name="Memory Requested"
+          value={`${data.memory} MB`}
+        />
+        <Attribute
+          name="Memory Limit"
+          value={`${data.memory_limit} MB`}
+        />
+      </div>
 
 
 
-      <div className="flotilla-attributes-container flotilla-attributes-container-horizontal"
-        style={{ marginBottom: 12 }}>
-          {data.max_memory_used && <Attribute
-            name="Memory Used"
-            value={`${data.max_memory_used} MB`}
-          />}
-          <Attribute
-            name="Memory Requested"
-            value={`${data.memory} MB`}
-          />
-          <Attribute
-            name="Memory Limit"
-            value={`${data.memory_limit} MB`}
-          />
-    </div>      
-
-
-
-
-
-    </div>
 
     {data.gpu && (
       <div
@@ -116,8 +108,8 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
               {data.command.replace(/\n(\s)+/g, "\n")}
             </Pre>
           ) : (
-            "Existing task definition command was used."
-          )
+              "Existing task definition command was used."
+            )
         }
       />
     </div>

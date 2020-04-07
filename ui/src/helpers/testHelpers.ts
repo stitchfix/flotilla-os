@@ -67,6 +67,7 @@ export const createMockTaskObject = (overrides?: Partial<Task>): Task => ({
 })
 
 export const createMockRunObject = (overrides?: Partial<Run>): Run => ({
+  attempt_count: 1,
   instance: {
     dns_name: "my_dns_name",
     instance_id: "my_instance_id",
