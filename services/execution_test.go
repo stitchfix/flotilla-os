@@ -38,13 +38,14 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		{Name: "K1", Value: "V1"},
 	}
 	expectedCalls := map[string]bool{
-		"GetDefinition":       true,
-		"IsImageValid":        true,
-		"CanBeRun":            true,
-		"CreateRun":           true,
-		"UpdateRun":           true,
-		"GetPodReAttemptRate": true,
-		"Enqueue":             true,
+		"GetDefinition":            true,
+		"IsImageValid":             true,
+		"CanBeRun":                 true,
+		"CreateRun":                true,
+		"UpdateRun":                true,
+		"GetTaskHistoricalRuntime": true,
+		"GetPodReAttemptRate":      true,
+		"Enqueue":                  true,
 	}
 
 	cmd := "_test_cmd_"
@@ -147,13 +148,14 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 		{Name: "K1", Value: "V1"},
 	}
 	expectedCalls := map[string]bool{
-		"GetDefinitionByAlias": true,
-		"IsImageValid":         true,
-		"CanBeRun":             true,
-		"CreateRun":            true,
-		"UpdateRun":            true,
-		"GetPodReAttemptRate":  true,
-		"Enqueue":              true,
+		"GetDefinitionByAlias":     true,
+		"IsImageValid":             true,
+		"CanBeRun":                 true,
+		"CreateRun":                true,
+		"UpdateRun":                true,
+		"GetTaskHistoricalRuntime": true,
+		"GetPodReAttemptRate":      true,
+		"Enqueue":                  true,
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine

@@ -59,6 +59,22 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	return attemptRate, err
 }
 
+func (sm *SQLStateManager) GetTaskHistoricalRuntime() (float32, error) {
+	var err error
+	minutes := float32(1.0)
+	err = sm.db.Get(&minutes, TaskExecutionRuntimeCommandSQL)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return minutes, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching TaskRuntime rate")}
+		} else {
+			return minutes, errors.Wrapf(err, "Error fetching attempt rate")
+		}
+	}
+	return minutes, err
+}
+
 func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
 	var err error
 	var taskResources TaskResources
@@ -592,7 +608,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
       task_arn = $2, definition_id = $3,
 	  alias = $4, image = $5,
       cluster_name = $6, exit_code = $7,
-      exit_reason = $8, 
+      exit_reason = $8,
       status = $9, queued_at = $10,
       started_at = $11,
       finished_at = $12, instance_id = $13,

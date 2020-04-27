@@ -78,6 +78,11 @@ func (iatt *ImplementsAllTheThings) GetPodReAttemptRate() (float32, error) {
 	return 1.0, nil
 }
 
+func (iatt *ImplementsAllTheThings) GetTaskHistoricalRuntime() (float32, error){
+	iatt.Calls = append(iatt.Calls, "GetTaskHistoricalRuntime")
+	return 1.0, nil
+}
+
 // ListDefinitions - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitions(
 	limit int, offset int, sortBy string,
