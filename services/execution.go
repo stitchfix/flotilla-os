@@ -263,7 +263,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
-	if taskExecutionMinutes >= float32(es.spotThresholdMinutes) {
+	if taskExecutionMinutes > float32(es.spotThresholdMinutes) {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
