@@ -58,6 +58,7 @@ type executionService struct {
 	baseUri                  string
 	spotReAttemptOverride    float32
 	eksSpotOverride          bool
+	spotThresholdMinutes     float64
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -116,6 +117,12 @@ func NewExecutionService(conf config.Config,
 		es.eksSpotOverride = conf.GetBool("eks.spot_override")
 	} else {
 		es.eksSpotOverride = false
+	}
+
+	if conf.IsSet("eks.spot_threshold_minutes") {
+		es.spotThresholdMinutes = conf.GetFloat64("eks.spot_threshold_minutes")
+	} else {
+		es.spotThresholdMinutes = 30.0
 	}
 
 	es.reservedEnv = map[string]func(run state.Run) string{
@@ -246,12 +253,17 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		return run, err
 	}
 
+	taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime()
 	reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
 	if reAttemptRate >= es.spotReAttemptOverride &&
 		fields.Engine != nil &&
 		fields.NodeLifecycle != nil &&
 		*fields.Engine == state.EKSEngine &&
 		*fields.NodeLifecycle == state.SpotLifecycle {
+		fields.NodeLifecycle = &state.OndemandLifecycle
+	}
+
+	if taskExecutionMinutes >= float32(es.spotThresholdMinutes) {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
