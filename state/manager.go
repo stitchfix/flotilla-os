@@ -49,7 +49,7 @@ type Manager interface {
 
 	ListFailingNodes() (NodeList, error)
 	GetPodReAttemptRate() (float32, error)
-	GetTaskHistoricalRuntime() (float32, error)
+	GetTaskHistoricalRuntime(executableID string, runId string) (float32, error)
 }
 
 //

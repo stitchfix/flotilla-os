@@ -54,6 +54,7 @@ func (de *defaultExecutor) Do(req *http.Request, timeout time.Duration, entity i
 		return fmt.Errorf("Error response: %v", r.Status)
 	}
 }
+
 // Generic http client to make http requests.
 type Client struct {
 	Host       string

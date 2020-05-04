@@ -29,6 +29,7 @@ type App struct {
 	handler            http.Handler
 	workerManager      worker.Worker
 }
+
 // Start the Application.
 func (app *App) Run() error {
 	srv := &http.Server{

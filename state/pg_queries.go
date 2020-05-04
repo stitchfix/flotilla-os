@@ -80,7 +80,6 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       LIMIT 30) A
 `
 
-
 const ListFailingNodesSQL = `
 SELECT instance_dns_name
       FROM TASK

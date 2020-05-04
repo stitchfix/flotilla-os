@@ -59,10 +59,10 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	return attemptRate, err
 }
 
-func (sm *SQLStateManager) GetTaskHistoricalRuntime() (float32, error) {
+func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID string) (float32, error) {
 	var err error
 	minutes := float32(1.0)
-	err = sm.db.Get(&minutes, TaskExecutionRuntimeCommandSQL)
+	err = sm.db.Get(&minutes, TaskExecutionRuntimeCommandSQL, executableID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

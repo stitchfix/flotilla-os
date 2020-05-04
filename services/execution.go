@@ -253,7 +253,8 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		return run, err
 	}
 
-	taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime()
+	executableID := executable.GetExecutableID()
+	taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime(*executableID, runID)
 	reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
 	if reAttemptRate >= es.spotReAttemptOverride &&
 		fields.Engine != nil &&
@@ -591,7 +592,7 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	if err != nil {
 		return run, err
 	}
-	if ! req.DryRun {
+	if !req.DryRun {
 		return es.createAndEnqueueRun(run)
 	}
 	return run, nil
