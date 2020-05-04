@@ -17,7 +17,6 @@ type Config interface {
 	GetBool(key string) bool
 	GetFloat64(key string) float64
 	IsSet(key string) bool
-
 }
 
 //

@@ -4,6 +4,7 @@ import (
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 )
+
 //
 // EKSClusterClient is the cluster client for EKS
 // [NOTE] This client assumes the EKS cluster is capable is running a mixed varieties of jobs.
