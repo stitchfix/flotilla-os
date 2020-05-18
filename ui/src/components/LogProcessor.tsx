@@ -79,7 +79,9 @@ export class LogProcessor extends React.Component<Props, State> {
 
   render() {
     const { width, height, hasRunFinished } = this.props
-    const { isProcessing, processedLogs } = this.state
+    let { isProcessing, processedLogs } = this.state
+
+    processedLogs = processedLogs.map((el) => el + "\n")
 
     // If no existing logs and processing, return spinner.
     if (isProcessing && processedLogs.length === 0) {
