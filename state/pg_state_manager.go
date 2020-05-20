@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 
 	"github.com/jmoiron/sqlx"
 
@@ -570,6 +571,7 @@ func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 // UpdateRun updates run with updates - can be partial
 //
 func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
+	start := time.Now()
 	var (
 		err      error
 		existing Run
@@ -644,6 +646,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	if err = tx.Commit(); err != nil {
 		return existing, errors.WithStack(err)
 	}
+
+	_ = metrics.Timing(metrics.EngineUpdateRun, time.Since(start), []string{existing.ClusterName}, 1)
 
 	return existing, nil
 }

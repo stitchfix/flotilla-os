@@ -402,7 +402,10 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 		if !ok {
 			return run, errors.New("Metrics client not defined.")
 		}
+		start := time.Now()
 		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		_ = metrics.Timing(metrics.StatusWorkerFetchMetrics, time.Since(start), []string{run.ClusterName}, 1)
+
 		if err != nil {
 			return run, err
 		}
@@ -428,7 +431,10 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	if err != nil {
 		return state.Run{}, err
 	}
+
+	start := time.Now()
 	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	_ = metrics.Timing(metrics.StatusWorkerGetJob, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err != nil {
 		return run, err
@@ -437,7 +443,9 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	var mostRecentPod *v1.Pod
 	var mostRecentPodCreationTimestamp metav1.Time
 
+	start = time.Now()
 	podList, err := ee.getPodList(run)
+	_ = metrics.Timing(metrics.StatusWorkerGetPodList, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
 		_ = ee.log.Log("message", "iterating over pods", "podList length", len(podList.Items))
@@ -487,7 +495,9 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	//run, _ = ee.FetchPodMetrics(run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
 
+	start = time.Now()
 	events, err := ee.GetEvents(run)
+	_ = metrics.Timing(metrics.StatusWorkerGetEvents, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err == nil && len(events.PodEvents) > 0 {
 		newEvents := events.PodEvents
