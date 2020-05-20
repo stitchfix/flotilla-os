@@ -31,6 +31,16 @@ const (
 	StatusWorkerFetchUpdateStatus Metric = "status_worker.timing.fetch_update_status"
 	// Metric for locked runs
 	StatusWorkerLockedRuns Metric = "status_worker.locked_runs"
+	// Timing for fetch metrics
+	StatusWorkerFetchMetrics Metric = "status_worker.fetch_metrics"
+	// Timing for get pod list
+	StatusWorkerGetPodList Metric = "status_worker.get_pod_list"
+	// Timing for get events
+	StatusWorkerGetEvents Metric = "status_worker.get_events"
+	// Timing for get job
+	StatusWorkerGetJob Metric = "status_worker.get_job"
+	// Engine update run
+	EngineUpdateRun Metric = "engine.update_run"
 )
 
 type MetricTag string
