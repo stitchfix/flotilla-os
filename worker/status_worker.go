@@ -182,6 +182,7 @@ func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
 
 func (sw *statusWorker) runOnceECS() {
 	runReceipt, err := sw.ee.PollStatus()
+
 	if err != nil {
 		sw.log.Log("message", "unable to receive status message", "error", fmt.Sprintf("%+v", err))
 		return

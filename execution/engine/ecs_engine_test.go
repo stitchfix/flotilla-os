@@ -41,6 +41,10 @@ func (mqm *mockQueueManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3F
 	return state.CloudTrailS3File{}, nil
 }
 
+func (mqm *mockQueueManager) ReceiveKubernetesRun(qURL string) (string, error) {
+	return "", nil
+}
+
 func (mqm *mockQueueManager) ReceiveStatus(qURL string) (queue.StatusReceipt, error) {
 	popped := mqm.statusUpdates[0]
 	mqm.statusUpdates = mqm.statusUpdates[1:]
