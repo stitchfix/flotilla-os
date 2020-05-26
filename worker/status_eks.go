@@ -77,7 +77,7 @@ func (sw *statusEKSWorker) runOnceEKS() {
 
 func (sw *statusEKSWorker) processEKSRun(run state.Run) {
 	reloadRun, err := sw.sm.GetRun(run.RunID)
-	if err != nil {
+	if err != nil || reloadRun.Status == state.StatusStopped {
 		return
 	}
 
