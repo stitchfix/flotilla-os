@@ -207,6 +207,11 @@ func (d *DefinitionExecutionRequest) GetExecutionRequestCustom() *ExecutionReque
 	return nil
 }
 
+type TerminateJob struct {
+	RunID    string
+	UserInfo UserInfo
+}
+
 // Definition represents a definition of a job - roughly 1-1 with an AWS ECS
 // task definition. It implements the `Executable` interface.
 type Definition struct {

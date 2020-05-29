@@ -59,6 +59,7 @@ type executionService struct {
 	spotReAttemptOverride    float32
 	eksSpotOverride          bool
 	spotThresholdMinutes     float64
+	terminateJobChannel      chan state.TerminateJob
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -142,6 +143,9 @@ func NewExecutionService(conf config.Config,
 			return run.User
 		},
 	}
+
+	es.terminateJobChannel = make(chan state.TerminateJob, 100)
+	go es.terminateWorker(es.terminateJobChannel)
 
 	// Warm cached cluster list
 	_, _ = es.ecsClusterClient.ListClusters()
@@ -413,56 +417,62 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 	return err
 }
 
+func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
+	for job := range jobChan {
+		runID := job.RunID
+		userInfo := job.UserInfo
+		run, err := es.stateManager.GetRun(runID)
+		if err != nil {
+			break
+		}
+
+		if run.Engine == nil {
+			run.Engine = &state.ECSEngine
+		}
+
+		// If it's queued and not submitted, set status to stopped (checked by submit worker)
+		if run.Status == state.StatusQueued && *run.Engine == state.ECSEngine {
+			_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
+			break
+		}
+
+		if *run.Engine == state.ECSEngine {
+			// If it's been submitted, let the status update workers handle setting it to stopped
+			if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
+				break
+			}
+		}
+
+		if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
+			err = es.eksExecutionEngine.Terminate(run)
+			if err == nil || run.Status == state.StatusQueued {
+				exitReason := "Task terminated by user"
+				if len(userInfo.Email) > 0 {
+					exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
+				}
+
+				exitCode := int64(1)
+				finishedAt := time.Now()
+				_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
+					Status:     state.StatusStopped,
+					ExitReason: &exitReason,
+					ExitCode:   &exitCode,
+					FinishedAt: &finishedAt,
+				})
+				break
+			}
+			break
+		}
+		break
+	}
+}
+
 //
 // Terminate stops the run with the given runID
 //
 func (es *executionService) Terminate(runID string, userInfo state.UserInfo) error {
-	run, err := es.stateManager.GetRun(runID)
-	if err != nil {
-		return err
-	}
-
-	if run.Engine == nil {
-		run.Engine = &state.ECSEngine
-	}
-
-	// If it's queued and not submitted, set status to stopped (checked by submit worker)
-	if run.Status == state.StatusQueued && *run.Engine == state.ECSEngine {
-		_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
-		return err
-	}
-
-	if *run.Engine == state.ECSEngine {
-		// If it's been submitted, let the status update workers handle setting it to stopped
-		if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-			return es.ecsExecutionEngine.Terminate(run)
-		}
-	}
-
-	if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
-		err = es.eksExecutionEngine.Terminate(run)
-		if err == nil || run.Status == state.StatusQueued {
-			exitReason := "Task terminated by user"
-			if len(userInfo.Email) > 0 {
-				exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
-			}
-
-			exitCode := int64(1)
-			finishedAt := time.Now()
-			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
-				Status:     state.StatusStopped,
-				ExitReason: &exitReason,
-				ExitCode:   &exitCode,
-				FinishedAt: &finishedAt,
-			})
-			return err
-		}
-		return nil
-	}
-
-	return exceptions.MalformedInput{
-		ErrorString: fmt.Sprintf(
-			"invalid run, state: %s, arn: %s, clusterName: %s", run.Status, run.TaskArn, run.ClusterName)}
+	es.terminateJobChannel <- state.TerminateJob{RunID: runID, UserInfo: userInfo}
+	return nil
 }
 
 //
