@@ -145,7 +145,6 @@ func NewExecutionService(conf config.Config,
 	}
 
 	es.terminateJobChannel = make(chan state.TerminateJob, 100)
-	go es.terminateWorker(es.terminateJobChannel)
 
 	// Warm cached cluster list
 	_, _ = es.ecsClusterClient.ListClusters()
@@ -451,6 +450,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 					exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
 				}
 
+
 				exitCode := int64(1)
 				finishedAt := time.Now()
 				_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
@@ -472,6 +472,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 //
 func (es *executionService) Terminate(runID string, userInfo state.UserInfo) error {
 	es.terminateJobChannel <- state.TerminateJob{RunID: runID, UserInfo: userInfo}
+	go es.terminateWorker(es.terminateJobChannel)
 	return nil
 }
 
