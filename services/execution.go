@@ -425,6 +425,17 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 			break
 		}
 
+		subRuns, err := es.stateManager.ListRuns(1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
+		if err == nil && subRuns.Total > 0 {
+			for _, subRun := range subRuns.Runs {
+				es.terminateJobChannel <- state.TerminateJob{
+					RunID:    subRun.RunID,
+					UserInfo: job.UserInfo,
+				}
+			}
+			go es.terminateWorker(es.terminateJobChannel)
+		}
+
 		if run.Engine == nil {
 			run.Engine = &state.ECSEngine
 		}
@@ -449,7 +460,6 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 				if len(userInfo.Email) > 0 {
 					exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
 				}
-
 
 				exitCode := int64(1)
 				finishedAt := time.Now()
