@@ -143,7 +143,8 @@ select
   execution_request_custom::TEXT as executionrequestcustom,
   cpu_limit as cpulimit,
   memory_limit as memorylimit,
-  attempt_count as attemptcount
+  attempt_count as attemptcount,
+  spawned
 from task t
 `
 
