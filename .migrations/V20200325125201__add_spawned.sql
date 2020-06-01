@@ -1,1 +1,1 @@
-ALTER TABLE task ADD COLUMN spawned jsonb;
+ALTER TABLE task ADD COLUMN spawned_runs jsonb;

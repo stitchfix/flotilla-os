@@ -144,7 +144,7 @@ select
   cpu_limit as cpulimit,
   memory_limit as memorylimit,
   attempt_count as attemptcount,
-  spawned
+  spawned_runs as spawnedruns
 from task t
 `
 
