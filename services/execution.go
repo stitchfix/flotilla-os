@@ -450,7 +450,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 		if *run.Engine == state.ECSEngine {
 			// If it's been submitted, let the status update workers handle setting it to stopped
 			if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-				break
+				err = es.ecsExecutionEngine.Terminate(run)
 			}
 		}
 
