@@ -990,6 +990,20 @@ func (e *PodEvents) Scan(value interface{}) error {
 }
 
 // Value to db
+func (e SpawnedRuns) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+func (e *SpawnedRuns) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
+// Value to db
 func (e PodEvents) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil

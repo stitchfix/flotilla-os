@@ -132,15 +132,16 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	updatedRun, err := sw.ee.FetchUpdateStatus(updatedRunWithMetrics)
 	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 
-	subRuns, err := sw.sm.ListRuns(1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": updatedRun.RunID}, state.Engines)
-	if err == nil && subRuns.Total > 0 {
-		var spawnedRuns state.SpawnedRuns
-		for _, subRun := range subRuns.Runs {
-			spawnedRuns = append(spawnedRuns, state.SpawnedRun{RunID: subRun.RunID})
+	if err == nil {
+		subRuns, err := sw.sm.ListRuns(1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
+		if err == nil && subRuns.Total > 0 {
+			var spawnedRuns state.SpawnedRuns
+			for _, subRun := range subRuns.Runs {
+				spawnedRuns = append(spawnedRuns, state.SpawnedRun{RunID: subRun.RunID})
+			}
+			updatedRun.SpawnedRuns = &spawnedRuns
 		}
-		updatedRun.SpawnedRuns = &spawnedRuns
 	}
-
 	if err != nil {
 		message := fmt.Sprintf("%+v", err)
 		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
