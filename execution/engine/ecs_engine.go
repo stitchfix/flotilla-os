@@ -81,8 +81,8 @@ func (ee *ECSExecutionEngine) Initialize(conf config.Config) error {
 	// - this isn't ideal; is there another way?
 	//
 	if flotillaMode != "test" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(conf.GetString("aws_default_region"))}))
+		awsConfig := &aws.Config{Region: aws.String(conf.GetString("aws_default_region"))}
+		sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
 
 		ecsClient := ecs.New(sess)
 		ec2Client := ec2.New(sess)

@@ -113,7 +113,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	)
 	confLogOptions := conf.GetStringMapString("eks.manifest.storage.options")
 	awsRegion := confLogOptions["region"]
-	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
+	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
+	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
 	ee.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	ee.s3Bucket = confLogOptions["s3_bucket_name"]
 	ee.s3BucketRootDir = confLogOptions["s3_bucket_root_dir"]
