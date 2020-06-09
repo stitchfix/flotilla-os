@@ -1,11 +1,14 @@
 package worker
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/queue"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 
@@ -18,15 +21,17 @@ import (
 )
 
 type statusWorker struct {
-	sm           state.Manager
-	ee           engine.Engine
-	conf         config.Config
-	log          flotillaLog.Logger
-	pollInterval time.Duration
-	t            tomb.Tomb
-	engine       *string
-	redisClient  *redis.Client
-	workerId     string
+	sm                       state.Manager
+	ee                       engine.Engine
+	conf                     config.Config
+	log                      flotillaLog.Logger
+	pollInterval             time.Duration
+	t                        tomb.Tomb
+	engine                   *string
+	redisClient              *redis.Client
+	workerId                 string
+	exceptionExtractorClient *http.Client
+	exceptionExtractorUrl    string
 }
 
 func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
@@ -37,6 +42,13 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.log = log
 	sw.engine = engine
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
+
+	if sw.conf.IsSet("eks.exception_extractor_url") {
+		sw.exceptionExtractorClient = &http.Client{
+			Timeout: time.Second * 5,
+		}
+		sw.exceptionExtractorUrl = sw.conf.GetString("eks.exception_extractor_url")
+	}
 	sw.setupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
 	return nil
@@ -94,7 +106,7 @@ func (sw *statusWorker) runOnceEKS() {
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	var lockedRuns []state.Run
 	for _, run := range runs {
-		duration := time.Duration((rand.Intn(15))+15) * time.Second
+		duration := time.Duration((rand.Intn(15))+25) * time.Second
 		lock := sw.acquireLock(run, "status", duration)
 		if lock {
 			lockedRuns = append(lockedRuns, run)
@@ -159,6 +171,21 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	} else {
 		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
 			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
+			if sw.exceptionExtractorClient != nil {
+				jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
+				res, err := sw.exceptionExtractorClient.Get(jobUrl)
+				if err == nil {
+					body, err := ioutil.ReadAll(res.Body)
+					if body != nil {
+						defer res.Body.Close()
+						runExceptions := state.RunExceptions{}
+						err = json.Unmarshal(body, &runExceptions)
+						if err == nil {
+							updatedRun.RunExceptions = &runExceptions
+						}
+					}
+				}
+			}
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			if err != nil {
 				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
