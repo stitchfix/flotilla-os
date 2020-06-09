@@ -686,11 +686,7 @@ type SpawnedRun struct {
 
 type SpawnedRuns []SpawnedRun
 
-type RunException struct {
-	Payload string `json:"payload"`
-}
-
-type RunExceptions []RunException
+type RunExceptions []string
 
 func (w *PodEvent) Equal(other PodEvent) bool {
 	return w.Reason == other.Reason &&
