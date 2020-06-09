@@ -450,6 +450,7 @@ type Run struct {
 	ExecutionRequestCustom  *ExecutionRequestCustom  `json:"execution_request_custom,omitempty"`
 	AttemptCount            *int64                   `json:"attempt_count,omitempty"`
 	SpawnedRuns             *SpawnedRuns             `json:"spawned_runs,omitempty"`
+	RunExceptions           *RunExceptions           `json:"run_exceptions,omitempty"`
 }
 
 //
@@ -569,6 +570,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.SpawnedRuns = other.SpawnedRuns
 	}
 
+	if other.RunExceptions != nil {
+		d.RunExceptions = other.RunExceptions
+	}
+
 	if other.ExecutableID != nil {
 		d.ExecutableID = other.ExecutableID
 	}
@@ -680,6 +685,12 @@ type SpawnedRun struct {
 }
 
 type SpawnedRuns []SpawnedRun
+
+type RunException struct {
+	Payload string `json:"payload"`
+}
+
+type RunExceptions []RunException
 
 func (w *PodEvent) Equal(other PodEvent) bool {
 	return w.Reason == other.Reason &&
