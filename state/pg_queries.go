@@ -145,7 +145,7 @@ select
   memory_limit as memorylimit,
   attempt_count as attemptcount,
   spawned_runs::TEXT as spawnedruns,
-  run_exceptions::TEXT as runexceptions,
+  run_exceptions::TEXT as runexceptions
 from task t
 `
 
