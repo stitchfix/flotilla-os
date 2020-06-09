@@ -171,7 +171,8 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	} else {
 		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
 			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
-			if sw.exceptionExtractorClient != nil {
+
+			if sw.exceptionExtractorClient != nil && updatedRun.ExitCode != nil && *(updatedRun.ExitCode) != 0 {
 				jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
 				res, err := sw.exceptionExtractorClient.Get(jobUrl)
 				if err == nil {
