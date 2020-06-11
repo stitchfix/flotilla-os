@@ -173,19 +173,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
 
 			if sw.exceptionExtractorClient != nil && updatedRun.ExitCode != nil && *(updatedRun.ExitCode) != int64(0) {
-				jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
-				res, err := sw.exceptionExtractorClient.Get(jobUrl)
-				if err == nil {
-					body, err := ioutil.ReadAll(res.Body)
-					if body != nil {
-						defer res.Body.Close()
-						runExceptions := state.RunExceptions{}
-						err = json.Unmarshal(body, &runExceptions)
-						if err == nil {
-							updatedRun.RunExceptions = &runExceptions
-						}
-					}
-				}
+				go sw.extractExceptions(run.RunID)
 			}
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			if err != nil {
@@ -206,6 +194,28 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 				updatedRun.SpawnedRuns != run.SpawnedRuns {
 				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			}
+		}
+	}
+}
+
+func (sw *statusWorker) extractExceptions(runID string) {
+	//Logs maybe delayed before being persisted to S3.
+	time.Sleep(60 * time.Second)
+	run, err := sw.sm.GetRun(runID)
+	if err == nil {
+		jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
+		res, err := sw.exceptionExtractorClient.Get(jobUrl)
+		if err == nil && res != nil && res.Body != nil {
+			body, err := ioutil.ReadAll(res.Body)
+			if body != nil {
+				defer res.Body.Close()
+				runExceptions := state.RunExceptions{}
+				err = json.Unmarshal(body, &runExceptions)
+				if err == nil {
+					run.RunExceptions = &runExceptions
+				}
+			}
+			_, _ = sw.sm.UpdateRun(run.RunID, run)
 		}
 	}
 }
