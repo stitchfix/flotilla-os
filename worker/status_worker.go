@@ -200,6 +200,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 				updatedRun.MaxCpuUsed != run.MaxCpuUsed ||
 				updatedRun.Cpu != run.Cpu ||
+				updatedRun.PodName != run.PodName ||
 				updatedRun.Memory != run.Memory ||
 				updatedRun.PodEvents != run.PodEvents ||
 				updatedRun.SpawnedRuns != run.SpawnedRuns {
