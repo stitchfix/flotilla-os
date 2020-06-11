@@ -69,7 +69,7 @@ const TaskExecutionRuntimeCommandSQL = `
 SELECT percentile_disc(0.95) within GROUP (ORDER BY A.minutes) as minutes
 FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       FROM TASK
-      WHERE executable_id = $1
+      WHERE definition_id = $1
         AND exit_code = 0
         AND engine = 'eks'
         AND max_memory_used is not null
