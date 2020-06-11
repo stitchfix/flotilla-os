@@ -56,7 +56,7 @@ SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 
 FROM (SELECT max_memory_used, max_cpu_used
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '3 days'
            AND exit_code = 0
            AND max_memory_used is not null
            AND max_cpu_used is not null
@@ -72,9 +72,6 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       WHERE definition_id = $1
         AND exit_code = 0
         AND engine = 'eks'
-        AND max_memory_used is not null
-        AND max_cpu_used is not null
-        AND command_hash is not NULL
         AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '3 days'
         AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
