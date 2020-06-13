@@ -2,9 +2,7 @@ package engine
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -57,16 +55,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
-	for clusterName, b64Kubeconfig := range clusters {
+	for clusterName, _ := range clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
-		kStr, err := base64.StdEncoding.DecodeString(b64Kubeconfig)
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(filename, kStr, 0644)
-		if err != nil {
-			return err
-		}
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
 			return err
