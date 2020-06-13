@@ -72,6 +72,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 			return err
 		}
 		kClient, err := kubernetes.NewForConfig(clientConf)
+		_ = ee.log.Log("initializing-eks-clusters=", clusterName, "filename", filename, "client", clientConf.ServerName)
 		if err != nil {
 			return err
 		}
