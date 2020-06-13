@@ -2,9 +2,7 @@ package engine
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"time"
 
