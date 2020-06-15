@@ -37,14 +37,13 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
 		updated.Status = state.StatusRunning
 	} else if job.Status.Succeeded == 1 {
-		var exitCode int64 = 0
 		if pod != nil && pod.Status.Phase == corev1.PodSucceeded {
+			var exitCode int64 = 0
 			var exitReason = fmt.Sprintf("Pod %s Exited Successfully", pod.Name)
 			updated.ExitReason = &exitReason
+			updated.Status = state.StatusStopped
+			updated.ExitCode = &exitCode
 		}
-		updated.Status = state.StatusStopped
-		updated.ExitCode = &exitCode
-
 	} else if job.Status.Failed == 1 {
 		var exitCode int64 = 1
 		updated.Status = state.StatusStopped
