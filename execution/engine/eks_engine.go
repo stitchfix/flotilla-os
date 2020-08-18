@@ -495,7 +495,9 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	hoursBack := time.Now().Add(-24 * time.Hour)
 
 	start = time.Now()
-	events, err := ee.GetEvents(run)
+	var events state.PodEventList
+	// Disabling GetEvents
+	// events, err = ee.GetEvents(run)
 	_ = metrics.Timing(metrics.StatusWorkerGetEvents, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err == nil && len(events.PodEvents) > 0 {
