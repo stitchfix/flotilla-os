@@ -17,7 +17,6 @@ import (
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
-	"gopkg.in/tomb.v2"
 )
 
 type statusWorker struct {
@@ -115,7 +114,7 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	_ = metrics.Increment(metrics.StatusWorkerLockedRuns, []string{sw.workerId}, float64(len(lockedRuns)))
 	for _, run := range lockedRuns {
 		start := time.Now()
-		sw.processEKSRun(run)
+		go sw.processEKSRun(run)
 		_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
 	}
 }
