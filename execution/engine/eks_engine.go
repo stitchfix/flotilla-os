@@ -244,14 +244,9 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 		return err
 	}
 
-	err = kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+	_ = kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
 	if run.PodName != nil {
 		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
-	}
-
-	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusFailure)}, 1)
-		return err
 	}
 
 	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
