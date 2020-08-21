@@ -105,7 +105,7 @@ func (sw *statusWorker) runOnceEKS() {
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	var lockedRuns []state.Run
 	for _, run := range runs {
-		duration := time.Duration(rand.Intn(60)) * time.Second
+		duration := time.Duration(30) * time.Second
 		lock := sw.acquireLock(run, "status", duration)
 		if lock {
 			lockedRuns = append(lockedRuns, run)
