@@ -90,7 +90,7 @@ func (sw *statusWorker) Run() error {
 func (sw *statusWorker) runOnceEKS() {
 	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -3).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
 	}, nil, []string{state.EKSEngine})
@@ -106,7 +106,7 @@ func (sw *statusWorker) runOnceEKS() {
 func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	var lockedRuns []state.Run
 	for _, run := range runs {
-		duration := time.Duration((rand.Intn(15))+25) * time.Second
+		duration := time.Duration(rand.Intn(15)) * time.Second
 		lock := sw.acquireLock(run, "status", duration)
 		if lock {
 			lockedRuns = append(lockedRuns, run)
