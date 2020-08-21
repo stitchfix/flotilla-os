@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
+	"gopkg.in/tomb.v2"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
