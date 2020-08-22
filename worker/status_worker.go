@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/engine"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
+	"github.com/stitchfix/flotilla-os/state"
+	"gopkg.in/tomb.v2"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
-	"gopkg.in/tomb.v2"
-	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/config"
-	"github.com/stitchfix/flotilla-os/execution/engine"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
-	"github.com/stitchfix/flotilla-os/state"
 )
 
 type statusWorker struct {
@@ -121,7 +121,12 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 }
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
 	start := time.Now()
-	set, err := sw.redisClient.SetNX(fmt.Sprintf("%s-%s", run.RunID, purpose), sw.workerId, expiration).Result()
+	key := fmt.Sprintf("%s-%s", run.RunID, purpose)
+	ttl, err := sw.redisClient.TTL(key).Result()
+	if err == nil && ttl.Nanoseconds() < 0 {
+		_, err = sw.redisClient.Del(key).Result()
+	}
+	set, err := sw.redisClient.SetNX(key, sw.workerId, expiration).Result()
 	if err != nil {
 		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
 		return true
