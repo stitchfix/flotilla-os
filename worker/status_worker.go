@@ -114,6 +114,7 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	_ = metrics.Increment(metrics.StatusWorkerLockedRuns, []string{sw.workerId}, float64(len(lockedRuns)))
 	for _, run := range lockedRuns {
 		start := time.Now()
+		_ = sw.log.Log("message", "launching go process eks run", "run", run.RunID)
 		go sw.processEKSRun(run)
 		_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
 	}
