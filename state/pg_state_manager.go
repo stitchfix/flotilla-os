@@ -24,14 +24,15 @@ import (
 // SQLStateManager uses postgresql to manage state
 //
 type SQLStateManager struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	readonlyDB *sqlx.DB
 }
 
 func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
 	var err error
 	var nodeList NodeList
 
-	err = sm.db.Select(&nodeList, ListFailingNodesSQL)
+	err = sm.readonlyDB.Select(&nodeList, ListFailingNodesSQL)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -47,7 +48,7 @@ func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
 func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	var err error
 	attemptRate := float32(1.0)
-	err = sm.db.Get(&attemptRate, PodReAttemptRate)
+	err = sm.readonlyDB.Get(&attemptRate, PodReAttemptRate)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -63,7 +64,7 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID string) (float32, error) {
 	var err error
 	minutes := float32(1.0)
-	err = sm.db.Get(&minutes, TaskExecutionRuntimeCommandSQL, executableID, runID)
+	err = sm.readonlyDB.Get(&minutes, TaskExecutionRuntimeCommandSQL, executableID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -80,7 +81,7 @@ func (sm *SQLStateManager) EstimateRunResources(executableID string, runID strin
 	var err error
 	var taskResources TaskResources
 
-	err = sm.db.Get(&taskResources, TaskResourcesSelectCommandSQL, executableID, runID)
+	err = sm.readonlyDB.Get(&taskResources, TaskResourcesSelectCommandSQL, executableID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -125,8 +126,20 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 		return errors.Wrap(err, "unable to open postgres db")
 	}
 
+	var readonlyDbUrl string
+	if conf.IsSet("readonly_database_url") {
+		readonlyDbUrl = conf.GetString("readonly_database_url")
+	} else {
+		readonlyDbUrl = dburl
+	}
+
+	if sm.readonlyDB, err = sqlx.Open("postgres", readonlyDbUrl); err != nil {
+		return errors.Wrap(err, "unable to open readonly postgres db")
+	}
+
 	if conf.IsSet("database_max_idle_connections") {
 		sm.db.SetMaxIdleConns(conf.GetInt("database_max_idle_connections"))
+		sm.readonlyDB.SetMaxIdleConns(conf.GetInt("database_max_idle_connections"))
 	}
 
 	if createSchema {
