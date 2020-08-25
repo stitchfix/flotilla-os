@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
+	"go.uber.org/multierr"
 )
 
 //
@@ -917,7 +918,7 @@ func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, er
 // Cleanup close any open resources
 //
 func (sm *SQLStateManager) Cleanup() error {
-	return sm.db.Close()
+	return multierr.Combine(sm.db.Close(), sm.readonlyDB.Close())
 }
 
 type IOrderable interface {

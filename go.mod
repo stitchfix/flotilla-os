@@ -36,6 +36,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/yuin/goldmark v1.1.32 // indirect
+	go.uber.org/multierr v1.1.0
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
