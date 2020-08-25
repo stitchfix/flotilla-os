@@ -169,7 +169,6 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	var requiredMatch []corev1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
-	cpuNodeTypes := []string{"c5.2xlarge", "c5.4xlarge", "c5.9xlarge"}
 
 	var nodeLifecycle []string
 	if *run.NodeLifecycle == state.OndemandLifecycle {
@@ -192,19 +191,6 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 				Key:      "kubernetes.io/hostname",
 				Operator: corev1.NodeSelectorOpNotIn,
 				Values:   nodeList,
-			})
-		}
-
-		//For high cpu jobs - assign to c5 node types.
-		if run.Memory != nil &&
-			run.Cpu != nil &&
-			*run.Cpu > int64(0) &&
-			*run.Memory > int64(0) &&
-			float64(*run.Cpu)/float64(*run.Memory) >= 0.5 {
-			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "beta.kubernetes.io/instance-type",
-				Operator: corev1.NodeSelectorOpIn,
-				Values:   cpuNodeTypes,
 			})
 		}
 	}
