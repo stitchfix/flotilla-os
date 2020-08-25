@@ -23,7 +23,7 @@ var DefaultEngine = ECSEngine
 
 var DefaultARA = true
 
-var MinCPU = int64(512)
+var MinCPU = int64(256)
 
 var MaxCPU = int64(32000)
 
