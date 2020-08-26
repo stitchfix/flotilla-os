@@ -51,12 +51,12 @@ const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectCommandSQL = `
-SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 1.5 as int) as memory,
+SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 1.75 as int) as memory,
        cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used)) * 1.25  as int)  as cpu
 FROM (SELECT max_memory_used, max_cpu_used
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '3 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
            AND exit_code = 0
            AND max_memory_used is not null
            AND max_cpu_used is not null
@@ -72,7 +72,7 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       WHERE definition_id = $1
         AND exit_code = 0
         AND engine = 'eks'
-        AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '3 days'
+        AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
         AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
 `
