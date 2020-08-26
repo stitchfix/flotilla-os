@@ -80,7 +80,11 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
 const ListFailingNodesSQL = `
 SELECT instance_dns_name
       FROM TASK
-      WHERE (exit_code = 128 OR pod_events @> '[{"reason": "Failed"}]' OR pod_events @> '[{"reason": "FailedSync"}]' OR  pod_events @> '[{"reason": "FailedCreatePodSandBox"}]')
+      WHERE (exit_code = 128 OR
+            pod_events @> '[{"reason": "Failed"}]' OR
+            pod_events @> '[{"reason": "FailedSync"}]' OR
+            pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
+            (exit_code = 1 AND exit_reason is null))
            AND engine = 'eks'
            AND queued_at >= NOW() - INTERVAL '12 HOURS'
       GROUP BY 1
