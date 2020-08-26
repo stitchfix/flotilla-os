@@ -27,7 +27,7 @@ var MinCPU = int64(256)
 
 var MaxCPU = int64(32000)
 
-var MinMem = int64(256)
+var MinMem = int64(512)
 
 var MaxMem = int64(250000)
 
