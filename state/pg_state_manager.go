@@ -120,18 +120,13 @@ var likeFields = map[string]bool{
 //
 func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	dburl := conf.GetString("database_url")
+	readonlyDbUrl := conf.GetString("readonly_database_url")
+
 	createSchema := conf.GetBool("create_database_schema")
 
 	var err error
 	if sm.db, err = sqlx.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
-	}
-
-	var readonlyDbUrl string
-	if conf.IsSet("readonly_database_url") {
-		readonlyDbUrl = conf.GetString("readonly_database_url")
-	} else {
-		readonlyDbUrl = dburl
 	}
 
 	if sm.readonlyDB, err = sqlx.Open("postgres", readonlyDbUrl); err != nil {
