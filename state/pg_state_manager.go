@@ -531,11 +531,11 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	sql := fmt.Sprintf(ListRunsSQL, whereClause, orderQuery)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
-	err = sm.db.Select(&result.Runs, sql, limit, offset)
+	err = sm.readonlyDB.Select(&result.Runs, sql, limit, offset)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs sql")
 	}
-	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	err = sm.readonlyDB.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs count sql")
 	}
@@ -817,12 +817,12 @@ func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListWorkersSQL)
 
-	err = sm.db.Select(&result.Workers, GetWorkerEngine, engine)
+	err = sm.readonlyDB.Select(&result.Workers, GetWorkerEngine, engine)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers sql")
 	}
 
-	err = sm.db.Get(&result.Total, countSQL)
+	err = sm.readonlyDB.Get(&result.Total, countSQL)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers count sql")
 	}
@@ -834,7 +834,7 @@ func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 // GetWorker returns data for a single worker.
 //
 func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker, err error) {
-	if err := sm.db.Get(&w, GetWorkerSQL, workerType, engine); err != nil {
+	if err := sm.readonlyDB.Get(&w, GetWorkerSQL, workerType, engine); err != nil {
 		if err == sql.ErrNoRows {
 			err = exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Worker of type %s not found", workerType)}
