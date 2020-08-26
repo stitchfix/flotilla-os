@@ -531,11 +531,11 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	sql := fmt.Sprintf(ListRunsSQL, whereClause, orderQuery)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
-	err = sm.readonlyDB.Select(&result.Runs, sql, limit, offset)
+	err = sm.db.Select(&result.Runs, sql, limit, offset)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs sql")
 	}
-	err = sm.readonlyDB.Get(&result.Total, countSQL, nil, 0)
+	err = sm.db.Get(&result.Total, countSQL, nil, 0)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs count sql")
 	}
