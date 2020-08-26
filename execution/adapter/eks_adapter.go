@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"math"
 	"strings"
 	"time"
 )
@@ -267,19 +266,10 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 	executableResources := executable.GetExecutableResources()
 	if araEnabled && executableResources.AdaptiveResourceAllocation != nil && *executableResources.AdaptiveResourceAllocation == true {
-		// Check if last run was a OOM, in that case only increase memory
-		lastRun := a.getLastRun(manager, run)
-		if lastRun.ExitReason != nil && strings.Contains(*lastRun.ExitReason, "OOMKilled") {
-			memRequest = int64(math.Max(float64(*lastRun.Memory)*1.75, float64(memLimit)))
-			cpuRequest = *lastRun.Cpu
-		} else {
-			// If last run wasn't an OOM, estimate based on successful runs.
-			estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
-			if err == nil {
-				cpuRequest = estimatedResources.Cpu
-				memRequest = estimatedResources.Memory
-
-			}
+		estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
+		if err == nil {
+			cpuRequest = estimatedResources.Cpu
+			memRequest = estimatedResources.Memory
 		}
 	}
 	if cpuRequest > cpuLimit {
