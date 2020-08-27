@@ -181,6 +181,15 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
 			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
 
+			// Get pod events for failed runs.
+			var exitCode int64 = 0
+			if updatedRun.ExitCode != &exitCode {
+				events, err := sw.ee.GetEvents(updatedRun)
+				if err == nil && events.PodEvents != nil {
+					updatedRun.PodEvents = &events.PodEvents
+				}
+			}
+
 			if updatedRun.ExitCode != nil {
 				go sw.cleanupRun(run.RunID)
 			}
@@ -209,7 +218,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 
 func (sw *statusWorker) cleanupRun(runID string) {
 	//Logs maybe delayed before being persisted to S3.
-	time.Sleep(90 * time.Second)
+	time.Sleep(120 * time.Second)
 	run, err := sw.sm.GetRun(runID)
 	if err == nil {
 		//Delete run from Kubernetes
