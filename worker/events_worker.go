@@ -32,7 +32,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	ew.qm = qm
 	ew.log = log
 	ew.engine = engine
-	ew.queue = conf.GetString("eks_events_queue")
+	ew.queue = conf.GetString("eks.events_queue")
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	return nil
