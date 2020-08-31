@@ -991,12 +991,6 @@ func (tl *TemplateList) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func UnmarshalKubernetesEvent(data []byte) (KubernetesEvent, error) {
-	var r KubernetesEvent
-	err := json.Unmarshal(data, &r)
-	return r, err
-}
-
 func (r *KubernetesEvent) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
