@@ -990,3 +990,52 @@ func (tl *TemplateList) MarshalJSON() ([]byte, error) {
 		Alias:     (*Alias)(tl),
 	})
 }
+
+func (r *KubernetesEvent) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type KubernetesEvent struct {
+	Metadata           Metadata       `json:"metadata,omitempty"`
+	Reason             string         `json:"reason,omitempty"`
+	Message            string         `json:"message,omitempty"`
+	Source             Source         `json:"source,omitempty"`
+	FirstTimestamp     string         `json:"firstTimestamp,omitempty"`
+	LastTimestamp      string         `json:"lastTimestamp,omitempty"`
+	Count              int64          `json:"count,omitempty"`
+	Type               string         `json:"type,omitempty"`
+	EventTime          interface{}    `json:"eventTime,omitempty"`
+	ReportingComponent string         `json:"reportingComponent,omitempty"`
+	ReportingInstance  string         `json:"reportingInstance,omitempty"`
+	InvolvedObject     InvolvedObject `json:"involvedObject,omitempty"`
+}
+
+type InvolvedObject struct {
+	Kind            string `json:"kind,omitempty"`
+	Namespace       string `json:"namespace,omitempty"`
+	Name            string `json:"name,omitempty"`
+	Uid             string `json:"uid,omitempty"`
+	APIVersion      string `json:"apiVersion,omitempty"`
+	ResourceVersion string `json:"resourceVersion,omitempty"`
+	FieldPath       string `json:"fieldPath,omitempty"`
+	Labels          Labels `json:"labels,omitempty"`
+}
+
+type Labels struct {
+	ControllerUid string `json:"controller-uid,omitempty"`
+	JobName       string `json:"job-name,omitempty"`
+}
+
+type Metadata struct {
+	Name              string `json:"name,omitempty"`
+	Namespace         string `json:"namespace,omitempty"`
+	SelfLink          string `json:"selfLink,omitempty"`
+	Uid               string `json:"uid,omitempty"`
+	ResourceVersion   string `json:"resourceVersion,omitempty"`
+	CreationTimestamp string `json:"creationTimestamp,omitempty"`
+}
+
+type Source struct {
+	Component string `json:"component,omitempty"`
+	Host      string `json:"host,omitempty"`
+}

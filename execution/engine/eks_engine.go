@@ -307,13 +307,7 @@ func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
 //
 // Reads off SQS queue and generates a Run object based on the runId
 func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
-	var run state.Run
-
-	runId, err := ee.qm.ReceiveKubernetesRun(ee.statusQueue)
-	if err == nil && len(runId) > 0 {
-		run.RunID = runId
-	}
-	return run, err
+	return state.Run{}, nil
 }
 
 //

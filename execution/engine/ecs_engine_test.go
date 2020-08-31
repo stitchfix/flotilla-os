@@ -41,6 +41,10 @@ func (mqm *mockQueueManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3F
 	return state.CloudTrailS3File{}, nil
 }
 
+func (mqm *mockQueueManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error) {
+	return state.KubernetesEvent{}, nil
+}
+
 func (mqm *mockQueueManager) ReceiveKubernetesRun(qURL string) (string, error) {
 	return "", nil
 }
