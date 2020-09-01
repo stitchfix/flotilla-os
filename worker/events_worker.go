@@ -32,7 +32,14 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	ew.qm = qm
 	ew.log = log
 	ew.engine = engine
-	ew.queue = conf.GetString("eks.events_queue")
+	eventsQueue, err := ew.qm.QurlFor("eks.events_queue", false)
+
+	if err != nil {
+		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
+		return nil
+	}
+
+	ew.queue = eventsQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	return nil
@@ -56,17 +63,11 @@ func (ew *eventsWorker) Run() error {
 }
 
 func (ew *eventsWorker) runOnce() {
-	qurl, err := ew.qm.QurlFor(ew.queue, false)
-	if err != nil {
-		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
-		return
-	}
-	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(qurl)
+	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-
 	ew.processEvent(kubernetesEvent)
 }
 
