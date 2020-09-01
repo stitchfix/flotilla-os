@@ -32,7 +32,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	ew.qm = qm
 	ew.log = log
 	ew.engine = engine
-	eventsQueue, err := ew.qm.QurlFor("eks.events_queue", false)
+	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
 
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
