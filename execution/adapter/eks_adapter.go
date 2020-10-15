@@ -201,7 +201,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	}
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/lifecycle",
+		Key:      "node.kubernetes.io/lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
