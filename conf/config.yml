@@ -1,6 +1,7 @@
-flotilla_mode: dev
+flotilla_mode: test
 aws_default_region: us-east-1
 database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable'
+readonly_database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable'
 create_database_schema: true
 state_manager: postgres
 queue_manager: sqs
@@ -35,6 +36,7 @@ worker:
         retry_worker_count_per_instance: 1
         submit_worker_count_per_instance: 2
         status_worker_count_per_instance: 2
+        events_queue: flotilla
 http:
     server:
         read_timeout_seconds: 5
