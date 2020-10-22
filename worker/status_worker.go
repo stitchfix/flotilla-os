@@ -180,7 +180,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	} else {
 		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
 			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
-
+			sw.logStatusUpdate(updatedRun)
 			if updatedRun.ExitCode != nil {
 				go sw.cleanupRun(run.RunID)
 			}
