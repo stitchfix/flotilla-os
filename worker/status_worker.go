@@ -304,6 +304,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	var err error
 	var startedAt, finishedAt time.Time
 	var env state.EnvList
+	var command string
 
 	if update.StartedAt != nil {
 		startedAt = *update.StartedAt
@@ -317,6 +318,10 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 		env = *update.Env
 	}
 
+	if update.Command != nil {
+		command = *update.Command
+	}
+
 	if update.ExitCode != nil {
 		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
@@ -325,6 +330,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"alias", update.Alias,
 			"image", update.Image,
 			"cluster_name", update.ClusterName,
+			"command", command,
 			"exit_code", *update.ExitCode,
 			"status", update.Status,
 			"started_at", startedAt,
@@ -345,6 +351,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"alias", update.Alias,
 			"image", update.Image,
 			"cluster_name", update.ClusterName,
+			"command", command,
 			"status", update.Status,
 			"started_at", startedAt,
 			"finished_at", finishedAt,
