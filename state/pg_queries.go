@@ -84,6 +84,7 @@ SELECT instance_dns_name
       WHERE (exit_code = 128 OR
             pod_events @> '[{"reason": "Failed"}]' OR
             pod_events @> '[{"reason": "FailedSync"}]' OR
+            pod_events @> '[{"reason": "OutOfmemory"}]' OR
             pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
             (exit_code = 1 AND exit_reason is null))
            AND engine = 'eks'
