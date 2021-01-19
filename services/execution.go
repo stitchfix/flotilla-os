@@ -51,7 +51,7 @@ type executionService struct {
 	ecsExecutionEngine       engine.Engine
 	eksExecutionEngine       engine.Engine
 	reservedEnv              map[string]func(run state.Run) string
-	eksClusterOverride       string
+	eksClusterOverride       []string
 	eksOverridePercent       int
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
@@ -94,7 +94,7 @@ func NewExecutionService(conf config.Config,
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
 
-	es.eksClusterOverride = conf.GetString("eks.cluster_override")
+	es.eksClusterOverride = conf.GetStringSlice("eks.cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
 	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
 	if conf.IsSet("check_image_validity") {
@@ -499,17 +499,20 @@ func (es *executionService) ListClusters() ([]string, error) {
 // several common request fields (mostly around ECS/EKS differences).
 //
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) {
+	rand.Seed(time.Now().Unix())
 	if fields.Engine == nil {
 		fields.Engine = &state.DefaultEngine
 	}
 
 	// Handle the case the cluster name was of type EKS but fields.Engine was not set to EKS.
-	if fields.ClusterName == es.eksClusterOverride {
-		fields.Engine = &state.EKSEngine
+	for _, v := range es.eksClusterOverride {
+		if v == fields.ClusterName {
+			fields.Engine = &state.EKSEngine
+		}
 	}
 
 	if *fields.Engine == state.EKSEngine {
-		fields.ClusterName = es.eksClusterOverride
+		fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
 	}
 
 	// Added to facilitate migration of ECS jobs to EKS.
@@ -522,7 +525,7 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 			} else {
 				fields.NodeLifecycle = &state.SpotLifecycle
 			}
-			fields.ClusterName = es.eksClusterOverride
+			fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
 		}
 	}
 

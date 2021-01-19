@@ -19,7 +19,7 @@ var ECSEngine = "ecs"
 
 var EKSEngine = "eks"
 
-var DefaultEngine = ECSEngine
+var DefaultEngine = EKSEngine
 
 var DefaultARA = true
 

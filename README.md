@@ -310,7 +310,7 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `eks.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
 | `eks.kubeconfig_basepath` | folder where the kubeconfigs are stored |
 | `eks.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
-| `eks.cluster_override` | EKS cluster to override ECS traffic |
+| `eks.cluster_override` | EKS clusters to override ECS traffic |
 | `eks.cluster_override_percent` | Percentage of traffic to send to EKS over ECS - if multiple clusters are configured, default is ECS |
 | `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
 | `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
