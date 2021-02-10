@@ -4,23 +4,23 @@ package state
 // DefinitionSelect postgres specific query for definitions
 //
 const DefinitionSelect = `
-select coalesce(td.arn, '')            as arn,
-       td.definition_id                as definitionid,
-       td.adaptive_resource_allocation as adaptiveresourceallocation,
-       td.image                        as image,
-       td.group_name                   as groupname,
-       td.container_name               as containername,
-       coalesce(td.user, '')           as "user",
-       td.alias                        as alias,
-       td.memory                       as memory,
-       coalesce(td.command, '')        as command,
-       coalesce(td.task_type, '')      as tasktype,
-       env::TEXT                       as env,
-       td.privileged                   as privileged,
-       td.cpu                          as cpu,
-       td.gpu                          as gpu,
-       '[""]'                          as tags,
-       null                            as ports
+select coalesce(td.arn, '')                as arn,
+       td.definition_id                    as definitionid,
+       td.adaptive_resource_allocation     as adaptiveresourceallocation,
+       td.image                            as image,
+       td.group_name                       as groupname,
+       td.container_name                   as containername,
+       coalesce(td.user, '')               as "user",
+       td.alias                            as alias,
+       td.memory                           as memory,
+       coalesce(td.command, '')            as command,
+       coalesce(td.task_type, '')          as tasktype,
+       env::TEXT                           as env,
+       td.privileged                       as privileged,
+       td.cpu                              as cpu,
+       td.gpu                              as gpu,
+       array_to_json('{""}'::TEXT[])::TEXT as tags,
+       array_to_json('{}'::INT[])::TEXT    as ports
 from (select * from task_def) td
 `
 
