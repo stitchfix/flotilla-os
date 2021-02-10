@@ -4,35 +4,24 @@ package state
 // DefinitionSelect postgres specific query for definitions
 //
 const DefinitionSelect = `
-select
-  coalesce(td.arn,'')       as arn,
-  td.definition_id          as definitionid,
-  td.adaptive_resource_allocation as adaptiveresourceallocation,
-  td.image                  as image,
-  td.group_name             as groupname,
-  td.container_name         as containername,
-  coalesce(td.user,'')      as "user",
-  td.alias                  as alias,
-  td.memory                 as memory,
-  coalesce(td.command,'')   as command,
-  coalesce(td.task_type,'') as tasktype,
-  env::TEXT                 as env,
-  ports                     as ports,
-  tags                      as tags,
-  td.privileged             as privileged,
-  td.cpu                    as cpu,
-  td.gpu                    as gpu
-  from (select * from task_def) td left outer join
-    (select task_def_id,
-      array_to_json(array_agg(port))::TEXT as ports
-        from task_def_ports group by task_def_id
-    ) tdp
-  on td.definition_id = tdp.task_def_id left outer join
-    (select task_def_id,
-      array_to_json(array_agg(tag_id))::TEXT as tags
-        from task_def_tags group by task_def_id
-    ) tdt
-  on td.definition_id = tdt.task_def_id
+select coalesce(td.arn, '')            as arn,
+       td.definition_id                as definitionid,
+       td.adaptive_resource_allocation as adaptiveresourceallocation,
+       td.image                        as image,
+       td.group_name                   as groupname,
+       td.container_name               as containername,
+       coalesce(td.user, '')           as "user",
+       td.alias                        as alias,
+       td.memory                       as memory,
+       coalesce(td.command, '')        as command,
+       coalesce(td.task_type, '')      as tasktype,
+       env::TEXT                       as env,
+       td.privileged                   as privileged,
+       td.cpu                          as cpu,
+       td.gpu                          as gpu,
+       '[""]'                          as tags,
+       null                            as ports
+from (select * from task_def) td
 `
 
 //
