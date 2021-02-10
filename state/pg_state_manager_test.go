@@ -151,14 +151,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Expected returned definitions to have correctly attached env vars, was %v", dA.Env)
 	}
 
-	if len(*dA.Ports) != 1 {
-		t.Errorf("Expected returned definitions to have correctly attached ports, was %v", dA.Ports)
-	}
-
-	if len(*dA.Tags) != 2 {
-		t.Errorf("Expected returned definitions to have correctly attached tags, was %v", dA.Tags)
-	}
-
 	// Test ordering and offset
 	dl, _ = sm.ListDefinitions(1, 1, "group_name", "asc", nil, nil)
 	if dl.Definitions[0].GroupName != "groupW" {
