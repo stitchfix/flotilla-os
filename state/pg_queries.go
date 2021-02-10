@@ -19,7 +19,7 @@ select coalesce(td.arn, '')            as arn,
        td.privileged                   as privileged,
        td.cpu                          as cpu,
        td.gpu                          as gpu,
-       '[""]'                          as tags,
+       null                            as tags,
        null                            as ports
 from (select * from task_def) td
 `
