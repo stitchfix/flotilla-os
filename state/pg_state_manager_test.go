@@ -151,14 +151,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Expected returned definitions to have correctly attached env vars, was %v", dA.Env)
 	}
 
-	if len(*dA.Ports) != 1 {
-		t.Errorf("Expected returned definitions to have correctly attached ports, was %v", dA.Ports)
-	}
-
-	if len(*dA.Tags) != 2 {
-		t.Errorf("Expected returned definitions to have correctly attached tags, was %v", dA.Tags)
-	}
-
 	// Test ordering and offset
 	dl, _ = sm.ListDefinitions(1, 1, "group_name", "asc", nil, nil)
 	if dl.Definitions[0].GroupName != "groupW" {
@@ -203,14 +195,6 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 		t.Errorf("Expected empty environment but got %s", *dE.Env)
 	}
 
-	if len(*dE.Ports) != 2 {
-		t.Errorf("Expected 2 ports but got %v", *dE.Ports)
-	}
-
-	if dE.Tags != nil {
-		t.Errorf("Expected empty tags but got %s", *dE.Tags)
-	}
-
 	_, err := sm.GetDefinition("Z")
 	if err == nil {
 		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
@@ -228,14 +212,6 @@ func TestSQLStateManager_GetDefinitionByAlias(t *testing.T) {
 
 	if dE.Env != nil {
 		t.Errorf("Expected empty environment but got %s", *dE.Env)
-	}
-
-	if len(*dE.Ports) != 2 {
-		t.Errorf("Expected 2 ports but got %v", *dE.Ports)
-	}
-
-	if dE.Tags != nil {
-		t.Errorf("Expected empty tags but got %s", *dE.Tags)
 	}
 
 	_, err := sm.GetDefinitionByAlias("aliasZ")
@@ -282,7 +258,6 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 
 	if f.Alias != d.Alias ||
 		len(*f.Env) != len(*d.Env) ||
-		len(*f.Ports) != len(*d.Ports) ||
 		*f.Memory != *d.Memory {
 		t.Errorf("Expected created definition to match the one passed in for creation")
 	}
@@ -318,16 +293,8 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 		t.Errorf("Expected image to be updated to [updated] but is %s", d.Image)
 	}
 
-	if d.Ports != nil {
-		t.Errorf("Expected no ports after update")
-	}
-
 	if len(*d.Env) != 2 {
 		t.Errorf("Expected new env to have length 2, was %v", len(*d.Env))
-	}
-
-	if len(*d.Tags) != 1 {
-		t.Errorf("Expected new tags to have length 1, was %v", len(*d.Tags))
 	}
 
 	updatedEnv := *d.Env
