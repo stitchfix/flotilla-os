@@ -68,17 +68,40 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
 `
 
 const ListFailingNodesSQL = `
-SELECT instance_dns_name
-      FROM TASK
-      WHERE (exit_code = 128 OR
-            pod_events @> '[{"reason": "Failed"}]' OR
-            pod_events @> '[{"reason": "FailedSync"}]' OR
-            pod_events @> '[{"reason": "OutOfmemory"}]' OR
-            pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
-            (exit_code = 1 AND exit_reason is null))
-           AND engine = 'eks'
-           AND queued_at >= NOW() - INTERVAL '12 HOURS'
-      GROUP BY 1
+WITH control_plane_errors AS
+         (
+             SELECT instance_dns_name
+             FROM TASK
+             WHERE (exit_code = 128 OR
+                    pod_events @> '[{"reason": "Failed"}]' OR
+                    pod_events @> '[{"reason": "FailedSync"}]' OR
+                    pod_events @> '[{"reason": "OutOfmemory"}]' OR
+                    pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
+                    (exit_code = 1 AND exit_reason is null))
+               AND engine = 'eks'
+               AND queued_at >= NOW() - INTERVAL '12 HOURS'
+             GROUP BY 1
+         ),
+     timeouts AS
+         (
+             SELECT instance_dns_name, count(*) as c
+             FROM TASK
+             WHERE exit_reason like 'Task terminated by - %'
+               AND engine = 'eks'
+               AND queued_at >= NOW() - INTERVAL '12 HOURS'
+             GROUP BY 1
+         )
+SELECT
+   instance_dns_name
+FROM
+   control_plane_errors
+UNION ALL
+SELECT
+   instance_dns_name
+FROM
+   timeouts
+WHERE
+   c > 5
 `
 
 const PodReAttemptRate = `
