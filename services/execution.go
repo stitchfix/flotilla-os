@@ -34,7 +34,7 @@ type ExecutionService interface {
 		filters map[string][]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
-	UpdateStatus(runID string, status string, exitCode *int64) error
+	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions) error
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
@@ -408,11 +408,11 @@ func (es *executionService) Get(runID string) (state.Run, error) {
 //
 // UpdateStatus is for supporting some legacy runs that still manually update their status
 //
-func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64) error {
+func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions) error {
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
-	_, err := es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode})
+	_, err := es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, RunExceptions: runExceptions})
 	return err
 }
 
