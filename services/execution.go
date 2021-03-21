@@ -412,7 +412,8 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
-	_, err := es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, RunExceptions: runExceptions})
+	finishedAt := time.Now()
+	_, err := es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, RunExceptions: runExceptions, FinishedAt: &finishedAt})
 	return err
 }
 
