@@ -221,7 +221,11 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 			return &v1.PodList{Items: []v1.Pod{*pod}}, err
 		}
 	} else {
-		if time.Now().After(run.QueuedAt.Add(time.Minute * time.Duration(5))) {
+		if run.QueuedAt == nil {
+			return &v1.PodList{}, err
+		}
+		queuedAt := *run.QueuedAt
+		if time.Now().After(queuedAt.Add(time.Minute * time.Duration(5))) {
 			podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
 			})
