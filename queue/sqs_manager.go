@@ -292,7 +292,7 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 	return receipt, nil
 }
 
-func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error){
+func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error) {
 	var kubernetesEvent state.KubernetesEvent
 
 	if len(qURL) == 0 {
@@ -318,7 +318,9 @@ func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent
 		body := response.Messages[0].Body
 
 		err = json.Unmarshal([]byte(*body), &kubernetesEvent)
-		_ = qm.ack(qURL, response.Messages[0].ReceiptHandle)
+		kubernetesEvent.Done = func() error {
+			return qm.ack(qURL, response.Messages[0].ReceiptHandle)
+		}
 
 	}
 	return kubernetesEvent, nil

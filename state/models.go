@@ -1008,6 +1008,7 @@ type KubernetesEvent struct {
 	ReportingComponent string         `json:"reportingComponent,omitempty"`
 	ReportingInstance  string         `json:"reportingInstance,omitempty"`
 	InvolvedObject     InvolvedObject `json:"involvedObject,omitempty"`
+	Done               func() error
 }
 
 type InvolvedObject struct {
