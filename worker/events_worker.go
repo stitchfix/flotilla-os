@@ -3,12 +3,14 @@ package worker
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -101,9 +103,24 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 			events = state.PodEvents{event}
 		}
 		run.PodEvents = &events
+		if kubernetesEvent.Reason == "Scheduled" {
+			podName, err := ew.parsePodName(kubernetesEvent)
+			if err == nil {
+				run.PodName = &podName
+			}
+		}
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
 		}
 	}
+}
+
+func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (string, error) {
+	expression := regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
+	matches := expression.FindStringSubmatch(kubernetesEvent.Message)
+	if matches != nil && len(matches) >= 1 {
+		return matches[0], nil
+	}
+	return "", errors.Errorf("no pod name found for [%s]", kubernetesEvent.Message)
 }
