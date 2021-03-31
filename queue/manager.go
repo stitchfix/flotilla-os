@@ -18,7 +18,7 @@ type Manager interface {
 	ReceiveRun(qURL string) (RunReceipt, error)
 	ReceiveStatus(qURL string) (StatusReceipt, error)
 	ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, error)
-	ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error)
+	ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, func() error, error)
 	ReceiveKubernetesRun(queue string) (string, error)
 	List() ([]string, error)
 }

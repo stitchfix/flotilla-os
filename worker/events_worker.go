@@ -65,15 +65,15 @@ func (ew *eventsWorker) Run() error {
 }
 
 func (ew *eventsWorker) runOnce() {
-	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
+	kubernetesEvent, ack, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	ew.processEvent(kubernetesEvent)
+	ew.processEvent(kubernetesEvent, ack)
 }
 
-func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
+func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent, ack func() error) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	if !strings.HasPrefix(runId, "eks") {
 		return
@@ -112,6 +112,8 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
+		} else {
+			_ = ack()
 		}
 	}
 }
