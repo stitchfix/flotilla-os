@@ -215,21 +215,20 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 		return &v1.PodList{}, err
 	}
 
-	if run.PodName != nil {
-		pod, err := kClient.CoreV1().Pods(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
-		if pod != nil {
-			return &v1.PodList{Items: []v1.Pod{*pod}}, err
-		}
-	} else {
-		if run.QueuedAt == nil {
-			return &v1.PodList{}, err
-		}
-		queuedAt := *run.QueuedAt
-		if time.Now().After(queuedAt.Add(time.Minute * time.Duration(5))) {
-			podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
-			})
-			return podList, err
+	if run.QueuedAt != nil {
+		if run.PodName != nil {
+			pod, err := kClient.CoreV1().Pods(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+			if pod != nil {
+				return &v1.PodList{Items: []v1.Pod{*pod}}, err
+			}
+		} else {
+			queuedAt := *run.QueuedAt
+			if time.Now().After(queuedAt.Add(time.Minute * time.Duration(5))) {
+				podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
+				})
+				return podList, err
+			}
 		}
 	}
 	return &v1.PodList{}, err
