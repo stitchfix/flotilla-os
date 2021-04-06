@@ -165,8 +165,6 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	}
 	if err != nil {
 		message := fmt.Sprintf("%+v", err)
-		_ = sw.log.Log("message", "unable to receive eks runs", "error", message)
-
 		minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
 		if strings.Contains(message, "not found") && minutesInQueue > float64(30) {
 			stoppedAt := time.Now()
@@ -179,7 +177,6 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 
 	} else {
 		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
-			_ = sw.log.Log("message", "updating eks run status", "pod", updatedRun.PodName, "status", updatedRun.Status, "exit_code", updatedRun.ExitCode)
 			sw.logStatusUpdate(updatedRun)
 			if updatedRun.ExitCode != nil {
 				go sw.cleanupRun(run.RunID)

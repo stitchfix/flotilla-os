@@ -196,7 +196,6 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 			run.Memory = &mem
 			memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
 			run.MemoryLimit = &memLimit
-			_ = ee.log.Log("job-name=", run.RunID, "pod-name=", run.PodName, "cpu", cpu, "mem", mem)
 		}
 	}
 	return run, nil
@@ -372,7 +371,6 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 		return state.PodEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
 
-	_ = ee.log.Log("message", "getting events", "run_id", run.RunID, "events", len(eventList.Items))
 	var podEvents []state.PodEvent
 	for _, e := range eventList.Items {
 		eTime := e.FirstTimestamp.Time
@@ -451,8 +449,6 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	_ = metrics.Timing(metrics.StatusWorkerGetPodList, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) > 0 {
-		_ = ee.log.Log("message", "iterating over pods", "podList length", len(podList.Items))
-
 		// Iterate over associated pods to find the most recent.
 		for _, p := range podList.Items {
 			if mostRecentPodCreationTimestamp.Before(&p.CreationTimestamp) || len(podList.Items) == 1 {
@@ -465,9 +461,6 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// there is a newer pod (i.e. the old pod was killed),
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
-
-			_ = ee.log.Log("message", "found new pod for run", "prev_pod_name", run.PodName, "next_pod_name", mostRecentPod.Name)
-
 			if run.PodName != nil && mostRecentPod.Name != *run.PodName {
 				_ = metrics.Increment(metrics.EngineEKSRunPodnameChange, []string{}, 1)
 			}
