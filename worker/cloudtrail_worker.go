@@ -98,10 +98,7 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 		}
 
 		err = json.NewDecoder(getObjectOutput.Body).Decode(&ctn)
-
-		_ = ctw.log.Log("message", "CloudTrail processing file", "key", fmt.Sprintf("s3://%s/%s", cloudTrailS3File.S3Bucket, keyName), "len", len(ctn.Records))
 		ctw.processCloudTrailNotifications(ctn)
-
 		getObjectOutput.Body.Close()
 	}
 }
@@ -120,8 +117,6 @@ func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrail
 		run, err := ctw.sm.GetRun(runId)
 		if err == nil {
 			var rawRecords []state.Record
-			_ = ctw.log.Log("message", "Saving CloudTrail Events", "run_id", runId, len(records))
-
 			if run.CloudTrailNotifications == nil || len((*run.CloudTrailNotifications).Records) == 0 {
 				rawRecords = records
 			} else {
