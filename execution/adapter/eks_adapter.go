@@ -363,7 +363,7 @@ func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run 
 func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
 	bashCmd := "bash"
 	optLogin := "-l"
-	optStr := "-cex"
+	optStr := "-ce"
 	return []string{bashCmd, optLogin, optStr, cmdString}
 }
 
