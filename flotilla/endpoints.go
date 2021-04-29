@@ -40,14 +40,15 @@ type LaunchRequest struct {
 }
 
 type LaunchRequestV2 struct {
-	RunTags          RunTags `json:"run_tags"`
-	Command          *string
-	Memory           *int64
-	Cpu              *int64
-	Gpu              *int64
-	Engine           *string
-	NodeLifecycle    *string `json:"node_lifecycle"`
-	EphemeralStorage *int64  `json:"ephemeral_storage"`
+	RunTags               RunTags `json:"run_tags"`
+	Command               *string
+	Memory                *int64
+	Cpu                   *int64
+	Gpu                   *int64
+	Engine                *string
+	NodeLifecycle         *string `json:"node_lifecycle"`
+	EphemeralStorage      *int64  `json:"ephemeral_storage"`
+	ActiveDeadlineSeconds *int64  `json:"active_deadline_seconds,omitempty"`
 	*LaunchRequest
 }
 
@@ -528,16 +529,17 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      lr.ClusterName,
-			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerID,
-			Command:          lr.Command,
-			Memory:           lr.Memory,
-			Cpu:              lr.Cpu,
-			Gpu:              lr.Gpu,
-			Engine:           lr.Engine,
-			EphemeralStorage: lr.EphemeralStorage,
-			NodeLifecycle:    lr.NodeLifecycle,
+			ClusterName:           lr.ClusterName,
+			Env:                   lr.Env,
+			OwnerID:               lr.RunTags.OwnerID,
+			Command:               lr.Command,
+			Memory:                lr.Memory,
+			Cpu:                   lr.Cpu,
+			Gpu:                   lr.Gpu,
+			Engine:                lr.Engine,
+			EphemeralStorage:      lr.EphemeralStorage,
+			NodeLifecycle:         lr.NodeLifecycle,
+			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 		},
 	}
 
@@ -591,16 +593,17 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      lr.ClusterName,
-			Env:              lr.Env,
-			OwnerID:          lr.RunTags.OwnerID,
-			Command:          lr.Command,
-			Memory:           lr.Memory,
-			Cpu:              lr.Cpu,
-			Gpu:              lr.Gpu,
-			Engine:           lr.Engine,
-			EphemeralStorage: lr.EphemeralStorage,
-			NodeLifecycle:    lr.NodeLifecycle,
+			ClusterName:           lr.ClusterName,
+			Env:                   lr.Env,
+			OwnerID:               lr.RunTags.OwnerID,
+			Command:               lr.Command,
+			Memory:                lr.Memory,
+			Cpu:                   lr.Cpu,
+			Gpu:                   lr.Gpu,
+			Engine:                lr.Engine,
+			EphemeralStorage:      lr.EphemeralStorage,
+			NodeLifecycle:         lr.NodeLifecycle,
+			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)

@@ -272,20 +272,21 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	}
 
 	run = state.Run{
-		RunID:            runID,
-		ClusterName:      fields.ClusterName,
-		Image:            resources.Image,
-		Status:           state.StatusQueued,
-		User:             fields.OwnerID,
-		Command:          fields.Command,
-		Memory:           fields.Memory,
-		Cpu:              fields.Cpu,
-		Gpu:              fields.Gpu,
-		Engine:           fields.Engine,
-		NodeLifecycle:    fields.NodeLifecycle,
-		EphemeralStorage: fields.EphemeralStorage,
-		ExecutableID:     executable.GetExecutableID(),
-		ExecutableType:   executable.GetExecutableType(),
+		RunID:                 runID,
+		ClusterName:           fields.ClusterName,
+		Image:                 resources.Image,
+		Status:                state.StatusQueued,
+		User:                  fields.OwnerID,
+		Command:               fields.Command,
+		Memory:                fields.Memory,
+		Cpu:                   fields.Cpu,
+		Gpu:                   fields.Gpu,
+		Engine:                fields.Engine,
+		NodeLifecycle:         fields.NodeLifecycle,
+		EphemeralStorage:      fields.EphemeralStorage,
+		ExecutableID:          executable.GetExecutableID(),
+		ExecutableType:        executable.GetExecutableType(),
+		ActiveDeadlineSeconds: fields.ActiveDeadlineSeconds,
 	}
 
 	runEnv := es.constructEnviron(run, fields.Env)
@@ -543,6 +544,14 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 
 	if es.eksSpotOverride && *fields.Engine == state.EKSEngine {
 		fields.NodeLifecycle = &state.OndemandLifecycle
+	}
+
+	if fields.ActiveDeadlineSeconds == nil {
+		if fields.NodeLifecycle == &state.OndemandLifecycle {
+			fields.ActiveDeadlineSeconds = &state.OndemandActiveDeadlineSeconds
+		} else {
+			fields.ActiveDeadlineSeconds = &state.SpotActiveDeadlineSeconds
+		}
 	}
 }
 

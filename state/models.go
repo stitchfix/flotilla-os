@@ -175,16 +175,17 @@ type Executable interface {
 
 // Common fields required to execute any Executable.
 type ExecutionRequestCommon struct {
-	ClusterName      string   `json:"cluster_name"`
-	Env              *EnvList `json:"env"`
-	OwnerID          string   `json:"owner_id"`
-	Command          *string  `json:"command"`
-	Memory           *int64   `json:"memory"`
-	Cpu              *int64   `json:"cpu"`
-	Gpu              *int64   `json:"gpu"`
-	Engine           *string  `json:"engine"`
-	EphemeralStorage *int64   `json:"ephemeral_storage"`
-	NodeLifecycle    *string  `json:"node_lifecycle"`
+	ClusterName           string   `json:"cluster_name"`
+	Env                   *EnvList `json:"env"`
+	OwnerID               string   `json:"owner_id"`
+	Command               *string  `json:"command"`
+	Memory                *int64   `json:"memory"`
+	Cpu                   *int64   `json:"cpu"`
+	Gpu                   *int64   `json:"gpu"`
+	Engine                *string  `json:"engine"`
+	EphemeralStorage      *int64   `json:"ephemeral_storage"`
+	NodeLifecycle         *string  `json:"node_lifecycle"`
+	ActiveDeadlineSeconds *int64   `json:"active_deadline_seconds,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
