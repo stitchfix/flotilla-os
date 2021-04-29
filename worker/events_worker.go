@@ -115,6 +115,8 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 			exitCode := int64(124)
 			run.ExitCode = &exitCode
 			run.Status = state.StatusStopped
+			run.StartedAt = run.QueuedAt
+			run.FinishedAt = &timestamp
 		}
 
 		if kubernetesEvent.Reason == "Completed" {
@@ -122,6 +124,8 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 			exitCode := int64(0)
 			run.ExitCode = &exitCode
 			run.Status = state.StatusStopped
+			run.StartedAt = run.QueuedAt
+			run.FinishedAt = &timestamp
 		}
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
