@@ -122,7 +122,6 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
 	if run.ActiveDeadlineSeconds == nil {
-
 		if *run.NodeLifecycle == state.OndemandLifecycle {
 			run.ActiveDeadlineSeconds = &state.OndemandActiveDeadlineSeconds
 		} else {
