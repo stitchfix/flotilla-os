@@ -112,8 +112,17 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 
 		if kubernetesEvent.Reason == "DeadlineExceeded" {
 			run.ExitReason = &kubernetesEvent.Message
+			exitCode := int64(124)
+			run.ExitCode = &exitCode
+			run.Status = state.StatusStopped
 		}
 
+		if kubernetesEvent.Reason == "Completed" {
+			run.ExitReason = &kubernetesEvent.Message
+			exitCode := int64(0)
+			run.ExitCode = &exitCode
+			run.Status = state.StatusStopped
+		}
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
