@@ -121,14 +121,18 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	affinity := a.constructAffinity(executable, run, manager)
 	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
-	activeDeadlineSeconds := state.SpotActiveDeadlineSeconds
-	if *run.NodeLifecycle == state.OndemandLifecycle {
-		activeDeadlineSeconds = state.OndemandActiveDeadlineSeconds
+	if run.ActiveDeadlineSeconds == nil {
+
+		if *run.NodeLifecycle == state.OndemandLifecycle {
+			run.ActiveDeadlineSeconds = &state.OndemandActiveDeadlineSeconds
+		} else {
+			run.ActiveDeadlineSeconds = &state.SpotActiveDeadlineSeconds
+		}
 	}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
-		ActiveDeadlineSeconds:   &activeDeadlineSeconds,
+		ActiveDeadlineSeconds:   run.ActiveDeadlineSeconds,
 		BackoffLimit:            &state.EKSBackoffLimit,
 
 		Template: corev1.PodTemplateSpec{
