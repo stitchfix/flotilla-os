@@ -109,6 +109,11 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 				run.PodName = &podName
 			}
 		}
+
+		if kubernetesEvent.Reason == "DeadlineExceeded" {
+			run.ExitReason = &kubernetesEvent.Message
+		}
+
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
