@@ -451,6 +451,7 @@ type Run struct {
 	AttemptCount            *int64                   `json:"attempt_count,omitempty"`
 	SpawnedRuns             *SpawnedRuns             `json:"spawned_runs,omitempty"`
 	RunExceptions           *RunExceptions           `json:"run_exceptions,omitempty"`
+	ActiveDeadlineSeconds   *int64                   `json:"active_deadline_seconds,omitempty"`
 }
 
 //
