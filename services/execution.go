@@ -1,11 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -425,8 +427,40 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 	}
 	finishedAt := time.Now()
 
-	_, err = es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
+	exitReason := es.extractExitReason(runExceptions)
+	_, err = es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, ExitReason: &exitReason, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
 	return err
+}
+
+func (es *executionService) extractExitReason(runExceptions *state.RunExceptions) string {
+	connectionError := regexp.MustCompile(`(?i).*(timeout|gatewayerror|socketerror|\s503\s|\s502\s|\s500\s|\s504\s|connectionerror).*`)
+	pipError := regexp.MustCompile(`(?i).*(could\snot\sfind\sa\sversion|package\snot\sfound|ModuleNotFoundError|No\smatching\sdistribution\sfound).*`)
+	yumError := regexp.MustCompile(`(?i).*(Nothing\sto\sdo).*`)
+	gitError := regexp.MustCompile(`(?i).*(Could\snot\sread\sfrom\sremote\srepository|correct\saccess\srights|Repository\snot\sfound).*`)
+	argumentError := regexp.MustCompile(`(?i).*(404|400|keyerror|column\smissing|RuntimeError).*`)
+	syntaxError := regexp.MustCompile(`(?i).*(syntaxerror|typeerror|).*`)
+
+	value, _ := json.Marshal(runExceptions)
+	if value != nil {
+		errorMsg := string(value)
+		switch {
+		case connectionError.MatchString(errorMsg):
+			return "Connection error to downstream uri"
+		case pipError.MatchString(errorMsg):
+			return "Python pip package installation error"
+		case yumError.MatchString(errorMsg):
+			return "Yum installation error"
+		case gitError.MatchString(errorMsg):
+			return "Git clone error"
+		case argumentError.MatchString(errorMsg):
+			return "Data or argument error"
+		case syntaxError.MatchString(errorMsg):
+			return "Code or syntax error"
+		default:
+			return "Runtime exception encountered"
+		}
+	}
+	return "Exception encountered"
 }
 
 func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
