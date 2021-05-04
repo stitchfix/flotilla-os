@@ -460,7 +460,7 @@ func (es *executionService) extractExitReason(runExceptions *state.RunExceptions
 			return "Runtime exception encountered"
 		}
 	}
-	return "Exception encountered"
+	return "Runtime exception encountered"
 }
 
 func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
