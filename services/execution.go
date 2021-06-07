@@ -177,8 +177,9 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		run state.Run
 		err error
 	)
-
 	fields := req.GetExecutionRequestCommon()
+	rand.Seed(time.Now().Unix())
+	fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
 	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Construct run object with StatusQueued and new UUID4 run id
@@ -460,8 +461,6 @@ func (es *executionService) ListClusters() ([]string, error) {
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
 	fields.Engine = &state.EKSEngine
-	rand.Seed(time.Now().Unix())
-	fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
 
 	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
