@@ -1,15 +1,12 @@
 package services
 
 import (
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	"testing"
 )
 
 func setUpDefinitionServiceTest(t *testing.T) (DefinitionService, *testutils.ImplementsAllTheThings) {
-	confDir := "../conf"
-	c, _ := config.NewConfig(&confDir)
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
 		Definitions: map[string]state.Definition{
@@ -26,7 +23,7 @@ func setUpDefinitionServiceTest(t *testing.T) (DefinitionService, *testutils.Imp
 			"B": "b/",
 		},
 	}
-	ds, _ := NewDefinitionService(c, &imp, &imp)
+	ds, _ := NewDefinitionService(&imp)
 	return ds, &imp
 }
 
