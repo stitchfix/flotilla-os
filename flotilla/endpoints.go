@@ -746,54 +746,21 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 // Get list of groups.
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
-	lr := ep.decodeListRequest(r)
 
-	var name string
-	if len(lr.filters["name"]) > 0 {
-		name = lr.filters["name"][0]
-	}
-
-	groups, err := ep.definitionService.ListGroups(lr.limit, lr.offset, &name)
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem getting groups",
-			"operation", "GetGroups",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-	} else {
-		response := make(map[string]interface{})
-		response["total"] = groups.Total
-		response["groups"] = groups.Groups
-		response["limit"] = lr.limit
-		response["offset"] = lr.offset
-		ep.encodeResponse(w, response)
-	}
+	groups := state.GroupsList{}
+	response := make(map[string]interface{})
+	response["total"] = groups.Total
+	response["groups"] = groups.Groups
+	ep.encodeResponse(w, response)
 }
 
 // Get listing of tags.
 func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
-	lr := ep.decodeListRequest(r)
-
-	var name string
-	if len(lr.filters["name"]) > 0 {
-		name = lr.filters["name"][0]
-	}
-
-	tags, err := ep.definitionService.ListTags(lr.limit, lr.offset, &name)
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem getting tags",
-			"operation", "GetTags",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-	} else {
-		response := make(map[string]interface{})
-		response["total"] = tags.Total
-		response["tags"] = tags.Tags
-		response["limit"] = lr.limit
-		response["offset"] = lr.offset
-		ep.encodeResponse(w, response)
-	}
+	tags := state.TagsList{}
+	response := make(map[string]interface{})
+	response["total"] = tags.Total
+	response["tags"] = tags.Tags
+	ep.encodeResponse(w, response)
 }
 
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
