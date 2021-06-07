@@ -707,32 +707,3 @@ func TestEndpoints_StopRun(t *testing.T) {
 		t.Errorf("Expected [terminated] acknowledgement")
 	}
 }
-
-func TestEndpoints_UpdateRun(t *testing.T) {
-	router := setUp(t)
-
-	updatedDef := `{"status":"STOPPED", "exit_code":0}`
-	req := httptest.NewRequest("PUT", "/api/v1/runA/status", bytes.NewBufferString(updatedDef))
-	w := httptest.NewRecorder()
-
-	router.ServeHTTP(w, req)
-
-	resp := w.Result()
-
-	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
-	}
-
-	if resp.StatusCode != 200 {
-		t.Errorf("Expected status 200, was %v", resp.StatusCode)
-	}
-
-	var ack map[string]bool
-	err := json.NewDecoder(resp.Body).Decode(&ack)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if _, ok := ack["updated"]; !ok {
-		t.Errorf("Expected [updated] acknowledgement")
-	}
-}
