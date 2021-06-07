@@ -27,57 +27,7 @@ The core assumption is that you understand your work the best. Therefore, it is 
 
 ### Minimal Assumptions
 
-Before we can do _anything_ there's some *prerequistes* that must be met.
-
-1. Flotilla by default uses AWS. You must have an AWS account and AWS keys available. This quick-start guide uses AWS keys exported into the environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. If you've got credentials configured on your machine you can set these easily by running:
-
-```
-export AWS_ACCESS_KEY_ID=$(aws --profile default configure get aws_access_key_id)
-export AWS_SECRET_ACCESS_KEY=$(aws --profile default configure get aws_secret_access_key)
-```
-> Note: When running on AWS EC2 instances or ECS it's better practice to use an IAM profile for AWS credentials
-
-2. The AWS credentials must be authorized. The permissions required are described in the following policy document for AWS (you can attach it to a user or a role depending on how you manage users in AWS).
-
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "flotilla-policy",
-            "Effect": "Allow",
-            "Action": [
-                "sqs:DeleteMessage",
-                "sqs:ListQueues",
-                "sqs:GetQueueUrl",
-                "logs:DescribeLogGroups",
-                "sqs:ReceiveMessage",
-                "events:PutRule",
-                "sqs:SendMessage",
-                "sqs:GetQueueAttributes",
-                "ecs:DescribeClusters",
-                "ecs:DeregisterTaskDefinition",
-                "events:ListRuleNamesByTarget",
-                "ecs:RunTask",
-                "ecs:RegisterTaskDefinition",
-                "sqs:CreateQueue",
-                "ecs:ListContainerInstances",
-                "ecs:DescribeContainerInstances",
-                "ecs:ListClusters",
-                "ecs:StopTask",
-                "logs:CreateLogGroup",
-                "logs:PutRetentionPolicy",
-                "logs:GetLogEvents",
-                "events:PutTargets",
-                "sqs:SetQueueAttributes"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-```
-
-3. Flotilla uses AWS's Elastic Container Service (ECS) and Elastic Kubernetes Service (EKS) as the execution backend. However, Flotilla does not manage ECS/EKS clusters. There must be at least one cluster defined in AWS's ECS/EKS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward. You can easily set up a cluster by following the instructions here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html
+Flotilla uses AWS's Elastic Kubernetes Service (EKS) as the execution backend. However, Flotilla does not manage EKS clusters. There must be at least one cluster defined in AWS's EKS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
 
 https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html
 
@@ -153,7 +103,7 @@ Before you can run a task you first need to define it. We'll use the example hel
 
 It's a simple task that runs in the default ubuntu image, prints your username to the logs, and exits.
 
-> Note: While you can use non-public images and images in your own registries with flotilla, credentials for accessing those images must exist on the ECS hosts. This is outside the scope of this doc. See the AWS [documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/private-auth.html).
+> Note: While you can use non-public images and images in your own registries with flotilla, credentials for accessing those images must exist on the EKS hosts. This is outside the scope of this doc.
 
 
 Let's define it:
@@ -295,14 +245,6 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `http.server.listen_address` | The port for the http server to listen on |
 | `owner_id_var` | Which environment variable containing ownership information to inject into the runtime of jobs |
 | `enabled_workers` | This variable is a list of the workers that run. Use this to control what workers run when using a multi-container deployment strategy. Valid list items include (`retry`, `submit`, and `status`) |
-| `ecs.log.namespace` | For the default ECS execution engine setup this is the `log-group` to use |
-| `ecs.log.retention_days` | For the default ECS execution engine this is the number of days to retain logs |
-| `ecs.log.driver.options.*` | For the default ECS execution engine these map to the `awslogs` driver options [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html) |
-| `queue.namespace` | For the default ECS execution engine this is the prefix used for SQS to determine which queues to pull job launch messages from |
-| `queue.retention_seconds` | For the default ECS execution engine this configures how long a message will stay in an SQS queue without being consumed |
-| `queue.process_time` | For the default ECS execution engine configures the length of time allowed to process a job launch message |
-| `queue.status` | For the default ECS execution engine this configures which SQS queue to route ECS cluster status updates to |
-| `queue.status_rule` | For the default ECS execution engine this configures the name of the rule for routing ECS cluster status updates |
 | `metrics.dogstatsd.address` | Statds metrics host in Datadog format |
 | `metrics.dogstatsd.namespace` | Namespace for the metrics - for example `flotilla.` |
 | `redis_address` | Redis host for caching and locks|
@@ -310,8 +252,7 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `eks.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
 | `eks.kubeconfig_basepath` | folder where the kubeconfigs are stored |
 | `eks.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
-| `eks.cluster_override` | EKS clusters to override ECS traffic |
-| `eks.cluster_override_percent` | Percentage of traffic to send to EKS over ECS - if multiple clusters are configured, default is ECS |
+| `eks.cluster_override` | EKS clusters to override traffic |
 | `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
 | `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
 | `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name for manifest storage. |

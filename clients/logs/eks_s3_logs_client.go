@@ -106,7 +106,7 @@ func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, last
 		return acc, &newLastSeen, err
 	}
 
-	return "", nil, errors.Errorf("No logs.")
+	return "", aws.String(""), errors.Errorf("No logs.")
 }
 
 //
