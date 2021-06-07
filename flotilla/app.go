@@ -71,13 +71,18 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing worker service")
 	}
+	definitionService, err := services.NewDefinitionService(stateManager)
+	if err != nil {
+		return app, errors.Wrap(err, "problem initializing definition service")
+	}
 
 	ep := endpoints{
-		executionService: executionService,
-		eksLogService:    eksLogService,
-		workerService:    workerService,
-		templateService:  templateService,
-		logger:           log,
+		executionService:  executionService,
+		eksLogService:     eksLogService,
+		workerService:     workerService,
+		templateService:   templateService,
+		logger:            log,
+		definitionService: definitionService,
 	}
 
 	app.configureRoutes(ep)

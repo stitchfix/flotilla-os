@@ -19,7 +19,6 @@ type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
 	templateService   services.TemplateService
-	ecsLogService     services.LogService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
 	logger            flotillaLog.Logger
@@ -877,7 +876,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 	if req.Engine != nil {
 		if !utils.StringSliceContains(state.Engines, *req.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *req.Engine)})
+				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *req.Engine)})
 			return
 		}
 	} else {
@@ -927,7 +926,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	if req.Engine != nil {
 		if !utils.StringSliceContains(state.Engines, *req.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *req.Engine)})
+				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *req.Engine)})
 			return
 		}
 	} else {
