@@ -746,20 +746,17 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 // Get list of groups.
 func (ep *endpoints) GetGroups(w http.ResponseWriter, r *http.Request) {
-
-	groups := state.GroupsList{}
 	response := make(map[string]interface{})
-	response["total"] = groups.Total
-	response["groups"] = groups.Groups
+	response["total"] = 0
+	response["groups"] = []string{}
 	ep.encodeResponse(w, response)
 }
 
 // Get listing of tags.
 func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
-	tags := state.TagsList{}
 	response := make(map[string]interface{})
-	response["total"] = tags.Total
-	response["tags"] = tags.Tags
+	response["total"] = 0
+	response["tags"] = []string{}
 	ep.encodeResponse(w, response)
 }
 
