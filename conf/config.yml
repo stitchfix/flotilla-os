@@ -27,6 +27,7 @@ http:
             - 'http://localhost:3001'
 owner_id_var: FLOTILLA_RUN_OWNER_ID
 eks:
+    cluster_override: ["clusta"]
     log:
         namespace: flotilla-eks-namespace
         retention_days: 90
