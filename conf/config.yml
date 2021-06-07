@@ -12,23 +12,12 @@ execution_engine: eks
 enabled_workers:
     - retry
     - submit
-    - status
 queue:
     namespace: dev-flotilla
     retention_seconds: 604800
     process_time: 45
     status: flotilla-status-updates-dev
     status_rule: flotilla-task-status
-worker:
-    eks:
-        retry_interval: 30s
-        submit_interval: 5s
-        status_interval: 300ms
-        worker_manager_interval: 10000ms
-        retry_worker_count_per_instance: 1
-        submit_worker_count_per_instance: 2
-        status_worker_count_per_instance: 2
-        events_queue: flotilla
 http:
     server:
         read_timeout_seconds: 5
