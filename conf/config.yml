@@ -5,10 +5,10 @@ readonly_database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmod
 create_database_schema: true
 state_manager: postgres
 queue_manager: sqs
-cluster_client: ecs
+cluster_client: eks
 logs_client: cloudwatch
 metrics_client: dogstatsd
-execution_engine: ecs
+execution_engine: eks
 enabled_workers:
     - retry
     - submit
@@ -20,14 +20,6 @@ queue:
     status: flotilla-status-updates-dev
     status_rule: flotilla-task-status
 worker:
-    ecs:
-        retry_interval: 30s
-        submit_interval: 5s
-        status_interval: 300ms
-        worker_manager_interval: 10000ms
-        retry_worker_count_per_instance: 1
-        submit_worker_count_per_instance: 2
-        status_worker_count_per_instance: 2
     eks:
         retry_interval: 30s
         submit_interval: 5s
@@ -45,13 +37,6 @@ http:
         cors_allowed_origins:
             - 'http://localhost:3001'
 owner_id_var: FLOTILLA_RUN_OWNER_ID
-ecs:
-    log:
-        namespace: flotilla-os-logs
-        retention_days: 90
-        driver:
-            name: awslogs
-            options: {awslogs-group: flotilla-os-logs, awslogs-stream-prefix: flotilla, awslogs-region: us-east-1}
 eks:
     log:
         namespace: flotilla-eks-namespace

@@ -38,8 +38,8 @@ func setUp(t *testing.T) *mux.Router {
 		Groups: []string{"g1", "g2", "g3"},
 		Tags:   []string{"t1", "t2", "t3"},
 	}
-	ds, _ := services.NewDefinitionService(c, &imp, &imp)
-	es, _ := services.NewExecutionService(c, &imp, &imp, &imp, &imp, &imp, &imp, &imp)
+	ds, _ := services.NewDefinitionService(&imp)
+	es, _ := services.NewExecutionService(c, &imp, &imp, &imp, &imp)
 	ls, _ := services.NewLogService(c, &imp, &imp)
 	ep := endpoints{definitionService: ds, executionService: es, ecsLogService: ls}
 	return NewRouter(ep)

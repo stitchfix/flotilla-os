@@ -44,10 +44,6 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 	}
 	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
 
-	if err != nil && *run.Engine == state.ECSEngine {
-		return "", nil, err
-	}
-
 	return ls.lc.Logs(executable, run, lastSeen)
 }
 

@@ -5,19 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/stitchfix/flotilla-os/log"
-	"math/rand"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
-	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/state"
-	"github.com/stitchfix/flotilla-os/utils"
 )
 
 //
@@ -47,10 +43,7 @@ type ExecutionService interface {
 
 type executionService struct {
 	stateManager             state.Manager
-	ecsClusterClient         cluster.Client
 	eksClusterClient         cluster.Client
-	registryClient           registry.Client
-	ecsExecutionEngine       engine.Engine
 	eksExecutionEngine       engine.Engine
 	reservedEnv              map[string]func(run state.Run) string
 	eksClusterOverride       []string
@@ -71,20 +64,10 @@ func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error)
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config,
-	ecsExecutionEngine engine.Engine,
-	eksExecutionEngine engine.Engine,
-	sm state.Manager,
-	ecsClusterClient cluster.Client,
-	eksClusterClient cluster.Client,
-	rc registry.Client,
-	log log.Logger) (ExecutionService, error) {
+func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, sm state.Manager, eksClusterClient cluster.Client) (ExecutionService, error) {
 	es := executionService{
 		stateManager:       sm,
-		ecsClusterClient:   ecsClusterClient,
 		eksClusterClient:   eksClusterClient,
-		registryClient:     rc,
-		ecsExecutionEngine: ecsExecutionEngine,
 		eksExecutionEngine: eksExecutionEngine,
 	}
 	//
@@ -147,9 +130,6 @@ func NewExecutionService(conf config.Config,
 	}
 
 	es.terminateJobChannel = make(chan state.TerminateJob, 100)
-
-	// Warm cached cluster list
-	_, _ = es.ecsClusterClient.ListClusters()
 	return &es, nil
 }
 
@@ -198,7 +178,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	es.sanitizeExecutionRequestCommonFields(fields, definition.Privileged)
+	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Validate that definition can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &definition, fields.Env, *fields.Engine); err != nil {
@@ -332,21 +312,6 @@ func (es *executionService) canBeRun(clusterName string, executable state.Execut
 	}
 	var ok bool
 	var err error
-	if es.checkImageValidity {
-		ok, err = es.registryClient.IsImageValid(resources.Image)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return exceptions.MissingResource{
-				ErrorString: fmt.Sprintf(
-					"image [%s] was not found in any of the configured repositories", resources.Image)}
-		}
-	}
-
-	if engine == state.ECSEngine {
-		ok, err = es.ecsClusterClient.CanBeRun(clusterName, *resources)
-	}
 	if engine == state.EKSEngine {
 		if *resources.Privileged == true {
 			ok, err = false, errors.New("eks cannot run containers with privileged mode")
@@ -398,7 +363,7 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.ECSEngine, state.EKSEngine})
+	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine})
 }
 
 //
@@ -485,20 +450,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 		}
 
 		if run.Engine == nil {
-			run.Engine = &state.ECSEngine
-		}
-
-		// If it's queued and not submitted, set status to stopped (checked by submit worker)
-		if run.Status == state.StatusQueued && *run.Engine == state.ECSEngine {
-			_, err = es.stateManager.UpdateRun(runID, state.Run{Status: state.StatusStopped})
-			break
-		}
-
-		if *run.Engine == state.ECSEngine {
-			// If it's been submitted, let the status update workers handle setting it to stopped
-			if run.Status != state.StatusStopped && len(run.TaskArn) > 0 && len(run.ClusterName) > 0 {
-				err = es.ecsExecutionEngine.Terminate(run)
-			}
+			run.Engine = &state.EKSEngine
 		}
 
 		if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
@@ -538,45 +490,15 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 // ListClusters returns a list of all execution clusters available
 //
 func (es *executionService) ListClusters() ([]string, error) {
-	return es.ecsClusterClient.ListClusters()
+	return []string{}, nil
 }
 
 //
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
-// several common request fields (mostly around ECS/EKS differences).
-//
-func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon, privileged *bool) {
-	rand.Seed(time.Now().Unix())
-	if fields.Engine == nil {
-		fields.Engine = &state.DefaultEngine
-	}
+func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
+	fields.Engine = &state.EKSEngine
 
-	// Handle the case the cluster name was of type EKS but fields.Engine was not set to EKS.
-	for _, v := range es.eksClusterOverride {
-		if v == fields.ClusterName {
-			fields.Engine = &state.EKSEngine
-		}
-	}
-
-	if *fields.Engine == state.EKSEngine {
-		fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
-	}
-
-	// Added to facilitate migration of ECS jobs to EKS.
-	if *fields.Engine != state.EKSEngine && es.eksOverridePercent > 0 && *privileged == false {
-		modulo := 100 / es.eksOverridePercent
-		if rand.Int()%modulo == 0 {
-			fields.Engine = &state.EKSEngine
-			if utils.StringSliceContains(es.clusterOndemandWhitelist, fields.ClusterName) {
-				fields.NodeLifecycle = &state.OndemandLifecycle
-			} else {
-				fields.NodeLifecycle = &state.SpotLifecycle
-			}
-			fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
-		}
-	}
-
-	if es.eksSpotOverride && *fields.Engine == state.EKSEngine {
+	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
@@ -601,13 +523,7 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 		return run, err
 	}
 
-	// ECS Queue run
-	if *run.Engine == state.ECSEngine {
-		err = es.ecsExecutionEngine.Enqueue(run)
-	} else if *run.Engine == state.EKSEngine {
-		err = es.eksExecutionEngine.Enqueue(run)
-	}
-
+	err = es.eksExecutionEngine.Enqueue(run)
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -660,7 +576,7 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	)
 
 	fields := req.GetExecutionRequestCommon()
-	es.sanitizeExecutionRequestCommonFields(fields, template.Privileged)
+	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Validate that template can be run (image exists, cluster has resources)
 	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {

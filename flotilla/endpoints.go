@@ -458,7 +458,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	if lr.Engine != nil {
 		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
+				ErrorString: fmt.Sprintf("engine must be [eks]")})
 			return
 		}
 	} else {
@@ -509,7 +509,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	if lr.Engine != nil {
 		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks] %s was specified", *lr.Engine)})
+				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *lr.Engine)})
 			return
 		}
 	} else {
@@ -573,7 +573,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	if lr.Engine != nil {
 		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
 			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [ecs, eks]")})
+				ErrorString: fmt.Sprintf("engine must be [eks]")})
 			return
 		}
 	} else {
@@ -723,28 +723,6 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 		run.Engine = &state.DefaultEngine
 	}
 
-	if *run.Engine == state.ECSEngine {
-		logs, newLastSeen, err := ep.ecsLogService.Logs(vars["run_id"], &lastSeen)
-		if err != nil {
-			_ = ep.logger.Log(
-				"message", "problem getting logs",
-				"operation", "GetLogs",
-				"error", fmt.Sprintf("%+v", err),
-				"run_id", vars["run_id"],
-				"last_seen", lastSeen)
-			ep.encodeError(w, err)
-			return
-		}
-
-		res := map[string]string{
-			"log": logs,
-		}
-		if newLastSeen != nil {
-			res["last_seen"] = *newLastSeen
-		}
-		ep.encodeResponse(w, res)
-	}
-
 	if *run.Engine == state.EKSEngine {
 		if rawText == true {
 			_ = ep.eksLogService.LogsText(vars["run_id"], w)
@@ -820,7 +798,6 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// List ECS clusters associated with Flotilla.
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	clusters, err := ep.executionService.ListClusters()
 	if err != nil {
@@ -838,7 +815,7 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 
 // List active workers.
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
-	wl, err := ep.workerService.List(state.ECSEngine)
+	wl, err := ep.workerService.List(state.EKSEngine)
 	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
 
 	if wl.Workers == nil {
