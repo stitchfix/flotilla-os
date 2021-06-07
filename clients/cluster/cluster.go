@@ -26,12 +26,6 @@ type Client interface {
 //
 func NewClusterClient(conf config.Config, name string) (Client, error) {
 	switch name {
-	case "ecs":
-		ecsc := &ECSClusterClient{}
-		if err := ecsc.Initialize(conf); err != nil {
-			return nil, errors.Wrap(err, "problem initializing ECSClusterClient")
-		}
-		return ecsc, nil
 	case "eks":
 		eksc := &EKSClusterClient{}
 		if err := eksc.Initialize(conf); err != nil {
