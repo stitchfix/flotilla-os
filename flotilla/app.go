@@ -63,7 +63,7 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing template service")
 	}
-	eksLogService, err := services.NewLogService(conf, stateManager, eksLogsClient)
+	eksLogService, err := services.NewLogService(stateManager, eksLogsClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing eks log service")
 	}

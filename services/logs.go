@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/stitchfix/flotilla-os/clients/logs"
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"net/http"
 )
@@ -18,7 +17,7 @@ type logService struct {
 }
 
 // Initialize a Log service.
-func NewLogService(conf config.Config, sm state.Manager, lc logs.Client) (LogService, error) {
+func NewLogService(sm state.Manager, lc logs.Client) (LogService, error) {
 	return &logService{sm: sm, lc: lc}, nil
 }
 

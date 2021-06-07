@@ -40,7 +40,7 @@ func setUp(t *testing.T) *mux.Router {
 	}
 	ds, _ := services.NewDefinitionService(&imp)
 	es, _ := services.NewExecutionService(c, &imp, &imp, &imp)
-	ls, _ := services.NewLogService(c, &imp, &imp)
+	ls, _ := services.NewLogService(&imp, &imp)
 	ep := endpoints{definitionService: ds, executionService: es, ecsLogService: ls}
 	return NewRouter(ep)
 }

@@ -1,15 +1,12 @@
 package services
 
 import (
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	"testing"
 )
 
 func setUpLogServiceTest(t *testing.T) (LogService, *testutils.ImplementsAllTheThings) {
-	confDir := "../conf"
-	c, _ := config.NewConfig(&confDir)
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
 		Definitions: map[string]state.Definition{
@@ -20,7 +17,7 @@ func setUpLogServiceTest(t *testing.T) (LogService, *testutils.ImplementsAllTheT
 			"running":  {DefinitionID: "B", RunID: "running", Status: state.StatusRunning},
 		},
 	}
-	ls, _ := NewLogService(c, &imp, &imp)
+	ls, _ := NewLogService(&imp, &imp)
 	return ls, &imp
 }
 

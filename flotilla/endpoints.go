@@ -723,26 +723,24 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 		run.Engine = &state.DefaultEngine
 	}
 
-	if *run.Engine == state.EKSEngine {
-		if rawText == true {
-			_ = ep.eksLogService.LogsText(vars["run_id"], w)
-		} else {
-			log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
+	if rawText == true {
+		_ = ep.eksLogService.LogsText(vars["run_id"], w)
+	} else {
+		log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
 
-			res := map[string]string{
-				"log":       "",
-				"last_seen": lastSeen,
-			}
-
-			if err == nil {
-				res = map[string]string{
-					"log":       log,
-					"last_seen": *newLastSeen,
-				}
-			}
-
-			ep.encodeResponse(w, res)
+		res := map[string]string{
+			"log":       "",
+			"last_seen": lastSeen,
 		}
+
+		if err == nil {
+			res = map[string]string{
+				"log":       log,
+				"last_seen": *newLastSeen,
+			}
+		}
+
+		ep.encodeResponse(w, res)
 	}
 }
 
