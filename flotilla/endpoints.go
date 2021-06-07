@@ -454,15 +454,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	if lr.Engine != nil {
-		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
-			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [eks]")})
-			return
-		}
-	} else {
-		lr.Engine = &state.DefaultEngine
-	}
+	lr.Engine = &state.DefaultEngine
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
@@ -505,15 +497,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.Engine != nil {
-		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
-			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *lr.Engine)})
-			return
-		}
-	} else {
-		lr.Engine = &state.DefaultEngine
-	}
+	lr.Engine = &state.DefaultEngine
 
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
@@ -569,15 +553,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.Engine != nil {
-		if !utils.StringSliceContains(state.Engines, *lr.Engine) {
-			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [eks]")})
-			return
-		}
-	} else {
-		lr.Engine = &state.DefaultEngine
-	}
+	lr.Engine = &state.DefaultEngine
 
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
@@ -873,15 +849,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if req.Engine != nil {
-		if !utils.StringSliceContains(state.Engines, *req.Engine) {
-			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *req.Engine)})
-			return
-		}
-	} else {
-		req.Engine = &state.DefaultEngine
-	}
+	req.Engine = &state.DefaultEngine
 
 	if req.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *req.NodeLifecycle) {
@@ -923,15 +891,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Engine != nil {
-		if !utils.StringSliceContains(state.Engines, *req.Engine) {
-			ep.encodeError(w, exceptions.MalformedInput{
-				ErrorString: fmt.Sprintf("engine must be [eks] %s was specified", *req.Engine)})
-			return
-		}
-	} else {
-		req.Engine = &state.DefaultEngine
-	}
+	req.Engine = &state.DefaultEngine
 
 	if req.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *req.NodeLifecycle) {
