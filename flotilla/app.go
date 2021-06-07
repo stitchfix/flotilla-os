@@ -10,7 +10,6 @@ import (
 	"github.com/rs/cors"
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
-	"github.com/stitchfix/flotilla-os/clients/registry"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -46,63 +45,42 @@ func (app *App) Run() error {
 // Function to initialize a new Flotilla app.
 func NewApp(conf config.Config,
 	log flotillaLog.Logger,
-	ecsLogsClient logs.Client,
 	eksLogsClient logs.Client,
-	ecsExecutionEngine engine.Engine,
 	eksExecutionEngine engine.Engine,
 	stateManager state.Manager,
-	ecsClusterClient cluster.Client,
 	eksClusterClient cluster.Client,
-	registryClient registry.Client,
-	ecsQueueManager queue.Manager,
 	eksQueueManager queue.Manager,
 ) (App, error) {
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, ecsExecutionEngine, eksExecutionEngine, stateManager, ecsClusterClient, eksClusterClient, registryClient, log)
+	executionService, err := services.NewExecutionService(conf, eksExecutionEngine, stateManager, eksClusterClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
-	}
-	definitionService, err := services.NewDefinitionService(conf, ecsExecutionEngine, stateManager)
-	if err != nil {
-		return app, errors.Wrap(err, "problem initializing definition service")
 	}
 	templateService, err := services.NewTemplateService(conf, stateManager)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing template service")
 	}
-	ecsLogService, err := services.NewLogService(conf, stateManager, ecsLogsClient)
-	if err != nil {
-		return app, errors.Wrap(err, "problem initializing ecs log service")
-	}
-
-	eksLogService, err := services.NewLogService(conf, stateManager, eksLogsClient)
+	eksLogService, err := services.NewLogService(stateManager, eksLogsClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing eks log service")
 	}
-
 	workerService, err := services.NewWorkerService(conf, stateManager)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing worker service")
 	}
 
 	ep := endpoints{
-		executionService:  executionService,
-		definitionService: definitionService,
-		ecsLogService:     ecsLogService,
-		eksLogService:     eksLogService,
-		workerService:     workerService,
-		templateService:   templateService,
-		logger:            log,
+		executionService: executionService,
+		eksLogService:    eksLogService,
+		workerService:    workerService,
+		templateService:  templateService,
+		logger:           log,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeECSWorkers(conf, log, ecsExecutionEngine, stateManager, ecsQueueManager); err != nil {
-		return app, errors.Wrap(err, "problem ecs initializing workers")
-	}
-
 	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager, eksQueueManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
@@ -145,21 +123,6 @@ func (app *App) configureRoutes(ep endpoints) {
 	} else {
 		app.handler = NewRouter(ep)
 	}
-}
-
-func (app *App) initializeECSWorkers(
-	conf config.Config,
-	log flotillaLog.Logger,
-	ee engine.Engine,
-	sm state.Manager,
-	qm queue.Manager) error {
-	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.ECSEngine, qm)
-	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
-	if err != nil {
-		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
-	}
-	app.workerManager = workerManager
-	return nil
 }
 
 func (app *App) initializeEKSWorkers(

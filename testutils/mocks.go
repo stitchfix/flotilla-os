@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"math"
 	"net/http"
 	"testing"
@@ -410,7 +411,7 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 // Logs - Logs Client
 func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
-	return "", nil, nil
+	return "", aws.String(""), nil
 }
 
 // GetExecutableByTypeAndID - StateManager

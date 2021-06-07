@@ -73,11 +73,6 @@ func (sw *statusWorker) Run() error {
 			sw.log.Log("message", "A status worker was terminated")
 			return nil
 		default:
-			if *sw.engine == state.ECSEngine {
-				sw.runOnceECS()
-				time.Sleep(sw.pollInterval)
-			}
-
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
 				time.Sleep(sw.pollInterval)
@@ -242,57 +237,6 @@ func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
 		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 			updatedRun.MaxCpuUsed != run.MaxCpuUsed {
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
-		}
-	}
-}
-
-func (sw *statusWorker) runOnceECS() {
-	runReceipt, err := sw.ee.PollStatus()
-
-	if err != nil {
-		sw.log.Log("message", "unable to receive status message", "error", fmt.Sprintf("%+v", err))
-		return
-	}
-
-	// Ensure update is in the env required, otherwise, ack without taking action
-	update := runReceipt.Run
-	if update != nil {
-		//
-		// Relies on the reserved env var, FLOTILLA_SERVER_MODE to ensure update
-		// belongs to -this- mode of Flotilla
-		//
-		var serverMode string
-		if update.Env != nil {
-			for _, kv := range *update.Env {
-				if kv.Name == "FLOTILLA_SERVER_MODE" {
-					serverMode = kv.Value
-				}
-			}
-		}
-
-		shouldProcess := len(serverMode) > 0 && serverMode == sw.conf.GetString("flotilla_mode")
-		if shouldProcess {
-			run, err := sw.findRun(update.TaskArn)
-			if err != nil {
-				sw.log.Log("message", "unable to find run to apply update to", "error", fmt.Sprintf("%+v", err))
-				return
-			}
-
-			_, err = sw.sm.UpdateRun(run.RunID, *update)
-			if err != nil {
-				sw.log.Log("message", "error applying status update", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
-				return
-			}
-
-			// emit status update event
-			sw.logStatusUpdate(*update)
-		}
-
-		if sw.conf.GetString("flotilla_mode") != "dev" {
-			_ = sw.log.Log("message", "Acking status update", "arn", update.TaskArn)
-		}
-		if err = runReceipt.Done(); err != nil {
-			sw.log.Log("message", "Acking status update failed", "arn", update.TaskArn, "error", fmt.Sprintf("%+v", err))
 		}
 	}
 }

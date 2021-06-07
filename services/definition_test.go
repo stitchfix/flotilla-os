@@ -1,15 +1,12 @@
 package services
 
 import (
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	"testing"
 )
 
 func setUpDefinitionServiceTest(t *testing.T) (DefinitionService, *testutils.ImplementsAllTheThings) {
-	confDir := "../conf"
-	c, _ := config.NewConfig(&confDir)
 	imp := testutils.ImplementsAllTheThings{
 		T: t,
 		Definitions: map[string]state.Definition{
@@ -26,7 +23,7 @@ func setUpDefinitionServiceTest(t *testing.T) (DefinitionService, *testutils.Imp
 			"B": "b/",
 		},
 	}
-	ds, _ := NewDefinitionService(c, &imp, &imp)
+	ds, _ := NewDefinitionService(&imp)
 	return ds, &imp
 }
 
@@ -52,7 +49,7 @@ func TestDefinitionService_Create(t *testing.T) {
 	}
 
 	// order matters
-	expected := []string{"ListDefinitions", "Define", "CreateDefinition"}
+	expected := []string{"ListDefinitions", "CreateDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -138,7 +135,7 @@ func TestDefinitionService_Update(t *testing.T) {
 	ds.Update("A", d)
 
 	// order matters
-	expected := []string{"GetDefinition", "Define", "UpdateDefinition"}
+	expected := []string{"GetDefinition", "UpdateDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -155,7 +152,7 @@ func TestDefinitionService_Delete(t *testing.T) {
 	ds.Delete("A")
 
 	// order matters
-	expected := []string{"GetDefinition", "Deregister", "DeleteDefinition"}
+	expected := []string{"DeleteDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

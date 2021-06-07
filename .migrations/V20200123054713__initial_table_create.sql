@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS task (
   gpu integer,
   ephemeral_storage integer,
   node_lifecycle text,
-  engine character varying DEFAULT 'ecs' NOT NULL,
+  engine character varying DEFAULT 'eks' NOT NULL,
   container_name text,
   pod_name text,
   namespace text,

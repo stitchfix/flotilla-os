@@ -2,9 +2,7 @@ package services
 
 import (
 	"fmt"
-	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
-	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/state"
 	"strings"
 )
@@ -30,15 +28,14 @@ type DefinitionService interface {
 }
 
 type definitionService struct {
-	sm                 state.Manager
-	ecsExecutionEngine engine.Engine
+	sm state.Manager
 }
 
 //
 // NewDefinitionService configures and returns a DefinitionService
 //
-func NewDefinitionService(conf config.Config, ecsExecutionEngine engine.Engine, stateManager state.Manager) (DefinitionService, error) {
-	ds := definitionService{sm: stateManager, ecsExecutionEngine: ecsExecutionEngine}
+func NewDefinitionService(stateManager state.Manager) (DefinitionService, error) {
+	ds := definitionService{sm: stateManager}
 	return &ds, nil
 }
 
@@ -68,12 +65,7 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, err
 	}
 	definition.DefinitionID = definitionID
-	defined, err := ds.ecsExecutionEngine.Define(*definition)
-
-	if err != nil {
-		return state.Definition{}, err
-	}
-	return defined, ds.sm.CreateDefinition(defined)
+	return *definition, ds.sm.CreateDefinition(*definition)
 }
 
 func (ds *definitionService) aliasExists(alias string) (bool, error) {
@@ -119,27 +111,11 @@ func (ds *definitionService) Update(definitionID string, updates state.Definitio
 	}
 
 	definition.UpdateWith(updates)
-	defined, err := ds.ecsExecutionEngine.Define(definition)
-	if err != nil {
-		return definition, err
-	}
-
-	if definition.AdaptiveResourceAllocation != nil {
-		defined.AdaptiveResourceAllocation = definition.AdaptiveResourceAllocation
-	}
-
-	return ds.sm.UpdateDefinition(definitionID, defined)
+	return ds.sm.UpdateDefinition(definitionID, definition)
 }
 
 // Delete deletes and deregisters the definition specified by definitionID
 func (ds *definitionService) Delete(definitionID string) error {
-	definition, err := ds.sm.GetDefinition(definitionID)
-	if err != nil {
-		return err
-	}
-	if err = ds.ecsExecutionEngine.Deregister(definition); err != nil {
-		return err
-	}
 	return ds.sm.DeleteDefinition(definitionID)
 }
 

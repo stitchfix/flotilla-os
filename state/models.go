@@ -15,11 +15,9 @@ import (
 	"time"
 )
 
-var ECSEngine = "ecs"
-
 var EKSEngine = "eks"
 
-var DefaultEngine = ECSEngine
+var DefaultEngine = EKSEngine
 
 var DefaultARA = true
 
@@ -45,7 +43,7 @@ var DefaultLifecycle = SpotLifecycle
 
 var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
 
-var Engines = []string{ECSEngine, EKSEngine}
+var Engines = []string{EKSEngine}
 
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
@@ -213,7 +211,6 @@ type TerminateJob struct {
 	UserInfo UserInfo
 }
 
-// Definition represents a definition of a job - roughly 1-1 with an AWS ECS
 // task definition. It implements the `Executable` interface.
 type Definition struct {
 	Arn              string `json:"arn"`
