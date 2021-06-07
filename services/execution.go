@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"math/rand"
 	"regexp"
 	"strconv"
 	"time"
@@ -459,6 +460,8 @@ func (es *executionService) ListClusters() ([]string, error) {
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
 	fields.Engine = &state.EKSEngine
+	rand.Seed(time.Now().Unix())
+	fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
 
 	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
