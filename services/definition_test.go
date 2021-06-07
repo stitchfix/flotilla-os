@@ -135,7 +135,7 @@ func TestDefinitionService_Update(t *testing.T) {
 	ds.Update("A", d)
 
 	// order matters
-	expected := []string{"GetDefinition", "Define", "UpdateDefinition"}
+	expected := []string{"UpdateDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -152,7 +152,7 @@ func TestDefinitionService_Delete(t *testing.T) {
 	ds.Delete("A")
 
 	// order matters
-	expected := []string{"GetDefinition", "Deregister", "DeleteDefinition"}
+	expected := []string{"DeleteDefinition"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of create calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}

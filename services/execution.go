@@ -180,11 +180,6 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	fields := req.GetExecutionRequestCommon()
 	es.sanitizeExecutionRequestCommonFields(fields)
 
-	// Validate that definition can be run (image exists, cluster has resources)
-	if err = es.canBeRun(fields.ClusterName, &definition, fields.Env, *fields.Engine); err != nil {
-		return run, err
-	}
-
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRunFromDefinition(definition, req)
 	if err != nil {
@@ -296,39 +291,6 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 		}
 	}
 	return state.EnvList(runEnv)
-}
-
-func (es *executionService) canBeRun(clusterName string, executable state.Executable, env *state.EnvList, engine string) error {
-	resources := executable.GetExecutableResources()
-
-	if env != nil {
-		for _, e := range *env {
-			_, usingRestricted := es.reservedEnv[e.Name]
-			if usingRestricted {
-				return exceptions.ConflictingResource{
-					ErrorString: fmt.Sprintf("environment variable %s is reserved", e.Name)}
-			}
-		}
-	}
-	var ok bool
-	var err error
-	if engine == state.EKSEngine {
-		if *resources.Privileged == true {
-			ok, err = false, errors.New("eks cannot run containers with privileged mode")
-		} else {
-			ok, err = true, nil
-		}
-	}
-
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return exceptions.MalformedInput{
-			ErrorString: fmt.Sprintf(
-				"executable cannot be run on cluster [%s]", clusterName)}
-	}
-	return nil
 }
 
 //
@@ -577,11 +539,6 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 
 	fields := req.GetExecutionRequestCommon()
 	es.sanitizeExecutionRequestCommonFields(fields)
-
-	// Validate that template can be run (image exists, cluster has resources)
-	if err = es.canBeRun(fields.ClusterName, &template, fields.Env, *fields.Engine); err != nil {
-		return run, err
-	}
 
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRunFromTemplate(template, req)
