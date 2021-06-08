@@ -20,10 +20,10 @@ import (
 )
 
 //
-// EKSS3LogsClient corresponds with the aws logs driver
+// K8SS3LogsClient corresponds with the aws logs driver
 // for ECS and returns logs for runs
 //
-type EKSS3LogsClient struct {
+type K8SS3LogsClient struct {
 	logRetentionInDays int64
 	logNamespace       string
 	s3Client           *s3.S3
@@ -41,15 +41,15 @@ type s3Log struct {
 //
 // Name returns the name of the logs client
 //
-func (lc *EKSS3LogsClient) Name() string {
-	return "eks-s3"
+func (lc *K8SS3LogsClient) Name() string {
+	return "k8s-s3"
 }
 
 //
-// Initialize sets up the EKSS3LogsClient
+// Initialize sets up the K8SS3LogsClient
 //
-func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("eks.log.driver.options")
+func (lc *K8SS3LogsClient) Initialize(conf config.Config) error {
+	confLogOptions := conf.GetStringMapString("k8s.log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
 	if len(awsRegion) == 0 {
@@ -58,7 +58,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 
 	if len(awsRegion) == 0 {
 		return errors.Errorf(
-			"EKSS3LogsClient needs one of [eks.log.driver.options.awslogs-region] or [aws_default_region] set in config")
+			"K8SS3LogsClient needs one of [k8s.log.driver.options.awslogs-region] or [aws_default_region] set in config")
 	}
 
 	flotillaMode := conf.GetString("flotilla_mode")
@@ -73,7 +73,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 
 	if len(s3BucketName) == 0 {
 		return errors.Errorf(
-			"EKSS3LogsClient needs [eks.log.driver.options.s3_bucket_name] set in config")
+			"K8SS3LogsClient needs [k8s.log.driver.options.s3_bucket_name] set in config")
 	}
 	lc.s3Bucket = s3BucketName
 
@@ -81,7 +81,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 
 	if len(s3BucketRootDir) == 0 {
 		return errors.Errorf(
-			"EKSS3LogsClient needs [eks.log.driver.options.s3_bucket_root_dir] set in config")
+			"K8SS3LogsClient needs [k8s.log.driver.options.s3_bucket_root_dir] set in config")
 	}
 	lc.s3BucketRootDir = s3BucketRootDir
 
@@ -90,7 +90,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *K8SS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	result, err := lc.getS3Object(run)
 	startPosition := int64(0)
 	if lastSeen != nil {
@@ -112,7 +112,7 @@ func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, last
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
+func (lc *K8SS3LogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	result, err := lc.getS3Object(run)
 
 	if result != nil && err == nil {
@@ -125,7 +125,7 @@ func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, 
 //
 // Fetch S3Object associated with the pod's log.
 //
-func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
+func (lc *K8SS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
 	//Pod isn't there yet - dont return a 404
 	if run.PodName == nil {
 		return nil, errors.New("no pod associated with the run.")
@@ -162,7 +162,7 @@ func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, erro
 	}
 }
 
-func (lc *EKSS3LogsClient) getS3Key(s3Key *string) (*s3.GetObjectOutput, error) {
+func (lc *K8SS3LogsClient) getS3Key(s3Key *string) (*s3.GetObjectOutput, error) {
 	result, err := lc.s3Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(lc.s3Bucket),
 		Key:    aws.String(*s3Key),
@@ -176,14 +176,14 @@ func (lc *EKSS3LogsClient) getS3Key(s3Key *string) (*s3.GetObjectOutput, error) 
 //
 // Formulate dir name on S3.
 //
-func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
+func (lc *K8SS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
 
 //
 // Converts log messages from S3 to strings - returns the contents of the entire file.
 //
-func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
+func (lc *K8SS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
 	reader := bufio.NewReader(result.Body)
 	for {
 		line, err := reader.ReadBytes('\n')
@@ -210,7 +210,7 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 //
 // Converts log messages from S3 to strings, takes a starting offset.
 //
-func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
+func (lc *K8SS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
 	acc := ""
 	currentPosition := int64(0)
 	// if less than/equal to 0, read entire log.

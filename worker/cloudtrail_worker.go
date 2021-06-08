@@ -36,9 +36,9 @@ func (ctw *cloudtrailWorker) Initialize(conf config.Config, sm state.Manager, ee
 	ctw.log = log
 	ctw.engine = engine
 	ctw.queue = conf.GetString("cloudtrail_queue")
-	_ = ctw.qm.Initialize(ctw.conf, "eks")
+	_ = ctw.qm.Initialize(ctw.conf, "k8s")
 
-	awsRegion := conf.GetString("eks.manifest.storage.options.region")
+	awsRegion := conf.GetString("k8s.manifest.storage.options.region")
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
 	ctw.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 
@@ -104,10 +104,10 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
-	sa := ctw.conf.GetString("eks.service_account")
+	sa := ctw.conf.GetString("k8s.service_account")
 	runIdRecordMap := make(map[string][]state.Record)
 	for _, record := range ctn.Records {
-		if strings.Contains(record.UserIdentity.Arn, sa) && strings.Contains(record.UserIdentity.Arn, "eks-") {
+		if strings.Contains(record.UserIdentity.Arn, sa) && strings.Contains(record.UserIdentity.Arn, "k8s-") {
 			runId := ctw.getRunId(record)
 			runIdRecordMap[runId] = append(runIdRecordMap[runId], record)
 		}

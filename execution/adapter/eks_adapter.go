@@ -12,18 +12,18 @@ import (
 	"time"
 )
 
-type EKSAdapter interface {
+type K8SAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
-type eksAdapter struct{}
+type k8sAdapter struct{}
 
 //
-// NewEKSAdapter configures and returns an eks adapter for translating
-// from EKS api specific objects to our representation
+// NewK8SAdapter configures and returns an k8s adapter for translating
+// from K8S api specific objects to our representation
 //
-func NewEKSAdapter() (EKSAdapter, error) {
-	adapter := eksAdapter{}
+func NewK8SAdapter() (K8SAdapter, error) {
+	adapter := k8sAdapter{}
 	return &adapter, nil
 }
 
@@ -31,7 +31,7 @@ func NewEKSAdapter() (EKSAdapter, error) {
 // Adapting Kubernetes batch/v1 job to a Flotilla run object.
 // This method maps the exit code & timestamps from Kubernetes to Flotilla's Run object.
 //
-func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
+func (a *k8sAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
 	updated := run
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
 		updated.Status = state.StatusRunning
@@ -97,7 +97,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
 //
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *k8sAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -124,7 +124,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
 		ActiveDeadlineSeconds:   run.ActiveDeadlineSeconds,
-		BackoffLimit:            &state.EKSBackoffLimit,
+		BackoffLimit:            &state.K8SBackoffLimit,
 
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: v1.ObjectMeta{
@@ -140,17 +140,17 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		},
 	}
 
-	eksJob := batchv1.Job{
+	k8sJob := batchv1.Job{
 		Spec: jobSpec,
 		ObjectMeta: v1.ObjectMeta{
 			Name: run.RunID,
 		},
 	}
 
-	return eksJob, nil
+	return k8sJob, nil
 }
 
-func (a *eksAdapter) constructContainerPorts(executable state.Executable) []corev1.ContainerPort {
+func (a *k8sAdapter) constructContainerPorts(executable state.Executable) []corev1.ContainerPort {
 	var containerPorts []corev1.ContainerPort
 	executableResources := executable.GetExecutableResources()
 	if executableResources.Ports != nil && len(*executableResources.Ports) > 0 {
@@ -163,7 +163,7 @@ func (a *eksAdapter) constructContainerPorts(executable state.Executable) []core
 	return containerPorts
 }
 
-func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
+func (a *k8sAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
@@ -216,7 +216,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+func (a *k8sAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
 	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
@@ -256,7 +256,7 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
+func (a *k8sAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 	executableResources := executable.GetExecutableResources()
@@ -288,7 +288,7 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
-func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
+func (a *k8sAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
 	if cpu < state.MinCPU {
 		cpu = state.MinCPU
 	}
@@ -304,7 +304,7 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
 	return cpu, mem
 }
 
-func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executable) (int64, int64) {
+func (a *k8sAdapter) getResourceDefaults(run state.Run, executable state.Executable) (int64, int64) {
 	// 1. Init with the global defaults
 	cpu := state.MinCPU
 	mem := state.MinMem
@@ -339,7 +339,7 @@ func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executa
 	return cpu, mem
 }
 
-func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {
+func (a *k8sAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {
 	var lastRun state.Run
 	runList, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
 		"queued_at_since": {
@@ -348,21 +348,21 @@ func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run 
 		"status":        {state.StatusStopped},
 		"command":       {strings.Replace(*run.Command, "'", "''", -1)},
 		"executable_id": {*run.ExecutableID},
-	}, nil, []string{state.EKSEngine})
+	}, nil, []string{state.K8SEngine})
 	if err == nil && len(runList.Runs) > 0 {
 		lastRun = runList.Runs[0]
 	}
 	return lastRun
 }
 
-func (a *eksAdapter) constructCmdSlice(cmdString string) []string {
+func (a *k8sAdapter) constructCmdSlice(cmdString string) []string {
 	bashCmd := "bash"
 	optLogin := "-l"
 	optStr := "-cex"
 	return []string{bashCmd, optLogin, optStr, cmdString}
 }
 
-func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []corev1.EnvVar {
+func (a *k8sAdapter) envOverrides(executable state.Executable, run state.Run) []corev1.EnvVar {
 	pairs := make(map[string]string)
 	resources := executable.GetExecutableResources()
 
@@ -394,7 +394,7 @@ func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []
 	return res
 }
 
-func (a *eksAdapter) sanitizeEnvVar(key string) string {
+func (a *k8sAdapter) sanitizeEnvVar(key string) string {
 	// Environment variable can't start with a $
 	if strings.HasPrefix(key, "$") {
 		key = strings.Replace(key, "$", "", 1)

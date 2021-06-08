@@ -44,32 +44,32 @@ type ExecutionService interface {
 
 type executionService struct {
 	stateManager             state.Manager
-	eksClusterClient         cluster.Client
-	eksExecutionEngine       engine.Engine
+	k8sClusterClient         cluster.Client
+	k8sExecutionEngine       engine.Engine
 	reservedEnv              map[string]func(run state.Run) string
-	eksClusterOverride       []string
-	eksOverridePercent       int
+	k8sClusterOverride       []string
+	k8sOverridePercent       int
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
 	baseUri                  string
 	spotReAttemptOverride    float32
-	eksSpotOverride          bool
+	k8sSpotOverride          bool
 	spotThresholdMinutes     float64
 	terminateJobChannel      chan state.TerminateJob
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
-	return es.eksExecutionEngine.GetEvents(run)
+	return es.k8sExecutionEngine.GetEvents(run)
 }
 
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, sm state.Manager, eksClusterClient cluster.Client) (ExecutionService, error) {
+func NewExecutionService(conf config.Config, k8sExecutionEngine engine.Engine, sm state.Manager, k8sClusterClient cluster.Client) (ExecutionService, error) {
 	es := executionService{
 		stateManager:       sm,
-		eksClusterClient:   eksClusterClient,
-		eksExecutionEngine: eksExecutionEngine,
+		k8sClusterClient:   k8sClusterClient,
+		k8sExecutionEngine: k8sExecutionEngine,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -80,9 +80,9 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
 
-	es.eksClusterOverride = conf.GetStringSlice("eks.cluster_override")
-	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
-	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
+	es.k8sClusterOverride = conf.GetStringSlice("k8s.cluster_override")
+	es.k8sOverridePercent = conf.GetInt("k8s.cluster_override_percent")
+	es.clusterOndemandWhitelist = conf.GetStringSlice("k8s.cluster_ondemand_whitelist")
 	if conf.IsSet("check_image_validity") {
 		es.checkImageValidity = conf.GetBool("check_image_validity")
 	} else {
@@ -93,21 +93,21 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		es.baseUri = conf.GetString("base_uri")
 	}
 
-	if conf.IsSet("eks.spot_reattempt_override") {
-		es.spotReAttemptOverride = float32(conf.GetFloat64("eks.spot_reattempt_override"))
+	if conf.IsSet("k8s.spot_reattempt_override") {
+		es.spotReAttemptOverride = float32(conf.GetFloat64("k8s.spot_reattempt_override"))
 	} else {
 		// defaults to 5% override.
 		es.spotReAttemptOverride = float32(0.05)
 	}
 
-	if conf.IsSet("eks.spot_override") {
-		es.eksSpotOverride = conf.GetBool("eks.spot_override")
+	if conf.IsSet("k8s.spot_override") {
+		es.k8sSpotOverride = conf.GetBool("k8s.spot_override")
 	} else {
-		es.eksSpotOverride = false
+		es.k8sSpotOverride = false
 	}
 
-	if conf.IsSet("eks.spot_threshold_minutes") {
-		es.spotThresholdMinutes = conf.GetFloat64("eks.spot_threshold_minutes")
+	if conf.IsSet("k8s.spot_threshold_minutes") {
+		es.spotThresholdMinutes = conf.GetFloat64("k8s.spot_threshold_minutes")
 	} else {
 		es.spotThresholdMinutes = 30.0
 	}
@@ -179,7 +179,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
-	fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
+	fields.ClusterName = es.k8sClusterOverride[rand.Intn(len(es.k8sClusterOverride))]
 	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Construct run object with StatusQueued and new UUID4 run id
@@ -241,7 +241,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	if reAttemptRate >= es.spotReAttemptOverride &&
 		fields.Engine != nil &&
 		fields.NodeLifecycle != nil &&
-		*fields.Engine == state.EKSEngine &&
+		*fields.Engine == state.K8SEngine &&
 		*fields.NodeLifecycle == state.SpotLifecycle {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
@@ -331,7 +331,7 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine})
+	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.K8SEngine})
 }
 
 //
@@ -418,11 +418,11 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 		}
 
 		if run.Engine == nil {
-			run.Engine = &state.EKSEngine
+			run.Engine = &state.K8SEngine
 		}
 
-		if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
-			err = es.eksExecutionEngine.Terminate(run)
+		if *run.Engine == state.K8SEngine && run.Status != state.StatusStopped {
+			err = es.k8sExecutionEngine.Terminate(run)
 			if err == nil || run.Status == state.StatusQueued {
 				exitReason := "Task terminated by user"
 				if len(userInfo.Email) > 0 {
@@ -464,9 +464,9 @@ func (es *executionService) ListClusters() ([]string, error) {
 //
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
-	fields.Engine = &state.EKSEngine
+	fields.Engine = &state.K8SEngine
 
-	if es.eksSpotOverride {
+	if es.k8sSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
@@ -491,7 +491,7 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 		return run, err
 	}
 
-	err = es.eksExecutionEngine.Enqueue(run)
+	err = es.k8sExecutionEngine.Enqueue(run)
 	queuedAt := time.Now()
 
 	if err != nil {

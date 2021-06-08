@@ -5,10 +5,10 @@ readonly_database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmod
 create_database_schema: true
 state_manager: postgres
 queue_manager: sqs
-cluster_client: eks
+cluster_client: k8s
 logs_client: cloudwatch
 metrics_client: dogstatsd
-execution_engine: eks
+execution_engine: k8s
 enabled_workers:
     - retry
     - submit
@@ -26,14 +26,14 @@ http:
         cors_allowed_origins:
             - 'http://localhost:3001'
 owner_id_var: FLOTILLA_RUN_OWNER_ID
-eks:
+k8s:
     cluster_override: ["clusta"]
     log:
-        namespace: flotilla-eks-namespace
+        namespace: flotilla-k8s-namespace
         retention_days: 90
         driver:
             name: awslogs
-            options: {awslogs-group: flotilla-eks-namespace, awslogs-region: us-east-1}
+            options: {awslogs-group: flotilla-k8s-namespace, awslogs-region: us-east-1}
 metrics:
   dogstatsd:
     address: 127.0.0.1:8125

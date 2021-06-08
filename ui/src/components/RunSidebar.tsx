@@ -32,7 +32,7 @@ const RunSidebar: React.FC<{ data: Run }> = ({ data }) => {
         </div>
         <EnvList env={data.env} />
       </Card>
-      {data && data.engine === ExecutionEngine.EKS && (
+      {data && data.engine === ExecutionEngine.K8S && (
         <RunDebugAttributes data={data} />
       )}
     </div>

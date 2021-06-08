@@ -46,8 +46,8 @@ const validationSchema = Yup.object().shape({
     })
   ),
   engine: Yup.string()
-    .matches(/(eks|ecs)/)
-    .required("A valid engine type of ecs or eks must be set."),
+    .matches(/(k8s|ecs)/)
+    .required("A valid engine type of ecs or k8s must be set."),
   node_lifecycle: Yup.string().matches(/(spot|ondemand)/),
   template_payload: Yup.object().required("Template payload is required."),
 })
@@ -107,18 +107,18 @@ const TemplateExecutionForm: React.FC<Props> = ({
                 onChange={(evt: React.FormEvent<HTMLInputElement>) => {
                   setFieldValue("engine", evt.currentTarget.value)
 
-                  if (evt.currentTarget.value === ExecutionEngine.EKS) {
+                  if (evt.currentTarget.value === ExecutionEngine.K8S) {
                     setFieldValue(
                       "cluster",
-                      process.env.REACT_APP_EKS_CLUSTER_NAME || ""
+                      process.env.REACT_APP_K8S_CLUSTER_NAME || ""
                     )
-                  } else if (getEngine() === ExecutionEngine.EKS) {
+                  } else if (getEngine() === ExecutionEngine.K8S) {
                     setFieldValue("cluster", "")
                   }
                 }}
                 selectedValue={values.engine}
               >
-                <Radio label="EKS" value={ExecutionEngine.EKS} />
+                <Radio label="K8S" value={ExecutionEngine.K8S} />
                 <Radio label="ECS" value={ExecutionEngine.ECS} />
               </RadioGroup>
             </FormGroup>
@@ -127,7 +127,7 @@ const TemplateExecutionForm: React.FC<Props> = ({
                 "FastField" as it needs to re-render when value.engine is
                 updated.
             */}
-            {getEngine() !== ExecutionEngine.EKS && (
+            {getEngine() !== ExecutionEngine.K8S && (
               <FormGroup
                 label="Cluster"
                 helperText="Select a cluster for this task to execute on."
@@ -179,7 +179,7 @@ const TemplateExecutionForm: React.FC<Props> = ({
                 onChange={(value: string) => {
                   setFieldValue(helpers.nodeLifecycleFieldSpec.name, value)
                 }}
-                isDisabled={getEngine() !== ExecutionEngine.EKS}
+                isDisabled={getEngine() !== ExecutionEngine.K8S}
               />
               {errors.node_lifecycle && (
                 <FieldError>{errors.node_lifecycle}</FieldError>

@@ -34,7 +34,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	ew.qm = qm
 	ew.log = log
 	ew.engine = engine
-	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
+	eventsQueue, err := ew.qm.QurlFor(conf.GetString("k8s.events_queue"), false)
 
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
@@ -42,7 +42,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	}
 
 	ew.queue = eventsQueue
-	_ = ew.qm.Initialize(ew.conf, "eks")
+	_ = ew.qm.Initialize(ew.conf, "k8s")
 
 	return nil
 }
@@ -75,7 +75,7 @@ func (ew *eventsWorker) runOnce() {
 
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
-	if !strings.HasPrefix(runId, "eks") {
+	if !strings.HasPrefix(runId, "k8s") {
 		return
 	}
 
@@ -137,7 +137,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 }
 
 func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (string, error) {
-	expression := regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
+	expression := regexp.MustCompile(`(k8s-\w+-\w+-\w+-\w+-\w+-\w+)`)
 	matches := expression.FindStringSubmatch(kubernetesEvent.Message)
 	if matches != nil && len(matches) >= 1 {
 		return matches[0], nil
