@@ -171,7 +171,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 
 	var nodeLifecycle []string
-	if *run.NodeLifecycle == state.OndemandLifecycle {
+	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
 		nodeLifecycle = append(nodeLifecycle, "normal")
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot")
