@@ -73,16 +73,16 @@ func main() {
 	// Get cluster client for validating definitions
 	// against execution clusters
 	//
-	eksClusterClient, err := cluster.NewClusterClient(c, state.EKSEngine)
+	k8sClusterClient, err := cluster.NewClusterClient(c, state.K8SEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS cluster client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize K8S cluster client"))
 		//TODO
 		//os.Exit(1)
 	}
 
-	eksLogsClient, err := logs.NewLogsClient(c, logger, state.EKSEngine)
+	k8sLogsClient, err := logs.NewLogsClient(c, logger, state.K8SEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS logs client"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize K8S logs client"))
 		//TODO
 		//os.Exit(1)
 	}
@@ -90,23 +90,23 @@ func main() {
 	//
 	// Get queue manager for queuing runs
 	//
-	eksQueueManager, err := queue.NewQueueManager(c, state.EKSEngine)
+	k8sQueueManager, err := queue.NewQueueManager(c, state.K8SEngine)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize k8s queue manager"))
 		os.Exit(1)
 	}
 
 	//
 	// Get execution engine for interacting with backend
-	// execution management framework (eg. EKS)
+	// execution management framework (eg. K8S)
 	//
-	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine, logger)
+	k8sExecutionEngine, err := engine.NewExecutionEngine(c, k8sQueueManager, state.K8SEngine, logger)
 	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize K8S execution engine"))
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager)
+	app, err := flotilla.NewApp(c, logger, k8sLogsClient, k8sExecutionEngine, stateManager, k8sClusterClient, k8sQueueManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

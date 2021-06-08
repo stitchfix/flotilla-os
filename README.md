@@ -27,9 +27,9 @@ The core assumption is that you understand your work the best. Therefore, it is 
 
 ### Minimal Assumptions
 
-Flotilla uses AWS's Elastic Kubernetes Service (EKS) as the execution backend. However, Flotilla does not manage EKS clusters. There must be at least one cluster defined in AWS's EKS service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
+Flotilla uses Kubernetes as the execution backend. However, Flotilla does not manage K8S clusters. There must be at least one cluster defined in AWS's K8S service available to you and it must have at least one task node. Most typically this is the `default` cluster and examples will assume this going forward.
 
-https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html
+https://docs.aws.amazon.com/k8s/latest/userguide/what-is-k8s.html
 
 
 ### Starting the service locally
@@ -103,7 +103,7 @@ Before you can run a task you first need to define it. We'll use the example hel
 
 It's a simple task that runs in the default ubuntu image, prints your username to the logs, and exits.
 
-> Note: While you can use non-public images and images in your own registries with flotilla, credentials for accessing those images must exist on the EKS hosts. This is outside the scope of this doc.
+> Note: While you can use non-public images and images in your own registries with flotilla, credentials for accessing those images must exist on the K8S hosts. This is outside the scope of this doc.
 
 
 Let's define it:
@@ -249,22 +249,22 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `metrics.dogstatsd.namespace` | Namespace for the metrics - for example `flotilla.` |
 | `redis_address` | Redis host for caching and locks|
 | `redis_db` | Redis db to be used - numeric |
-| `eks.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
-| `eks.kubeconfig_basepath` | folder where the kubeconfigs are stored |
-| `eks.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
-| `eks.cluster_override` | EKS clusters to override traffic |
-| `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
-| `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
-| `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name for manifest storage. |
-| `eks.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path. |
-| `eks.log.namespace.retention_days` | Number of days to store logs. |
-| `eks.log.namespace.driver.name` | Logger name. |
-| `eks.log.namespace.driver.options.s3_bucket_name` | S3 bucket name to store logs. |
-| `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path within the bucket.|
-| `eks.job_namespace` | Kubernetes namespace to submit jobs to. |
-| `eks.job_ttl` | default job ttl in seconds |
-| `eks.job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
-| `eks.service_account` | Kubernetes service account to use for jobs. |
+| `k8s.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
+| `k8s.kubeconfig_basepath` | folder where the kubeconfigs are stored |
+| `k8s.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
+| `k8s.cluster_override` | K8S clusters to override traffic |
+| `k8s.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
+| `k8s.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
+| `k8s.manifest.storage.options.s3_bucket_name` | S3 bucket name for manifest storage. |
+| `k8s.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path. |
+| `k8s.log.namespace.retention_days` | Number of days to store logs. |
+| `k8s.log.namespace.driver.name` | Logger name. |
+| `k8s.log.namespace.driver.options.s3_bucket_name` | S3 bucket name to store logs. |
+| `k8s.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path within the bucket.|
+| `k8s.job_namespace` | Kubernetes namespace to submit jobs to. |
+| `k8s.job_ttl` | default job ttl in seconds |
+| `k8s.job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/K8S |
+| `k8s.service_account` | Kubernetes service account to use for jobs. |
 
 ## Development
 

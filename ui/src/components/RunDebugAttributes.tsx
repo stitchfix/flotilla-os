@@ -22,15 +22,15 @@ const createS3ManifestUrl = (runID: string): string => {
 const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
   <Card style={{ marginTop: 12 }}>
     <div className="flotilla-card-header-container">
-      <div className="flotilla-card-header">EKS Debug</div>
+      <div className="flotilla-card-header">K8S Debug</div>
     </div>
     <div className="flotilla-attributes-container flotilla-attributes-container-vertical">
-      {data.cluster && <Attribute name="EKS Cluster" value={data.cluster} />}
-      {data.pod_name && <Attribute name="EKS Pod Name" value={data.pod_name} />}
-      {data.attempt_count && <Attribute name="EKS Pod Attempt Count" value={data.attempt_count} />}
-      {data.engine === ExecutionEngine.EKS && (
+      {data.cluster && <Attribute name="K8S Cluster" value={data.cluster} />}
+      {data.pod_name && <Attribute name="K8S Pod Name" value={data.pod_name} />}
+      {data.attempt_count && <Attribute name="K8S Pod Attempt Count" value={data.attempt_count} />}
+      {data.engine === ExecutionEngine.K8S && (
         <Attribute
-          name="EKS S3 Logs"
+          name="K8S S3 Logs"
           value={
             <a
               href={createS3LogsUrl(data.run_id)}
@@ -66,9 +66,9 @@ const RunDebugAttributes: React.FC<{ data: Run }> = ({ data }) => (
           }
         />
       )}
-      {data.engine === ExecutionEngine.EKS && (
+      {data.engine === ExecutionEngine.K8S && (
         <Attribute
-          name="EKS Manifest"
+          name="K8S Manifest"
           value={
             <a
               href={createS3ManifestUrl(data.run_id)}

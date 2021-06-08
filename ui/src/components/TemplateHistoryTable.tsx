@@ -122,7 +122,7 @@ export const TemplateHistoryTable: React.FunctionComponent<Props> = ({
             cluster: {
               displayName: "Cluster",
               render: (r: Run) =>
-                r.engine === ExecutionEngine.EKS ? "-" : r.cluster,
+                r.engine === ExecutionEngine.K8S ? "-" : r.cluster,
               isSortable: false,
             },
           }}

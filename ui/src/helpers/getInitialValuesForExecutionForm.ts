@@ -89,13 +89,13 @@ function getInitialValuesForCommonExecutionFields(
         owner_id: ownerID,
         engine,
       }
-    case ExecutionEngine.EKS:
+    case ExecutionEngine.K8S:
     default:
       return {
         cluster: get(
           r,
           "cluster",
-          process.env.REACT_APP_EKS_CLUSTER_NAME || ""
+          process.env.REACT_APP_K8S_CLUSTER_NAME || ""
         ),
         node_lifecycle: get(r, "node_lifecycle", DefaultNodeLifecycle),
         env,

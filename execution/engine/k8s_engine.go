@@ -26,12 +26,12 @@ import (
 )
 
 //
-// EKSExecutionEngine submits runs to EKS.
+// K8SExecutionEngine submits runs to K8S.
 //
-type EKSExecutionEngine struct {
+type K8SExecutionEngine struct {
 	kClients        map[string]kubernetes.Clientset
 	metricsClients  map[string]metricsv.Clientset
-	adapter         adapter.EKSAdapter
+	adapter         adapter.K8SAdapter
 	qm              queue.Manager
 	log             flotillaLog.Logger
 	jobQueue        string
@@ -48,21 +48,21 @@ type EKSExecutionEngine struct {
 }
 
 //
-// Initialize configures the EKSExecutionEngine and initializes internal clients
+// Initialize configures the K8SExecutionEngine and initializes internal clients
 //
-func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	clusters := conf.GetStringMapString("eks.clusters")
+func (ee *K8SExecutionEngine) Initialize(conf config.Config) error {
+	clusters := conf.GetStringMapString("k8s.clusters")
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
 	for clusterName, _ := range clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
+		filename := fmt.Sprintf("%s/%s", conf.GetString("k8s.kubeconfig_basepath"), clusterName)
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
 			return err
 		}
 		kClient, err := kubernetes.NewForConfig(clientConf)
-		_ = ee.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
+		_ = ee.log.Log("message", "initializing-k8s-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
 		if err != nil {
 			return err
 		}
@@ -70,25 +70,25 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		ee.metricsClients[clusterName] = *metricsv.NewForConfigOrDie(clientConf)
 	}
 
-	ee.jobQueue = conf.GetString("eks.job_queue")
+	ee.jobQueue = conf.GetString("k8s.job_queue")
 	ee.schedulerName = "default-scheduler"
 
-	if conf.IsSet("eks.scheduler_name") {
-		ee.schedulerName = conf.GetString("eks.scheduler_name")
+	if conf.IsSet("k8s.scheduler_name") {
+		ee.schedulerName = conf.GetString("k8s.scheduler_name")
 	}
-	if conf.IsSet("eks.status_queue") {
-		ee.statusQueue = conf.GetString("eks.status_queue")
+	if conf.IsSet("k8s.status_queue") {
+		ee.statusQueue = conf.GetString("k8s.status_queue")
 	}
-	ee.jobNamespace = conf.GetString("eks.job_namespace")
-	ee.jobTtl = conf.GetInt("eks.job_ttl")
-	ee.jobSA = conf.GetString("eks.service_account")
-	if conf.IsSet("eks.ara_enabled") {
-		ee.jobARAEnabled = conf.GetBool("eks.ara_enabled")
+	ee.jobNamespace = conf.GetString("k8s.job_namespace")
+	ee.jobTtl = conf.GetInt("k8s.job_ttl")
+	ee.jobSA = conf.GetString("k8s.service_account")
+	if conf.IsSet("k8s.ara_enabled") {
+		ee.jobARAEnabled = conf.GetBool("k8s.ara_enabled")
 	} else {
 		ee.jobARAEnabled = false
 	}
 
-	adapt, err := adapter.NewEKSAdapter()
+	adapt, err := adapter.NewK8SAdapter()
 
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 			Strict: true,
 		},
 	)
-	confLogOptions := conf.GetStringMapString("eks.manifest.storage.options")
+	confLogOptions := conf.GetStringMapString("k8s.manifest.storage.options")
 	awsRegion := confLogOptions["region"]
 	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
@@ -114,7 +114,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+func (ee *K8SExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
 
 	kClient, err := ee.getKClient(run)
@@ -140,7 +140,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 		}
 
 		// Legitimate submit error, retryable.
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineK8SExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, true, err
 	}
 
@@ -159,7 +159,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 			_ = ee.log.Log("s3_upload_error", "error", err.Error())
 		}
 	}
-	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineK8SExecute, []string{string(metrics.StatusSuccess)}, 1)
 
 	run, _ = ee.getPodName(run)
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
@@ -173,7 +173,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	return adaptedRun, false, nil
 }
 
-func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
+func (ee *K8SExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	podList, err := ee.getPodList(run)
 
 	if err != nil {
@@ -201,14 +201,14 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	return run, nil
 }
 
-func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) state.Run {
+func (ee *K8SExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) state.Run {
 	if len(pod.Spec.NodeName) > 0 {
 		run.InstanceDNSName = pod.Spec.NodeName
 	}
 	return run
 }
 
-func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
+func (ee *K8SExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return &v1.PodList{}, err
@@ -234,7 +234,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 	return &v1.PodList{}, err
 }
 
-func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+func (ee *K8SExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
 	kClient, ok := ee.kClients[run.ClusterName]
 	if !ok {
 		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
@@ -242,7 +242,7 @@ func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, e
 	return kClient, nil
 }
 
-func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
+func (ee *K8SExecutionEngine) Terminate(run state.Run) error {
 	gracePeriod := int64(300)
 	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
@@ -263,29 +263,29 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineK8STerminate, []string{string(metrics.StatusSuccess)}, 1)
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
+func (ee *K8SExecutionEngine) Enqueue(run state.Run) error {
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineK8SEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = ee.qm.Enqueue(qurl, run); err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineK8SEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineK8SEnqueue, []string{string(metrics.StatusSuccess)}, 1)
 	return nil
 }
 
-func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
+func (ee *K8SExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
@@ -311,34 +311,34 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	return runs, nil
 }
 
-// PollStatus is a dummy function as EKS does not emit task status
+// PollStatus is a dummy function as K8S does not emit task status
 // change events.
 //
-func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
+func (ee *K8SExecutionEngine) PollStatus() (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
 
 //
 // Reads off SQS queue and generates a Run object based on the runId
-func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
+func (ee *K8SExecutionEngine) PollRunStatus() (state.Run, error) {
 	return state.Run{}, nil
 }
 
 //
-// Define returns a blank task definition and an error for the EKS engine.
+// Define returns a blank task definition and an error for the K8S engine.
 //
-func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
+func (ee *K8SExecutionEngine) Define(td state.Definition) (state.Definition, error) {
 	return td, errors.New("Definition of tasks are only for ECSs.")
 }
 
 //
-// Deregister returns an error for the EKS engine.
+// Deregister returns an error for the K8S engine.
 //
-func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
-	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
+func (ee *K8SExecutionEngine) Deregister(definition state.Definition) error {
+	return errors.Errorf("K8SExecutionEngine does not allow for deregistering of task definitions.")
 }
 
-func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
+func (ee *K8SExecutionEngine) Get(run state.Run) (state.Run, error) {
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
@@ -357,7 +357,7 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	return updates, nil
 }
 
-func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
+func (ee *K8SExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
 	if run.PodName == nil {
 		return state.PodEventList{}, nil
 	}
@@ -384,7 +384,7 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 
 		if strings.Contains(e.Reason, "TriggeredScaleUp") {
 			source := fmt.Sprintf("source:%s", e.ObjectMeta.Name)
-			_ = metrics.Increment(metrics.EngineEKSNodeTriggeredScaledUp, []string{source}, 1)
+			_ = metrics.Increment(metrics.EngineK8SNodeTriggeredScaledUp, []string{source}, 1)
 		}
 		podEvents = append(podEvents, runEvent)
 	}
@@ -397,7 +397,7 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 	return podEventList, nil
 }
 
-func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+func (ee *K8SExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
 	if run.PodName != nil {
 		metricsClient, ok := ee.metricsClients[run.ClusterName]
 		if !ok {
@@ -427,7 +427,7 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 	return run, errors.New("no pod associated with the run.")
 }
 
-func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
+func (ee *K8SExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
@@ -462,7 +462,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		// update it.
 		if mostRecentPod != nil && (run.PodName == nil || mostRecentPod.Name != *run.PodName) {
 			if run.PodName != nil && mostRecentPod.Name != *run.PodName {
-				_ = metrics.Increment(metrics.EngineEKSRunPodnameChange, []string{}, 1)
+				_ = metrics.Increment(metrics.EngineK8SRunPodnameChange, []string{}, 1)
 			}
 
 			run.PodName = &mostRecentPod.Name

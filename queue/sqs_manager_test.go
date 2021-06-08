@@ -147,7 +147,7 @@ func setUp(t *testing.T) SQSManager {
 	c, _ := config.NewConfig(&confDir)
 
 	qm := SQSManager{}
-	qm.Initialize(c, state.EKSEngine)
+	qm.Initialize(c, state.K8SEngine)
 	qm.namespace = "qtest"
 
 	qA := "A"

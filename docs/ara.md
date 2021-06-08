@@ -18,4 +18,4 @@ If the prior recorded value of memory and CPU are lower than what the Metrics Se
 
 Also, an MD5 checksum of the command and its arguments are stored in the database. This becomes a signature of the job and its resources. 
 
-The core [query for ARA](https://github.com/stitchfix/flotilla-os/blob/master/state/pg_queries.go#L53-L66) and the associated [adapter code](https://github.com/stitchfix/flotilla-os/blob/master/execution/adapter/eks_adapter.go#L269-L301)
+The core [query for ARA](https://github.com/stitchfix/flotilla-os/blob/master/state/pg_queries.go#L53-L66) and the associated [adapter code](https://github.com/stitchfix/flotilla-os/blob/master/execution/adapter/k8s_adapter.go#L269-L301)

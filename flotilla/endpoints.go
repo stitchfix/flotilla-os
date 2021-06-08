@@ -19,7 +19,7 @@ type endpoints struct {
 	executionService  services.ExecutionService
 	definitionService services.DefinitionService
 	templateService   services.TemplateService
-	eksLogService     services.LogService
+	k8sLogService     services.LogService
 	workerService     services.WorkerService
 	logger            flotillaLog.Logger
 }
@@ -651,7 +651,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Get Pod Events (EKS only) for a run ID.
+// Get Pod Events (K8S only) for a run ID.
 func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	run, err := ep.executionService.Get(vars["run_id"])
@@ -666,7 +666,7 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var podEventList state.PodEventList
-	if *run.Engine == state.EKSEngine {
+	if *run.Engine == state.K8SEngine {
 		if run.PodEvents != nil {
 			podEventList.Total = len(*run.PodEvents)
 			podEventList.PodEvents = *run.PodEvents
@@ -699,9 +699,9 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rawText == true {
-		_ = ep.eksLogService.LogsText(vars["run_id"], w)
+		_ = ep.k8sLogService.LogsText(vars["run_id"], w)
 	} else {
-		log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
+		log, newLastSeen, err := ep.k8sLogService.Logs(vars["run_id"], &lastSeen)
 
 		res := map[string]string{
 			"log":       "",
@@ -752,23 +752,23 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 
 // List active workers.
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
-	wl, err := ep.workerService.List(state.EKSEngine)
-	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
+	wl, err := ep.workerService.List(state.K8SEngine)
+	wlK8S, errK8S := ep.workerService.List(state.K8SEngine)
 
 	if wl.Workers == nil {
 		wl.Workers = []state.Worker{}
 	}
 
-	if wlEKS.Workers == nil {
-		wlEKS.Workers = []state.Worker{}
+	if wlK8S.Workers == nil {
+		wlK8S.Workers = []state.Worker{}
 	}
 
-	if err != nil || errEKS != nil {
+	if err != nil || errK8S != nil {
 		ep.encodeError(w, err)
 	} else {
 		response := make(map[string]interface{})
-		response["total"] = wl.Total + wlEKS.Total
-		response["workers"] = append(wl.Workers, wlEKS.Workers...)
+		response["total"] = wl.Total + wlK8S.Total
+		response["workers"] = append(wl.Workers, wlK8S.Workers...)
 		ep.encodeResponse(w, response)
 	}
 }

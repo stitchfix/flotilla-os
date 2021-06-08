@@ -42,11 +42,11 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	sw.engine = engine
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 
-	if sw.conf.IsSet("eks.exception_extractor_url") {
+	if sw.conf.IsSet("k8s.exception_extractor_url") {
 		sw.exceptionExtractorClient = &http.Client{
 			Timeout: time.Second * 5,
 		}
-		sw.exceptionExtractorUrl = sw.conf.GetString("eks.exception_extractor_url")
+		sw.exceptionExtractorUrl = sw.conf.GetString("k8s.exception_extractor_url")
 	}
 	sw.setupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
@@ -54,7 +54,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 }
 
 func (sw *statusWorker) setupRedisClient(conf config.Config) {
-	if *sw.engine == state.EKSEngine {
+	if *sw.engine == state.K8SEngine {
 		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
 	}
 }
@@ -73,31 +73,31 @@ func (sw *statusWorker) Run() error {
 			sw.log.Log("message", "A status worker was terminated")
 			return nil
 		default:
-			if *sw.engine == state.EKSEngine {
-				sw.runOnceEKS()
+			if *sw.engine == state.K8SEngine {
+				sw.runOnceK8S()
 				time.Sleep(sw.pollInterval)
 			}
 		}
 	}
 }
 
-func (sw *statusWorker) runOnceEKS() {
+func (sw *statusWorker) runOnceK8S() {
 	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
 		},
 		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
-	}, nil, []string{state.EKSEngine})
+	}, nil, []string{state.K8SEngine})
 
 	if err != nil {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	runs := rl.Runs
-	sw.processEKSRuns(runs)
+	sw.processK8SRuns(runs)
 }
 
-func (sw *statusWorker) processEKSRuns(runs []state.Run) {
+func (sw *statusWorker) processK8SRuns(runs []state.Run) {
 	var lockedRuns []state.Run
 	for _, run := range runs {
 		duration := time.Duration(45) * time.Second
@@ -109,9 +109,9 @@ func (sw *statusWorker) processEKSRuns(runs []state.Run) {
 	_ = metrics.Increment(metrics.StatusWorkerLockedRuns, []string{sw.workerId}, float64(len(lockedRuns)))
 	for _, run := range lockedRuns {
 		start := time.Now()
-		_ = sw.log.Log("message", "launching go process eks run", "run", run.RunID)
-		go sw.processEKSRun(run)
-		_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
+		_ = sw.log.Log("message", "launching go process k8s run", "run", run.RunID)
+		go sw.processK8SRun(run)
+		_ = metrics.Timing(metrics.StatusWorkerProcessK8SRun, time.Since(start), []string{sw.workerId}, 1)
 	}
 }
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
@@ -130,8 +130,8 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 	return set
 }
 
-func (sw *statusWorker) processEKSRun(run state.Run) {
-	_ = sw.log.Log("message", "process eks run", "run", run.RunID)
+func (sw *statusWorker) processK8SRun(run state.Run) {
+	_ = sw.log.Log("message", "process k8s run", "run", run.RunID)
 	reloadRun, err := sw.sm.GetRun(run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
@@ -163,7 +163,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		minutesInQueue := time.Now().Sub(*run.QueuedAt).Minutes()
 		if strings.Contains(message, "not found") && minutesInQueue > float64(30) {
 			stoppedAt := time.Now()
-			reason := "Job either timed out or not found on the EKS cluster."
+			reason := "Job either timed out or not found on the K8S cluster."
 			updatedRun.Status = state.StatusStopped
 			updatedRun.FinishedAt = &stoppedAt
 			updatedRun.ExitReason = &reason
@@ -178,7 +178,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 			}
 			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
 			if err != nil {
-				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
+				_ = sw.log.Log("message", "unable to save k8s runs", "error", fmt.Sprintf("%+v", err))
 			}
 
 			if updatedRun.Status == state.StatusStopped {
@@ -231,7 +231,7 @@ func (sw *statusWorker) extractExceptions(runID string) {
 	}
 }
 
-func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
+func (sw *statusWorker) processK8SRunMetrics(run state.Run) {
 	updatedRun, err := sw.ee.FetchPodMetrics(run)
 	if err == nil {
 		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||

@@ -39,13 +39,13 @@ func (events byTimestamp) Less(i, j int) bool { return *(events[i].Timestamp) < 
 func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (Client, error) {
 	_ = logger.Log("message", "Initializing logs client", "client", name)
 	switch name {
-	case "eks":
+	case "k8s":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service
-		ekscw := &EKSS3LogsClient{}
-		if err := ekscw.Initialize(conf); err != nil {
-			return nil, errors.Wrap(err, "problem initializing EKSCloudWatchLogsClient")
+		k8scw := &K8SS3LogsClient{}
+		if err := k8scw.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing K8SCloudWatchLogsClient")
 		}
-		return ekscw, nil
+		return k8scw, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}

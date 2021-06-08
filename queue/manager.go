@@ -46,12 +46,12 @@ type StatusReceipt struct {
 //
 func NewQueueManager(conf config.Config, name string) (Manager, error) {
 	switch name {
-	case state.EKSEngine:
-		sqsEKS := &SQSManager{}
-		if err := sqsEKS.Initialize(conf, state.EKSEngine); err != nil {
+	case state.K8SEngine:
+		sqsK8S := &SQSManager{}
+		if err := sqsK8S.Initialize(conf, state.K8SEngine); err != nil {
 			return nil, errors.Wrap(err, "problem initializing SQSManager")
 		}
-		return sqsEKS, nil
+		return sqsK8S, nil
 	default:
 		return nil, fmt.Errorf("no QueueManager named [%s] was found", name)
 	}
