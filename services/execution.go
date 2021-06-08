@@ -213,9 +213,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		err error
 	)
 
-	if fields.Engine == nil {
-		fields.Engine = &state.DefaultEngine
-	}
+	fields.Engine = &state.DefaultEngine
 
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
