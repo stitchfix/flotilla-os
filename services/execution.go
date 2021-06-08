@@ -250,6 +250,10 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
 
+	if fields.NodeLifecycle == nil {
+		fields.NodeLifecycle = &state.SpotLifecycle
+	}
+
 	run = state.Run{
 		RunID:                 runID,
 		ClusterName:           fields.ClusterName,
