@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/state"
 	"net/http"
@@ -30,7 +31,7 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 
 	if run.Status != state.StatusRunning && run.Status != state.StatusStopped {
 		// Won't have logs yet
-		return "", nil, nil
+		return "", aws.String(""), nil
 	}
 
 	if run.ExecutableType == nil {
