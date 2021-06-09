@@ -11,7 +11,7 @@ const RunAttributes: React.FC<{ data: Run }> = ({ data }) => (
       style={{ marginBottom: 12 }}
     >
       <Attribute name="Engine Type" value={<Tag>{data.engine}</Tag>} />
-      {data.engine !== ExecutionEngine.K8S && (
+      {data.engine !== ExecutionEngine.EKS && (
         <Attribute name="Cluster" value={data.cluster} />
       )}
       <Attribute

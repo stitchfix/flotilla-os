@@ -33,7 +33,7 @@ const MockRun: RunType = {
   finished_at: "2019-10-25T06:21:51",
   group_name: "group_name",
   env: [],
-  engine: ExecutionEngine.K8S,
+  engine: ExecutionEngine.EKS,
   node_lifecycle: NodeLifecycle.ON_DEMAND,
   max_cpu_used: 0,
   max_memory_used: 0,

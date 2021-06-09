@@ -49,7 +49,7 @@ FROM (SELECT CASE WHEN exit_code = 137 THEN memory * 2 ELSE max_memory_used END 
            AND (exit_code = 0 or exit_code = 137)
            AND max_memory_used is not null
            AND max_cpu_used is not null
-           AND engine = 'k8s'
+           AND engine = 'eks'
            AND definition_id = $1
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
@@ -61,7 +61,7 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       FROM TASK
       WHERE definition_id = $1
         AND exit_code = 0
-        AND engine = 'k8s'
+        AND engine = 'eks'
         AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
         AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
@@ -78,7 +78,7 @@ WITH control_plane_errors AS
                     pod_events @> '[{"reason": "OutOfmemory"}]' OR
                     pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
                     (exit_code = 1 AND exit_reason is null))
-               AND engine = 'k8s'
+               AND engine = 'eks'
                AND queued_at >= NOW() - INTERVAL '12 HOURS'
              GROUP BY 1
          ),
@@ -87,7 +87,7 @@ WITH control_plane_errors AS
              SELECT instance_dns_name, count(*) as c
              FROM TASK
              WHERE exit_reason like 'Task terminated by - %'
-               AND engine = 'k8s'
+               AND engine = 'eks'
                AND queued_at >= NOW() - INTERVAL '12 HOURS'
              GROUP BY 1
          )
@@ -110,7 +110,7 @@ FROM (
       SELECT COUNT(CASE WHEN attempt_count = 1 THEN 1 END) * 1.0 AS single_attempts,
              COUNT(CASE WHEN attempt_count != 1 THEN 1 END) * 1.0 AS multiple_attempts
       FROM task
-      WHERE engine = 'k8s' AND
+      WHERE engine = 'eks' AND
             queued_at >= NOW() - INTERVAL '30 MINUTES' AND
             node_lifecycle = 'spot') A
 `

@@ -26,12 +26,12 @@ type Client interface {
 //
 func NewClusterClient(conf config.Config, name string) (Client, error) {
 	switch name {
-	case "k8s":
-		k8sc := &K8SClusterClient{}
-		if err := k8sc.Initialize(conf); err != nil {
-			return nil, errors.Wrap(err, "problem initializing K8SClusterClient")
+	case "eks":
+		eksc := &EKSClusterClient{}
+		if err := eksc.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing EKSClusterClient")
 		}
-		return k8sc, nil
+		return eksc, nil
 	default:
 		return nil, fmt.Errorf("No Client named [%s] was found", name)
 	}
