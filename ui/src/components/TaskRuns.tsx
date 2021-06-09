@@ -122,7 +122,7 @@ export const TaskRuns: React.FunctionComponent<Props> = ({
             cluster: {
               displayName: "Cluster",
               render: (r: Run) =>
-                r.engine === ExecutionEngine.K8S ? "-" : r.cluster,
+                r.engine === ExecutionEngine.EKS ? "-" : r.cluster,
               isSortable: false,
             },
           }}

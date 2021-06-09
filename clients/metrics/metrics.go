@@ -11,18 +11,18 @@ import (
 type Metric string
 
 const (
-	// Metric associated to submission of jobs to K8S
-	EngineK8SExecute Metric = "engine.k8s.execute"
-	// Metric associated to submission of jobs to SQS queue, before K8S submission.
-	EngineK8SEnqueue Metric = "engine.k8s.enqueue"
+	// Metric associated to submission of jobs to EKS
+	EngineEKSExecute Metric = "engine.eks.execute"
+	// Metric associated to submission of jobs to SQS queue, before EKS submission.
+	EngineEKSEnqueue Metric = "engine.eks.enqueue"
 	// Metric associated to termination of jobs via the API.
-	EngineK8STerminate Metric = "engine.k8s.terminate"
+	EngineEKSTerminate Metric = "engine.eks.terminate"
 	// Metric associated to termination of pods hopping between hosts.
-	EngineK8SRunPodnameChange Metric = "engine.k8s.run_podname_changed"
+	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
 	// Metric associated to pod events where there was a Cluster Autoscale event.
-	EngineK8SNodeTriggeredScaledUp Metric = "engine.k8s.triggered_scale_up"
-	// Timing for status worker processK8SRun
-	StatusWorkerProcessK8SRun Metric = "status_worker.timing.process_k8s_run"
+	EngineEKSNodeTriggeredScaledUp Metric = "engine.eks.triggered_scale_up"
+	// Timing for status worker processEKSRun
+	StatusWorkerProcessEKSRun Metric = "status_worker.timing.process_eks_run"
 	// Timing for acquire lock
 	StatusWorkerAcquireLock Metric = "status_worker.timing.acquire_lock"
 	// Timing for fetch_pod_metrics

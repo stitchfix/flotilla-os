@@ -45,17 +45,17 @@ func (app *App) Run() error {
 // Function to initialize a new Flotilla app.
 func NewApp(conf config.Config,
 	log flotillaLog.Logger,
-	k8sLogsClient logs.Client,
-	k8sExecutionEngine engine.Engine,
+	eksLogsClient logs.Client,
+	eksExecutionEngine engine.Engine,
 	stateManager state.Manager,
-	k8sClusterClient cluster.Client,
-	k8sQueueManager queue.Manager,
+	eksClusterClient cluster.Client,
+	eksQueueManager queue.Manager,
 ) (App, error) {
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, k8sExecutionEngine, stateManager, k8sClusterClient)
+	executionService, err := services.NewExecutionService(conf, eksExecutionEngine, stateManager, eksClusterClient)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}
@@ -63,9 +63,9 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing template service")
 	}
-	k8sLogService, err := services.NewLogService(stateManager, k8sLogsClient)
+	eksLogService, err := services.NewLogService(stateManager, eksLogsClient)
 	if err != nil {
-		return app, errors.Wrap(err, "problem initializing k8s log service")
+		return app, errors.Wrap(err, "problem initializing eks log service")
 	}
 	workerService, err := services.NewWorkerService(conf, stateManager)
 	if err != nil {
@@ -78,7 +78,7 @@ func NewApp(conf config.Config,
 
 	ep := endpoints{
 		executionService:  executionService,
-		k8sLogService:     k8sLogService,
+		eksLogService:     eksLogService,
 		workerService:     workerService,
 		templateService:   templateService,
 		logger:            log,
@@ -86,8 +86,8 @@ func NewApp(conf config.Config,
 	}
 
 	app.configureRoutes(ep)
-	if err = app.initializeK8SWorkers(conf, log, k8sExecutionEngine, stateManager, k8sQueueManager); err != nil {
-		return app, errors.Wrap(err, "problem k8s initializing workers")
+	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager, eksQueueManager); err != nil {
+		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
 
 	return app, nil
@@ -130,13 +130,13 @@ func (app *App) configureRoutes(ep endpoints) {
 	}
 }
 
-func (app *App) initializeK8SWorkers(
+func (app *App) initializeEKSWorkers(
 	conf config.Config,
 	log flotillaLog.Logger,
 	ee engine.Engine,
 	sm state.Manager,
 	qm queue.Manager) error {
-	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.K8SEngine, qm)
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.EKSEngine, qm)
 	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")

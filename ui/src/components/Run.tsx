@@ -120,7 +120,7 @@ export class Run extends React.Component<Props> {
 
       if (
         data &&
-        data.engine === ExecutionEngine.K8S &&
+        data.engine === ExecutionEngine.EKS &&
         data.status !== RunStatus.STOPPED
       ) {
         return RunTabId.EVENTS
@@ -269,7 +269,7 @@ export class Run extends React.Component<Props> {
                           id={RunTabId.LOGS}
                           title="Container Logs"
                           panel={
-                            data.engine === ExecutionEngine.K8S ? (
+                            data.engine === ExecutionEngine.EKS ? (
                               <LogRequesterS3
                                 runID={data.run_id}
                                 status={data.status}
@@ -285,12 +285,12 @@ export class Run extends React.Component<Props> {
                         <Tab
                           id={RunTabId.EVENTS}
                           title={
-                            data.engine !== ExecutionEngine.K8S ? (
-                              <Tooltip content="Run events are only available for tasks run on K8S.">
-                                K8S Pod Events
+                            data.engine !== ExecutionEngine.EKS ? (
+                              <Tooltip content="Run events are only available for tasks run on EKS.">
+                                EKS Pod Events
                               </Tooltip>
                             ) : (
-                              "K8S Pod Events"
+                              "EKS Pod Events"
                             )
                           }
                           panel={
@@ -300,17 +300,17 @@ export class Run extends React.Component<Props> {
                               hasLogs={this.props.hasLogs}
                             />
                           }
-                          disabled={data.engine !== ExecutionEngine.K8S}
+                          disabled={data.engine !== ExecutionEngine.EKS}
                         />
                         <Tab
                           id={RunTabId.CLOUDTRAIL}
                           title={
-                            data.engine !== ExecutionEngine.K8S ? (
-                              <Tooltip content="Cloudtrail records are only available for tasks run on K8S.">
+                            data.engine !== ExecutionEngine.EKS ? (
+                              <Tooltip content="Cloudtrail records are only available for tasks run on EKS.">
                                 Cloudtrail Records
                               </Tooltip>
                             ) : (
-                              `K8S Cloudtrail Records (${
+                              `EKS Cloudtrail Records (${
                                 hasCloudtrailRecords
                                   ? get(
                                       data,
@@ -325,7 +325,7 @@ export class Run extends React.Component<Props> {
                             <CloudtrailRecords data={cloudtrailRecords || []} />
                           }
                           disabled={
-                            data.engine !== ExecutionEngine.K8S ||
+                            data.engine !== ExecutionEngine.EKS ||
                             hasCloudtrailRecords === false
                           }
                         />

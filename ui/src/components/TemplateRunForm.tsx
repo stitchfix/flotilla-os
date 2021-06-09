@@ -47,7 +47,7 @@ const getInitialValuesForTemplateRun = (): TemplateExecutionRequest => {
     owner_id: "",
     memory: 512,
     cpu: 512,
-    engine: ExecutionEngine.K8S,
+    engine: ExecutionEngine.EKS,
   }
 }
 
@@ -67,8 +67,8 @@ const validationSchema = Yup.object().shape({
     })
   ),
   engine: Yup.string()
-    .matches(/(k8s|ecs)/)
-    .required("A valid engine type of ecs or k8s must be set."),
+    .matches(/(eks|ecs)/)
+    .required("A valid engine type of ecs or eks must be set."),
   node_lifecycle: Yup.string().matches(/(spot|ondemand)/),
   template_payload: Yup.object().required("template_payload is required"),
 })
@@ -180,18 +180,18 @@ class RunForm extends React.Component<Props> {
                   onChange={(evt: React.FormEvent<HTMLInputElement>) => {
                     setFieldValue("engine", evt.currentTarget.value)
 
-                    if (evt.currentTarget.value === ExecutionEngine.K8S) {
+                    if (evt.currentTarget.value === ExecutionEngine.EKS) {
                       setFieldValue(
                         "cluster",
-                        process.env.REACT_APP_K8S_CLUSTER_NAME || ""
+                        process.env.REACT_APP_EKS_CLUSTER_NAME || ""
                       )
-                    } else if (getEngine() === ExecutionEngine.K8S) {
+                    } else if (getEngine() === ExecutionEngine.EKS) {
                       setFieldValue("cluster", "")
                     }
                   }}
                   selectedValue={values.engine}
                 >
-                  <Radio label="K8S" value={ExecutionEngine.K8S} />
+                  <Radio label="EKS" value={ExecutionEngine.EKS} />
                   <Radio label="ECS" value={ExecutionEngine.ECS} />
                 </RadioGroup>
                 <div className="flotilla-form-section-divider" />
@@ -201,7 +201,7 @@ class RunForm extends React.Component<Props> {
                 "FastField" as it needs to re-render when value.engine is
                 updated.
               */}
-                {getEngine() !== ExecutionEngine.K8S && (
+                {getEngine() !== ExecutionEngine.EKS && (
                   <FormGroup
                     label="Cluster"
                     helperText="Select a cluster for this task to execute on."
@@ -250,7 +250,7 @@ class RunForm extends React.Component<Props> {
                 {/* Node Lifecycle Field */}
                 <FormGroup
                   label="Node Lifecycle"
-                  helperText="This field is only applicable to tasks running on K8S. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
+                  helperText="This field is only applicable to tasks running on EKS. For more information, please view this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html"
                 >
                   <Field
                     name="node_lifecycle"
@@ -259,7 +259,7 @@ class RunForm extends React.Component<Props> {
                     onChange={(value: string) => {
                       setFieldValue("node_lifecycle", value)
                     }}
-                    isDisabled={getEngine() !== ExecutionEngine.K8S}
+                    isDisabled={getEngine() !== ExecutionEngine.EKS}
                   />
                   {errors.node_lifecycle && (
                     <FieldError>{errors.node_lifecycle}</FieldError>

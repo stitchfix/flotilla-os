@@ -10,7 +10,7 @@ describe("getInitialValuesForTaskRun", () => {
       cpu: td.cpu,
       memory: td.memory,
       env: td.env,
-      engine: ExecutionEngine.K8S,
+      engine: ExecutionEngine.EKS,
       command: td.command,
     }
 

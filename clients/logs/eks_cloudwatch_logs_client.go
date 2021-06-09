@@ -20,32 +20,32 @@ import (
 )
 
 //
-// K8SCloudWatchLogsClient corresponds with the aws logs driver
+// EKSCloudWatchLogsClient corresponds with the aws logs driver
 // for ECS and returns logs for runs
 //
-type K8SCloudWatchLogsClient struct {
+type EKSCloudWatchLogsClient struct {
 	logRetentionInDays int64
 	logNamespace       string
 	logsClient         logsClient
 	logger             *log.Logger
 }
 
-type K8SCloudWatchLog struct {
+type EKSCloudWatchLog struct {
 	Log string `json:"log"`
 }
 
 //
 // Name returns the name of the logs client
 //
-func (lc *K8SCloudWatchLogsClient) Name() string {
-	return "k8s-cloudwatch"
+func (lc *EKSCloudWatchLogsClient) Name() string {
+	return "eks-cloudwatch"
 }
 
 //
-// Initialize sets up the K8SCloudWatchLogsClient
+// Initialize sets up the EKSCloudWatchLogsClient
 //
-func (lc *K8SCloudWatchLogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("k8s.log.driver.options")
+func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
+	confLogOptions := conf.GetStringMapString("eks.log.driver.options")
 
 	awsRegion := confLogOptions["awslogs-region"]
 	if len(awsRegion) == 0 {
@@ -54,23 +54,23 @@ func (lc *K8SCloudWatchLogsClient) Initialize(conf config.Config) error {
 
 	if len(awsRegion) == 0 {
 		return errors.Errorf(
-			"K8SCloudWatchLogsClient needs one of [k8s.log.driver.options.awslogs-region] or [aws_default_region] set in config")
+			"EKSCloudWatchLogsClient needs one of [eks.log.driver.options.awslogs-region] or [aws_default_region] set in config")
 	}
 
 	//
 	// log.namespace in conf takes precedence over log.driver.options.awslogs-group
 	//
-	lc.logNamespace = conf.GetString("k8s.log.namespace")
+	lc.logNamespace = conf.GetString("eks.log.namespace")
 	if _, ok := confLogOptions["awslogs-group"]; ok && len(lc.logNamespace) == 0 {
 		lc.logNamespace = confLogOptions["awslogs-group"]
 	}
 
 	if len(lc.logNamespace) == 0 {
 		return errors.Errorf(
-			"K8SCloudWatchLogsClient needs one of [k8s.log.driver.options.awslogs-group] or [k8s.log.namespace] set in config")
+			"EKSCloudWatchLogsClient needs one of [eks.log.driver.options.awslogs-group] or [eks.log.namespace] set in config")
 	}
 
-	lc.logRetentionInDays = int64(conf.GetInt("k8s.log.retention_days"))
+	lc.logRetentionInDays = int64(conf.GetInt("eks.log.retention_days"))
 	if lc.logRetentionInDays == 0 {
 		lc.logRetentionInDays = int64(30)
 	}
@@ -90,7 +90,7 @@ func (lc *K8SCloudWatchLogsClient) Initialize(conf config.Config) error {
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *K8SCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
 	startFromHead := true
 
 	//Pod isn't there yet - dont return a 404
@@ -132,22 +132,22 @@ func (lc *K8SCloudWatchLogsClient) Logs(executable state.Executable, run state.R
 }
 
 // This method doesn't return log string, it is a placeholder only.
-func (lc *K8SCloudWatchLogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
-	return errors.Errorf("K8SCloudWatchLogsClient does not support LogsText method.")
+func (lc *EKSCloudWatchLogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
+	return errors.Errorf("EKSCloudWatchLogsClient does not support LogsText method.")
 }
 
 // Generate stream name
-func (lc *K8SCloudWatchLogsClient) toStreamName(run state.Run) string {
+func (lc *EKSCloudWatchLogsClient) toStreamName(run state.Run) string {
 	return fmt.Sprintf("%s", *run.PodName)
 }
 
 // Convert Cloudwatch logs to strings
-func (lc *K8SCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
+func (lc *EKSCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.OutputLogEvent) string {
 	sort.Sort(byTimestamp(events))
 
 	messages := make([]string, len(events))
 	for i, event := range events {
-		var l K8SCloudWatchLog
+		var l EKSCloudWatchLog
 		err := json.Unmarshal([]byte(*event.Message), &l)
 		if err != nil {
 			messages[i] = *event.Message
@@ -157,7 +157,7 @@ func (lc *K8SCloudWatchLogsClient) logsToMessage(events []*cloudwatchlogs.Output
 	return strings.Join(messages, "")
 }
 
-func (lc *K8SCloudWatchLogsClient) createNamespaceIfNotExists() error {
+func (lc *EKSCloudWatchLogsClient) createNamespaceIfNotExists() error {
 	exists, err := lc.namespaceExists()
 	if err != nil {
 		return errors.Wrapf(err, "problem checking if log namespace [%s] exists", lc.logNamespace)
@@ -169,7 +169,7 @@ func (lc *K8SCloudWatchLogsClient) createNamespaceIfNotExists() error {
 }
 
 // Check for the existence of a namespace.
-func (lc *K8SCloudWatchLogsClient) namespaceExists() (bool, error) {
+func (lc *EKSCloudWatchLogsClient) namespaceExists() (bool, error) {
 	result, err := lc.logsClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{
 		LogGroupNamePrefix: &lc.logNamespace,
 	})
@@ -189,7 +189,7 @@ func (lc *K8SCloudWatchLogsClient) namespaceExists() (bool, error) {
 }
 
 // Creates namespace is not present.
-func (lc *K8SCloudWatchLogsClient) createNamespace() error {
+func (lc *EKSCloudWatchLogsClient) createNamespace() error {
 	_, err := lc.logsClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: &lc.logNamespace,
 	})

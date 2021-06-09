@@ -176,10 +176,10 @@ export type UpdateTaskPayload = {
 
 export enum ExecutionEngine {
   ECS = "ecs",
-  K8S = "k8s",
+  EKS = "eks",
 }
 
-export const DefaultExecutionEngine = ExecutionEngine.K8S
+export const DefaultExecutionEngine = ExecutionEngine.EKS
 
 export enum NodeLifecycle {
   SPOT = "spot",

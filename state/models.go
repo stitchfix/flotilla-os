@@ -15,9 +15,9 @@ import (
 	"time"
 )
 
-var K8SEngine = "k8s"
+var EKSEngine = "eks"
 
-var DefaultEngine = K8SEngine
+var DefaultEngine = EKSEngine
 
 var DefaultARA = true
 
@@ -43,7 +43,7 @@ var DefaultLifecycle = SpotLifecycle
 
 var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
 
-var Engines = []string{K8SEngine}
+var Engines = []string{EKSEngine}
 
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
@@ -62,7 +62,7 @@ var StatusStopped = "STOPPED"
 
 var MaxLogLines = int64(256)
 
-var K8SBackoffLimit = int32(0)
+var EKSBackoffLimit = int32(0)
 
 var WorkerTypes = map[string]bool{
 	"retry":  true,

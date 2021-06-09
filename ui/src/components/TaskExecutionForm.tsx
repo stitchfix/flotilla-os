@@ -44,8 +44,8 @@ const validationSchema = Yup.object().shape({
     })
   ),
   engine: Yup.string()
-    .matches(/(k8s|ecs)/)
-    .required("A valid engine type of ecs or k8s must be set."),
+    .matches(/(eks|ecs)/)
+    .required("A valid engine type of ecs or eks must be set."),
   node_lifecycle: Yup.string().matches(/(spot|ondemand)/),
   command: Yup.string()
     .min(1)
@@ -104,18 +104,18 @@ const TaskExecutionForm: React.FC<Props> = ({
             onChange={(evt: React.FormEvent<HTMLInputElement>) => {
               setFieldValue("engine", evt.currentTarget.value)
 
-              if (evt.currentTarget.value === ExecutionEngine.K8S) {
+              if (evt.currentTarget.value === ExecutionEngine.EKS) {
                 setFieldValue(
                   "cluster",
-                  process.env.REACT_APP_K8S_CLUSTER_NAME || ""
+                  process.env.REACT_APP_EKS_CLUSTER_NAME || ""
                 )
-              } else if (getEngine() === ExecutionEngine.K8S) {
+              } else if (getEngine() === ExecutionEngine.EKS) {
                 setFieldValue("cluster", "")
               }
             }}
             selectedValue={values.engine}
           >
-            <Radio label="K8S" value={ExecutionEngine.K8S} />
+            <Radio label="EKS" value={ExecutionEngine.EKS} />
             <Radio label="ECS" value={ExecutionEngine.ECS} />
           </RadioGroup>
           {/*
@@ -123,7 +123,7 @@ const TaskExecutionForm: React.FC<Props> = ({
             "FastField" as it needs to re-render when value.engine is
             updated.
           */}
-          {getEngine() !== ExecutionEngine.K8S && (
+          {getEngine() !== ExecutionEngine.EKS && (
             <FormGroup
               label="Cluster"
               helperText="Select a cluster for this task to execute on."
@@ -175,7 +175,7 @@ const TaskExecutionForm: React.FC<Props> = ({
               onChange={(value: string) => {
                 setFieldValue(helpers.nodeLifecycleFieldSpec.name, value)
               }}
-              isDisabled={getEngine() !== ExecutionEngine.K8S}
+              isDisabled={getEngine() !== ExecutionEngine.EKS}
             />
             {errors.node_lifecycle && (
               <FieldError>{errors.node_lifecycle}</FieldError>
