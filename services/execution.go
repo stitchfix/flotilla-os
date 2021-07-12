@@ -33,7 +33,7 @@ type ExecutionService interface {
 		filters map[string][]string,
 		envFilters map[string]string) (state.RunList, error)
 	Get(runID string) (state.Run, error)
-	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions) error
+	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
@@ -342,7 +342,7 @@ func (es *executionService) Get(runID string) (state.Run, error) {
 //
 // UpdateStatus is for supporting some legacy runs that still manually update their status
 //
-func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions) error {
+func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error {
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
@@ -358,8 +358,12 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 	}
 	finishedAt := time.Now()
 
-	exitReason := es.extractExitReason(runExceptions)
-	_, err = es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, ExitReason: &exitReason, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
+	if exitReason == nil {
+		extractedExitReason := es.extractExitReason(runExceptions)
+		exitReason = &extractedExitReason
+	}
+
+	_, err = es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, ExitReason: exitReason, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
 	return err
 }
 
