@@ -638,7 +638,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	err = ep.executionService.UpdateStatus(vars["run_id"], run.Status, run.ExitCode, run.RunExceptions)
+	err = ep.executionService.UpdateStatus(vars["run_id"], run.Status, run.ExitCode, run.RunExceptions, run.ExitReason)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem updating run",
