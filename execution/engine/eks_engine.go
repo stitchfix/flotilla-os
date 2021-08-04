@@ -55,7 +55,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
-	for clusterName, _ := range clusters {
+	for clusterName := range clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {

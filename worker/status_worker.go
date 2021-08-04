@@ -86,7 +86,8 @@ func (sw *statusWorker) runOnceEKS() {
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
 		},
-		"status": {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
+		"task_type": {state.DefaultTaskType},
+		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
 	}, nil, []string{state.EKSEngine})
 
 	if err != nil {
