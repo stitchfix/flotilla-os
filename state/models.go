@@ -19,7 +19,7 @@ var EKSEngine = "eks"
 
 var DefaultEngine = EKSEngine
 
-var DefaultARA = true
+var DefaultTaskType = "task"
 
 var MinCPU = int64(256)
 
@@ -423,7 +423,7 @@ type Run struct {
 	InstanceDNSName         string                   `json:"-"`
 	GroupName               string                   `json:"group_name"`
 	User                    string                   `json:"user,omitempty"`
-	TaskType                string                   `json:"-"`
+	TaskType                string                   `json:"task_type,omitempty"`
 	Env                     *EnvList                 `json:"env,omitempty"`
 	Command                 *string                  `json:"command,omitempty"`
 	CommandHash             *string                  `json:"command_hash,omitempty"`

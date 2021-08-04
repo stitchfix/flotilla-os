@@ -670,12 +670,12 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	INSERT INTO task (
       task_arn, run_id, definition_id, alias, image, cluster_name, exit_code, exit_reason, status,
       queued_at, started_at, finished_at, instance_id, instance_dns_name, group_name,
-      env, task_type, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
+      env, command, memory, cpu, gpu, engine, node_lifecycle, ephemeral_storage,
 			container_name, pod_name, namespace, max_cpu_used, max_memory_used, pod_events, command_hash,
-			executable_id, executable_type, execution_request_custom, cpu_limit, memory_limit, attempt_count, spawned_runs, run_exceptions, active_deadline_seconds
+			executable_id, executable_type, execution_request_custom, cpu_limit, memory_limit, attempt_count, spawned_runs, run_exceptions, active_deadline_seconds, task_type
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'task', $17, $18, $19, $20, $21, $22, $23,
-      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31, $32, $33, $34, $35, $36, $37, $38);
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
+      $24, $25, $26, $27, $28, $29, MD5($17), $30, $31, $32, $33, $34, $35, $36, $37, $38, $39);
     `
 
 	tx, err := sm.db.Begin()
@@ -692,7 +692,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Env, r.Command, r.Memory, r.Cpu, r.Gpu, r.Engine, r.NodeLifecycle,
 		r.EphemeralStorage, r.ContainerName, r.PodName, r.Namespace, r.MaxCpuUsed,
 		r.MaxMemoryUsed, r.PodEvents, r.ExecutableID, r.ExecutableType,
-		r.ExecutionRequestCustom, r.CpuLimit, r.MemoryLimit, r.AttemptCount, r.SpawnedRuns, r.RunExceptions, r.ActiveDeadlineSeconds); err != nil {
+		r.ExecutionRequestCustom, r.CpuLimit, r.MemoryLimit, r.AttemptCount,
+		r.SpawnedRuns, r.RunExceptions, r.ActiveDeadlineSeconds, r.TaskType); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

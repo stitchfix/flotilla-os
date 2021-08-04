@@ -268,6 +268,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		ExecutableID:          executable.GetExecutableID(),
 		ExecutableType:        executable.GetExecutableType(),
 		ActiveDeadlineSeconds: fields.ActiveDeadlineSeconds,
+		TaskType:              state.DefaultTaskType,
 	}
 
 	runEnv := es.constructEnviron(run, fields.Env)
