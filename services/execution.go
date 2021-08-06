@@ -224,7 +224,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		return run, err
 	}
 
-	if fields.Engine == &state.EKSEngine {
+	if *fields.Engine == state.EKSEngine {
 		executableCmd, err := executable.GetExecutableCommand(req)
 		if err != nil {
 			return run, err
@@ -469,7 +469,7 @@ func (es *executionService) ListClusters() ([]string, error) {
 //
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
-	if fields.Engine == nil{
+	if fields.Engine == nil {
 		fields.Engine = &state.EKSEngine
 	}
 
