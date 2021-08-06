@@ -17,6 +17,8 @@ import (
 
 var EKSEngine = "eks"
 
+var EKSEMREngine = "eks-emr"
+
 var DefaultEngine = EKSEngine
 
 var DefaultTaskType = "task"
@@ -43,7 +45,7 @@ var DefaultLifecycle = SpotLifecycle
 
 var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
 
-var Engines = []string{EKSEngine}
+var Engines = []string{EKSEngine, EKSEMREngine}
 
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
