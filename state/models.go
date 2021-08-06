@@ -17,6 +17,8 @@ import (
 
 var EKSEngine = "eks"
 
+var EKSSparkEngine = "eks-spark"
+
 var DefaultEngine = EKSEngine
 
 var DefaultTaskType = "task"
@@ -43,7 +45,7 @@ var DefaultLifecycle = SpotLifecycle
 
 var NodeLifeCycles = []string{OndemandLifecycle, SpotLifecycle}
 
-var Engines = []string{EKSEngine}
+var Engines = []string{EKSEngine, EKSSparkEngine}
 
 // StatusRunning indicates the run is running
 var StatusRunning = "RUNNING"
@@ -89,7 +91,7 @@ func IsValidStatus(status string) bool {
 // NewRunID returns a new uuid for a Run
 func NewRunID(engine *string) (string, error) {
 	s, err := newUUIDv4()
-	return fmt.Sprintf("%s-%s", *engine, s[4:]), err
+	return fmt.Sprintf("%s-%s", *engine, s[len(*engine)+1:]), err
 }
 
 // NewDefinitionID returns a new uuid for a Definition

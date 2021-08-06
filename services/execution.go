@@ -213,39 +213,41 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		err error
 	)
 
-	fields.Engine = &state.DefaultEngine
+	fields.Engine = req.GetExecutionRequestCommon().Engine
 
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
 	// `executableCmd` as the Run's Command.
-	executableCmd, err := executable.GetExecutableCommand(req)
-
-	if err != nil {
-		return run, err
-	}
-
-	if (fields.Command == nil || len(*fields.Command) == 0) && (len(executableCmd) > 0) {
-		fields.Command = aws.String(executableCmd)
-	}
 
 	runID, err := state.NewRunID(fields.Engine)
 	if err != nil {
 		return run, err
 	}
 
-	executableID := executable.GetExecutableID()
-	taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime(*executableID, runID)
-	reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
-	if reAttemptRate >= es.spotReAttemptOverride &&
-		fields.Engine != nil &&
-		fields.NodeLifecycle != nil &&
-		*fields.Engine == state.EKSEngine &&
-		*fields.NodeLifecycle == state.SpotLifecycle {
-		fields.NodeLifecycle = &state.OndemandLifecycle
-	}
+	if *fields.Engine == state.EKSEngine {
+		executableCmd, err := executable.GetExecutableCommand(req)
+		if err != nil {
+			return run, err
+		}
 
-	if taskExecutionMinutes > float32(es.spotThresholdMinutes) {
-		fields.NodeLifecycle = &state.OndemandLifecycle
+		if (fields.Command == nil || len(*fields.Command) == 0) && (len(executableCmd) > 0) {
+			fields.Command = aws.String(executableCmd)
+		}
+		executableID := executable.GetExecutableID()
+
+		taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime(*executableID, runID)
+		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
+		if reAttemptRate >= es.spotReAttemptOverride &&
+			fields.Engine != nil &&
+			fields.NodeLifecycle != nil &&
+			*fields.Engine == state.EKSEngine &&
+			*fields.NodeLifecycle == state.SpotLifecycle {
+			fields.NodeLifecycle = &state.OndemandLifecycle
+		}
+
+		if taskExecutionMinutes > float32(es.spotThresholdMinutes) {
+			fields.NodeLifecycle = &state.OndemandLifecycle
+		}
 	}
 
 	if fields.NodeLifecycle == nil {
@@ -467,7 +469,9 @@ func (es *executionService) ListClusters() ([]string, error) {
 //
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
-	fields.Engine = &state.EKSEngine
+	if fields.Engine == nil {
+		fields.Engine = &state.EKSEngine
+	}
 
 	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
