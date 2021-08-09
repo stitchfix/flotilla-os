@@ -504,7 +504,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.Engine == nil {
+	if lr.Engine == nil || *lr.Engine == "ecs" {
 		if lr.SparkExtension != nil {
 			lr.Engine = &state.EKSSparkEngine
 		} else {
@@ -566,7 +566,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.Engine == nil {
+	if lr.Engine == nil || *lr.Engine == "ecs" {
 		if lr.SparkExtension != nil {
 			lr.Engine = &state.EKSSparkEngine
 		} else {
