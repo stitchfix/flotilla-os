@@ -640,26 +640,31 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	}
 
 	cloudTrailNotifications := r.CloudTrailNotifications
-
 	if cloudTrailNotifications == nil {
 		cloudTrailNotifications = &CloudTrailNotifications{}
 	}
 
 	executionRequestCustom := r.ExecutionRequestCustom
-
 	if executionRequestCustom == nil {
 		executionRequestCustom = &ExecutionRequestCustom{}
+	}
+
+	sparkExtension := r.SparkExtension
+	if sparkExtension == nil {
+		sparkExtension = &SparkExtension{}
 	}
 
 	return json.Marshal(&struct {
 		Instance                map[string]string        `json:"instance"`
 		PodEvents               *PodEvents               `json:"pod_events"`
 		CloudTrailNotifications *CloudTrailNotifications `json:"cloudtrail_notifications"`
+		SparkExtension          *SparkExtension          `json:"spark_extension"`
 		Alias
 	}{
 		Instance:                instance,
 		PodEvents:               podEvents,
 		CloudTrailNotifications: cloudTrailNotifications,
+		SparkExtension:          sparkExtension,
 		Alias:                   (Alias)(r),
 	})
 }
