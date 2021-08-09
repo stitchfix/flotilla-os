@@ -267,7 +267,6 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	if update.ExitCode != nil {
 		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
-			"task_arn", update.TaskArn,
 			"definition_id", update.DefinitionID,
 			"alias", update.Alias,
 			"image", update.Image,
@@ -288,7 +287,6 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	} else {
 		err = sw.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
-			"task_arn", update.TaskArn,
 			"definition_id", update.DefinitionID,
 			"alias", update.Alias,
 			"image", update.Image,

@@ -186,7 +186,6 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 		run.Namespace = &pod.Namespace
 		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
 			container := pod.Spec.Containers[len(pod.Spec.Containers)-1]
-			run.ContainerName = &container.Name
 			cpu := container.Resources.Requests.Cpu().ScaledValue(resource.Milli)
 			cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
@@ -476,7 +475,6 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 
 		if mostRecentPod != nil && mostRecentPod.Spec.Containers != nil && len(mostRecentPod.Spec.Containers) > 0 {
 			container := mostRecentPod.Spec.Containers[len(mostRecentPod.Spec.Containers)-1]
-			run.ContainerName = &container.Name
 			cpu := container.Resources.Requests.Cpu().ScaledValue(resource.Milli)
 			run.Cpu = &cpu
 			mem := container.Resources.Requests.Memory().ScaledValue(resource.Mega)

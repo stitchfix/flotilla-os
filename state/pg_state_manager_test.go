@@ -13,7 +13,8 @@ import (
 )
 
 func getDB(conf config.Config) *sqlx.DB {
-	db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
+	//db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
+	db, err := sqlx.Connect("postgres", "dbname=flotilla sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,6 +27,7 @@ func setUp() Manager {
 	db := getDB(conf)
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
+	os.Setenv("DATABASE_URL", "postgres://localhost/flotilla?sslmode=disable")
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
 
@@ -54,9 +56,9 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, alias, image, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name, env
+      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks'
     )
     `
 
@@ -495,7 +497,6 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	t1 = t1.UTC()
 	t2 = t2.UTC()
 	r2 := Run{
-		TaskArn:      "arn1",
 		RunID:        "run:18",
 		GroupName:    "group:cupcake",
 		DefinitionID: "A",
@@ -597,7 +598,6 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	t1 = t1.UTC()
 	t2 = t2.UTC()
 	u := Run{
-		TaskArn:    "arn1",
 		Alias:      "alien",
 		Image:      "imagine",
 		ExitCode:   &ec,

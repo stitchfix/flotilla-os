@@ -212,11 +212,11 @@ type TerminateJob struct {
 
 // task definition. It implements the `Executable` interface.
 type Definition struct {
-	DefinitionID     string `json:"definition_id"`
-	GroupName        string `json:"group_name,omitempty"`
-	Alias            string `json:"alias"`
-	Command          string `json:"command,omitempty"`
-	TaskType         string `json:"task_type,omitempty"`
+	DefinitionID string `json:"definition_id"`
+	GroupName    string `json:"group_name,omitempty"`
+	Alias        string `json:"alias"`
+	Command      string `json:"command,omitempty"`
+	TaskType     string `json:"task_type,omitempty"`
 	ExecutableResources
 }
 
@@ -385,7 +385,6 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn                 string                   `json:"task_arn"`
 	RunID                   string                   `json:"run_id"`
 	DefinitionID            string                   `json:"definition_id"`
 	Alias                   string                   `json:"alias"`
@@ -415,7 +414,6 @@ type Run struct {
 	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty"`
 	PodName                 *string                  `json:"pod_name,omitempty"`
 	Namespace               *string                  `json:"namespace,omitempty"`
-	ContainerName           *string                  `json:"container_name,omitempty"`
 	MaxMemoryUsed           *int64                   `json:"max_memory_used,omitempty"`
 	MaxCpuUsed              *int64                   `json:"max_cpu_used,omitempty"`
 	PodEvents               *PodEvents               `json:"pod_events,omitempty"`
@@ -433,9 +431,6 @@ type Run struct {
 // UpdateWith updates this run with information from another
 //
 func (d *Run) UpdateWith(other Run) {
-	if len(other.TaskArn) > 0 {
-		d.TaskArn = other.TaskArn
-	}
 	if len(other.RunID) > 0 {
 		d.RunID = other.RunID
 	}
@@ -528,10 +523,6 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.PodName != nil {
 		d.PodName = other.PodName
-	}
-
-	if other.ContainerName != nil {
-		d.ContainerName = other.ContainerName
 	}
 
 	if other.Namespace != nil {

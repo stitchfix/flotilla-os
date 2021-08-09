@@ -25,8 +25,8 @@ func setUp(t *testing.T) *mux.Router {
 		},
 		Runs: map[string]state.Run{
 			"runA": {DefinitionID: "A", ClusterName: "A",
-				GroupName: "A", TaskArn: "ARN",
-				RunID: "runA", Status: state.StatusRunning},
+				GroupName: "A",
+				RunID:     "runA", Status: state.StatusRunning},
 			"runB": {DefinitionID: "B", ClusterName: "B",
 				GroupName: "B", RunID: "runB",
 				InstanceDNSName: "cupcakedns", InstanceID: "cupcakeid"},
