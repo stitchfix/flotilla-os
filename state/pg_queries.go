@@ -4,19 +4,15 @@ package state
 // DefinitionSelect postgres specific query for definitions
 //
 const DefinitionSelect = `
-select coalesce(td.arn, '')                as arn,
-       td.definition_id                    as definitionid,
+select td.definition_id                    as definitionid,
        td.adaptive_resource_allocation     as adaptiveresourceallocation,
        td.image                            as image,
        td.group_name                       as groupname,
-       td.container_name                   as containername,
-       coalesce(td.user, '')               as "user",
        td.alias                            as alias,
        td.memory                           as memory,
        coalesce(td.command, '')            as command,
        coalesce(td.task_type, '')          as tasktype,
        env::TEXT                           as env,
-       td.privileged                       as privileged,
        td.cpu                              as cpu,
        td.gpu                              as gpu,
        array_to_json('{""}'::TEXT[])::TEXT as tags,
@@ -120,7 +116,6 @@ FROM (
 //
 const RunSelect = `
 select
-  coalesce(t.task_arn,'')                    as taskarn,
   t.run_id                                   as runid,
   coalesce(t.definition_id,'')               as definitionid,
   coalesce(t.alias,'')                       as alias,
@@ -135,7 +130,6 @@ select
   coalesce(t.instance_id,'')                 as instanceid,
   coalesce(t.instance_dns_name,'')           as instancednsname,
   coalesce(t.group_name,'')                  as groupname,
-  coalesce(t.user,'')                        as "user",
   coalesce(t.task_type,'')                   as tasktype,
   env::TEXT                                  as env,
   command,
@@ -145,7 +139,6 @@ select
   engine,
   ephemeral_storage as ephemeralstorage,
   node_lifecycle as nodelifecycle,
-  container_name as containername,
   pod_name as podname,
   namespace,
   max_cpu_used as maxcpuused,

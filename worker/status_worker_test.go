@@ -30,7 +30,6 @@ func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAl
 		},
 		StatusUpdatesAsRuns: []state.Run{
 			{
-				TaskArn: "status1",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",
@@ -40,7 +39,6 @@ func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAl
 				Status: state.StatusRunning,
 			},
 			{
-				TaskArn: "status1",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",
@@ -50,7 +48,6 @@ func setUpStatusWorkerTest(t *testing.T) (*statusWorker, *testutils.ImplementsAl
 				Status: state.StatusPending,
 			},
 			{
-				TaskArn: "status1",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",
@@ -89,7 +86,6 @@ func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsA
 		},
 		StatusUpdatesAsRuns: []state.Run{
 			{
-				TaskArn: "nope1",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",
@@ -99,7 +95,6 @@ func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsA
 				Status: state.StatusStopped,
 			},
 			{
-				TaskArn: "nope2",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",
@@ -109,7 +104,6 @@ func setUpStatusWorkerTest2(t *testing.T) (*statusWorker, *testutils.ImplementsA
 				Status: state.StatusStopped,
 			},
 			{
-				TaskArn: "status1",
 				Env: &state.EnvList{
 					{
 						Name:  "FLOTILLA_SERVER_MODE",

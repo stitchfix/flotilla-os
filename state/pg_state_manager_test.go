@@ -36,8 +36,8 @@ func setUp() Manager {
 
 func insertDefinitions(db *sqlx.DB) {
 	defsql := `
-    INSERT INTO task_def (definition_id, image, group_name, container_name, alias, memory, command, env, privileged)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    INSERT INTO task_def (definition_id, image, group_name, alias, memory, command, env)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `
 
 	portsql := `
@@ -54,20 +54,20 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, alias, image, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name, env
+      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks'
     )
     `
 
 	db.MustExec(defsql,
-		"A", "imageA", "groupZ", "containerA", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`, true)
+		"A", "imageA", "groupZ", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`)
 	db.MustExec(defsql,
-		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
-		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil)
-	db.MustExec(defsql, "C", "imageC", "groupX", "containerC", "aliasC", 1024, "echo 'hi'", nil, nil)
-	db.MustExec(defsql, "D", "imageD", "groupW", "containerD", "aliasD", 1024, "echo 'hi'", nil, false)
-	db.MustExec(defsql, "E", "imageE", "groupV", "containerE", "aliasE", 1024, "echo 'hi'", nil, true)
+		"B", "imageB", "groupY", "aliasB", 1024, "echo 'hi'",
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`)
+	db.MustExec(defsql, "C", "imageC", "groupX", "aliasC", 1024, "echo 'hi'", nil)
+	db.MustExec(defsql, "D", "imageD", "groupW", "aliasD", 1024, "echo 'hi'", nil)
+	db.MustExec(defsql, "E", "imageE", "groupV", "aliasE", 1024, "echo 'hi'", nil)
 
 	db.MustExec(portsql, "A", 10000)
 	db.MustExec(portsql, "C", 10001)
@@ -141,10 +141,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	dA := dl.Definitions[0]
 	if dA.DefinitionID != "A" {
 		t.Errorf("Listing returned incorrect definition, expected A but got %s", dA.DefinitionID)
-	}
-
-	if *dA.Privileged != true {
-		t.Errorf("Listing returned incorrect definition, expected true but got %v", dA.Privileged)
 	}
 
 	if len(*dA.Env) != 1 {
@@ -227,10 +223,8 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	var err error
 	memory := int64(512)
 	d := Definition{
-		Arn:          "arn:cupcake",
 		DefinitionID: "id:cupcake",
 		GroupName:    "group:cupcake",
-		User:         "noone",
 		Alias:        "cupcake",
 		Command:      "echo 'hi'",
 		ExecutableResources: ExecutableResources{
@@ -239,9 +233,8 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 			Env: &EnvList{
 				{Name: "E1", Value: "V1"},
 			},
-			ContainerName: "container:cupcake",
-			Ports:         &PortsList{12345, 6789},
-			Tags:          &Tags{"apple", "orange", "tiger"},
+			Ports: &PortsList{12345, 6789},
+			Tags:  &Tags{"apple", "orange", "tiger"},
 		},
 	}
 
@@ -502,7 +495,6 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 	t1 = t1.UTC()
 	t2 = t2.UTC()
 	r2 := Run{
-		TaskArn:      "arn1",
 		RunID:        "run:18",
 		GroupName:    "group:cupcake",
 		DefinitionID: "A",
@@ -604,7 +596,6 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	t1 = t1.UTC()
 	t2 = t2.UTC()
 	u := Run{
-		TaskArn:    "arn1",
 		Alias:      "alien",
 		Image:      "imagine",
 		ExitCode:   &ec,

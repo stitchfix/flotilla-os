@@ -47,7 +47,6 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 		return res, err
 	}
 	curr.TemplateID = templateID
-	curr.ContainerName = templateID
 
 	// 3. Check if template name exists - if it does NOT, we will insert it into
 	// the DB with a version number of 1. If it does, and if there are any
@@ -136,10 +135,6 @@ func (ts *templateService) diff(prev state.Template, curr state.Template) bool {
 			}
 		}
 	}
-
-	if *prev.Privileged != *curr.Privileged {
-		return true
-	}
 	if *prev.AdaptiveResourceAllocation != *curr.AdaptiveResourceAllocation {
 		return true
 	}
@@ -221,19 +216,13 @@ func (ts *templateService) constructTemplateFromCreateTemplateRequest(req *state
 	if req.Env != nil {
 		tpl.Env = req.Env
 	}
-	if req.Privileged != nil {
-		tpl.Privileged = req.Privileged
-	} else {
-		*tpl.Privileged = false
-	}
+
 	if req.AdaptiveResourceAllocation != nil {
 		tpl.AdaptiveResourceAllocation = req.AdaptiveResourceAllocation
 	} else {
 		*tpl.AdaptiveResourceAllocation = true
 	}
-	if len(req.ContainerName) > 0 {
-		tpl.ContainerName = req.ContainerName
-	}
+
 	if req.Ports != nil {
 		tpl.Ports = req.Ports
 	}

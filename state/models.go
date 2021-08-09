@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -147,13 +146,11 @@ type Tags []string
 // executable.
 type ExecutableResources struct {
 	Image                      string     `json:"image"`
-	Memory                     *int64     `json:"memory"`
+	Memory                     *int64     `json:"memory,omitempty"`
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
 	Env                        *EnvList   `json:"env"`
-	Privileged                 *bool      `json:"privileged,omitempty"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
-	ContainerName              string     `json:"container_name"`
 	Ports                      *PortsList `json:"ports,omitempty"`
 	Tags                       *Tags      `json:"tags,omitempty"`
 }
@@ -215,14 +212,11 @@ type TerminateJob struct {
 
 // task definition. It implements the `Executable` interface.
 type Definition struct {
-	Arn              string `json:"arn"`
-	DefinitionID     string `json:"definition_id"`
-	GroupName        string `json:"group_name"`
-	User             string `json:"user,omitempty"`
-	Alias            string `json:"alias"`
-	Command          string `json:"command,omitempty"`
-	TaskType         string `json:"-"`
-	SharedMemorySize *int64 `json:"shared_memory_size,omitempty"`
+	DefinitionID string `json:"definition_id"`
+	GroupName    string `json:"group_name,omitempty"`
+	Alias        string `json:"alias"`
+	Command      string `json:"command,omitempty"`
+	TaskType     string `json:"task_type,omitempty"`
 	ExecutableResources
 }
 
@@ -245,7 +239,7 @@ func (d Definition) GetExecutableCommand(req ExecutionRequest) (string, error) {
 }
 
 func (d Definition) GetExecutableResourceName() string {
-	return d.Arn
+	return d.DefinitionID
 }
 
 var commandWrapper = `
@@ -273,8 +267,6 @@ type validationCondition struct {
 	reason    string
 }
 
-var validGroupName = regexp.MustCompile(`^[a-zA-Z0-9_\\-]+$`)
-
 //
 // IsValid returns true only if this is a valid definition with all
 // required information
@@ -282,12 +274,7 @@ var validGroupName = regexp.MustCompile(`^[a-zA-Z0-9_\\-]+$`)
 func (d *Definition) IsValid() (bool, []string) {
 	conditions := []validationCondition{
 		{len(d.Image) == 0, "string [image] must be specified"},
-		{len(d.GroupName) == 0, "string [group_name] must be specified"},
-		{!validGroupName.MatchString(d.GroupName), "Group name can only contain letters, numbers, hyphens, and underscores"},
-		{len(d.GroupName) > 255, "Group name must be 255 characters or less"},
 		{len(d.Alias) == 0, "string [alias] must be specified"},
-		{d.Memory == nil, "int [memory] must be specified"},
-		{len(d.Command) == 0, "string [command] must be specified"},
 	}
 
 	valid := true
@@ -305,9 +292,6 @@ func (d *Definition) IsValid() (bool, []string) {
 // UpdateWith updates this definition with information from another
 //
 func (d *Definition) UpdateWith(other Definition) {
-	if len(other.Arn) > 0 {
-		d.Arn = other.Arn
-	}
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
 	}
@@ -316,12 +300,6 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if len(other.GroupName) > 0 {
 		d.GroupName = other.GroupName
-	}
-	if len(other.ContainerName) > 0 {
-		d.ContainerName = other.ContainerName
-	}
-	if len(other.User) > 0 {
-		d.User = other.User
 	}
 	if len(other.Alias) > 0 {
 		d.Alias = other.Alias
@@ -352,9 +330,6 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Tags != nil {
 		d.Tags = other.Tags
-	}
-	if other.Privileged != nil {
-		d.Privileged = other.Privileged
 	}
 }
 
@@ -410,7 +385,6 @@ func (dl *DefinitionList) MarshalJSON() ([]byte, error) {
 //   on information that is no longer accessible.
 //
 type Run struct {
-	TaskArn                 string                   `json:"task_arn"`
 	RunID                   string                   `json:"run_id"`
 	DefinitionID            string                   `json:"definition_id"`
 	Alias                   string                   `json:"alias"`
@@ -440,7 +414,6 @@ type Run struct {
 	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty"`
 	PodName                 *string                  `json:"pod_name,omitempty"`
 	Namespace               *string                  `json:"namespace,omitempty"`
-	ContainerName           *string                  `json:"container_name,omitempty"`
 	MaxMemoryUsed           *int64                   `json:"max_memory_used,omitempty"`
 	MaxCpuUsed              *int64                   `json:"max_cpu_used,omitempty"`
 	PodEvents               *PodEvents               `json:"pod_events,omitempty"`
@@ -458,9 +431,6 @@ type Run struct {
 // UpdateWith updates this run with information from another
 //
 func (d *Run) UpdateWith(other Run) {
-	if len(other.TaskArn) > 0 {
-		d.TaskArn = other.TaskArn
-	}
 	if len(other.RunID) > 0 {
 		d.RunID = other.RunID
 	}
@@ -553,10 +523,6 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.PodName != nil {
 		d.PodName = other.PodName
-	}
-
-	if other.ContainerName != nil {
-		d.ContainerName = other.ContainerName
 	}
 
 	if other.Namespace != nil {
