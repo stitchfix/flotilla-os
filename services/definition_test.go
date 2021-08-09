@@ -72,38 +72,6 @@ func TestDefinitionService_Create2(t *testing.T) {
 	ds, _ := setUpDefinitionServiceTest(t)
 	var err error
 	memory := int64(512)
-	invalid1 := state.Definition{
-		Alias:               "cupcake",
-		GroupName:           "group-cupcake",
-		ExecutableResources: state.ExecutableResources{Image: "image:cupcake"},
-	}
-
-	_, err = ds.Create(&invalid1)
-	if err == nil {
-		t.Errorf("Expected invalid definition with nil memory to result in error")
-	}
-
-	invalid2 := state.Definition{
-		Alias:     "cupcake",
-		GroupName: `YUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGETOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBIIIIIIIIIIIIIIIIIIIIIIIIIGGGGGGGGGGGGYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGEYUGETOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOBIIIIIIIIIIIIIIIIIIIIIIIIIGGGGGGGGGGGG`,
-		ExecutableResources: state.ExecutableResources{Image: "image:cupcake",
-			Memory: &memory},
-	}
-	_, err = ds.Create(&invalid2)
-	if err == nil {
-		t.Errorf("Expected invalid definition with len(GroupName) > 255 to result in error")
-	}
-
-	invalid3 := state.Definition{
-		GroupName: "group-cupcake",
-		ExecutableResources: state.ExecutableResources{Image: "image:cupcake",
-			Memory: &memory},
-	}
-	_, err = ds.Create(&invalid3)
-	if err == nil {
-		t.Errorf("Expected invalid defintion with no alias to result in error")
-	}
-
 	invalid4 := state.Definition{
 		Alias:               "cupcake",
 		GroupName:           "group-cupcake",
@@ -112,17 +80,6 @@ func TestDefinitionService_Create2(t *testing.T) {
 	_, err = ds.Create(&invalid4)
 	if err == nil {
 		t.Errorf("Expected invalid definition with no image to result in error")
-	}
-
-	invalid5 := state.Definition{
-		Alias:     "cupcake",
-		GroupName: "cant.have.dots",
-		ExecutableResources: state.ExecutableResources{Image: "image:cupcake",
-			Memory: &memory},
-	}
-	_, err = ds.Create(&invalid5)
-	if err == nil {
-		t.Errorf("Expected invalid definition with invalid GroupName to result in error")
 	}
 }
 
