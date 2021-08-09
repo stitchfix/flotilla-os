@@ -143,10 +143,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf("Listing returned incorrect definition, expected A but got %s", dA.DefinitionID)
 	}
 
-	if *dA.Privileged != true {
-		t.Errorf("Listing returned incorrect definition, expected true but got %v", dA.Privileged)
-	}
-
 	if len(*dA.Env) != 1 {
 		t.Errorf("Expected returned definitions to have correctly attached env vars, was %v", dA.Env)
 	}
@@ -227,10 +223,8 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 	var err error
 	memory := int64(512)
 	d := Definition{
-		Arn:          "arn:cupcake",
 		DefinitionID: "id:cupcake",
 		GroupName:    "group:cupcake",
-		User:         "noone",
 		Alias:        "cupcake",
 		Command:      "echo 'hi'",
 		ExecutableResources: ExecutableResources{
@@ -239,7 +233,6 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 			Env: &EnvList{
 				{Name: "E1", Value: "V1"},
 			},
-			ContainerName: "container:cupcake",
 			Ports:         &PortsList{12345, 6789},
 			Tags:          &Tags{"apple", "orange", "tiger"},
 		},

@@ -313,14 +313,6 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	selectForUpdate := `SELECT * FROM task_def WHERE definition_id = $1 FOR UPDATE;`
 	deletePorts := `DELETE FROM task_def_ports WHERE task_def_id = $1;`
 	deleteTags := `DELETE FROM task_def_tags WHERE task_def_id = $1`
-	update := `
-    UPDATE task_def SET
-      arn = $2, image = $3,
-      container_name = $4, "user" = $5,
-      alias = $6, memory = $7,
-      command = $8, env = $9, privileged = $10, cpu = $11, gpu = $12, adaptive_resource_allocation = $13
-    WHERE definition_id = $1;
-    `
 
 	insertPorts := `
     INSERT INTO task_def_ports(
@@ -355,11 +347,29 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		return existing, errors.WithStack(err)
 	}
 
+	update := `
+    UPDATE task_def SET
+      image = $2,
+      alias = $3,
+      memory = $4,
+      command = $5,
+      env = $6,
+      cpu = $7,
+      gpu = $8,
+      adaptive_resource_allocation = $9
+    WHERE definition_id = $1;
+    `
 	if _, err = tx.Exec(
-		update, definitionID,
-		existing.Arn, existing.Image, existing.ContainerName,
-		existing.User, existing.Alias, existing.Memory,
-		existing.Command, existing.Env, existing.Privileged, existing.Cpu, existing.Gpu, existing.AdaptiveResourceAllocation); err != nil {
+		update,
+		definitionID,
+		existing.Image,
+		existing.Alias,
+		existing.Memory,
+		existing.Command,
+		existing.Env,
+		existing.Cpu,
+		existing.Gpu,
+		existing.AdaptiveResourceAllocation); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -397,13 +407,6 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 //
 func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	var err error
-	insert := `
-    INSERT INTO task_def(
-      arn, definition_id, image, group_name,
-      container_name, "user", alias, memory, command, env, privileged, cpu, gpu, adaptive_resource_allocation
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
-    `
 
 	insertPorts := `
     INSERT INTO task_def_ports(
@@ -426,9 +429,33 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 		return errors.WithStack(err)
 	}
 
+	insert := `
+    INSERT INTO task_def(
+      definition_id,
+      image,
+      group_name,
+      alias,
+      memory,
+      command,
+      env,
+      cpu,
+      gpu,
+      adaptive_resource_allocation
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+    `
+
 	if _, err = tx.Exec(insert,
-		d.Arn, d.DefinitionID, d.Image, d.GroupName, d.ContainerName,
-		d.User, d.Alias, d.Memory, d.Command, d.Env, d.Privileged, d.Cpu, d.Gpu, d.AdaptiveResourceAllocation); err != nil {
+		d.DefinitionID,
+		d.Image,
+		d.GroupName,
+		d.Alias,
+		d.Memory,
+		d.Command,
+		d.Env,
+		d.Cpu,
+		d.Gpu,
+		d.AdaptiveResourceAllocation); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
@@ -1220,8 +1247,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	insert := `
     INSERT INTO template(
 			template_id, template_name, version, schema, command_template,
-			adaptive_resource_allocation, image, container_name, memory, env,
-			privileged, cpu, gpu, defaults, avatar_uri
+			adaptive_resource_allocation, image, memory, env, cpu, gpu, defaults, avatar_uri
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
     `
@@ -1233,8 +1259,8 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 
 	if _, err = tx.Exec(insert,
 		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
-		t.AdaptiveResourceAllocation, t.Image, t.ContainerName, t.Memory, t.Env,
-		t.Privileged, t.Cpu, t.Gpu, t.Defaults, t.AvatarURI); err != nil {
+		t.AdaptiveResourceAllocation, t.Image, t.Memory, t.Env,
+		t.Cpu, t.Gpu, t.Defaults, t.AvatarURI); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)
