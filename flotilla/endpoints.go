@@ -34,9 +34,8 @@ type listRequest struct {
 }
 
 type LaunchRequest struct {
-	ClusterName    string                `json:"cluster"`
-	Env            *state.EnvList        `json:"env"`
-	SparkExtension *state.SparkExtension `json:"spark_extension,omitempty"`
+	ClusterName string         `json:"cluster"`
+	Env         *state.EnvList `json:"env"`
 }
 
 type LaunchRequestV2 struct {
@@ -46,8 +45,9 @@ type LaunchRequestV2 struct {
 	Cpu                   *int64
 	Gpu                   *int64
 	Engine                *string
-	NodeLifecycle         *string `json:"node_lifecycle"`
-	ActiveDeadlineSeconds *int64  `json:"active_deadline_seconds,omitempty"`
+	NodeLifecycle         *string               `json:"node_lifecycle"`
+	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
+	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
 	*LaunchRequest
 }
 
@@ -566,7 +566,13 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lr.Engine = &state.DefaultEngine
+	if lr.Engine == nil {
+		if lr.SparkExtension != nil {
+			lr.Engine = &state.EKSSparkEngine
+		} else {
+			lr.Engine = &state.EKSEngine
+		}
+	}
 
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
@@ -591,6 +597,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Engine:                lr.Engine,
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
+			SparkExtension:        lr.SparkExtension,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
