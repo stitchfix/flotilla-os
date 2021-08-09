@@ -63,8 +63,8 @@ func insertDefinitions(db *sqlx.DB) {
 	db.MustExec(defsql,
 		"A", "imageA", "groupZ", "aliasA", 1024, "echo 'hi'", `[{"name":"E_A1","value":"V_A1"}]`)
 	db.MustExec(defsql,
-		"B", "imageB", "groupY", "containerB", "aliasB", 1024, "echo 'hi'",
-		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`, nil)
+		"B", "imageB", "groupY", "aliasB", 1024, "echo 'hi'",
+		`[{"name":"E_B1","value":"V_B1"},{"name":"E_B2","value":"V_B2"},{"name":"E_B3","value":"V_B3"}]`)
 	db.MustExec(defsql, "C", "imageC", "groupX", "aliasC", 1024, "echo 'hi'", nil)
 	db.MustExec(defsql, "D", "imageD", "groupW", "aliasD", 1024, "echo 'hi'", nil)
 	db.MustExec(defsql, "E", "imageE", "groupV", "aliasE", 1024, "echo 'hi'", nil)
