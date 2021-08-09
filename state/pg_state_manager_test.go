@@ -13,8 +13,7 @@ import (
 )
 
 func getDB(conf config.Config) *sqlx.DB {
-	//db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
-	db, err := sqlx.Connect("postgres", "dbname=flotilla sslmode=disable")
+	db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +26,6 @@ func setUp() Manager {
 	db := getDB(conf)
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
-	os.Setenv("DATABASE_URL", "postgres://localhost/flotilla?sslmode=disable")
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
 
