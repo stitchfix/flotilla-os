@@ -170,19 +170,46 @@ type Executable interface {
 	GetExecutableResourceName() string // This will typically be an ARN.
 }
 
+func UnmarshalSparkExtension(data []byte) (SparkExtension, error) {
+	var r SparkExtension
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *SparkExtension) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type SparkExtension struct {
+	SparkSubmitJobDriver *SparkSubmitJobDriver `json:"spark_submit_job_driver,omitempty"`
+	ApplicationConf      []Conf                `json:"application_conf,omitempty"`
+}
+
+type Conf struct {
+	Name  *string `json:"name,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type SparkSubmitJobDriver struct {
+	EntryPoint          *string  `json:"entry_point,omitempty"`
+	EntryPointArguments []string `json:"entry_point_arguments,omitempty"`
+	SparkSubmitConf     []Conf   `json:"spark_submit_conf,omitempty"`
+}
+
 // Common fields required to execute any Executable.
 type ExecutionRequestCommon struct {
-	ClusterName           string   `json:"cluster_name"`
-	Env                   *EnvList `json:"env"`
-	OwnerID               string   `json:"owner_id"`
-	Command               *string  `json:"command"`
-	Memory                *int64   `json:"memory"`
-	Cpu                   *int64   `json:"cpu"`
-	Gpu                   *int64   `json:"gpu"`
-	Engine                *string  `json:"engine"`
-	EphemeralStorage      *int64   `json:"ephemeral_storage"`
-	NodeLifecycle         *string  `json:"node_lifecycle"`
-	ActiveDeadlineSeconds *int64   `json:"active_deadline_seconds,omitempty"`
+	ClusterName           string          `json:"cluster_name"`
+	Env                   *EnvList        `json:"env"`
+	OwnerID               string          `json:"owner_id"`
+	Command               *string         `json:"command"`
+	Memory                *int64          `json:"memory"`
+	Cpu                   *int64          `json:"cpu"`
+	Gpu                   *int64          `json:"gpu"`
+	Engine                *string         `json:"engine"`
+	EphemeralStorage      *int64          `json:"ephemeral_storage"`
+	NodeLifecycle         *string         `json:"node_lifecycle"`
+	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
+	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -425,6 +452,7 @@ type Run struct {
 	SpawnedRuns             *SpawnedRuns             `json:"spawned_runs,omitempty"`
 	RunExceptions           *RunExceptions           `json:"run_exceptions,omitempty"`
 	ActiveDeadlineSeconds   *int64                   `json:"active_deadline_seconds,omitempty"`
+	SparkExtension          *SparkExtension          `json:"spark_extension,omitempty"`
 }
 
 //
@@ -547,6 +575,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.ExecutableType != nil {
 		d.ExecutableType = other.ExecutableType
+	}
+
+	if other.SparkExtension != nil {
+		d.SparkExtension = other.SparkExtension
 	}
 
 	if other.CloudTrailNotifications != nil && len((*other.CloudTrailNotifications).Records) > 0 {

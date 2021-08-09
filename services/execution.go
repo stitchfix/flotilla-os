@@ -250,6 +250,13 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		}
 	}
 
+	if *fields.Engine == state.EKSSparkEngine {
+		if req.GetExecutionRequestCommon().SparkExtension == nil {
+			return run, errors.New("spark_extension can't be nil, when using eks-spark engine type")
+		}
+		fields.SparkExtension = req.GetExecutionRequestCommon().SparkExtension
+	}
+
 	if fields.NodeLifecycle == nil {
 		fields.NodeLifecycle = &state.SpotLifecycle
 	}
@@ -271,6 +278,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		ExecutableType:        executable.GetExecutableType(),
 		ActiveDeadlineSeconds: fields.ActiveDeadlineSeconds,
 		TaskType:              state.DefaultTaskType,
+		SparkExtension:        fields.SparkExtension,
 	}
 
 	runEnv := es.constructEnviron(run, fields.Env)

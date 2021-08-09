@@ -664,7 +664,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.AttemptCount,
 			&existing.SpawnedRuns,
 			&existing.RunExceptions,
-			&existing.ActiveDeadlineSeconds)
+			&existing.ActiveDeadlineSeconds,
+			&existing.SparkExtension)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -709,7 +710,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		attempt_count = $34,
 		spawned_runs = $35,
 		run_exceptions = $36,
-		active_deadline_seconds = $37
+		active_deadline_seconds = $37,
+		spark_extension = $38
     WHERE run_id = $1;
     `
 
@@ -751,7 +753,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.AttemptCount,
 		existing.SpawnedRuns,
 		existing.RunExceptions,
-		existing.ActiveDeadlineSeconds); err != nil {
+		existing.ActiveDeadlineSeconds,
+		existing.SparkExtension); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -809,7 +812,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		run_exceptions,
 		active_deadline_seconds,
 		task_type,
-		command_hash
+		command_hash,
+		spark_extension
     ) VALUES (
         $1,
 		$2,
@@ -848,7 +852,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$35,
 		$36,
 		$37,
-		MD5($16)
+		MD5($16),
+		$38
 	);
     `
 
@@ -894,7 +899,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.SpawnedRuns,
 		r.RunExceptions,
 		r.ActiveDeadlineSeconds,
-		r.TaskType); err != nil {
+		r.TaskType,
+		r.SparkExtension); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

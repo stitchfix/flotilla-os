@@ -34,8 +34,9 @@ type listRequest struct {
 }
 
 type LaunchRequest struct {
-	ClusterName string         `json:"cluster"`
-	Env         *state.EnvList `json:"env"`
+	ClusterName    string                `json:"cluster"`
+	Env            *state.EnvList        `json:"env"`
+	SparkExtension *state.SparkExtension `json:"spark_extension,omitempty"`
 }
 
 type LaunchRequestV2 struct {
@@ -46,7 +47,6 @@ type LaunchRequestV2 struct {
 	Gpu                   *int64
 	Engine                *string
 	NodeLifecycle         *string `json:"node_lifecycle"`
-	EphemeralStorage      *int64  `json:"ephemeral_storage"`
 	ActiveDeadlineSeconds *int64  `json:"active_deadline_seconds,omitempty"`
 	*LaunchRequest
 }
@@ -454,7 +454,13 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	lr.Engine = &state.DefaultEngine
+	if lr.Engine == nil {
+		if lr.SparkExtension != nil {
+			lr.Engine = &state.EKSSparkEngine
+		} else {
+			lr.Engine = &state.EKSEngine
+		}
+	}
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
@@ -468,6 +474,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Engine:           lr.Engine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
+			SparkExtension:   lr.SparkExtension,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -497,7 +504,13 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lr.Engine = &state.DefaultEngine
+	if lr.Engine == nil {
+		if lr.SparkExtension != nil {
+			lr.Engine = &state.EKSSparkEngine
+		} else {
+			lr.Engine = &state.EKSEngine
+		}
+	}
 
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
@@ -520,9 +533,9 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Cpu:                   lr.Cpu,
 			Gpu:                   lr.Gpu,
 			Engine:                lr.Engine,
-			EphemeralStorage:      lr.EphemeralStorage,
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
+			SparkExtension:        lr.SparkExtension,
 		},
 	}
 
@@ -576,7 +589,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Cpu:                   lr.Cpu,
 			Gpu:                   lr.Gpu,
 			Engine:                lr.Engine,
-			EphemeralStorage:      lr.EphemeralStorage,
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 		},
