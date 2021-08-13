@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"strings"
+	_ "k8s.io/client-go/kubernetes/scheme"
 )
 
 //
@@ -67,7 +68,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.emrContainersClient = emrcontainers.New(sess, aws.NewConfig().WithRegion(emr.awsRegion))
 
 	emr.serializer = k8sJson.NewSerializerWithOptions(
-		k8sJson.DefaultMetaFactory, nil, nil,
+		k8sJson.SimpleMetaFactory{}, nil, nil,
 		k8sJson.SerializerOptions{
 			Yaml:   true,
 			Pretty: true,
@@ -80,7 +81,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 
-	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-json"))
+	key := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-json"))
 	obj, err := json.Marshal(startJobRunInput)
 	if err == nil {
 		emr.writeStringToS3(key, obj)
@@ -445,6 +446,16 @@ func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run sta
 			})
 		}
 	}
+
+	res = append(res, v1.EnvVar{
+		Name: "SPARK_APPLICATION_ID",
+		ValueFrom: &v1.EnvVarSource{
+			FieldRef: &v1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "metadata.labels['spark-app-selector']",
+			},
+		},
+	})
 	return res
 }
 
