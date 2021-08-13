@@ -77,6 +77,27 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
+
+	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
+	emr.writeStringToS3(aws.String(startJobRunInput.String()), key)
+
+	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
+	if err == nil {
+		run.SparkExtension.VirtualClusterId = startJobRunOutput.VirtualClusterId
+		run.SparkExtension.EMRJobId = startJobRunOutput.Id
+		run.Status = state.StatusPending
+		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
+	} else {
+		run.ExitReason = aws.String("Failed to submit job to EMR/EKS.")
+		_ = emr.log.Log("EMR job submission error", "error", err.Error())
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
+		return run, false, err
+	}
+	return run, false, nil
+}
+
+func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -107,23 +128,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
 		VirtualClusterId: &emr.emrVirtualCluster,
 	}
-
-	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
-	emr.writeStringToS3(aws.String(startJobRunInput.String()), key)
-
-	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
-	if err == nil {
-		run.SparkExtension.VirtualClusterId = startJobRunOutput.VirtualClusterId
-		run.SparkExtension.EMRJobId = startJobRunOutput.Id
-		run.Status = state.StatusPending
-		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
-	} else {
-		run.ExitReason = aws.String("Failed to submit job to EMR/EKS.")
-		_ = emr.log.Log("EMR job submission error", "error", err.Error())
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
-		return run, false, err
-	}
-	return run, false, nil
+	return startJobRunInput
 }
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
@@ -313,6 +318,10 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 		Id:               run.SparkExtension.EMRJobId,
 		VirtualClusterId: run.SparkExtension.VirtualClusterId,
 	}
+
+	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "cancel-job-run-input"))
+	emr.writeStringToS3(aws.String(cancelJobRunInput.String()), key)
+
 	_, err := emr.emrContainersClient.CancelJobRun(&cancelJobRunInput)
 	if err != nil {
 		_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusFailure)}, 1)
