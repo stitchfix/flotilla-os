@@ -138,7 +138,6 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
 	pod := v1.Pod{
-		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
@@ -227,11 +226,13 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *string {
 	var b0 bytes.Buffer
 	err := emr.serializer.Encode(obj, &b0)
+	payload := bytes.ReplaceAll(b0.Bytes(), []byte("status: {}"), []byte(""))
+	payload = bytes.ReplaceAll(payload, []byte("creationTimestamp: null"), []byte(""))
 
 	if err == nil {
 		putObject := s3.PutObjectInput{
 			Bucket:      aws.String(emr.s3ManifestBucket),
-			Body:        bytes.NewReader(b0.Bytes()),
+			Body:        bytes.NewReader(payload),
 			Key:         key,
 			ContentType: aws.String("text/yaml"),
 		}
