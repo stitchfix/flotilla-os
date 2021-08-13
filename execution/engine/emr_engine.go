@@ -91,7 +91,8 @@ func (ee *EMRExecutionEngine) Execute(executable state.Executable, run state.Run
 					Classification: aws.String("spark-defaults"),
 					Properties: map[string]*string{
 						"spark.kubernetes.driver.podTemplateFile":   ee.driverPodTemplate(executable, run, manager),
-						"spark.kubernetes.executor.podTemplateFile": ee.executorPodTemplate(executable, run, manager)},
+						"spark.kubernetes.executor.podTemplateFile": ee.executorPodTemplate(executable, run, manager),
+						"spark.kubernetes.container.image":          &run.Image},
 				},
 			},
 		},
