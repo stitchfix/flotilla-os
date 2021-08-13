@@ -39,6 +39,7 @@ type EMRExecutionEngine struct {
 	s3Client            *s3.S3
 	awsRegion           string
 	s3LogsBucket        string
+	s3EventLogPath      string
 	s3LogsBasePath      string
 	s3ManifestBucket    string
 	s3ManifestBasePath  string
@@ -58,6 +59,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.awsRegion = conf.GetString("emr.aws_region")
 	emr.s3LogsBucket = conf.GetString("emr.log.bucket")
 	emr.s3LogsBasePath = conf.GetString("emr.log.base_path")
+	emr.s3EventLogPath = conf.GetString("emr.log.event_log_path")
 	emr.s3ManifestBucket = conf.GetString("emr.manifest.bucket")
 	emr.s3ManifestBasePath = conf.GetString("emr.manifest.base_path")
 	emr.emrJobSA = conf.GetString("eks.service_account")
@@ -193,8 +195,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			}},
 			Containers: []v1.Container{
 				{
-					Name:  "spark-kubernetes-executor",
-					Env:   emr.envOverrides(executable, run),
+					Name: "spark-kubernetes-executor",
+					Env:  emr.envOverrides(executable, run),
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      "shared-lib-volume",
@@ -314,6 +316,17 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
+	run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf = append(run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf,
+		state.Conf{
+			Name:  aws.String("spark.eventLog.dir"),
+			Value: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+		},
+		state.Conf{
+			Name:  aws.String("spark.eventLog.enabled"),
+			Value: aws.String(fmt.Sprintf("true")),
+		},
+	)
+
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
