@@ -194,7 +194,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			Containers: []v1.Container{
 				{
 					Name:  "spark-kubernetes-executor",
-					Image: run.Image,
 					Env:   emr.envOverrides(executable, run),
 					VolumeMounts: []v1.VolumeMount{
 						{
@@ -228,6 +227,7 @@ func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *
 	err := emr.serializer.Encode(obj, &b0)
 	payload := bytes.ReplaceAll(b0.Bytes(), []byte("status: {}"), []byte(""))
 	payload = bytes.ReplaceAll(payload, []byte("creationTimestamp: null"), []byte(""))
+	payload = bytes.ReplaceAll(payload, []byte("resources: {}"), []byte(""))
 
 	if err == nil {
 		putObject := s3.PutObjectInput{
