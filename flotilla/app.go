@@ -145,3 +145,18 @@ func (app *App) initializeEKSWorkers(
 	app.workerManager = workerManager
 	return nil
 }
+
+func (app *App) initializeEMRWorkers(
+	conf config.Config,
+	log flotillaLog.Logger,
+	ee engine.Engine,
+	sm state.Manager,
+	qm queue.Manager) error {
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.EKSSparkEngine, qm)
+	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	if err != nil {
+		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
+	}
+	app.workerManager = workerManager
+	return nil
+}
