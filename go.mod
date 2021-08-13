@@ -9,26 +9,27 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
-	github.com/aws/aws-sdk-go v1.31.11
+	github.com/aws/aws-sdk-go v1.40.18
 	github.com/containerd/continuity v0.0.0-20200107194136-26c1120b8d41 // indirect
-	github.com/docker/cli v0.0.0-20190702184337-39e22d9db677
-	github.com/docker/distribution v0.0.0-20190628181051-be07be99045e
-	github.com/docker/docker v1.4.2-0.20190702170247-a43a2ed74654
+	github.com/docker/cli v0.0.0-20190702184337-39e22d9db677 // indirect
+	github.com/docker/distribution v0.0.0-20190628181051-be07be99045e // indirect
+	github.com/docker/docker v1.4.2-0.20190702170247-a43a2ed74654 // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
-	github.com/docker/go-connections v0.4.1-0.20190612165340-fd1b1942c4d5
+	github.com/docker/go-connections v0.4.1-0.20190612165340-fd1b1942c4d5 // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/go-redis/redis v6.15.6+incompatible
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gorilla/mux v1.7.4-0.20190701202633-d83b6ffe499a
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/jmoiron/sqlx v1.2.1-0.20190426154859-38398a30ed85
 	github.com/lib/pq v1.1.2-0.20190507191818-2ff3cb3adc01
 	github.com/mattn/go-shellwords v1.0.6 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
-	github.com/moby/moby v1.4.2-0.20190702170247-a43a2ed74654
+	github.com/moby/moby v1.4.2-0.20190702170247-a43a2ed74654 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
+	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.6.1-0.20190613161432-33ffc0734c60
 	github.com/spf13/viper v1.4.1-0.20190614151712-3349bd9cc288
@@ -39,9 +40,7 @@ require (
 	go.uber.org/multierr v1.1.0
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/mod v0.3.0 // indirect
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	golang.org/x/tools v0.0.0-20200604183345-4d5ea46c79fe // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637

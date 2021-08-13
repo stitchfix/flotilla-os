@@ -183,6 +183,10 @@ func (r *SparkExtension) Marshal() ([]byte, error) {
 type SparkExtension struct {
 	SparkSubmitJobDriver *SparkSubmitJobDriver `json:"spark_submit_job_driver,omitempty"`
 	ApplicationConf      []Conf                `json:"application_conf,omitempty"`
+	EMRJobId             *string               `json:"emr_job_id,omitempty"`
+	HistoryUri           *string               `json:"history_uri,omitempty"`
+	VirtualClusterId     *string               `json:"virtual_cluster_id,omitempty"`
+	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 }
 
 type Conf struct {
@@ -191,9 +195,9 @@ type Conf struct {
 }
 
 type SparkSubmitJobDriver struct {
-	EntryPoint          *string  `json:"entry_point,omitempty"`
-	EntryPointArguments []string `json:"entry_point_arguments,omitempty"`
-	SparkSubmitConf     []Conf   `json:"spark_submit_conf,omitempty"`
+	EntryPoint          *string   `json:"entry_point,omitempty"`
+	EntryPointArguments []*string `json:"entry_point_arguments,omitempty"`
+	SparkSubmitConf     []Conf    `json:"spark_submit_conf,omitempty"`
 }
 
 // Common fields required to execute any Executable.

@@ -106,7 +106,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager)
+	emrExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSSparkEngine, logger)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EMR execution engine"))
+		os.Exit(1)
+	}
+	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

@@ -15,8 +15,14 @@ const (
 	EngineEKSExecute Metric = "engine.eks.execute"
 	// Metric associated to submission of jobs to SQS queue, before EKS submission.
 	EngineEKSEnqueue Metric = "engine.eks.enqueue"
+	// Metric associated to submission of jobs to EMR
+	EngineEMRExecute Metric = "engine.emr.execute"
+	// Metric associated to submission of jobs to SQS queue, before EMR submission.
+	EngineEMREnqueue Metric = "engine.emr.enqueue"
 	// Metric associated to termination of jobs via the API.
 	EngineEKSTerminate Metric = "engine.eks.terminate"
+	// Metric associated to termination of jobs via the API.
+	EngineEMRTerminate Metric = "engine.emr.terminate"
 	// Metric associated to termination of pods hopping between hosts.
 	EngineEKSRunPodnameChange Metric = "engine.eks.run_podname_changed"
 	// Metric associated to pod events where there was a Cluster Autoscale event.

@@ -46,6 +46,7 @@ type executionService struct {
 	stateManager             state.Manager
 	eksClusterClient         cluster.Client
 	eksExecutionEngine       engine.Engine
+	emrExecutionEngine       engine.Engine
 	reservedEnv              map[string]func(run state.Run) string
 	eksClusterOverride       []string
 	eksOverridePercent       int
@@ -65,11 +66,12 @@ func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error)
 //
 // NewExecutionService configures and returns an ExecutionService
 //
-func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, sm state.Manager, eksClusterClient cluster.Client) (ExecutionService, error) {
+func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, sm state.Manager, eksClusterClient cluster.Client, emrExecutionEngine engine.Engine) (ExecutionService, error) {
 	es := executionService{
 		stateManager:       sm,
 		eksClusterClient:   eksClusterClient,
 		eksExecutionEngine: eksExecutionEngine,
+		emrExecutionEngine: emrExecutionEngine,
 	}
 	//
 	// Reserved environment variables dynamically generated
@@ -434,8 +436,12 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 			run.Engine = &state.EKSEngine
 		}
 
-		if *run.Engine == state.EKSEngine && run.Status != state.StatusStopped {
-			err = es.eksExecutionEngine.Terminate(run)
+		if run.Status != state.StatusStopped {
+			if *run.Engine == state.EKSSparkEngine {
+				err = es.emrExecutionEngine.Terminate(run)
+			} else {
+				err = es.eksExecutionEngine.Terminate(run)
+			}
 			if err == nil || run.Status == state.StatusQueued {
 				exitReason := "Task terminated by user"
 				if len(userInfo.Email) > 0 {
@@ -506,7 +512,12 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 		return run, err
 	}
 
-	err = es.eksExecutionEngine.Enqueue(run)
+	if *run.Engine == state.EKSEngine {
+		err = es.eksExecutionEngine.Enqueue(run)
+	} else {
+		err = es.emrExecutionEngine.Enqueue(run)
+	}
+
 	queuedAt := time.Now()
 
 	if err != nil {
