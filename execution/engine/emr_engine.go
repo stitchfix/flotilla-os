@@ -107,6 +107,9 @@ func (ee *EMRExecutionEngine) Execute(executable state.Executable, run state.Run
 		VirtualClusterId: &ee.emrVirtualCluster,
 	}
 
+	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", ee.s3ManifestBasePath, run.RunID, "start-job-run-input"))
+	ee.writeStringToS3(aws.String(startJobRunInput.String()), key)
+
 	startJobRunOutput, err := ee.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
 		run.SparkExtension.VirtualClusterId = startJobRunOutput.VirtualClusterId
@@ -119,7 +122,6 @@ func (ee *EMRExecutionEngine) Execute(executable state.Executable, run state.Run
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err
 	}
-
 	return run, false, nil
 }
 
@@ -160,7 +162,7 @@ func (ee *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", ee.s3ManifestBasePath, run.RunID, "driver-template"))
-	ee.writeToS3(&pod, key)
+	ee.writeK8ObjToS3(&pod, key)
 	return key
 }
 
@@ -208,11 +210,11 @@ func (ee *EMRExecutionEngine) executorPodTemplate(executable state.Executable, r
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", ee.s3ManifestBasePath, run.RunID, "executor-template"))
-	ee.writeToS3(&pod, key)
+	ee.writeK8ObjToS3(&pod, key)
 	return key
 }
 
-func (ee *EMRExecutionEngine) writeToS3(obj runtime.Object, key *string) {
+func (ee *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) {
 	var b0 bytes.Buffer
 	err := ee.serializer.Encode(obj, &b0)
 
@@ -224,6 +226,21 @@ func (ee *EMRExecutionEngine) writeToS3(obj runtime.Object, key *string) {
 			ContentType: aws.String("text/yaml"),
 		}
 		_, err = ee.s3Client.PutObject(&putObject)
+		if err != nil {
+			_ = ee.log.Log("s3_upload_error", "error", err.Error())
+		}
+	}
+}
+
+func (ee *EMRExecutionEngine) writeStringToS3(key *string, body *string) {
+	if body != nil && key != nil {
+		putObject := s3.PutObjectInput{
+			Bucket:      aws.String(ee.s3ManifestBucket),
+			Body:        strings.NewReader(*body),
+			Key:         key,
+			ContentType: aws.String("text/yaml"),
+		}
+		_, err := ee.s3Client.PutObject(&putObject)
 		if err != nil {
 			_ = ee.log.Log("s3_upload_error", "error", err.Error())
 		}
