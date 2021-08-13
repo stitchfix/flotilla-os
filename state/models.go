@@ -198,6 +198,8 @@ type SparkSubmitJobDriver struct {
 	EntryPoint          *string   `json:"entry_point,omitempty"`
 	EntryPointArguments []*string `json:"entry_point_arguments,omitempty"`
 	SparkSubmitConf     []Conf    `json:"spark_submit_conf,omitempty"`
+	Files               []string  `json:"files,omitempty"`
+	PyFiles             []string  `json:"py_files,omitempty"`
 }
 
 // Common fields required to execute any Executable.

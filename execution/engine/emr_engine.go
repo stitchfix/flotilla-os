@@ -330,6 +330,17 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
+
+	if len(run.SparkExtension.SparkSubmitJobDriver.Files) > 0 {
+		files := strings.Join(run.SparkExtension.SparkSubmitJobDriver.Files, ",")
+		buffer.WriteString(fmt.Sprintf(" --files %s", files))
+	}
+
+	if len(run.SparkExtension.SparkSubmitJobDriver.PyFiles) > 0 {
+		files := strings.Join(run.SparkExtension.SparkSubmitJobDriver.PyFiles, ",")
+		buffer.WriteString(fmt.Sprintf(" --py-files %s", files))
+	}
+
 	return aws.String(buffer.String())
 }
 
