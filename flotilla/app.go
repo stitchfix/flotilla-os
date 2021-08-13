@@ -51,6 +51,7 @@ func NewApp(conf config.Config,
 	eksClusterClient cluster.Client,
 	eksQueueManager queue.Manager,
 	emrExecutionEngine engine.Engine,
+	emrQueueManager queue.Manager,
 ) (App, error) {
 	var app App
 	app.logger = log
@@ -88,6 +89,10 @@ func NewApp(conf config.Config,
 
 	app.configureRoutes(ep)
 	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager, eksQueueManager); err != nil {
+		return app, errors.Wrap(err, "problem eks initializing workers")
+	}
+
+	if err = app.initializeEMRWorkers(conf, log, emrExecutionEngine, stateManager, emrQueueManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
 
