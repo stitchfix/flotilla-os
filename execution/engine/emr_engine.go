@@ -169,8 +169,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "driver-template"))
-	emr.writeK8ObjToS3(&pod, key)
-	return key
+	return emr.writeK8ObjToS3(&pod, key)
 }
 
 func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
@@ -218,11 +217,10 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
-	emr.writeK8ObjToS3(&pod, key)
-	return key
+	return emr.writeK8ObjToS3(&pod, key)
 }
 
-func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) {
+func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *string {
 	var b0 bytes.Buffer
 	err := emr.serializer.Encode(obj, &b0)
 
@@ -238,6 +236,8 @@ func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) {
 			_ = emr.log.Log("s3_upload_error", "error", err.Error())
 		}
 	}
+
+	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
 func (emr *EMRExecutionEngine) writeStringToS3(key *string, body *string) {
