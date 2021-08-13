@@ -80,7 +80,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
-	emr.writeStringToS3(aws.String(startJobRunInput.String()), key)
+	emr.writeStringToS3(key, aws.String(startJobRunInput.String()))
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
@@ -160,6 +160,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 						MountPath: "/var/lib/app",
 					},
 				},
+				Command: emr.constructCmdSlice(run),
 			}},
 			RestartPolicy:      v1.RestartPolicyNever,
 			ServiceAccountName: emr.emrJobSA,
@@ -208,6 +209,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 						MountPath: "/var/lib/app",
 					},
 				},
+				Command: emr.constructCmdSlice(run),
 			}},
 			RestartPolicy:      v1.RestartPolicyNever,
 			ServiceAccountName: emr.emrJobSA,
@@ -320,7 +322,7 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "cancel-job-run-input"))
-	emr.writeStringToS3(aws.String(cancelJobRunInput.String()), key)
+	emr.writeStringToS3(key, aws.String(cancelJobRunInput.String()))
 
 	_, err := emr.emrContainersClient.CancelJobRun(&cancelJobRunInput)
 	if err != nil {
@@ -447,4 +449,15 @@ func (emr *EMRExecutionEngine) sanitizeEnvVar(key string) string {
 	// Environment variable names can't contain spaces.
 	key = strings.Replace(key, " ", "", -1)
 	return key
+}
+
+func (emr *EMRExecutionEngine) constructCmdSlice(run state.Run) []string {
+	cmdString := ""
+	if run.Command != nil {
+		cmdString = *run.Command
+	}
+	bashCmd := "bash"
+	optLogin := "-l"
+	optStr := "-cex"
+	return []string{bashCmd, optLogin, optStr, cmdString}
 }
