@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -79,8 +80,11 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 
-	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
-	emr.writeStringToS3(key, aws.String(startJobRunInput.String()))
+	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "start-job-run-json"))
+	obj, err := json.Marshal(startJobRunInput)
+	if err == nil {
+		emr.writeStringToS3(key, obj)
+	}
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
@@ -104,7 +108,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			MonitoringConfiguration: &emrcontainers.MonitoringConfiguration{
 				PersistentAppUI: aws.String(emrcontainers.PersistentAppUIEnabled),
 				S3MonitoringConfiguration: &emrcontainers.S3MonitoringConfiguration{
-					LogUri: aws.String(fmt.Sprintf("%s/%s", emr.s3LogsBucket, emr.s3LogsBasePath)),
+					LogUri: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3LogsBasePath)),
 				},
 			},
 			ApplicationConfiguration: []*emrcontainers.Configuration{
@@ -240,11 +244,11 @@ func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *
 	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
-func (emr *EMRExecutionEngine) writeStringToS3(key *string, body *string) {
+func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) {
 	if body != nil && key != nil {
 		putObject := s3.PutObjectInput{
 			Bucket:      aws.String(emr.s3ManifestBucket),
-			Body:        strings.NewReader(*body),
+			Body:        bytes.NewReader(body),
 			Key:         key,
 			ContentType: aws.String("text/yaml"),
 		}
@@ -321,10 +325,13 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 		VirtualClusterId: run.SparkExtension.VirtualClusterId,
 	}
 
-	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "cancel-job-run-input"))
-	emr.writeStringToS3(key, aws.String(cancelJobRunInput.String()))
+	key := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "cancel-job-run-input"))
+	obj, err := json.Marshal(cancelJobRunInput)
+	if err == nil {
+		emr.writeStringToS3(key, obj)
+	}
 
-	_, err := emr.emrContainersClient.CancelJobRun(&cancelJobRunInput)
+	_, err = emr.emrContainersClient.CancelJobRun(&cancelJobRunInput)
 	if err != nil {
 		_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusFailure)}, 1)
 		_ = emr.log.Log("EMR job termination error", "error", err.Error())
