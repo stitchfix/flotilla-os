@@ -19,8 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"strings"
 	_ "k8s.io/client-go/kubernetes/scheme"
+	"strings"
 )
 
 //
@@ -138,10 +138,12 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
 	pod := v1.Pod{
+		Status: nil,
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"flotilla-run-id": run.RunID},
+			CreationTimestamp: nil,
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -152,13 +154,15 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			}},
 			Containers: []v1.Container{
 				{
-					Name: "spark-kubernetes-driver",
-					Env:  emr.envOverrides(executable, run),
+					Name:      "spark-kubernetes-driver",
+					Env:       emr.envOverrides(executable, run),
+					Resources: nil,
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
-				Image: run.Image,
+				Name:      fmt.Sprintf("init-driver-%s", run.RunID),
+				Image:     run.Image,
+				Resources: nil,
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
@@ -167,8 +171,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 				Command: emr.constructCmdSlice(run),
 			}},
-			RestartPolicy:      v1.RestartPolicyNever,
-			Affinity:           emr.constructAffinity(executable, run, manager),
+			RestartPolicy: v1.RestartPolicyNever,
+			Affinity:      emr.constructAffinity(executable, run, manager),
 		},
 	}
 
@@ -178,10 +182,12 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 
 func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
 	pod := v1.Pod{
+		Status: nil,
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"flotilla-run-id": run.RunID},
+			CreationTimestamp: nil,
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -201,6 +207,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 							MountPath: "/var/lib/app",
 						},
 					},
+					Resources: nil,
 				},
 			},
 			InitContainers: []v1.Container{{
@@ -212,10 +219,11 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 						MountPath: "/var/lib/app",
 					},
 				},
-				Command: emr.constructCmdSlice(run),
+				Resources: nil,
+				Command:   emr.constructCmdSlice(run),
 			}},
-			RestartPolicy:      v1.RestartPolicyNever,
-			Affinity:           emr.constructAffinity(executable, run, manager),
+			RestartPolicy: v1.RestartPolicyNever,
+			Affinity:      emr.constructAffinity(executable, run, manager),
 		},
 	}
 
