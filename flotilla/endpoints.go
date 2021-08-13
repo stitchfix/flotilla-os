@@ -48,7 +48,8 @@ type LaunchRequestV2 struct {
 	NodeLifecycle         *string               `json:"node_lifecycle"`
 	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
-	*LaunchRequest
+	ClusterName           *string               `json:"cluster,omitempty"`
+	Env                   *state.EnvList        `json:"env,omitempty"`
 }
 
 //
