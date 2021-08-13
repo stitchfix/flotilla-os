@@ -168,7 +168,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				Command: emr.constructCmdSlice(run),
 			}},
 			RestartPolicy:      v1.RestartPolicyNever,
-			ServiceAccountName: emr.emrJobSA,
 			Affinity:           emr.constructAffinity(executable, run, manager),
 		},
 	}
@@ -216,7 +215,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				Command: emr.constructCmdSlice(run),
 			}},
 			RestartPolicy:      v1.RestartPolicyNever,
-			ServiceAccountName: emr.emrJobSA,
 			Affinity:           emr.constructAffinity(executable, run, manager),
 		},
 	}

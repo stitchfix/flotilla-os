@@ -35,7 +35,7 @@ type listRequest struct {
 
 type LaunchRequest struct {
 	ClusterName *string        `json:"cluster,omitempty"`
-	Env         *state.EnvList `json:"env"`
+	Env         *state.EnvList `json:"env,omitempty"`
 }
 
 type LaunchRequestV2 struct {

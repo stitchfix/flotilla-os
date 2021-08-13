@@ -342,7 +342,7 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine})
+	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine, state.EKSSparkEngine})
 }
 
 //
