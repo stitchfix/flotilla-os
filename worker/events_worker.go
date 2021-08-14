@@ -93,6 +93,7 @@ func (ew *eventsWorker) runOnce() {
 	ew.processEvent(kubernetesEvent)
 }
 func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
+	_ = ew.log.Log("info", kubernetesEvent)
 	if kubernetesEvent.InvolvedObject.Kind == "pod" {
 		// Fetch info about the pod from EKS api - get emr job info from labels
 		// Associate it with the Task
