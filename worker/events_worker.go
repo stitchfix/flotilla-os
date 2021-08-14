@@ -59,14 +59,11 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 		return err
 	}
 	kClient, err := kubernetes.NewForConfig(clientConf)
-	_ = ew.log.Log("message", "XXX")
-	_ = ew.log.Log("message", "initializing-eks-clusters-client-sw", clusterName, "filename", filename, "client", clientConf.ServerName)
 	if err != nil {
 		_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
 		return err
 	}
 	ew.kClient = *kClient
-
 	return nil
 }
 
@@ -147,11 +144,12 @@ func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
+				} else {
+					_ = kubernetesEvent.Done()
 				}
 			}
 		}
 	}
-	_ = kubernetesEvent.Done()
 }
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
