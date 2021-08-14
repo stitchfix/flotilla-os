@@ -183,6 +183,10 @@ func (r *SparkExtension) Marshal() ([]byte, error) {
 type SparkExtension struct {
 	SparkSubmitJobDriver *SparkSubmitJobDriver `json:"spark_submit_job_driver,omitempty"`
 	ApplicationConf      []Conf                `json:"application_conf,omitempty"`
+	EMRJobId             *string               `json:"emr_job_id,omitempty"`
+	HistoryUri           *string               `json:"history_uri,omitempty"`
+	VirtualClusterId     *string               `json:"virtual_cluster_id,omitempty"`
+	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 }
 
 type Conf struct {
@@ -191,9 +195,11 @@ type Conf struct {
 }
 
 type SparkSubmitJobDriver struct {
-	EntryPoint          *string  `json:"entry_point,omitempty"`
-	EntryPointArguments []string `json:"entry_point_arguments,omitempty"`
-	SparkSubmitConf     []Conf   `json:"spark_submit_conf,omitempty"`
+	EntryPoint          *string   `json:"entry_point,omitempty"`
+	EntryPointArguments []*string `json:"entry_point_arguments,omitempty"`
+	SparkSubmitConf     []Conf    `json:"spark_submit_conf,omitempty"`
+	Files               []string  `json:"files,omitempty"`
+	PyFiles             []string  `json:"py_files,omitempty"`
 }
 
 // Common fields required to execute any Executable.
@@ -1043,4 +1049,42 @@ type Metadata struct {
 type Source struct {
 	Component string `json:"component,omitempty"`
 	Host      string `json:"host,omitempty"`
+}
+
+func UnmarshalEmrEvents(data []byte) (EmrEvent, error) {
+	var r EmrEvent
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *EmrEvent) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type EmrEvent struct {
+	Version    *string       `json:"version,omitempty"`
+	ID         *string       `json:"id,omitempty"`
+	DetailType *string       `json:"detail-type,omitempty"`
+	Source     *string       `json:"source,omitempty"`
+	Account    *string       `json:"account,omitempty"`
+	Time       *string       `json:"time,omitempty"`
+	Region     *string       `json:"region,omitempty"`
+	Resources  []interface{} `json:"resources,omitempty"`
+	Detail     *Detail       `json:"detail,omitempty"`
+	Done       func() error
+}
+
+type Detail struct {
+	Severity         *string `json:"severity,omitempty"`
+	Name             *string `json:"name,omitempty"`
+	ID               *string `json:"id,omitempty"`
+	Arn              *string `json:"arn,omitempty"`
+	VirtualClusterID *string `json:"virtualClusterId,omitempty"`
+	State            *string `json:"state,omitempty"`
+	CreatedBy        *string `json:"createdBy,omitempty"`
+	ReleaseLabel     *string `json:"releaseLabel,omitempty"`
+	ExecutionRoleArn *string `json:"executionRoleArn,omitempty"`
+	FailureReason    *string `json:"failureReason,omitempty"`
+	StateDetails     *string `json:"stateDetails,omitempty"`
+	Message          *string `json:"message,omitempty"`
 }

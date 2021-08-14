@@ -19,6 +19,7 @@ type Manager interface {
 	ReceiveStatus(qURL string) (StatusReceipt, error)
 	ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, error)
 	ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error)
+	ReceiveEMREvent(qURL string) (state.EmrEvent, error)
 	ReceiveKubernetesRun(queue string) (string, error)
 	List() ([]string, error)
 }
@@ -52,6 +53,12 @@ func NewQueueManager(conf config.Config, name string) (Manager, error) {
 			return nil, errors.Wrap(err, "problem initializing SQSManager")
 		}
 		return sqsEKS, nil
+	case state.EKSSparkEngine:
+		sqsEKSSpark := &SQSManager{}
+		if err := sqsEKSSpark.Initialize(conf, state.EKSSparkEngine); err != nil {
+			return nil, errors.Wrap(err, "problem initializing SQSManager")
+		}
+		return sqsEKSSpark, nil
 	default:
 		return nil, fmt.Errorf("no QueueManager named [%s] was found", name)
 	}

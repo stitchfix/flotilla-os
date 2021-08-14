@@ -50,12 +50,14 @@ func NewApp(conf config.Config,
 	stateManager state.Manager,
 	eksClusterClient cluster.Client,
 	eksQueueManager queue.Manager,
+	emrExecutionEngine engine.Engine,
+	emrQueueManager queue.Manager,
 ) (App, error) {
 	var app App
 	app.logger = log
 	app.configure(conf)
 
-	executionService, err := services.NewExecutionService(conf, eksExecutionEngine, stateManager, eksClusterClient)
+	executionService, err := services.NewExecutionService(conf, eksExecutionEngine, stateManager, eksClusterClient, emrExecutionEngine)
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing execution service")
 	}
@@ -87,6 +89,10 @@ func NewApp(conf config.Config,
 
 	app.configureRoutes(ep)
 	if err = app.initializeEKSWorkers(conf, log, eksExecutionEngine, stateManager, eksQueueManager); err != nil {
+		return app, errors.Wrap(err, "problem eks initializing workers")
+	}
+
+	if err = app.initializeEMRWorkers(conf, log, emrExecutionEngine, stateManager, emrQueueManager); err != nil {
 		return app, errors.Wrap(err, "problem eks initializing workers")
 	}
 
@@ -137,6 +143,21 @@ func (app *App) initializeEKSWorkers(
 	sm state.Manager,
 	qm queue.Manager) error {
 	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.EKSEngine, qm)
+	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	if err != nil {
+		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
+	}
+	app.workerManager = workerManager
+	return nil
+}
+
+func (app *App) initializeEMRWorkers(
+	conf config.Config,
+	log flotillaLog.Logger,
+	ee engine.Engine,
+	sm state.Manager,
+	qm queue.Manager) error {
+	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, sm, &state.EKSSparkEngine, qm)
 	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")

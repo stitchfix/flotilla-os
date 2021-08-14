@@ -588,6 +588,21 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	return r, nil
 }
 
+func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
+	var err error
+	var r Run
+	err = sm.db.Get(&r, GetRunSQLByEMRJobId, emrJobId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return r, exceptions.MissingResource{
+				fmt.Sprintf("Run with emrjobid %s not found", emrJobId)}
+		} else {
+			return r, errors.Wrapf(err, "issue getting run with emrjobid [%s]", emrJobId)
+		}
+	}
+	return r, nil
+}
+
 func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	var err error
 	var r Run

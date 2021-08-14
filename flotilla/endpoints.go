@@ -34,8 +34,8 @@ type listRequest struct {
 }
 
 type LaunchRequest struct {
-	ClusterName string         `json:"cluster"`
-	Env         *state.EnvList `json:"env"`
+	ClusterName *string        `json:"cluster,omitempty"`
+	Env         *state.EnvList `json:"env,omitempty"`
 }
 
 type LaunchRequestV2 struct {
@@ -48,7 +48,8 @@ type LaunchRequestV2 struct {
 	NodeLifecycle         *string               `json:"node_lifecycle"`
 	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
-	*LaunchRequest
+	ClusterName           *string               `json:"cluster,omitempty"`
+	Env                   *state.EnvList        `json:"env,omitempty"`
 }
 
 //
@@ -414,7 +415,6 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          "v1-unknown",
 			Command:          nil,
@@ -464,7 +464,6 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      lr.ClusterName,
 			Env:              lr.Env,
 			OwnerID:          lr.RunTags.OwnerEmail,
 			Command:          nil,
@@ -525,7 +524,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:           lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,
@@ -587,7 +585,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:           lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,

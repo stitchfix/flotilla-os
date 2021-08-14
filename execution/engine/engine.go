@@ -38,12 +38,18 @@ type RunReceipt struct {
 //
 func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logger log.Logger) (Engine, error) {
 	switch name {
-	case "eks":
+	case state.EKSEngine:
 		eksEng := &EKSExecutionEngine{qm: qm, log: logger}
 		if err := eksEng.Initialize(conf); err != nil {
-			return nil, errors.Wrap(err, "problem initializing ECSExecutionEngine")
+			return nil, errors.Wrap(err, "problem initializing EKSExecutionEngine")
 		}
 		return eksEng, nil
+	case state.EKSSparkEngine:
+		emrEng := &EMRExecutionEngine{sqsQueueManager: qm, log: logger}
+		if err := emrEng.Initialize(conf); err != nil {
+			return nil, errors.Wrap(err, "problem initializing EMRExecutionEngine")
+		}
+		return emrEng, nil
 	default:
 		return nil, fmt.Errorf("no Engine named [%s] was found", name)
 	}

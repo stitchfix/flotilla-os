@@ -96,6 +96,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	emrQueueManager, err := queue.NewQueueManager(c, state.EKSSparkEngine)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
+		os.Exit(1)
+	}
+
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. EKS)
@@ -106,7 +112,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager)
+	emrExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSSparkEngine, logger)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EMR execution engine"))
+		os.Exit(1)
+	}
+	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)
