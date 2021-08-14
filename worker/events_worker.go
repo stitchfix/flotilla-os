@@ -51,14 +51,16 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
+	_ = ew.log.Log("message", "initializing-eks-clusters-sw", clusterName)
 
 	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 	if err != nil {
+		_ = ew.log.Log("message", "error initializing-eks-clusters", "error", fmt.Sprintf("%+v", err))
 		return err
 	}
 	kClient, err := kubernetes.NewForConfig(clientConf)
-	_ = ew.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
+	_ = ew.log.Log("message", "initializing-eks-clusters-client-sw", clusterName, "filename", filename, "client", clientConf.ServerName)
 	if err != nil {
 		return err
 	}
@@ -93,7 +95,6 @@ func (ew *eventsWorker) runOnce() {
 	ew.processEvent(kubernetesEvent)
 }
 func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
-	_ = ew.log.Log("info", kubernetesEvent)
 	if kubernetesEvent.InvolvedObject.Kind == "pod" {
 		// Fetch info about the pod from EKS api - get emr job info from labels
 		// Associate it with the Task
