@@ -82,6 +82,7 @@ func (ew *eventsWorker) Run() error {
 			return nil
 		default:
 			ew.runOnce()
+			ew.runOnceEMR()
 			time.Sleep(ew.pollInterval)
 		}
 	}
