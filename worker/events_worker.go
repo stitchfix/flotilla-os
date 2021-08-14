@@ -122,7 +122,10 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.Status = state.StatusQueued
 		}
 
-		_ = emrEvent.Done()
+		_, err = ew.sm.UpdateRun(run.RunID, run)
+		if err == nil {
+			_ = emrEvent.Done()
+		}
 	}
 }
 func (ew *eventsWorker) runOnce() {
