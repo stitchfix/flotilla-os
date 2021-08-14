@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
@@ -19,17 +20,18 @@ import (
 )
 
 type eventsWorker struct {
-	sm               state.Manager
-	qm               queue.Manager
-	conf             config.Config
-	log              flotillaLog.Logger
-	pollInterval     time.Duration
-	t                tomb.Tomb
-	queue            string
-	engine           *string
-	s3Client         *s3.S3
-	kClient          kubernetes.Clientset
-	emrHistoryServer string
+	sm                state.Manager
+	qm                queue.Manager
+	conf              config.Config
+	log               flotillaLog.Logger
+	pollInterval      time.Duration
+	t                 tomb.Tomb
+	queue             string
+	emrJobStatusQueue string
+	engine            *string
+	s3Client          *s3.S3
+	kClient           kubernetes.Clientset
+	emrHistoryServer  string
 }
 
 func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
@@ -40,14 +42,15 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	ew.log = log
 	ew.engine = engine
 	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
+	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
 
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
 		return nil
 	}
-
 	ew.queue = eventsQueue
+	ew.emrJobStatusQueue = emrJobStatusQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
@@ -84,6 +87,44 @@ func (ew *eventsWorker) Run() error {
 	}
 }
 
+func (ew *eventsWorker) runOnceEMR() {
+	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
+	if err != nil {
+		_ = ew.log.Log("message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
+		return
+	}
+	ew.processEventEMR(emrEvent)
+}
+
+func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
+	emrJobId := emrEvent.Detail.ID
+	run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
+	layout := "2020-08-31T17:27:50Z"
+	timestamp, err := time.Parse(layout, *emrEvent.Time)
+	if err != nil {
+		timestamp = time.Now()
+	}
+	if err == nil {
+		switch *emrEvent.Detail.State {
+		case "COMPLETED":
+			run.ExitCode = aws.Int64(0)
+			run.Status = state.StatusStopped
+			run.FinishedAt = &timestamp
+			run.ExitReason = emrEvent.Detail.StateDetails
+		case "RUNNING":
+			run.Status = state.StatusRunning
+		case "FAILED":
+			run.ExitCode = aws.Int64(-1)
+			run.Status = state.StatusStopped
+			run.FinishedAt = &timestamp
+			run.ExitReason = emrEvent.Detail.FailureReason
+		case "SUBMITTED":
+			run.Status = state.StatusQueued
+		}
+
+		_ = emrEvent.Done()
+	}
+}
 func (ew *eventsWorker) runOnce() {
 	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
@@ -92,7 +133,7 @@ func (ew *eventsWorker) runOnce() {
 	}
 	ew.processEvent(kubernetesEvent)
 }
-func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
+func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
@@ -150,7 +191,7 @@ func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	if !strings.HasPrefix(runId, "eks") {
-		ew.processEventEMR(kubernetesEvent)
+		ew.processEMRPodEvents(kubernetesEvent)
 	}
 
 	layout := "2020-08-31T17:27:50Z"

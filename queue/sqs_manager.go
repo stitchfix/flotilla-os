@@ -292,6 +292,40 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 	return receipt, nil
 }
 
+func (qm *SQSManager) ReceiveEMREvent(qURL string) (state.EmrEvent, error) {
+	var emrEvent state.EmrEvent
+
+	if len(qURL) == 0 {
+		return emrEvent, errors.Errorf("no queue url specified, can't dequeue")
+	}
+
+	maxMessages := int64(1)
+	visibilityTimeout := int64(45)
+	rmi := sqs.ReceiveMessageInput{
+		QueueUrl:            &qURL,
+		MaxNumberOfMessages: &maxMessages,
+		VisibilityTimeout:   &visibilityTimeout,
+	}
+
+	var err error
+
+	response, err := qm.qc.ReceiveMessage(&rmi)
+	if err != nil {
+		return emrEvent, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
+	}
+
+	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
+		body := response.Messages[0].Body
+
+		err = json.Unmarshal([]byte(*body), &emrEvent)
+		emrEvent.Done = func() error {
+			return qm.ack(qURL, response.Messages[0].ReceiptHandle)
+		}
+
+	}
+	return emrEvent, nil
+}
+
 func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error) {
 	var kubernetesEvent state.KubernetesEvent
 

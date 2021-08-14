@@ -1051,17 +1051,17 @@ type Source struct {
 	Host      string `json:"host,omitempty"`
 }
 
-func UnmarshalEmrEvents(data []byte) (EmrEvents, error) {
-	var r EmrEvents
+func UnmarshalEmrEvents(data []byte) (EmrEvent, error) {
+	var r EmrEvent
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
 
-func (r *EmrEvents) Marshal() ([]byte, error) {
+func (r *EmrEvent) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-type EmrEvents struct {
+type EmrEvent struct {
 	Version    *string       `json:"version,omitempty"`
 	ID         *string       `json:"id,omitempty"`
 	DetailType *string       `json:"detail-type,omitempty"`
@@ -1071,6 +1071,7 @@ type EmrEvents struct {
 	Region     *string       `json:"region,omitempty"`
 	Resources  []interface{} `json:"resources,omitempty"`
 	Detail     *Detail       `json:"detail,omitempty"`
+	Done       func() error
 }
 
 type Detail struct {

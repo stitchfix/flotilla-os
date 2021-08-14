@@ -29,7 +29,6 @@ import (
 type EMRExecutionEngine struct {
 	sqsQueueManager     queue.Manager
 	log                 flotillaLog.Logger
-	emrJobStatusQueue   string
 	emrJobQueue         string
 	emrJobNamespace     string
 	emrJobRoleArn       string
@@ -53,7 +52,6 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 	emr.emrVirtualCluster = conf.GetString("emr.virtual_cluster")
 	emr.emrJobQueue = conf.GetString("emr.job_queue")
-	emr.emrJobStatusQueue = conf.GetString("emr.job_status_queue")
 	emr.emrJobNamespace = conf.GetString("emr.job_namespace")
 	emr.emrJobRoleArn = conf.GetString("emr.job_role_arn")
 	emr.awsRegion = conf.GetString("emr.aws_region")
