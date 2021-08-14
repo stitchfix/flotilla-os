@@ -118,6 +118,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.ExitReason = emrEvent.Detail.StateDetails
 		case "RUNNING":
 			run.Status = state.StatusRunning
+			run.StartedAt = &timestamp
 		case "FAILED":
 			run.ExitCode = aws.Int64(-1)
 			run.Status = state.StatusStopped
@@ -148,10 +149,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		var sparkJobId *string = nil
 		if err == nil {
 			for k, v := range pod.Labels {
-				switch k {
-				case "emr-containers.amazonaws.com/job.id":
+				_ = ew.log.Log("message", "processing emr events", k, v)
+				if k == "emr-containers.amazonaws.com/job.id" {
 					emrJobId = &v
-				case "spark-app-selector":
+				}
+				if k == "spark-app-selector" {
 					sparkJobId = &v
 				}
 			}
