@@ -356,6 +356,11 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 		buffer.WriteString(fmt.Sprintf(" --py-files %s", files))
 	}
 
+	if len(run.SparkExtension.SparkSubmitJobDriver.Jars) > 0 {
+		jars := strings.Join(run.SparkExtension.SparkSubmitJobDriver.Jars, ",")
+		buffer.WriteString(fmt.Sprintf(" --jars %s", jars))
+	}
+
 	return aws.String(buffer.String())
 }
 

@@ -201,6 +201,7 @@ type SparkSubmitJobDriver struct {
 	SparkSubmitConf     []Conf    `json:"spark_submit_conf,omitempty"`
 	Files               []string  `json:"files,omitempty"`
 	PyFiles             []string  `json:"py_files,omitempty"`
+	Jars                []string  `json:"jars,omitempty"`
 }
 
 // Common fields required to execute any Executable.
