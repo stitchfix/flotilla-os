@@ -100,12 +100,12 @@ func (ew *eventsWorker) runOnceEMR() {
 func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 	emrJobId := emrEvent.Detail.ID
 	run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
-	layout := "2020-08-31T17:27:50Z"
-	timestamp, err := time.Parse(layout, *emrEvent.Time)
-	if err != nil {
-		timestamp = time.Now()
-	}
 	if err == nil {
+		layout := "2020-08-31T17:27:50Z"
+		timestamp, err := time.Parse(layout, *emrEvent.Time)
+		if err != nil {
+			timestamp = time.Now()
+		}
 		switch *emrEvent.Detail.State {
 		case "COMPLETED":
 			run.ExitCode = aws.Int64(0)
