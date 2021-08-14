@@ -163,6 +163,16 @@ func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
 	return r, err
 }
 
+func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(emrJobId string) (state.Run, error){
+	iatt.Calls = append(iatt.Calls, "GetRunByEMRJobId")
+	var err error
+	r, ok := iatt.Runs[emrJobId]
+	if !ok {
+		err = fmt.Errorf("No run %s", emrJobId )
+	}
+	return r, err
+}
+
 // CreateRun - StateManager
 func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 	iatt.Calls = append(iatt.Calls, "CreateRun")

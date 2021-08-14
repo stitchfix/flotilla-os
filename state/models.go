@@ -1050,3 +1050,40 @@ type Source struct {
 	Component string `json:"component,omitempty"`
 	Host      string `json:"host,omitempty"`
 }
+
+func UnmarshalEmrEvents(data []byte) (EmrEvents, error) {
+	var r EmrEvents
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func (r *EmrEvents) Marshal() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+type EmrEvents struct {
+	Version    *string       `json:"version,omitempty"`
+	ID         *string       `json:"id,omitempty"`
+	DetailType *string       `json:"detail-type,omitempty"`
+	Source     *string       `json:"source,omitempty"`
+	Account    *string       `json:"account,omitempty"`
+	Time       *string       `json:"time,omitempty"`
+	Region     *string       `json:"region,omitempty"`
+	Resources  []interface{} `json:"resources,omitempty"`
+	Detail     *Detail       `json:"detail,omitempty"`
+}
+
+type Detail struct {
+	Severity         *string `json:"severity,omitempty"`
+	Name             *string `json:"name,omitempty"`
+	ID               *string `json:"id,omitempty"`
+	Arn              *string `json:"arn,omitempty"`
+	VirtualClusterID *string `json:"virtualClusterId,omitempty"`
+	State            *string `json:"state,omitempty"`
+	CreatedBy        *string `json:"createdBy,omitempty"`
+	ReleaseLabel     *string `json:"releaseLabel,omitempty"`
+	ExecutionRoleArn *string `json:"executionRoleArn,omitempty"`
+	FailureReason    *string `json:"failureReason,omitempty"`
+	StateDetails     *string `json:"stateDetails,omitempty"`
+	Message          *string `json:"message,omitempty"`
+}
