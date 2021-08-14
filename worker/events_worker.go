@@ -146,15 +146,19 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
-		var sparkJobId *string = nil
+		var sparkAppId *string = nil
 		if err == nil {
 			for k, v := range pod.Labels {
-				_ = ew.log.Log("message", "processing emr events", k, v)
-				if k == "emr-containers.amazonaws.com/job.id" {
-					emrJobId = &v
+				if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
+					emrJobId = aws.String(v)
+					_ = ew.log.Log("message", "assigning emr job id", *emrJobId)
 				}
-				if k == "spark-app-selector" {
-					sparkJobId = &v
+				if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
+					sparkAppId = aws.String(v)
+					_ = ew.log.Log("message", "assigning spark app id", *sparkAppId)
+				}
+				if sparkAppId != nil && emrJobId != nil {
+					break
 				}
 			}
 		}
@@ -184,8 +188,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				}
 				run.PodEvents = &events
 
-				if sparkJobId != nil {
-					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs", ew.emrHistoryServer, *sparkJobId)
+				if sparkAppId != nil {
+					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 				}
 
