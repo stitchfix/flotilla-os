@@ -93,14 +93,10 @@ func (ew *eventsWorker) runOnce() {
 	ew.processEvent(kubernetesEvent)
 }
 func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
-	ew.log.Log("message", "k8s event", kubernetesEvent.InvolvedObject.Name, kubernetesEvent.Message)
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
-		// Fetch info about the pod from EKS api - get emr job info from labels
-		// Associate it with the Task
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
 		var sparkJobId *string = nil
-
 		if err == nil {
 			for k, v := range pod.Labels {
 				switch k {
@@ -146,10 +142,10 @@ func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 				}
-				_ = kubernetesEvent.Done()
 			}
 		}
 	}
+	_ = kubernetesEvent.Done()
 }
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
