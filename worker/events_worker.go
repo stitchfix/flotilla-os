@@ -93,7 +93,6 @@ func (ew *eventsWorker) runOnce() {
 	ew.processEvent(kubernetesEvent)
 }
 func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
-	defer kubernetesEvent.Done()
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
@@ -145,6 +144,7 @@ func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 				}
 			}
 		}
+		_ = kubernetesEvent.Done()
 	}
 }
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
