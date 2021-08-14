@@ -184,6 +184,7 @@ type SparkExtension struct {
 	SparkSubmitJobDriver *SparkSubmitJobDriver `json:"spark_submit_job_driver,omitempty"`
 	ApplicationConf      []Conf                `json:"application_conf,omitempty"`
 	EMRJobId             *string               `json:"emr_job_id,omitempty"`
+	SparkAppId           *string               `json:"spark_app_id,omitempty"`
 	EMRJobManifest       *string               `json:"emr_job_manifest,omitempty"`
 	HistoryUri           *string               `json:"history_uri,omitempty"`
 	VirtualClusterId     *string               `json:"virtual_cluster_id,omitempty"`

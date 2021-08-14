@@ -190,6 +190,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 				if sparkAppId != nil {
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs", ew.emrHistoryServer, *sparkAppId)
+					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 				}
 
