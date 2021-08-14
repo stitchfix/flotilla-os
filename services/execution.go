@@ -121,9 +121,6 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		"FLOTILLA_RUN_ID": func(run state.Run) string {
 			return run.RunID
 		},
-		"FLOTILLA_RUN_PAYLOAD_URI": func(run state.Run) string {
-			return fmt.Sprintf("%s/api/v6/history/%s/payload", es.baseUri, run.RunID)
-		},
 		"AWS_ROLE_SESSION_NAME": func(run state.Run) string {
 			return run.RunID
 		},

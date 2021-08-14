@@ -84,7 +84,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
 	if err == nil {
-		emr.writeStringToS3(emrJobManifest, obj)
+		emrJobManifest = emr.writeStringToS3(emrJobManifest, obj)
 	}
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
@@ -261,7 +261,7 @@ func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *
 	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
-func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) {
+func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) *string {
 	if body != nil && key != nil {
 		putObject := s3.PutObjectInput{
 			Bucket:      aws.String(emr.s3ManifestBucket),
@@ -274,6 +274,7 @@ func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) {
 			_ = emr.log.Log("s3_upload_error", "error", err.Error())
 		}
 	}
+	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *v1.Affinity {
