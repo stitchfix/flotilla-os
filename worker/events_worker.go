@@ -125,7 +125,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.FinishedAt = &timestamp
 			run.ExitReason = emrEvent.Detail.FailureReason
 		case "SUBMITTED":
-			run.Status = state.StatusQueued
+			run.Status = state.StatusPending
 		}
 
 		_, err = ew.sm.UpdateRun(run.RunID, run)

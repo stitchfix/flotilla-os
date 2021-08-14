@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	_ "k8s.io/client-go/kubernetes/scheme"
+	"regexp"
 	"strings"
 )
 
@@ -80,18 +81,18 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
-
-	key := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-json"))
-	obj, err := json.Marshal(startJobRunInput)
+	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
+	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
 	if err == nil {
-		emr.writeStringToS3(key, obj)
+		emr.writeStringToS3(emrJobManifest, obj)
 	}
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
 		run.SparkExtension.VirtualClusterId = startJobRunOutput.VirtualClusterId
 		run.SparkExtension.EMRJobId = startJobRunOutput.Id
-		run.Status = state.StatusPending
+		run.SparkExtension.EMRJobManifest = emrJobManifest
+		run.Status = state.StatusQueued
 		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
 	} else {
 		run.ExitReason = aws.String("Failed to submit job to EMR/EKS.")
@@ -132,8 +133,23 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
 		VirtualClusterId: &emr.emrVirtualCluster,
+		Tags:             emr.generateTags(run),
 	}
 	return startJobRunInput
+}
+
+func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
+	tags := make(map[string]*string)
+	if run.Env != nil && len(*run.Env) > 0 {
+		for _, ev := range *run.Env {
+			name := emr.sanitizeEnvVar(ev.Name)
+			space := regexp.MustCompile(`\s+`)
+			if len(ev.Value) < 256 && len(name) < 128 {
+				tags[name] = aws.String(space.ReplaceAllString(ev.Value, ""))
+			}
+		}
+	}
+	return tags
 }
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
