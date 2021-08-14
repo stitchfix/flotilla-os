@@ -94,7 +94,7 @@ func (ew *eventsWorker) runOnce() {
 }
 func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 	ew.log.Log("message", "k8s event", kubernetesEvent.InvolvedObject.Name, kubernetesEvent.Message)
-	if kubernetesEvent.InvolvedObject.Kind == "pod" {
+	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		// Fetch info about the pod from EKS api - get emr job info from labels
 		// Associate it with the Task
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
@@ -145,9 +145,8 @@ func (ew *eventsWorker) processEventEMR(kubernetesEvent state.KubernetesEvent) {
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
-				} else {
-					_ = kubernetesEvent.Done()
 				}
+				_ = kubernetesEvent.Done()
 			}
 		}
 	}
