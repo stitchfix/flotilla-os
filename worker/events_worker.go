@@ -98,6 +98,10 @@ func (ew *eventsWorker) runOnceEMR() {
 }
 
 func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
+	if emrEvent.Detail == nil {
+		return
+	}
+
 	emrJobId := emrEvent.Detail.ID
 	run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
 	if err == nil {
