@@ -51,7 +51,6 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
-	_ = ew.log.Log("message", "initializing-eks-clusters-sw", clusterName)
 
 	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
@@ -60,8 +59,10 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 		return err
 	}
 	kClient, err := kubernetes.NewForConfig(clientConf)
+	_ = ew.log.Log("message", "XXX")
 	_ = ew.log.Log("message", "initializing-eks-clusters-client-sw", clusterName, "filename", filename, "client", clientConf.ServerName)
 	if err != nil {
+		_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
 		return err
 	}
 	ew.kClient = *kClient
