@@ -106,7 +106,6 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		Prefix: aws.String(s3DirName),
 	})
 
-	lc.logger.Println("s3dir", s3DirName)
 	if err != nil || result == nil || result.Contents == nil || len(result.Contents) == 0 {
 		return "", aws.String(""), errors.Errorf("Problem fetching logs")
 	}
@@ -120,8 +119,6 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 			lastModified = content.LastModified
 		}
 	}
-
-	lc.logger.Println("key", *key)
 
 	if key == nil {
 		return "", aws.String(""), errors.Errorf("No driver logs found")

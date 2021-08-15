@@ -151,11 +151,9 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 			for k, v := range pod.Labels {
 				if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
 					emrJobId = aws.String(v)
-					_ = ew.log.Log("message", "assigning emr job id", *emrJobId)
 				}
 				if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
 					sparkAppId = aws.String(v)
-					_ = ew.log.Log("message", "assigning spark app id", *sparkAppId)
 				}
 				if sparkAppId != nil && emrJobId != nil {
 					break
