@@ -170,6 +170,12 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				{
 					Name: "spark-kubernetes-driver",
 					Env:  emr.envOverrides(executable, run),
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      "shared-lib-volume",
+							MountPath: "/var/lib/app",
+						},
+					},
 				},
 			},
 			InitContainers: []v1.Container{{
