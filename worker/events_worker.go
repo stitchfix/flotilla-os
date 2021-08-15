@@ -115,6 +115,9 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.ExitCode = aws.Int64(0)
 			run.Status = state.StatusStopped
 			run.FinishedAt = &timestamp
+			if run.StartedAt == nil {
+				run.StartedAt = run.QueuedAt
+			}
 			run.ExitReason = emrEvent.Detail.StateDetails
 		case "RUNNING":
 			run.Status = state.StatusRunning
@@ -123,6 +126,9 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.ExitCode = aws.Int64(-1)
 			run.Status = state.StatusStopped
 			run.FinishedAt = &timestamp
+			if run.StartedAt == nil {
+				run.StartedAt = run.QueuedAt
+			}
 			run.ExitReason = emrEvent.Detail.FailureReason
 		case "SUBMITTED":
 			run.Status = state.StatusPending
