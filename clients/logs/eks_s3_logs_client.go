@@ -2,6 +2,8 @@ package logs
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -30,6 +32,8 @@ type EKSS3LogsClient struct {
 	s3Bucket           string
 	s3BucketRootDir    string
 	logger             *log.Logger
+	emrS3LogsBucket    string
+	emrS3LogsBasePath  string
 }
 
 type s3Log struct {
@@ -68,7 +72,8 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 
 		lc.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	}
-
+	lc.emrS3LogsBucket = conf.GetString("emr.log.bucket")
+	lc.emrS3LogsBasePath = conf.GetString("emr.log.base_path")
 	s3BucketName := confLogOptions["s3_bucket_name"]
 
 	if len(s3BucketName) == 0 {
@@ -90,7 +95,96 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
+func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *string) (string, *string, error) {
+	s3DirName, err := lc.emrDriverLogsPath(run)
+	if err != nil {
+		return "", aws.String(""), errors.Errorf("No logs")
+	}
+
+	result, err := lc.s3Client.ListObjects(&s3.ListObjectsInput{
+		Bucket: aws.String(lc.emrS3LogsBucket),
+		Prefix: aws.String(s3DirName),
+	})
+
+	lc.logger.Println("s3dir", s3DirName)
+	if err != nil || result == nil || result.Contents == nil || len(result.Contents) == 0 {
+		return "", aws.String(""), errors.Errorf("Problem fetching logs")
+	}
+
+	var key *string
+	lastModified := &time.Time{}
+
+	for _, content := range result.Contents {
+		if strings.Contains(*content.Key, "-driver") && lastModified.Before(*content.LastModified) {
+			key = content.Key
+			lastModified = content.LastModified
+		}
+	}
+
+	lc.logger.Println("key", key)
+
+	if key == nil {
+		return "", aws.String(""), errors.Errorf("No driver logs found")
+	}
+
+	startPosition := int64(0)
+	if lastSeen != nil {
+		parsed, err := strconv.ParseInt(*lastSeen, 10, 64)
+		if err == nil {
+			startPosition = parsed
+		}
+	}
+	s3Obj, err := lc.s3Client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(lc.emrS3LogsBucket),
+		Key:    aws.String(*key),
+	})
+
+	if s3Obj != nil && err == nil {
+		defer s3Obj.Body.Close()
+		gr, err := gzip.NewReader(s3Obj.Body)
+		if err != nil {
+			return "", aws.String(""), errors.Errorf("No driver logs found")
+		}
+		defer gr.Close()
+		reader := bufio.NewReader(gr)
+		var b0 bytes.Buffer
+		counter := int64(0)
+		for {
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				if err == io.EOF {
+					err = nil
+				}
+				return "", aws.String(""), errors.Errorf("No driver logs found")
+			} else {
+				if counter > startPosition {
+					b0.Write(line)
+				}
+			}
+			counter = counter + 1
+		}
+	}
+	return "", aws.String(""), errors.Errorf("No driver logs found")
+}
+
+func (lc *EKSS3LogsClient) emrDriverLogsPath(run state.Run) (string, error) {
+	if run.SparkExtension.SparkAppId != nil &&
+		run.SparkExtension.EMRJobId != nil &&
+		run.SparkExtension.VirtualClusterId != nil {
+		return fmt.Sprintf("%s/%s/jobs/%s/containers/%s/",
+			lc.emrS3LogsBasePath,
+			*run.SparkExtension.VirtualClusterId,
+			*run.SparkExtension.EMRJobId,
+			*run.SparkExtension.SparkAppId), nil
+	}
+	return "", errors.New("couldn't construct s3 path.")
+}
+
 func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+	if *run.Engine == state.EKSSparkEngine {
+		return lc.emrLogsToMessageString(run, lastSeen)
+	}
+
 	result, err := lc.getS3Object(run)
 	startPosition := int64(0)
 	if lastSeen != nil {
