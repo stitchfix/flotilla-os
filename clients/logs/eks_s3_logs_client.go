@@ -115,7 +115,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	lastModified := &time.Time{}
 
 	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, "-driver") && lastModified.Before(*content.LastModified) {
+		if strings.Contains(*content.Key, "-driver/stderr") && lastModified.Before(*content.LastModified) {
 			key = content.Key
 			lastModified = content.LastModified
 		}
