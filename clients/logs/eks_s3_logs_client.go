@@ -121,7 +121,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		}
 	}
 
-	lc.logger.Println("key", key)
+	lc.logger.Println("key", *key)
 
 	if key == nil {
 		return "", aws.String(""), errors.Errorf("No driver logs found")
@@ -160,9 +160,10 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 				if counter > startPosition {
 					b0.Write(line)
 				}
+				counter = counter + 1
 			}
-			counter = counter + 1
 		}
+		return b0.String(), aws.String(fmt.Sprintf("%d", counter)), nil
 	}
 	return "", aws.String(""), errors.Errorf("No driver logs found")
 }
