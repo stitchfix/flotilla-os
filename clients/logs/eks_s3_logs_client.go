@@ -95,7 +95,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	s3DirName, err := lc.emrDriverLogsPath(run)
 	if err != nil {
 		return "", aws.String(""), errors.Errorf("No logs")
@@ -114,7 +114,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	lastModified := &time.Time{}
 
 	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, "-driver/stderr") && lastModified.Before(*content.LastModified) {
+		if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
 			key = content.Key
 			lastModified = content.LastModified
 		}
@@ -178,9 +178,9 @@ func (lc *EKSS3LogsClient) emrDriverLogsPath(run state.Run) (string, error) {
 	return "", errors.New("couldn't construct s3 path.")
 }
 
-func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	if *run.Engine == state.EKSSparkEngine {
-		return lc.emrLogsToMessageString(run, lastSeen)
+		return lc.emrLogsToMessageString(run, lastSeen, role, facility)
 	}
 
 	result, err := lc.getS3Object(run)

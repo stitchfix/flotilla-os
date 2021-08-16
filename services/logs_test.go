@@ -32,7 +32,7 @@ func TestLogService_Logs(t *testing.T) {
 		"GetRun": true,
 	}
 
-	_, _, err := ls.Logs("isQueued", nil)
+	_, _, err := ls.Logs("isQueued", nil, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -59,7 +59,7 @@ func TestLogService_Logs(t *testing.T) {
 		"GetExecutableByTypeAndID": true,
 	}
 
-	_, _, err = ls.Logs("running", nil)
+	_, _, err = ls.Logs("running", nil, nil, nil)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

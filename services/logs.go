@@ -8,7 +8,7 @@ import (
 )
 
 type LogService interface {
-	Logs(runID string, lastSeen *string) (string, *string, error)
+	Logs(runID string, lastSeen *string, role *string, facility *string) (string, *string, error)
 	LogsText(runID string, w http.ResponseWriter) error
 }
 
@@ -23,7 +23,7 @@ func NewLogService(sm state.Manager, lc logs.Client) (LogService, error) {
 }
 
 // Returns logs associated with a RunId
-func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, error) {
+func (ls *logService) Logs(runID string, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	run, err := ls.sm.GetRun(runID)
 	if err != nil {
 		return "", nil, err
@@ -44,7 +44,7 @@ func (ls *logService) Logs(runID string, lastSeen *string) (string, *string, err
 	}
 	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
 
-	return ls.lc.Logs(executable, run, lastSeen)
+	return ls.lc.Logs(executable, run, lastSeen, role, facility)
 }
 
 // Returns all the logs as text associated with a runID (supported only for s3 logs).
