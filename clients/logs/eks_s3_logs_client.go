@@ -113,6 +113,9 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	var key *string
 	lastModified := &time.Time{}
 
+	lc.logger.Println(*role)
+	lc.logger.Println(*facility)
+
 	for _, content := range result.Contents {
 		if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
 			key = content.Key
