@@ -184,6 +184,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			InitContainers: []v1.Container{{
 				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
 				Image: run.Image,
+				Env: emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
@@ -231,6 +232,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			InitContainers: []v1.Container{{
 				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
 				Image: run.Image,
+				Env: emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
