@@ -189,6 +189,8 @@ type SparkExtension struct {
 	HistoryUri           *string               `json:"history_uri,omitempty"`
 	VirtualClusterId     *string               `json:"virtual_cluster_id,omitempty"`
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
+	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`
+	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
 }
 
 type Conf struct {
