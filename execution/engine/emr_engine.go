@@ -346,8 +346,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
-
 	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
+	lifecycle := state.SpotLifecycle
+	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
+		lifecycle = "normal"
+	}
+
+	buffer.WriteString(fmt.Sprintf(" --conf spark.kubernetes.node.selector.node.kubernetes.io/lifecycle=%s", lifecycle))
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
