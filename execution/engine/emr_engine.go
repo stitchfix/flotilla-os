@@ -122,7 +122,11 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 					Properties: map[string]*string{
 						"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 						"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
-						"spark.kubernetes.container.image":          &run.Image},
+						"spark.kubernetes.container.image":          &run.Image,
+						"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+						"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+						"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
+					},
 				},
 			},
 		},
@@ -342,20 +346,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
-	run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf = append(run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf,
-		state.Conf{
-			Name:  aws.String("spark.eventLog.dir"),
-			Value: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
-		},
-		state.Conf{
-			Name:  aws.String("spark.history.fs.logDirectory"),
-			Value: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
-		},
-		state.Conf{
-			Name:  aws.String("spark.eventLog.enabled"),
-			Value: aws.String(fmt.Sprintf("true")),
-		},
-	)
 
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
