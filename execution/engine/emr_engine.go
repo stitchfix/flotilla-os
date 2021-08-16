@@ -347,6 +347,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
 
+	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
