@@ -107,6 +107,11 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
+	lifecycle := state.SpotLifecycle
+	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
+		lifecycle = "normal"
+	}
+
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -120,9 +125,10 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 				{
 					Classification: aws.String("spark-defaults"),
 					Properties: map[string]*string{
-						"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
-						"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
-						"spark.kubernetes.container.image":          &run.Image},
+						"spark.kubernetes.driver.podTemplateFile":                      emr.driverPodTemplate(executable, run, manager),
+						"spark.kubernetes.executor.podTemplateFile":                    emr.executorPodTemplate(executable, run, manager),
+						"spark.kubernetes.node.selector.node.kubernetes.io/lifecycle:": &lifecycle,
+						"spark.kubernetes.container.image":                             &run.Image},
 				},
 			},
 		},
@@ -184,7 +190,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			InitContainers: []v1.Container{{
 				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
 				Image: run.Image,
-				Env: emr.envOverrides(executable, run),
+				Env:   emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
@@ -232,7 +238,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			InitContainers: []v1.Container{{
 				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
 				Image: run.Image,
-				Env: emr.envOverrides(executable, run),
+				Env:   emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
@@ -345,6 +351,10 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf = append(run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf,
 		state.Conf{
 			Name:  aws.String("spark.eventLog.dir"),
+			Value: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+		},
+		state.Conf{
+			Name:  aws.String("spark.history.fs.logDirectory"),
 			Value: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		},
 		state.Conf{
