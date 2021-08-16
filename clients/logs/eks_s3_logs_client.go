@@ -121,11 +121,10 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	}
 
 	if key == nil {
-		lc.logger.Println(fmt.Sprintf("emr logging key not found for role=%s facility=%s", *role, *facility))
+		lc.logger.Println(fmt.Sprintf("run=%s emr logging key not found for role=%s facility=%s", run.RunID, *role, *facility))
 		return "", aws.String(""), errors.Errorf("No driver logs found")
 	}
 
-	lc.logger.Println(fmt.Sprintf("emr logging key=%s for role=%s facility=%s", *key, *role, *facility))
 	startPosition := int64(0)
 	if lastSeen != nil {
 		parsed, err := strconv.ParseInt(*lastSeen, 10, 64)
@@ -157,7 +156,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 				}
 
 			} else {
-				if counter > startPosition {
+				if counter >= startPosition {
 					b0.Write(line)
 				}
 				counter = counter + 1
