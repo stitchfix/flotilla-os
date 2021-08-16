@@ -419,7 +419,7 @@ func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) erro
 }
 
 // Logs - Logs Client
-func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	iatt.Calls = append(iatt.Calls, "Logs")
 	return "", aws.String(""), nil
 }

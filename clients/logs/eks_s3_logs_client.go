@@ -95,7 +95,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	s3DirName, err := lc.emrDriverLogsPath(run)
 	if err != nil {
 		return "", aws.String(""), errors.Errorf("No logs")
@@ -114,13 +114,14 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	lastModified := &time.Time{}
 
 	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, "-driver/stderr") && lastModified.Before(*content.LastModified) {
+		if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
 			key = content.Key
 			lastModified = content.LastModified
 		}
 	}
 
 	if key == nil {
+		lc.logger.Println(fmt.Sprintf("run=%s emr logging key not found for role=%s facility=%s", run.RunID, *role, *facility))
 		return "", aws.String(""), errors.Errorf("No driver logs found")
 	}
 
@@ -155,7 +156,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 				}
 
 			} else {
-				if counter > startPosition {
+				if counter >= startPosition {
 					b0.Write(line)
 				}
 				counter = counter + 1
@@ -169,18 +170,18 @@ func (lc *EKSS3LogsClient) emrDriverLogsPath(run state.Run) (string, error) {
 	if run.SparkExtension.SparkAppId != nil &&
 		run.SparkExtension.EMRJobId != nil &&
 		run.SparkExtension.VirtualClusterId != nil {
-		return fmt.Sprintf("%s/%s/jobs/%s/containers/%s/",
+		return fmt.Sprintf("%s/%s/jobs/%s/",
 			lc.emrS3LogsBasePath,
 			*run.SparkExtension.VirtualClusterId,
 			*run.SparkExtension.EMRJobId,
-			*run.SparkExtension.SparkAppId), nil
+		), nil
 	}
 	return "", errors.New("couldn't construct s3 path.")
 }
 
-func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	if *run.Engine == state.EKSSparkEngine {
-		return lc.emrLogsToMessageString(run, lastSeen)
+		return lc.emrLogsToMessageString(run, lastSeen, role, facility)
 	}
 
 	result, err := lc.getS3Object(run)

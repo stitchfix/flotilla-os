@@ -90,7 +90,7 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 //
 // Logs returns all logs from the log stream identified by handle since lastSeen
 //
-func (lc *EKSCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string) (string, *string, error) {
+func (lc *EKSCloudWatchLogsClient) Logs(executable state.Executable, run state.Run, lastSeen *string, role *string, facility *string) (string, *string, error) {
 	startFromHead := true
 
 	//Pod isn't there yet - dont return a 404

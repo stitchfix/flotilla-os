@@ -699,6 +699,8 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	lastSeen := ep.getURLParam(params, "last_seen", "")
 	rawText := ep.getStringBoolVal(ep.getURLParam(params, "raw_text", ""))
 	run, err := ep.executionService.Get(vars["run_id"])
+	role := ep.getURLParam(params, "role", "driver")
+	facility:= ep.getURLParam(params, "facility", "stderr")
 
 	if err != nil {
 		_ = ep.logger.Log(
@@ -717,7 +719,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	if rawText == true {
 		_ = ep.eksLogService.LogsText(vars["run_id"], w)
 	} else {
-		log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen)
+		log, newLastSeen, err := ep.eksLogService.Logs(vars["run_id"], &lastSeen, &role, &facility)
 
 		res := map[string]string{
 			"log":       "",
