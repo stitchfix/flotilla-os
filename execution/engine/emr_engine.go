@@ -107,11 +107,6 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
-	lifecycle := state.SpotLifecycle
-	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
-		lifecycle = "normal"
-	}
-
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -125,10 +120,9 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 				{
 					Classification: aws.String("spark-defaults"),
 					Properties: map[string]*string{
-						"spark.kubernetes.driver.podTemplateFile":                      emr.driverPodTemplate(executable, run, manager),
-						"spark.kubernetes.executor.podTemplateFile":                    emr.executorPodTemplate(executable, run, manager),
-						"spark.kubernetes.node.selector.node.kubernetes.io/lifecycle:": &lifecycle,
-						"spark.kubernetes.container.image":                             &run.Image},
+						"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
+						"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
+						"spark.kubernetes.container.image":          &run.Image},
 				},
 			},
 		},
