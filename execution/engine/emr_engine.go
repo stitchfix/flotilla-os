@@ -190,7 +190,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 						MountPath: "/var/lib/app",
 					},
 				},
-				Command: emr.constructCmdSlice(run),
+				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
@@ -237,7 +237,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 						MountPath: "/var/lib/app",
 					},
 				},
-				Command: emr.constructCmdSlice(run),
+				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
@@ -522,10 +522,10 @@ func (emr *EMRExecutionEngine) sanitizeEnvVar(key string) string {
 	return key
 }
 
-func (emr *EMRExecutionEngine) constructCmdSlice(run state.Run) []string {
+func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 	cmdString := ""
-	if run.Command != nil {
-		cmdString = *run.Command
+	if command != nil {
+		cmdString = *command
 	}
 	bashCmd := "bash"
 	optLogin := "-l"
