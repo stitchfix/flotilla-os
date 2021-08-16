@@ -171,11 +171,11 @@ func (lc *EKSS3LogsClient) emrDriverLogsPath(run state.Run) (string, error) {
 	if run.SparkExtension.SparkAppId != nil &&
 		run.SparkExtension.EMRJobId != nil &&
 		run.SparkExtension.VirtualClusterId != nil {
-		return fmt.Sprintf("%s/%s/jobs/%s/containers/%s/",
+		return fmt.Sprintf("%s/%s/jobs/%s/",
 			lc.emrS3LogsBasePath,
 			*run.SparkExtension.VirtualClusterId,
 			*run.SparkExtension.EMRJobId,
-			*run.SparkExtension.SparkAppId), nil
+		), nil
 	}
 	return "", errors.New("couldn't construct s3 path.")
 }
