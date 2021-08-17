@@ -106,7 +106,24 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	return run, false, nil
 }
 
+func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) map[string]*string {
+	conf := map[string]*string{
+		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
+		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
+		"spark.kubernetes.container.image":          &run.Image,
+		"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
+		"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
+	}
+
+	for _, k := range run.SparkExtension.ApplicationConf {
+		conf[*k.Name] = k.Value
+	}
+	return conf
+}
+
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
+
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -119,14 +136,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			ApplicationConfiguration: []*emrcontainers.Configuration{
 				{
 					Classification: aws.String("spark-defaults"),
-					Properties: map[string]*string{
-						"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
-						"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
-						"spark.kubernetes.container.image":          &run.Image,
-						"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
-						"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
-						"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
-					},
+					Properties:     emr.generateApplicationConf(executable, run, manager),
 				},
 			},
 		},
