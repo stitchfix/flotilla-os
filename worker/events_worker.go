@@ -44,7 +44,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.log = log
 	ew.eksEngine = eksEngine
 	ew.emrEngine = emrEngine
-	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eksEngine.events_queue"), false)
+	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
 	if conf.IsSet("emr.max_attempt_count") {
@@ -59,11 +59,11 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	}
 	ew.queue = eventsQueue
 	ew.emrJobStatusQueue = emrJobStatusQueue
-	_ = ew.qm.Initialize(ew.conf, "eksEngine")
+	_ = ew.qm.Initialize(ew.conf, "eks")
 
-	clusterName := conf.GetStringSlice("eksEngine.cluster_override")[0]
+	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
 
-	filename := fmt.Sprintf("%s/%s", conf.GetString("eksEngine.kubeconfig_basepath"), clusterName)
+	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 	if err != nil {
 		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
