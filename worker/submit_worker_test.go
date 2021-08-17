@@ -36,9 +36,9 @@ func setUpSubmitWorkerTest1(t *testing.T) (*submitWorker, *testutils.ImplementsA
 		Queued: []string{"run:cupcake"},
 	}
 	return &submitWorker{
-		sm:  &imp,
-		ee:  &imp,
-		log: logger,
+		sm:        &imp,
+		eksEngine: &imp,
+		log:       logger,
 	}, &imp
 }
 
@@ -68,9 +68,9 @@ func setUpSubmitWorkerTest2(t *testing.T) (*submitWorker, *testutils.ImplementsA
 		Queued: []string{"run:shoebox"},
 	}
 	return &submitWorker{
-		sm:  &imp,
-		ee:  &imp,
-		log: logger,
+		sm:        &imp,
+		eksEngine: &imp,
+		log:       logger,
 	}, &imp
 }
 
@@ -88,9 +88,9 @@ func setUpSubmitWorkerTest3(t *testing.T) (*submitWorker, *testutils.ImplementsA
 		Queued: []string{"run:nope"},
 	}
 	return &submitWorker{
-		sm:  &imp,
-		ee:  &imp,
-		log: logger,
+		sm:        &imp,
+		eksEngine: &imp,
+		log:       logger,
 	}, &imp
 }
 

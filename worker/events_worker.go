@@ -28,22 +28,30 @@ type eventsWorker struct {
 	t                 tomb.Tomb
 	queue             string
 	emrJobStatusQueue string
-	engine            *string
 	s3Client          *s3.S3
 	kClient           kubernetes.Clientset
 	emrHistoryServer  string
+	emrMaxPodEvents   int
+	eksEngine         engine.Engine
+	emrEngine         engine.Engine
 }
 
-func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	ew.pollInterval = pollInterval
 	ew.conf = conf
 	ew.sm = sm
 	ew.qm = qm
 	ew.log = log
-	ew.engine = engine
-	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
+	ew.eksEngine = eksEngine
+	ew.emrEngine = emrEngine
+	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eksEngine.events_queue"), false)
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
+	if conf.IsSet("emr.max_attempt_count") {
+		ew.emrMaxPodEvents = conf.GetInt("emr.max_pod_events")
+	} else {
+		ew.emrMaxPodEvents = 2000
+	}
 
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
@@ -51,14 +59,14 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	}
 	ew.queue = eventsQueue
 	ew.emrJobStatusQueue = emrJobStatusQueue
-	_ = ew.qm.Initialize(ew.conf, "eks")
+	_ = ew.qm.Initialize(ew.conf, "eksEngine")
 
-	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
+	clusterName := conf.GetStringSlice("eksEngine.cluster_override")[0]
 
-	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
+	filename := fmt.Sprintf("%s/%s", conf.GetString("eksEngine.kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 	if err != nil {
-		_ = ew.log.Log("message", "error initializing-eks-clusters", "error", fmt.Sprintf("%+v", err))
+		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
 		return err
 	}
 	kClient, err := kubernetes.NewForConfig(clientConf)
@@ -202,6 +210,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 				}
+
+				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
+					_ = ew.emrEngine.Terminate(run)
+				}
+
 			}
 		}
 		_ = kubernetesEvent.Done()

@@ -17,7 +17,7 @@ import (
 // Worker defines a background worker process
 //
 type Worker interface {
-	Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error
+	Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error
 	Run() error
 	GetTomb() *tomb.Tomb
 }
@@ -25,28 +25,28 @@ type Worker interface {
 //
 // NewWorker instantiates a new worker.
 //
-func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ee engine.Engine, sm state.Manager, engine *string, qm queue.Manager) (Worker, error) {
+func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, eksEngine engine.Engine, emrEngine engine.Engine, sm state.Manager, qm queue.Manager) (Worker, error) {
 	var worker Worker
 
 	switch workerType {
 	case "submit":
-		worker = &submitWorker{engine: engine}
+		worker = &submitWorker{}
 	case "retry":
-		worker = &retryWorker{engine: engine}
+		worker = &retryWorker{}
 	case "status":
-		worker = &statusWorker{engine: engine}
+		worker = &statusWorker{}
 	case "worker_manager":
-		worker = &workerManager{engine: engine}
+		worker = &workerManager{}
 	case "cloudtrail":
-		worker = &cloudtrailWorker{engine: engine}
+		worker = &cloudtrailWorker{}
 	case "events":
-		worker = &eventsWorker{engine: engine}
+		worker = &eventsWorker{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	if err = worker.Initialize(conf, sm, ee, log, pollInterval, engine, qm); err != nil {
+	if err = worker.Initialize(conf, sm, eksEngine, emrEngine, log, pollInterval, qm); err != nil {
 		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
 	}
 	return worker, nil

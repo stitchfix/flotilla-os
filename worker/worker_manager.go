@@ -15,7 +15,8 @@ import (
 
 type workerManager struct {
 	sm           state.Manager
-	ee           engine.Engine
+	eksEngine    engine.Engine
+	emrEngine    engine.Engine
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
@@ -25,16 +26,17 @@ type workerManager struct {
 	qm           queue.Manager
 }
 
-func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	wm.conf = conf
 	wm.log = log
-	wm.ee = ee
+	wm.eksEngine = eksEngine
+	wm.emrEngine = emrEngine
 	wm.sm = sm
 	wm.qm = qm
 	wm.pollInterval = pollInterval
-	wm.engine = engine
+
 	if err := wm.InitializeWorkers(); err != nil {
-		return errors.Errorf("WorkerManager unable to initialize workers. engine %s", *wm.engine)
+		return errors.Errorf("WorkerManager unable to initialize workers. engine")
 	}
 
 	return nil
@@ -63,7 +65,7 @@ func (wm *workerManager) InitializeWorkers() error {
 		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
-			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine, wm.qm)
+			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm)
 
 			if err != nil {
 				return err
@@ -155,7 +157,7 @@ func (wm *workerManager) removeWorker(workerType string) error {
 }
 
 func (wm *workerManager) addWorker(workerType string) error {
-	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.ee, wm.sm, wm.engine, wm.qm)
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm)
 
 	if err != nil {
 		return err

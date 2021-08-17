@@ -33,13 +33,12 @@ type statusWorker struct {
 	exceptionExtractorUrl    string
 }
 
-func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
-	sw.ee = ee
+	sw.ee = eksEngine
 	sw.log = log
-	sw.engine = engine
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 
 	if sw.conf.IsSet("eks.exception_extractor_url") {
@@ -49,7 +48,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 		sw.exceptionExtractorUrl = sw.conf.GetString("eks.exception_extractor_url")
 	}
 	sw.setupRedisClient(conf)
-	_ = sw.log.Log("message", "initialized a status worker", "engine", *engine)
+	_ = sw.log.Log("message", "initialized a status worker")
 	return nil
 }
 
@@ -184,7 +183,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 
 			if updatedRun.Status == state.StatusStopped {
 				//TODO - move to a separate worker.
-				//_ = sw.ee.Terminate(run)
+				//_ = sw.eksEngine.Terminate(run)
 			}
 		} else {
 			if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
