@@ -213,8 +213,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					}
 
 					from := time.Now().UnixNano()
-					if run.QueuedAt != nil {
-						from = run.QueuedAt.UnixNano()
+					if run.StartedAt != nil {
+						from = run.StartedAt.UnixNano()
 					}
 
 					metricsUri :=
