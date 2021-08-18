@@ -40,7 +40,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.ee = eksEngine
 	sw.log = log
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
-
+	sw.engine = &state.EKSEngine
 	if sw.conf.IsSet("eks.exception_extractor_url") {
 		sw.exceptionExtractorClient = &http.Client{
 			Timeout: time.Second * 5,
