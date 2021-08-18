@@ -119,7 +119,12 @@ func (sw *submitWorker) runOnce() {
 				}
 
 				// Execute the run using the execution engine.
-				launched, retryable, err = sw.eksEngine.Execute(d, run, sw.sm)
+				if run.Engine == nil || *run.Engine == state.EKSEngine {
+					launched, retryable, err = sw.eksEngine.Execute(d, run, sw.sm)
+				} else {
+					launched, retryable, err = sw.emrEngine.Execute(d, run, sw.sm)
+				}
+
 				break
 			case state.ExecutableTypeTemplate:
 				var tpl state.Template
