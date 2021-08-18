@@ -61,6 +61,8 @@ func (sw *submitWorker) runOnce() {
 	var err error
 
 	receipts, err = sw.eksEngine.PollRuns()
+	receiptsEMR, err := sw.emrEngine.PollRuns()
+	receipts = append(receipts, receiptsEMR...)
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
