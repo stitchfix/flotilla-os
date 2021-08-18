@@ -19,20 +19,15 @@ type retryWorker struct {
 	log          flotillaLog.Logger
 	pollInterval time.Duration
 	t            tomb.Tomb
-	engine       *string
 }
 
-func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	rw.pollInterval = pollInterval
 	rw.conf = conf
 	rw.sm = sm
-	rw.ee = ee
+	rw.ee = eksEngine
 	rw.log = log
-	rw.engine = engine
-	rw.log.Log("message", "initialized a retry worker", "engine", *engine)
-
-	rw.engine = engine
-
+	rw.log.Log("message", "initialized a retry worker")
 	return nil
 }
 
@@ -58,14 +53,7 @@ func (rw *retryWorker) Run() error {
 
 func (rw *retryWorker) runOnce() {
 	// List runs in the StatusNeedsRetry state and requeue them
-	var engines []string
-	if rw.engine != nil {
-		engines = []string{*rw.engine}
-	} else {
-		engines = nil
-	}
-
-	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, engines)
+	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil,  []string{state.EKSEngine})
 
 	if runList.Total > 0 {
 		rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))

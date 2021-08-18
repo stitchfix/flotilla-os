@@ -187,6 +187,7 @@ type SparkExtension struct {
 	SparkAppId           *string               `json:"spark_app_id,omitempty"`
 	EMRJobManifest       *string               `json:"emr_job_manifest,omitempty"`
 	HistoryUri           *string               `json:"history_uri,omitempty"`
+	MetricsUri           *string               `json:"metrics_uri,omitempty"`
 	VirtualClusterId     *string               `json:"virtual_cluster_id,omitempty"`
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`

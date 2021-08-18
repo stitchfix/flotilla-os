@@ -28,13 +28,12 @@ type cloudtrailWorker struct {
 	s3Client     *s3.S3
 }
 
-func (ctw *cloudtrailWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (ctw *cloudtrailWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	ctw.pollInterval = pollInterval
 	ctw.conf = conf
 	ctw.sm = sm
 	ctw.qm = qm
 	ctw.log = log
-	ctw.engine = engine
 	ctw.queue = conf.GetString("cloudtrail_queue")
 	_ = ctw.qm.Initialize(ctw.conf, "eks")
 

@@ -28,22 +28,32 @@ type eventsWorker struct {
 	t                 tomb.Tomb
 	queue             string
 	emrJobStatusQueue string
-	engine            *string
 	s3Client          *s3.S3
 	kClient           kubernetes.Clientset
 	emrHistoryServer  string
+	emrMetricsServer  string
+	emrMaxPodEvents   int
+	eksEngine         engine.Engine
+	emrEngine         engine.Engine
 }
 
-func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	ew.pollInterval = pollInterval
 	ew.conf = conf
 	ew.sm = sm
 	ew.qm = qm
 	ew.log = log
-	ew.engine = engine
+	ew.eksEngine = eksEngine
+	ew.emrEngine = emrEngine
 	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
+	ew.emrMetricsServer = conf.GetString("emr.metrics_server_uri")
+	if conf.IsSet("emr.max_attempt_count") {
+		ew.emrMaxPodEvents = conf.GetInt("emr.max_pod_events")
+	} else {
+		ew.emrMaxPodEvents = 2000
+	}
 
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
@@ -58,7 +68,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, ee engi
 	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 	if err != nil {
-		_ = ew.log.Log("message", "error initializing-eks-clusters", "error", fmt.Sprintf("%+v", err))
+		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
 		return err
 	}
 	kClient, err := kubernetes.NewForConfig(clientConf)
@@ -196,12 +206,38 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
+
+					to := time.Now().UnixNano()
+					if run.FinishedAt != nil {
+						to = run.FinishedAt.UnixNano()
+					}
+
+					from := time.Now().UnixNano()
+					if run.QueuedAt != nil {
+						from = run.QueuedAt.UnixNano()
+					}
+
+					metricsUri :=
+						fmt.Sprintf("%svar-run_id=%s&from=%d&to=%d&var-driver_id=%s",
+							ew.emrMetricsServer,
+							run.RunID,
+							from/1000000,
+							to/1000000,
+							*run.SparkExtension.EMRJobId,
+						)
+
+					run.SparkExtension.MetricsUri = &metricsUri
 				}
 
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 				}
+
+				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
+					_ = ew.emrEngine.Terminate(run)
+				}
+
 			}
 		}
 		_ = kubernetesEvent.Done()

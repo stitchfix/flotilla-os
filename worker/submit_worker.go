@@ -14,24 +14,24 @@ import (
 
 type submitWorker struct {
 	sm           state.Manager
-	ee           engine.Engine
+	eksEngine    engine.Engine
+	emrEngine    engine.Engine
 	conf         config.Config
 	log          flotillaLog.Logger
 	pollInterval time.Duration
 	t            tomb.Tomb
-	engine       *string
 	redisClient  *redis.Client
 }
 
-func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, ee engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, engine *string, qm queue.Manager) error {
+func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
-	sw.ee = ee
+	sw.eksEngine = eksEngine
+	sw.emrEngine = emrEngine
 	sw.log = log
-	sw.engine = engine
 	sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
-	_ = sw.log.Log("message", "initialized a submit worker", "engine", *engine)
+	_ = sw.log.Log("message", "initialized a submit worker")
 	return nil
 }
 
@@ -60,7 +60,7 @@ func (sw *submitWorker) runOnce() {
 	var run state.Run
 	var err error
 
-	receipts, err = sw.ee.PollRuns()
+	receipts, err = sw.eksEngine.PollRuns()
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
@@ -119,7 +119,7 @@ func (sw *submitWorker) runOnce() {
 				}
 
 				// Execute the run using the execution engine.
-				launched, retryable, err = sw.ee.Execute(d, run, sw.sm)
+				launched, retryable, err = sw.eksEngine.Execute(d, run, sw.sm)
 				break
 			case state.ExecutableTypeTemplate:
 				var tpl state.Template
@@ -135,7 +135,7 @@ func (sw *submitWorker) runOnce() {
 
 				// Execute the run using the execution engine.
 				sw.log.Log("message", "Submitting", "run_id", run.RunID)
-				launched, retryable, err = sw.ee.Execute(tpl, run, sw.sm)
+				launched, retryable, err = sw.eksEngine.Execute(tpl, run, sw.sm)
 				break
 			default:
 				// If executable type is invalid; log message and continue processing

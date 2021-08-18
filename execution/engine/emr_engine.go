@@ -106,8 +106,8 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	return run, false, nil
 }
 
-func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) map[string]*string {
-	conf := map[string]*string{
+func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
+	properties := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
 		"spark.kubernetes.container.image":          &run.Image,
@@ -117,9 +117,14 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	}
 
 	for _, k := range run.SparkExtension.ApplicationConf {
-		conf[*k.Name] = k.Value
+		properties[*k.Name] = k.Value
 	}
-	return conf
+	return []*emrcontainers.Configuration{
+		{
+			Classification: aws.String("spark-defaults"),
+			Properties:     properties,
+		},
+	}
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
@@ -133,12 +138,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 					LogUri: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3LogsBasePath)),
 				},
 			},
-			ApplicationConfiguration: []*emrcontainers.Configuration{
-				{
-					Classification: aws.String("spark-defaults"),
-					Properties:     emr.generateApplicationConf(executable, run, manager),
-				},
-			},
+			ApplicationConfiguration: emr.generateApplicationConf(executable, run, manager),
 		},
 		ExecutionRoleArn: &emr.emrJobRoleArn,
 		JobDriver: &emrcontainers.JobDriver{
