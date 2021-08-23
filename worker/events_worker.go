@@ -207,9 +207,9 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 
-					to := time.Now().Add(time.Minute * 1).UnixNano()
+					to := "now"
 					if run.FinishedAt != nil {
-						to = run.FinishedAt.Add(time.Minute * 1).UnixNano()
+						to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute * 1).UnixNano()/1000000)
 					}
 
 					from := time.Now().Add(-1 * time.Minute * 1).UnixNano()
@@ -218,11 +218,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					}
 
 					metricsUri :=
-						fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%d",
+						fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%s",
 							ew.emrMetricsServer,
 							*run.SparkExtension.SparkAppId,
 							from/1000000,
-							to/1000000,
+							to,
 						)
 
 					run.SparkExtension.MetricsUri = &metricsUri
