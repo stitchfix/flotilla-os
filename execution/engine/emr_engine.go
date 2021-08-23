@@ -174,6 +174,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+				"prometheus.io/scrape": "true",
 				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
@@ -222,6 +223,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+				"prometheus.io/scrape": "true",
 				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
