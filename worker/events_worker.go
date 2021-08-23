@@ -218,12 +218,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					}
 
 					metricsUri :=
-						fmt.Sprintf("%svar-run_id=%s&from=%d&to=%d&var-driver_id=%s",
+						fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%d",
 							ew.emrMetricsServer,
-							run.RunID,
+							*run.SparkExtension.SparkAppId,
 							from/1000000,
 							to/1000000,
-							*run.SparkExtension.EMRJobId,
 						)
 
 					run.SparkExtension.MetricsUri = &metricsUri
