@@ -234,7 +234,7 @@ func (ew *eventsWorker) setMetricsUri(run *state.Run) {
 			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
 		}
 
-		from := time.Now().Add(-1 * time.Minute * 1).UnixNano()
+		from := time.Now().Add(-1*time.Minute*1).UnixNano() / 1000000
 		if run.StartedAt != nil {
 			from = run.StartedAt.Add(-1*time.Minute*1).UnixNano() / 1000000
 		}
