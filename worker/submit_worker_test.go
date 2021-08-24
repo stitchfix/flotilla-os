@@ -38,6 +38,7 @@ func setUpSubmitWorkerTest1(t *testing.T) (*submitWorker, *testutils.ImplementsA
 	return &submitWorker{
 		sm:        &imp,
 		eksEngine: &imp,
+		emrEngine: &imp,
 		log:       logger,
 	}, &imp
 }
@@ -70,6 +71,7 @@ func setUpSubmitWorkerTest2(t *testing.T) (*submitWorker, *testutils.ImplementsA
 	return &submitWorker{
 		sm:        &imp,
 		eksEngine: &imp,
+		emrEngine: &imp,
 		log:       logger,
 	}, &imp
 }
@@ -90,6 +92,7 @@ func setUpSubmitWorkerTest3(t *testing.T) (*submitWorker, *testutils.ImplementsA
 	return &submitWorker{
 		sm:        &imp,
 		eksEngine: &imp,
+		emrEngine: &imp,
 		log:       logger,
 	}, &imp
 }
@@ -111,7 +114,7 @@ func TestSubmitWorker_Run(t *testing.T) {
 	worker, imp := setUpSubmitWorkerTest1(t)
 	worker.runOnce()
 
-	expected := []string{"PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
+	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -129,7 +132,7 @@ func TestSubmitWorker_Run2(t *testing.T) {
 	worker.runOnce()
 
 	// Importantly, execute is NOT called and it -is- acked
-	expected := []string{"PollRuns", "GetRun", "RunReceipt.Done"}
+	expected := []string{"PollRuns", "PollRuns", "GetRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -148,7 +151,7 @@ func TestSubmitWorker_Run3(t *testing.T) {
 	worker.runOnce()
 
 	// Importantly, execute is NOT called and it -is- acked
-	expected := []string{"PollRuns", "GetRun", "RunReceipt.Done"}
+	expected := []string{"PollRuns", "PollRuns", "GetRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -170,7 +173,7 @@ func TestSubmitWorker_Run4(t *testing.T) {
 	worker.runOnce()
 
 	// Importantly, execute is called and it -is- acked
-	expected := []string{"PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
+	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
@@ -198,7 +201,7 @@ func TestSubmitWorker_Run5(t *testing.T) {
 	worker.runOnce()
 
 	// Importantly, execute it called but it is not updated nor is it acked
-	expected := []string{"PollRuns", "GetRun", "GetDefinition", "Execute"}
+	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute"}
 	if len(imp.Calls) != len(expected) {
 		t.Errorf("Unexpected number of run calls, expected %v but was %v", len(expected), len(imp.Calls))
 	}
