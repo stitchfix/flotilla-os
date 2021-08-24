@@ -144,6 +144,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.Status = state.StatusPending
 		}
 
+		ew.setMetricsUri(&run)
 		_, err = ew.sm.UpdateRun(run.RunID, run)
 		if err == nil {
 			_ = emrEvent.Done()
@@ -207,26 +208,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 
-					to := "now"
-					if run.FinishedAt != nil {
-						to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute * 1).UnixNano()/1000000)
-					}
-
-					from := time.Now().Add(-1 * time.Minute * 1).UnixNano()
-					if run.StartedAt != nil {
-						from = run.StartedAt.Add(-1 * time.Minute * 1).UnixNano()
-					}
-
-					metricsUri :=
-						fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%s",
-							ew.emrMetricsServer,
-							*run.SparkExtension.SparkAppId,
-							from/1000000,
-							to,
-						)
-
-					run.SparkExtension.MetricsUri = &metricsUri
 				}
+				ew.setMetricsUri(&run)
 
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
@@ -242,6 +225,32 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		_ = kubernetesEvent.Done()
 	}
 }
+
+func (ew *eventsWorker) setMetricsUri(run *state.Run) {
+	if run != nil && run.SparkExtension != nil && run.SparkExtension.SparkAppId != nil {
+		to := "now"
+
+		if run.FinishedAt != nil {
+			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
+		}
+
+		from := time.Now().Add(-1 * time.Minute * 1).UnixNano()
+		if run.StartedAt != nil {
+			from = run.StartedAt.Add(-1*time.Minute*1).UnixNano() / 1000000
+		}
+
+		metricsUri :=
+			fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%s",
+				ew.emrMetricsServer,
+				*run.SparkExtension.SparkAppId,
+				from,
+				to,
+			)
+
+		run.SparkExtension.MetricsUri = &metricsUri
+	}
+}
+
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	if !strings.HasPrefix(runId, "eks") {
