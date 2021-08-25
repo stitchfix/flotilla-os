@@ -606,6 +606,10 @@ func (d *Run) UpdateWith(other Run) {
 		d.CpuLimit = other.CpuLimit
 	}
 
+	if other.MetricsUri != nil {
+		d.MetricsUri = other.MetricsUri
+	}
+
 	if other.MemoryLimit != nil {
 		d.MemoryLimit = other.MemoryLimit
 	}
