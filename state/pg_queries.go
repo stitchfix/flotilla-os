@@ -154,7 +154,8 @@ select t.run_id                          as runid,
        spawned_runs::TEXT                as spawnedruns,
        run_exceptions::TEXT              as runexceptions,
        active_deadline_seconds           as activedeadlineseconds,
-       spark_extension::TEXT             as sparkextension
+       spark_extension::TEXT             as sparkextension,
+       metrics_uri                       as metricsuri
 from task t
 `
 
