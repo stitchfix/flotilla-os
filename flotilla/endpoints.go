@@ -682,13 +682,12 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var podEventList state.PodEventList
-	if *run.Engine == state.EKSEngine {
-		if run.PodEvents != nil {
-			podEventList.Total = len(*run.PodEvents)
-			podEventList.PodEvents = *run.PodEvents
-		}
-		ep.encodeResponse(w, podEventList)
+	if run.PodEvents != nil {
+		podEventList.Total = len(*run.PodEvents)
+		podEventList.PodEvents = *run.PodEvents
 	}
+	ep.encodeResponse(w, podEventList)
+
 }
 
 // Get logs for a run.
@@ -700,7 +699,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 	rawText := ep.getStringBoolVal(ep.getURLParam(params, "raw_text", ""))
 	run, err := ep.executionService.Get(vars["run_id"])
 	role := ep.getURLParam(params, "role", "driver")
-	facility:= ep.getURLParam(params, "facility", "stderr")
+	facility := ep.getURLParam(params, "facility", "stderr")
 
 	if err != nil {
 		_ = ep.logger.Log(

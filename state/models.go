@@ -465,6 +465,7 @@ type Run struct {
 	RunExceptions           *RunExceptions           `json:"run_exceptions,omitempty"`
 	ActiveDeadlineSeconds   *int64                   `json:"active_deadline_seconds,omitempty"`
 	SparkExtension          *SparkExtension          `json:"spark_extension,omitempty"`
+	MetricsUri              *string                  `json:"metrics_uri,omitempty"`
 }
 
 //

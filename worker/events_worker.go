@@ -32,6 +32,7 @@ type eventsWorker struct {
 	kClient           kubernetes.Clientset
 	emrHistoryServer  string
 	emrMetricsServer  string
+	eksMetricsServer  string
 	emrMaxPodEvents   int
 	eksEngine         engine.Engine
 	emrEngine         engine.Engine
@@ -49,6 +50,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
 	ew.emrMetricsServer = conf.GetString("emr.metrics_server_uri")
+	ew.eksMetricsServer = conf.GetString("eks.metrics_server_uri")
 	if conf.IsSet("emr.max_attempt_count") {
 		ew.emrMaxPodEvents = conf.GetInt("emr.max_pod_events")
 	} else {
@@ -144,7 +146,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.Status = state.StatusPending
 		}
 
-		ew.setMetricsUri(&run)
+		ew.setEMRMetricsUri(&run)
 		_, err = ew.sm.UpdateRun(run.RunID, run)
 		if err == nil {
 			_ = emrEvent.Done()
@@ -209,7 +211,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 
 				}
-				ew.setMetricsUri(&run)
+				ew.setEMRMetricsUri(&run)
 
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
@@ -226,7 +228,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 	}
 }
 
-func (ew *eventsWorker) setMetricsUri(run *state.Run) {
+func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 	if run != nil && run.SparkExtension != nil && run.SparkExtension.SparkAppId != nil {
 		to := "now"
 
@@ -247,7 +249,32 @@ func (ew *eventsWorker) setMetricsUri(run *state.Run) {
 				to,
 			)
 
-		run.SparkExtension.MetricsUri = &metricsUri
+		run.MetricsUri = &metricsUri
+	}
+}
+
+func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
+	if run != nil {
+		to := "now"
+
+		if run.FinishedAt != nil {
+			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
+		}
+
+		from := time.Now().Add(-1*time.Minute*1).UnixNano() / 1000000
+		if run.StartedAt != nil {
+			from = run.StartedAt.Add(-1*time.Minute*1).UnixNano() / 1000000
+		}
+
+		metricsUri :=
+			fmt.Sprintf("%svar-run_id=%s&from=%d&to=%s",
+				ew.eksMetricsServer,
+				run.RunID,
+				from,
+				to,
+			)
+
+		run.MetricsUri = &metricsUri
 	}
 }
 
@@ -305,6 +332,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 			run.StartedAt = run.QueuedAt
 			run.FinishedAt = &timestamp
 		}
+		ew.setEKSMetricsUri(&run)
 		run, err = ew.sm.UpdateRun(runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
