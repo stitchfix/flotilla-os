@@ -670,7 +670,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	}
 
 	var executors []string
-	for _, podEvent := range *r.PodEvents {
+	for _, podEvent := range *podEvents {
 		if strings.Contains(podEvent.SourceObject, "-exec-") {
 			executors = append(executors, podEvent.SourceObject)
 		}
