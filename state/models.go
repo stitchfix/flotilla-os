@@ -192,6 +192,7 @@ type SparkExtension struct {
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`
 	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
+	Executors            []string              `json:"executors,omitempty"`
 }
 
 type Conf struct {
@@ -645,6 +646,18 @@ func (d *Run) UpdateWith(other Run) {
 	}
 }
 
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	var list []string
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
 func (r Run) MarshalJSON() ([]byte, error) {
 	type Alias Run
 	instance := map[string]string{
@@ -654,6 +667,18 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	podEvents := r.PodEvents
 	if podEvents == nil {
 		podEvents = &PodEvents{}
+	}
+
+	var executors []string
+	for _, podEvent := range *r.PodEvents {
+		if strings.Contains(podEvent.SourceObject, "-exec-") {
+			executors = append(executors, podEvent.SourceObject)
+		}
+	}
+
+	if executors != nil && len(executors) > 0 && *r.Engine != EKSEngine {
+		executors = removeDuplicateStr(executors)
+		r.SparkExtension.Executors = executors
 	}
 
 	cloudTrailNotifications := r.CloudTrailNotifications
