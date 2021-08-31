@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -659,6 +661,27 @@ func removeDuplicateStr(strSlice []string) []string {
 	return list
 }
 
+type byExecutorName []string
+
+func (s byExecutorName) Len() int {
+	return len(s)
+}
+func (s byExecutorName) Key(i int) int {
+	r, _ := regexp.Compile("-exec-(\\d+)")
+	key, err := strconv.Atoi(r.FindString(s[i]))
+	if err != nil {
+		return 0
+	}
+	return key
+}
+func (s byExecutorName) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s byExecutorName) Less(i, j int) bool {
+	return s.Key(i) < s.Key(j)
+}
+
 func (r Run) MarshalJSON() ([]byte, error) {
 	type Alias Run
 	instance := map[string]string{
@@ -679,7 +702,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 
 	if executors != nil && len(executors) > 0 && *r.Engine != EKSEngine {
 		executors = removeDuplicateStr(executors)
-		sort.Strings(executors)
+		sort.Sort(byExecutorName(executors))
 		r.SparkExtension.Executors = executors
 	}
 
