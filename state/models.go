@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -678,6 +679,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 
 	if executors != nil && len(executors) > 0 && *r.Engine != EKSEngine {
 		executors = removeDuplicateStr(executors)
+		sort.Strings(executors)
 		r.SparkExtension.Executors = executors
 	}
 
