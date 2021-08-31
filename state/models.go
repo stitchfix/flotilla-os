@@ -668,7 +668,11 @@ func (s byExecutorName) Len() int {
 }
 func (s byExecutorName) Key(i int) int {
 	r, _ := regexp.Compile("-exec-(\\d+)")
-	key, err := strconv.Atoi(r.FindString(s[i]))
+	matches := r.FindStringSubmatch(s[i])
+	if matches == nil || len(matches) < 2 {
+		return 0
+	}
+	key, err := strconv.Atoi(matches[1])
 	if err != nil {
 		return 0
 	}
