@@ -255,10 +255,10 @@ func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 
 func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 	if run != nil {
-		to := "now"
+		to := time.Now().Add(1*time.Minute*1).UnixNano() / 1000000
 
 		if run.FinishedAt != nil {
-			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
+			to = run.FinishedAt.Add(time.Minute*1).UnixNano() / 1000000
 		}
 
 		from := time.Now().Add(-1*time.Minute*1).UnixNano() / 1000000
@@ -267,7 +267,7 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 		}
 
 		metricsUri :=
-			fmt.Sprintf("%svar-run_id=%s&from=%d&to=%s",
+			fmt.Sprintf("%svar-run_id=%s&from=%d&to=%d",
 				ew.eksMetricsServer,
 				run.RunID,
 				from,
