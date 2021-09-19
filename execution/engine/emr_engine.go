@@ -370,7 +370,7 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	}
 
 	if run.SparkExtension.SparkSubmitJobDriver.Class != nil {
-		buffer.WriteString(fmt.Sprintf(" --class %s", run.SparkExtension.SparkSubmitJobDriver.Class))
+		buffer.WriteString(fmt.Sprintf(" --class %s", *run.SparkExtension.SparkSubmitJobDriver.Class))
 	}
 
 	if len(run.SparkExtension.SparkSubmitJobDriver.Files) > 0 {
