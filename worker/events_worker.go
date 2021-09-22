@@ -54,7 +54,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	if conf.IsSet("emr.max_attempt_count") {
 		ew.emrMaxPodEvents = conf.GetInt("emr.max_pod_events")
 	} else {
-		ew.emrMaxPodEvents = 2000
+		ew.emrMaxPodEvents = 20000
 	}
 
 	if err != nil {
