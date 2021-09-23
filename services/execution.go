@@ -439,22 +439,19 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 			} else {
 				err = es.eksExecutionEngine.Terminate(run)
 			}
-			if err == nil || run.Status == state.StatusQueued {
-				exitReason := "Task terminated by user"
-				if len(userInfo.Email) > 0 {
-					exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
-				}
-
-				exitCode := int64(1)
-				finishedAt := time.Now()
-				_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
-					Status:     state.StatusStopped,
-					ExitReason: &exitReason,
-					ExitCode:   &exitCode,
-					FinishedAt: &finishedAt,
-				})
-				break
+			exitReason := "Task terminated by user"
+			if len(userInfo.Email) > 0 {
+				exitReason = fmt.Sprintf("Task terminated by - %s", userInfo.Email)
 			}
+
+			exitCode := int64(1)
+			finishedAt := time.Now()
+			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
+				Status:     state.StatusStopped,
+				ExitReason: &exitReason,
+				ExitCode:   &exitCode,
+				FinishedAt: &finishedAt,
+			})
 			break
 		}
 		break
