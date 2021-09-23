@@ -112,7 +112,7 @@ func (sw *statusWorker) processEMRRuns(runs []state.Run) {
 					finishedAt := time.Now()
 					_, err = sw.sm.UpdateRun(run.RunID, state.Run{
 						Status:     state.StatusStopped,
-						ExitReason: aws.String(fmt.Sprintf("Job exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
+						ExitReason: aws.String(fmt.Sprintf("JobRun exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
 						ExitCode:   &exitCode,
 						FinishedAt: &finishedAt,
 					})
