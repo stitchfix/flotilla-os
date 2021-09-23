@@ -328,14 +328,12 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 		}
 
 		if kubernetesEvent.Reason == "Completed" {
-			events = state.PodEvents{}
 			run.ExitReason = &kubernetesEvent.Message
 			exitCode := int64(0)
 			run.ExitCode = &exitCode
 			run.Status = state.StatusStopped
 			run.StartedAt = run.QueuedAt
 			run.FinishedAt = &timestamp
-			run.PodEvents = &events
 		}
 		ew.setEKSMetricsUri(&run)
 		run, err = ew.sm.UpdateRun(runId, run)
