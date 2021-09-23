@@ -3,6 +3,7 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
@@ -31,6 +32,7 @@ type statusWorker struct {
 	workerId                 string
 	exceptionExtractorClient *http.Client
 	exceptionExtractorUrl    string
+	emrEngine                engine.Engine
 }
 
 func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
@@ -41,6 +43,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.log = log
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 	sw.engine = &state.EKSEngine
+	sw.emrEngine = emrEngine
 	if sw.conf.IsSet("eks.exception_extractor_url") {
 		sw.exceptionExtractorClient = &http.Client{
 			Timeout: time.Second * 5,
@@ -74,7 +77,46 @@ func (sw *statusWorker) Run() error {
 		default:
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
+				sw.runOnceEMR()
 				time.Sleep(sw.pollInterval)
+			}
+		}
+	}
+}
+
+func (sw *statusWorker) runOnceEMR() {
+	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
+		"queued_at_since": {
+			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+		},
+		"task_type": {state.DefaultTaskType},
+		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
+	}, nil, []string{state.EKSSparkEngine})
+
+	if err != nil {
+		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		return
+	}
+	runs := rl.Runs
+	sw.processEMRRuns(runs)
+}
+
+func (sw *statusWorker) processEMRRuns(runs []state.Run) {
+	for _, run := range runs {
+		if run.QueuedAt != nil && run.ActiveDeadlineSeconds != nil {
+			runningDuration := time.Now().Sub(*run.QueuedAt)
+			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
+				err := sw.emrEngine.Terminate(run)
+				if err == nil {
+					exitCode := int64(1)
+					finishedAt := time.Now()
+					_, err = sw.sm.UpdateRun(run.RunID, state.Run{
+						Status:     state.StatusStopped,
+						ExitReason: aws.String(fmt.Sprintf("Job exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
+						ExitCode:   &exitCode,
+						FinishedAt: &finishedAt,
+					})
+				}
 			}
 		}
 	}
