@@ -150,7 +150,6 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
 		VirtualClusterId: &emr.emrVirtualCluster,
-		Tags:             emr.generateTags(run),
 	}
 	return startJobRunInput
 }
