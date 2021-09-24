@@ -546,6 +546,6 @@ func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 	}
 	bashCmd := "bash"
 	optLogin := "-l"
-	optStr := "-cex"
+	optStr := "-ce"
 	return []string{bashCmd, optLogin, optStr, cmdString}
 }
