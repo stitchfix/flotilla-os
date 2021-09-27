@@ -167,8 +167,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 }
 
 func (lc *EKSS3LogsClient) emrDriverLogsPath(run state.Run) (string, error) {
-	if run.SparkExtension.SparkAppId != nil &&
-		run.SparkExtension.EMRJobId != nil &&
+	if run.SparkExtension.EMRJobId != nil &&
 		run.SparkExtension.VirtualClusterId != nil {
 		return fmt.Sprintf("%s/%s/jobs/%s/",
 			lc.emrS3LogsBasePath,
