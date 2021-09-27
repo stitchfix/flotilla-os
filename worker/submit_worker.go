@@ -160,6 +160,8 @@ func (sw *submitWorker) runOnce() {
 					// Don't change status, don't ack
 					continue
 				}
+			} else {
+				sw.log.Log("message", "Task submitted from SQS to the cluster", "run_id", run.RunID)
 			}
 
 			//
