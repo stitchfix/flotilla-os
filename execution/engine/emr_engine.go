@@ -169,12 +169,14 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 }
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
+	// Override driver pods to always be on ondemand nodetypes.
+	run.NodeLifecycle = &state.OndemandLifecycle
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id": run.RunID},
+				"flotilla-run-id":                                run.RunID},
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -223,7 +225,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id": run.RunID},
+				"flotilla-run-id":                                run.RunID},
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -358,12 +360,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
-	lifecycle := state.SpotLifecycle
-	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
-		lifecycle = "normal"
-	}
-
-	buffer.WriteString(fmt.Sprintf(" --conf spark.kubernetes.node.selector.node.kubernetes.io/lifecycle=%s", lifecycle))
+	
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
