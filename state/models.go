@@ -211,6 +211,7 @@ type SparkSubmitJobDriver struct {
 	PyFiles             []string  `json:"py_files,omitempty"`
 	Jars                []string  `json:"jars,omitempty"`
 	Class               *string   `json:"class,omitempty"`
+	WorkingDir          *string   `json:"working_dir,omitempty"`
 }
 
 // Common fields required to execute any Executable.

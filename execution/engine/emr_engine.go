@@ -171,6 +171,10 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
 	// Override driver pods to always be on ondemand nodetypes.
 	run.NodeLifecycle = &state.OndemandLifecycle
+	workingDir := "/var/lib/app"
+	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
+		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
+	}
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -195,6 +199,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 							MountPath: "/var/lib/app",
 						},
 					},
+					WorkingDir: workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
@@ -219,6 +224,10 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 }
 
 func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
+	workingDir := "/var/lib/app"
+	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
+		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
+	}
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -244,6 +253,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 							MountPath: "/var/lib/app",
 						},
 					},
+					WorkingDir: workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
@@ -360,7 +370,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
-	
+
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
