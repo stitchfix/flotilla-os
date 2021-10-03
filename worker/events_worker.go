@@ -127,7 +127,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.ExitCode = aws.Int64(0)
 			run.Status = state.StatusStopped
 			run.FinishedAt = &timestamp
-			if run.StartedAt == nil {
+			if run.StartedAt == nil || run.StartedAt.After(*run.FinishedAt) {
 				run.StartedAt = run.QueuedAt
 			}
 			run.ExitReason = emrEvent.Detail.StateDetails
@@ -141,7 +141,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			run.ExitCode = aws.Int64(-1)
 			run.Status = state.StatusStopped
 			run.FinishedAt = &timestamp
-			if run.StartedAt == nil {
+			if run.StartedAt == nil || run.StartedAt.After(*run.FinishedAt) {
 				run.StartedAt = run.QueuedAt
 			}
 			run.ExitReason = emrEvent.Detail.FailureReason
