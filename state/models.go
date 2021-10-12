@@ -724,8 +724,15 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	}
 
 	sparkExtension := r.SparkExtension
+
 	if sparkExtension == nil {
 		sparkExtension = &SparkExtension{}
+	} else {
+		for _, conf := range sparkExtension.HiveConf {
+			if strings.Contains(*conf.Name, "ConnectionPassword") {
+				*conf.Value = "HIDDEN"
+			}
+		}
 	}
 
 	return json.Marshal(&struct {
