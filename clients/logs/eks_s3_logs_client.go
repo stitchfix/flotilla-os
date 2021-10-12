@@ -104,6 +104,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	result, err := lc.s3Client.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(lc.emrS3LogsBucket),
 		Prefix: aws.String(s3DirName),
+		MaxKeys: aws.Int64(10000),
 	})
 
 	if err != nil || result == nil || result.Contents == nil || len(result.Contents) == 0 {
