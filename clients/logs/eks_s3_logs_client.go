@@ -101,25 +101,32 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		return "", aws.String(""), errors.Errorf("No logs")
 	}
 
-	result, err := lc.s3Client.ListObjects(&s3.ListObjectsInput{
-		Bucket: aws.String(lc.emrS3LogsBucket),
-		Prefix: aws.String(s3DirName),
-		MaxKeys: aws.Int64(10000),
-	})
-
-	if err != nil || result == nil || result.Contents == nil || len(result.Contents) == 0 {
-		return "", aws.String(""), errors.Errorf("Problem fetching logs")
+	params := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(lc.emrS3LogsBucket),
+		Prefix:  aws.String(s3DirName),
+		MaxKeys: aws.Int64(1000),
 	}
 
-	var key *string
+	pageNum := 0
 	lastModified := &time.Time{}
+	var key *string
 
-	for _, content := range result.Contents {
-		if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
-			key = content.Key
-			lastModified = content.LastModified
-		}
-	}
+	err = lc.s3Client.ListObjectsV2Pages(params,
+		func(result *s3.ListObjectsV2Output, lastPage bool) bool {
+			pageNum++
+			if result != nil {
+				for _, content := range result.Contents {
+					if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
+						key = content.Key
+						lastModified = content.LastModified
+					}
+				}
+			}
+			if lastPage {
+				return false
+			}
+			return pageNum <= 10
+		})
 
 	if key == nil {
 		lc.logger.Println(fmt.Sprintf("run=%s emr logging key not found for role=%s facility=%s", run.RunID, *role, *facility))
