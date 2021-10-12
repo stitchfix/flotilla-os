@@ -107,7 +107,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
-	properties := map[string]*string{
+	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
 		"spark.kubernetes.container.image":          &run.Image,
@@ -115,14 +115,24 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
 	}
+	hiveDefaults := map[string]*string{}
 
 	for _, k := range run.SparkExtension.ApplicationConf {
-		properties[*k.Name] = k.Value
+		sparkDefaults[*k.Name] = k.Value
 	}
+
+	for _, k := range run.SparkExtension.HiveConf {
+		hiveDefaults[*k.Name] = k.Value
+	}
+
 	return []*emrcontainers.Configuration{
 		{
 			Classification: aws.String("spark-defaults"),
-			Properties:     properties,
+			Properties:     sparkDefaults,
+		},
+		{
+			Classification: aws.String("spark-hive-site"),
+			Properties:     hiveDefaults,
 		},
 	}
 }
