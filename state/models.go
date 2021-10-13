@@ -186,6 +186,7 @@ func (r *SparkExtension) Marshal() ([]byte, error) {
 type SparkExtension struct {
 	SparkSubmitJobDriver *SparkSubmitJobDriver `json:"spark_submit_job_driver,omitempty"`
 	ApplicationConf      []Conf                `json:"application_conf,omitempty"`
+	HiveConf             []Conf                `json:"hive_conf,omitempty"`
 	EMRJobId             *string               `json:"emr_job_id,omitempty"`
 	SparkAppId           *string               `json:"spark_app_id,omitempty"`
 	EMRJobManifest       *string               `json:"emr_job_manifest,omitempty"`
@@ -723,8 +724,15 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	}
 
 	sparkExtension := r.SparkExtension
+
 	if sparkExtension == nil {
 		sparkExtension = &SparkExtension{}
+	} else {
+		for _, conf := range sparkExtension.HiveConf {
+			if strings.Contains(*conf.Name, "ConnectionPassword") {
+				*conf.Value = "HIDDEN"
+			}
+		}
 	}
 
 	return json.Marshal(&struct {
