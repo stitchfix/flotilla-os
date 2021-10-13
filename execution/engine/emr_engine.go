@@ -120,9 +120,12 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	for _, k := range run.SparkExtension.ApplicationConf {
 		sparkDefaults[*k.Name] = k.Value
 	}
-
-	for _, k := range run.SparkExtension.HiveConf {
-		hiveDefaults[*k.Name] = k.Value
+	if run.SparkExtension.HiveConf != nil {
+		for _, k := range run.SparkExtension.HiveConf {
+			if k.Name != nil && k.Value != nil {
+				hiveDefaults[*k.Name] = k.Value
+			}
+		}
 	}
 
 	return []*emrcontainers.Configuration{
