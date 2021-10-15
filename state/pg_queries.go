@@ -38,13 +38,11 @@ const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 const TaskResourcesSelectCommandSQL = `
 SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 1.75 as int) as memory,
        cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_cpu_used)) * 1.25  as int)  as cpu
-FROM (SELECT CASE WHEN exit_code = 137 THEN memory * 2 ELSE max_memory_used END as max_memory_used, max_cpu_used
+FROM (SELECT CASE WHEN exit_code = 137 THEN memory * 2 ELSE max_memory_used END as max_memory_used, cpu as max_cpu_used
       FROM TASK
       WHERE
            queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
-           AND (exit_code = 0 or exit_code = 137)
-           AND max_memory_used is not null
-           AND max_cpu_used is not null
+           AND exit_code = 137
            AND engine = 'eks'
            AND definition_id = $1
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
