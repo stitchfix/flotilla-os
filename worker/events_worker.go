@@ -131,9 +131,9 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 				run.StartedAt = run.QueuedAt
 			}
 			run.ExitReason = emrEvent.Detail.StateDetails
-			var events state.PodEvents
+			// var events state.PodEvents
 			// Pod Events are verbose and should be only stored for failed or running jobs.
-			run.PodEvents = &events
+			// run.PodEvents = &events
 		case "RUNNING":
 			run.Status = state.StatusRunning
 			run.StartedAt = &timestamp
