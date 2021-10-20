@@ -231,9 +231,9 @@ func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, 
 //
 func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
 	//Pod isn't there yet - dont return a 404
-	if run.PodName == nil {
-		return nil, errors.New("no pod associated with the run.")
-	}
+	//if run.PodName == nil {
+	//	return nil, errors.New("no pod associated with the run.")
+	//}
 	s3DirName := lc.toS3DirName(run)
 
 	// Get list of S3 objects in the run_id folder.
