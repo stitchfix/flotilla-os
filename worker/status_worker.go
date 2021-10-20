@@ -104,7 +104,7 @@ func (sw *statusWorker) runOnceEMR() {
 func (sw *statusWorker) processEMRRuns(runs []state.Run) {
 	for _, run := range runs {
 		if run.QueuedAt != nil && run.ActiveDeadlineSeconds != nil {
-			runningDuration := time.Now().Sub(*run.QueuedAt)
+			runningDuration := time.Now().Sub(*run.StartedAt)
 			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
 				err := sw.emrEngine.Terminate(run)
 				if err == nil {
