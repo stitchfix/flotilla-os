@@ -117,8 +117,10 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 			if result != nil {
 				for _, content := range result.Contents {
 					if strings.Contains(*content.Key, *role) && strings.Contains(*content.Key, *facility) && lastModified.Before(*content.LastModified) {
-						key = content.Key
-						lastModified = content.LastModified
+						if content != nil && *content.Size < int64(10000000) {
+							key = content.Key
+							lastModified = content.LastModified
+						}
 					}
 				}
 			}
@@ -140,12 +142,13 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 			startPosition = parsed
 		}
 	}
+
 	s3Obj, err := lc.s3Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(lc.emrS3LogsBucket),
 		Key:    aws.String(*key),
 	})
 
-	if s3Obj != nil && err == nil {
+	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
 		defer s3Obj.Body.Close()
 		gr, err := gzip.NewReader(s3Obj.Body)
 		if err != nil {
