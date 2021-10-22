@@ -226,14 +226,15 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 					},
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
+				SecurityContext: &v1.SecurityContext{
+					RunAsUser:              aws.Int64(0),
+					RunAsGroup:             aws.Int64(0),
+					RunAsNonRoot:           aws.Bool(false),
+					ReadOnlyRootFilesystem: aws.Bool(false),
+				},
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
-			SecurityContext: &v1.PodSecurityContext{
-				RunAsUser:    aws.Int64(0),
-				RunAsGroup:   aws.Int64(0),
-				RunAsNonRoot: aws.Bool(false),
-			},
 		},
 	}
 
@@ -285,14 +286,15 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 					},
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
+				SecurityContext: &v1.SecurityContext{
+					RunAsUser:              aws.Int64(0),
+					RunAsGroup:             aws.Int64(0),
+					RunAsNonRoot:           aws.Bool(false),
+					ReadOnlyRootFilesystem: aws.Bool(false),
+				},
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
-			SecurityContext: &v1.PodSecurityContext{
-				RunAsUser:    aws.Int64(0),
-				RunAsGroup:   aws.Int64(0),
-				RunAsNonRoot: aws.Bool(false),
-			},
 		},
 	}
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
