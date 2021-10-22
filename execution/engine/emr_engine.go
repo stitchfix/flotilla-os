@@ -229,6 +229,11 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
+			SecurityContext: &v1.PodSecurityContext{
+				RunAsUser:    aws.Int64(0),
+				RunAsGroup:   aws.Int64(0),
+				RunAsNonRoot: aws.Bool(false),
+			},
 		},
 	}
 
@@ -283,6 +288,11 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
+			SecurityContext: &v1.PodSecurityContext{
+				RunAsUser:    aws.Int64(0),
+				RunAsGroup:   aws.Int64(0),
+				RunAsNonRoot: aws.Bool(false),
+			},
 		},
 	}
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
