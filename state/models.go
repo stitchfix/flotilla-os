@@ -229,6 +229,7 @@ type ExecutionRequestCommon struct {
 	NodeLifecycle         *string         `json:"node_lifecycle"`
 	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
+	Description           *string         `json:"description,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
