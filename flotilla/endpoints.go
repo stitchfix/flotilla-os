@@ -50,6 +50,7 @@ type LaunchRequestV2 struct {
 	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
 	ClusterName           *string               `json:"cluster,omitempty"`
 	Env                   *state.EnvList        `json:"env,omitempty"`
+	Description           *string               `json:"description,omitempty"`
 }
 
 //
@@ -474,6 +475,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			SparkExtension:   lr.SparkExtension,
+			Description:      lr.Description,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -534,6 +536,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
+			Description:           lr.Description,
 		},
 	}
 
