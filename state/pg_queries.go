@@ -153,7 +153,8 @@ select t.run_id                          as runid,
        run_exceptions::TEXT              as runexceptions,
        active_deadline_seconds           as activedeadlineseconds,
        spark_extension::TEXT             as sparkextension,
-       metrics_uri                       as metricsuri
+       metrics_uri                       as metricsuri,
+       description                       as description
 from task t
 `
 

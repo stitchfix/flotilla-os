@@ -473,6 +473,7 @@ type Run struct {
 	ActiveDeadlineSeconds   *int64                   `json:"active_deadline_seconds,omitempty"`
 	SparkExtension          *SparkExtension          `json:"spark_extension,omitempty"`
 	MetricsUri              *string                  `json:"metrics_uri,omitempty"`
+	Description             *string                  `json:"description,omitempty"`
 }
 
 //
@@ -615,6 +616,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.MetricsUri != nil {
 		d.MetricsUri = other.MetricsUri
+	}
+
+	if other.Description != nil {
+		d.Description = other.Description
 	}
 
 	if other.MemoryLimit != nil {
