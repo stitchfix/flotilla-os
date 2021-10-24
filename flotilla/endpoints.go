@@ -598,6 +598,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
+			Description:           lr.Description,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
