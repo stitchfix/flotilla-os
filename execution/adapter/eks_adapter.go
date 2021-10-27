@@ -14,7 +14,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run *state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -97,7 +97,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
 //
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run *state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -107,18 +107,18 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
-	resourceRequirements, run := a.constructResourceRequirements(executable, run, manager, araEnabled)
+	resourceRequirements := a.constructResourceRequirements(executable, *run, manager, araEnabled)
 
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
 		Command:   cmdSlice,
 		Resources: resourceRequirements,
-		Env:       a.envOverrides(executable, run),
+		Env:       a.envOverrides(executable, *run),
 		Ports:     a.constructContainerPorts(executable),
 	}
 
-	affinity := a.constructAffinity(executable, run, manager)
+	affinity := a.constructAffinity(executable, *run, manager)
 	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
 
 	jobSpec := batchv1.JobSpec{
@@ -146,7 +146,6 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 			Name: run.RunID,
 		},
 	}
-
 	return eksJob, nil
 }
 
@@ -216,7 +215,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) corev1.ResourceRequirements {
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
 	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
@@ -253,7 +252,7 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 		Limits:   limits,
 		Requests: requests,
 	}
-	return resourceRequirements, run
+	return resourceRequirements
 }
 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
