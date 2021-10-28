@@ -151,7 +151,7 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 				if emrEvent.Detail.StateDetails != nil && !strings.Contains(*emrEvent.Detail.StateDetails, "JobRun failed. Please refer logs uploaded") {
 					run.ExitReason = emrEvent.Detail.StateDetails
 				} else {
-					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER ERROR") {
+					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER_ERROR") {
 						run.ExitReason = emrEvent.Detail.FailureReason
 					}
 				}
