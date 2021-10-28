@@ -99,6 +99,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.ExitCode = aws.Int64(-1)
 		run.StartedAt = run.QueuedAt
 		run.FinishedAt = run.QueuedAt
+		run.Status = state.StatusStopped
 		_ = emr.log.Log("EMR job submission error", "error", err.Error())
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err

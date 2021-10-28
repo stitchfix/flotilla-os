@@ -144,7 +144,19 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 			if run.StartedAt == nil || run.StartedAt.After(*run.FinishedAt) {
 				run.StartedAt = run.QueuedAt
 			}
-			run.ExitReason = emrEvent.Detail.FailureReason
+
+			run.ExitReason = aws.String("Job failed, please look at Driver Init and/or Driver Stdout logs.")
+
+			if emrEvent.Detail != nil {
+				if emrEvent.Detail.StateDetails != nil && !strings.Contains(*emrEvent.Detail.StateDetails, "JobRun failed. Please refer logs uploaded") {
+					run.ExitReason = emrEvent.Detail.StateDetails
+				} else {
+					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER ERROR") {
+						run.ExitReason = emrEvent.Detail.FailureReason
+					}
+				}
+			}
+
 		case "SUBMITTED":
 			run.Status = state.StatusPending
 		}
