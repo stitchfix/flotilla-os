@@ -482,7 +482,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 			cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
 			run.CpuLimit = &cpuLimit
 			memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
-			run.Memory = &memLimit
+			run.MemoryLimit = &memLimit
 		}
 	}
 
