@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/aws/aws-sdk-go/aws"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/utils"
@@ -727,6 +728,10 @@ func (r Run) MarshalJSON() ([]byte, error) {
 	executionRequestCustom := r.ExecutionRequestCustom
 	if executionRequestCustom == nil {
 		executionRequestCustom = &ExecutionRequestCustom{}
+	}
+
+	if r.Description == nil {
+		r.Description = aws.String(r.Alias)
 	}
 
 	sparkExtension := r.SparkExtension
