@@ -259,7 +259,6 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
-	cpuRequest = int64(float64(cpuRequest) * 0.25)
 	executableResources := executable.GetExecutableResources()
 	if araEnabled && executableResources.AdaptiveResourceAllocation != nil && *executableResources.AdaptiveResourceAllocation == true {
 		estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
