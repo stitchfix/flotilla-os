@@ -257,6 +257,10 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 			return run, errors.New("spark_extension can't be nil, when using eks-spark engine type")
 		}
 		fields.SparkExtension = req.GetExecutionRequestCommon().SparkExtension
+		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
+		if reAttemptRate >= es.spotReAttemptOverride {
+			fields.NodeLifecycle = &state.OndemandLifecycle
+		}
 	}
 
 	if fields.NodeLifecycle == nil {
