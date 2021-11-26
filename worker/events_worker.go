@@ -152,7 +152,8 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 					run.ExitReason = emrEvent.Detail.StateDetails
 				} else {
 					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER_ERROR") {
-						run.ExitReason = emrEvent.Detail.FailureReason
+						exitReason := strings.Replace(*emrEvent.Detail.FailureReason, "Please refer logs uploaded to S3/CloudWatch based on your monitoring configuration.", "", -1)
+						run.ExitReason = aws.String(exitReason)
 					}
 				}
 			}
