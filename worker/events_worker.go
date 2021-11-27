@@ -149,7 +149,8 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 
 			if emrEvent.Detail != nil {
 				if emrEvent.Detail.StateDetails != nil && !strings.Contains(*emrEvent.Detail.StateDetails, "JobRun failed. Please refer logs uploaded") {
-					run.ExitReason = emrEvent.Detail.StateDetails
+					exitReason := strings.Replace(*emrEvent.Detail.StateDetails, "Please refer logs uploaded to S3/CloudWatch based on your monitoring configuration.", "", -1)
+					run.ExitReason = aws.String(exitReason)
 				} else {
 					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER_ERROR") {
 						exitReason := strings.Replace(*emrEvent.Detail.FailureReason, "Please refer logs uploaded to S3/CloudWatch based on your monitoring configuration.", "", -1)
