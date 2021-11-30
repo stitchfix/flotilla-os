@@ -36,6 +36,7 @@ type EMRExecutionEngine struct {
 	emrJobSA            string
 	emrVirtualCluster   string
 	emrContainersClient *emrcontainers.EMRContainers
+	schedulerName       string
 	s3Client            *s3.S3
 	awsRegion           string
 	s3LogsBucket        string
@@ -62,6 +63,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.s3ManifestBucket = conf.GetString("emr.manifest.bucket")
 	emr.s3ManifestBasePath = conf.GetString("emr.manifest.base_path")
 	emr.emrJobSA = conf.GetString("eks.service_account")
+	emr.schedulerName = conf.GetString("eks.scheduler_name")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
@@ -203,6 +205,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 					EmptyDir: &(v1.EmptyDirVolumeSource{}),
 				},
 			}},
+			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
 					Name: "spark-kubernetes-driver",
@@ -257,6 +260,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 					EmptyDir: &(v1.EmptyDirVolumeSource{}),
 				},
 			}},
+			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
 					Name: "spark-kubernetes-executor",
