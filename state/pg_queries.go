@@ -71,6 +71,7 @@ WHERE (exit_code = 128 OR
   AND engine = 'eks'
   AND queued_at >= NOW() - INTERVAL '12 HOURS'
   AND instance_dns_name like 'ip-%'
+GROUP BY 1
 `
 
 const PodReAttemptRate = `
