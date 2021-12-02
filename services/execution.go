@@ -49,6 +49,7 @@ type executionService struct {
 	emrExecutionEngine       engine.Engine
 	reservedEnv              map[string]func(run state.Run) string
 	eksClusterOverride       []string
+	eksGPUClusterOverride    string
 	eksOverridePercent       int
 	clusterOndemandWhitelist []string
 	checkImageValidity       bool
@@ -83,6 +84,7 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	}
 
 	es.eksClusterOverride = conf.GetStringSlice("eks.cluster_override")
+	es.eksGPUClusterOverride = conf.GetString("eks.gpu_cluster_override")
 	es.eksOverridePercent = conf.GetInt("eks.cluster_override_percent")
 	es.clusterOndemandWhitelist = conf.GetStringSlice("eks.cluster_ondemand_whitelist")
 	if conf.IsSet("check_image_validity") {
@@ -179,6 +181,9 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
 	fields.ClusterName = es.eksClusterOverride[rand.Intn(len(es.eksClusterOverride))]
+	if fields.Gpu != nil && *fields.Gpu > 0 {
+		fields.ClusterName = es.eksGPUClusterOverride
+	}
 	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Construct run object with StatusQueued and new UUID4 run id
