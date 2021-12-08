@@ -416,6 +416,10 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 }
 
 func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
+	if run.Status == state.StatusStopped {
+		return errors.New("Run is already in a stopped state.")
+	}
+
 	cancelJobRunInput := emrcontainers.CancelJobRunInput{
 		Id:               run.SparkExtension.EMRJobId,
 		VirtualClusterId: run.SparkExtension.VirtualClusterId,
