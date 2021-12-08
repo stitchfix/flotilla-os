@@ -67,6 +67,7 @@ FROM TASK
 WHERE (exit_code = 128 OR
        pod_events @> '[{"reason": "Failed"}]' OR
        pod_events @> '[{"reason": "FailedSync"}]' OR
+       pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
        pod_events @> '[{"reason": "OutOfmemory"}]')
   AND engine = 'eks'
   AND queued_at >= NOW() - INTERVAL '12 HOURS'
