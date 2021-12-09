@@ -109,6 +109,8 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	run.Command = &cmd
 	resourceRequirements, run := a.constructResourceRequirements(executable, run, manager, araEnabled)
 
+	volumeMounts, volumes := a.constructVolumeMounts(executable, run, manager, araEnabled)
+
 	container := corev1.Container{
 		Name:      run.RunID,
 		Image:     run.Image,
@@ -116,6 +118,10 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		Resources: resourceRequirements,
 		Env:       a.envOverrides(executable, run),
 		Ports:     a.constructContainerPorts(executable),
+	}
+
+	if volumeMounts != nil {
+		container.VolumeMounts = volumeMounts
 	}
 
 	affinity := a.constructAffinity(executable, run, manager)
@@ -138,6 +144,10 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 				Affinity:           affinity,
 			},
 		},
+	}
+
+	if volumes != nil {
+		jobSpec.Template.Spec.Volumes = volumes
 	}
 
 	eksJob := batchv1.Job{
@@ -255,6 +265,21 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	}
 	return resourceRequirements, run
 }
+
+func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) ([]corev1.VolumeMount, []corev1.Volume) {
+	var mounts []corev1.VolumeMount = nil
+	var volumes []corev1.Volume = nil
+	if run.Gpu != nil && *run.Gpu > 0 {
+		mounts = make([]corev1.VolumeMount,1)
+		mounts[0] = corev1.VolumeMount{Name:"shared-memory",MountPath:"/dev/shm"}
+		volumes = make([]corev1.Volume,1)
+		sharedLimit := resource.MustParse(fmt.Sprintf("%dGi",*run.Gpu * int64(2)))
+		emptyDir := corev1.EmptyDirVolumeSource{Medium:"memory",SizeLimit:&sharedLimit}
+		volumes[0] = corev1.Volume{Name:"shared-memory",VolumeSource:corev1.VolumeSource{EmptyDir:&emptyDir}}
+	}
+	return mounts, volumes
+}
+
 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
