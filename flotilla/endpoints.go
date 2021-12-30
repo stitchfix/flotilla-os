@@ -51,6 +51,7 @@ type LaunchRequestV2 struct {
 	ClusterName           *string               `json:"cluster,omitempty"`
 	Env                   *state.EnvList        `json:"env,omitempty"`
 	Description           *string               `json:"description,omitempty"`
+	CommandHash           *string               `json:"command_hash,omitempty"`
 }
 
 //
@@ -425,6 +426,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			Engine:           &state.DefaultEngine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
+			CommandHash:      nil,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -476,6 +478,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    nil,
 			SparkExtension:   lr.SparkExtension,
 			Description:      lr.Description,
+			CommandHash:      lr.CommandHash,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -537,6 +540,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
+			CommandHash:           lr.CommandHash,
 		},
 	}
 
@@ -599,6 +603,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
+			CommandHash:           lr.CommandHash,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
