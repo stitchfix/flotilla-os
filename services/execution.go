@@ -290,6 +290,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		ActiveDeadlineSeconds: fields.ActiveDeadlineSeconds,
 		TaskType:              state.DefaultTaskType,
 		SparkExtension:        fields.SparkExtension,
+		CommandHash:           fields.CommandHash,
 	}
 
 	runEnv := es.constructEnviron(run, fields.Env)

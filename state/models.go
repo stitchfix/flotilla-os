@@ -214,6 +214,7 @@ type SparkSubmitJobDriver struct {
 	Jars                []string  `json:"jars,omitempty"`
 	Class               *string   `json:"class,omitempty"`
 	WorkingDir          *string   `json:"working_dir,omitempty"`
+	NumExecutors        *int64    `json:"num_executors,omitempty"`
 }
 
 // Common fields required to execute any Executable.
@@ -231,6 +232,7 @@ type ExecutionRequestCommon struct {
 	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
 	Description           *string         `json:"description,omitempty"`
+	CommandHash           *string         `json:"command_hash,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
