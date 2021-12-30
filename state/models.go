@@ -744,7 +744,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		if sparkExtension.HiveConf != nil {
 			for _, conf := range sparkExtension.HiveConf {
 				if conf.Name != nil && strings.Contains(*conf.Name, "ConnectionPassword") {
-					*conf.Value = "****"
+					conf.Value = aws.String("****")
 				}
 			}
 		}
