@@ -876,7 +876,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$35,
 		$36,
 		$37,
-		MD5($16),
+		COALESCE (command_hash, MD5($16));,
 		$38,
 		$39,
 		$40
