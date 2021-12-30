@@ -1,9 +1,11 @@
 package state
 
 import (
+	"crypto/md5"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 
 	"github.com/jmoiron/sqlx"
@@ -683,7 +685,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.SparkExtension,
 			&existing.MetricsUri,
 			&existing.Description,
-			)
+		)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -876,16 +878,24 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$35,
 		$36,
 		$37,
-		COALESCE (command_hash, MD5($16)),
 		$38,
 		$39,
-		$40
+		$40,
+		$41
 	);
     `
 
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return errors.WithStack(err)
+	}
+
+	if r.CommandHash == nil {
+		if r.Command != nil {
+			r.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*r.Command))))
+		} else {
+			r.CommandHash = aws.String("")
+		}
 	}
 
 	if _, err = tx.Exec(insert,
@@ -926,6 +936,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.RunExceptions,
 		r.ActiveDeadlineSeconds,
 		r.TaskType,
+		r.CommandHash,
 		r.SparkExtension,
 		r.MetricsUri,
 		r.Description); err != nil {
