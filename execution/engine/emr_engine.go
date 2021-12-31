@@ -21,6 +21,7 @@ import (
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	_ "k8s.io/client-go/kubernetes/scheme"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -82,6 +83,15 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	numExecutors := emr.estimateExecutorCount(run, manager)
+	if numExecutors != nil {
+		run.SparkExtension.SparkSubmitJobDriver.NumExecutors = numExecutors
+		for _, k := range run.SparkExtension.ApplicationConf {
+			if *k.Name == "spark.dynamicAllocation.maxExecutors" {
+				k.Value = aws.String(strconv.FormatInt(*numExecutors, 10))
+			}
+		}
+	}
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
@@ -383,6 +393,16 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		},
 	}
 	return affinity
+}
+
+func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) *int64 {
+	if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
+		count, err := manager.EstimateExecutorCount(run.DefinitionID, *run.CommandHash)
+		if err == nil {
+			return aws.Int64(count)
+		}
+	}
+	return aws.Int64(100)
 }
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {

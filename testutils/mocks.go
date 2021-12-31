@@ -185,6 +185,11 @@ func (iatt *ImplementsAllTheThings) EstimateRunResources(executableID string, co
 	return state.TaskResources{}, nil
 }
 
+func (iatt *ImplementsAllTheThings) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+	iatt.Calls = append(iatt.Calls, "EstimateExecutorCount")
+	return 0, nil
+}
+
 // UpdateRun - StateManager
 func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")

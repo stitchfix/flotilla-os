@@ -95,6 +95,22 @@ func (sm *SQLStateManager) EstimateRunResources(executableID string, runID strin
 	return taskResources, err
 }
 
+func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+	var err error
+	executorCount := int64(100)
+	err = sm.readonlyDB.Get(&executorCount, TaskResourcesExecutorCountSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return executorCount, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
+		} else {
+			return executorCount, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
+		}
+	}
+	return executorCount, err
+}
+
 //
 // Name is the name of the state manager - matches value in configuration
 //

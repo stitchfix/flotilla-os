@@ -47,7 +47,19 @@ FROM (SELECT CASE WHEN (exit_code = 137 or exit_reason = 'OOMKilled') THEN memor
            AND definition_id = $1
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
+`
 
+const TaskResourcesExecutorCountSQL = `
+SELECT COALESCE(cast((percentile_disc(0.99) within GROUP (ORDER BY A.executor_count)) * 1.75 as int), 100) as executor_count
+FROM (SELECT CASE WHEN (exit_reason like '%Exception%') THEN spark_extension->'num_executors' END as executor_count
+      FROM TASK
+      WHERE
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           AND engine = 'eks-spark'
+           AND definition_id = $1
+           AND command_hash = $2
+           AND (exit_code != 0)
+      LIMIT 30) A
 `
 const TaskExecutionRuntimeCommandSQL = `
 SELECT percentile_disc(0.95) within GROUP (ORDER BY A.minutes) as minutes
