@@ -1,11 +1,9 @@
 package state
 
 import (
-	"crypto/md5"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 
 	"github.com/jmoiron/sqlx"
@@ -888,14 +886,6 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return errors.WithStack(err)
-	}
-
-	if r.CommandHash == nil {
-		if r.Command != nil {
-			r.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*r.Command))))
-		} else {
-			r.CommandHash = aws.String("")
-		}
 	}
 
 	if _, err = tx.Exec(insert,
