@@ -402,7 +402,7 @@ func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager stat
 			return aws.Int64(count)
 		}
 	}
-	return aws.Int64(100)
+	return aws.Int64(25)
 }
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {

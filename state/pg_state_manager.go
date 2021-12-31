@@ -97,7 +97,7 @@ func (sm *SQLStateManager) EstimateRunResources(executableID string, runID strin
 
 func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
 	var err error
-	executorCount := int64(100)
+	executorCount := int64(25)
 	err = sm.readonlyDB.Get(&executorCount, TaskResourcesExecutorCountSQL, executableID, commandHash)
 
 	if err != nil {
