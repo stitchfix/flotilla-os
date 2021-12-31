@@ -1,8 +1,10 @@
 package flotilla
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -465,6 +467,10 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(hex.EncodeToString([]byte(*lr.Description)))
+	}
+
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			Env:              lr.Env,
@@ -514,6 +520,10 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		} else {
 			lr.Engine = &state.EKSEngine
 		}
+	}
+
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(hex.EncodeToString([]byte(*lr.Description)))
 	}
 
 	if lr.NodeLifecycle != nil {
@@ -577,6 +587,10 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		} else {
 			lr.Engine = &state.EKSEngine
 		}
+	}
+
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(hex.EncodeToString([]byte(*lr.Description)))
 	}
 
 	if lr.NodeLifecycle != nil {
