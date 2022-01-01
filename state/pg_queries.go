@@ -50,7 +50,7 @@ FROM (SELECT CASE WHEN (exit_code = 137 or exit_reason = 'OOMKilled') THEN memor
 `
 
 const TaskResourcesExecutorCountSQL = `
-SELECT coalesce(cast((percentile_disc(0.99) within GROUP (ORDER BY A.executor_count)) as int), 25) as executor_count
+SELECT least(coalesce(cast((percentile_disc(0.99) within GROUP (ORDER BY A.executor_count)) as int), 25), 100) as executor_count
 FROM (SELECT CASE
                  WHEN (exit_reason like '%Exception%')
                      THEN (spark_extension -> 'spark_submit_job_driver' -> 'num_executors')::int * 1.75
