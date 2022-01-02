@@ -62,7 +62,6 @@ FROM (SELECT CASE
            AND engine = 'eks-spark'
            AND definition_id = $1
            AND command_hash = $2
-           AND (exit_code != 0)
       LIMIT 30) A
 `
 const TaskExecutionRuntimeCommandSQL = `
