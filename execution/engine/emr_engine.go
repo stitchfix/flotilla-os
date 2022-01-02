@@ -394,6 +394,9 @@ func Max(x, y int64) int64 {
 }
 
 func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) state.Run {
+	if run.CommandHash == nil {
+		return run
+	}
 	numExecutors, err := manager.EstimateExecutorCount(run.DefinitionID, *run.CommandHash)
 	if err != nil {
 		numExecutors = 25
