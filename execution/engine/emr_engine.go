@@ -386,6 +386,12 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	}
 	return affinity
 }
+func Max(x, y int64) int64 {
+	if x < y {
+		return y
+	}
+	return x
+}
 
 func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) state.Run {
 	numExecutors, err := manager.EstimateExecutorCount(run.DefinitionID, *run.CommandHash)
@@ -396,7 +402,11 @@ func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager stat
 		run.SparkExtension.SparkSubmitJobDriver.NumExecutors = aws.Int64(numExecutors)
 		var applicationConf []state.Conf
 		for _, k := range run.SparkExtension.ApplicationConf {
-			if *k.Name == "spark.dynamicAllocation.maxExecutors" {
+			if *k.Name == "spark.dynamicAllocation.maxExecutors" && k.Value != nil {
+				passedInValue, err := strconv.Atoi(*k.Value)
+				if err == nil {
+					numExecutors = Max(numExecutors, int64(passedInValue))
+				}
 				k.Value = aws.String(strconv.FormatInt(numExecutors, 10))
 			}
 			applicationConf = append(applicationConf, state.Conf{Name: k.Name, Value: k.Value})
