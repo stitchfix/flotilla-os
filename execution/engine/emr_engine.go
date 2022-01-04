@@ -367,6 +367,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		}
 	}
 
+	if run.CommandHash != nil {
+		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		if err == nil && nodeType == state.OndemandLifecycle {
+			nodeLifecycle = []string{"normal"}
+		}
+	}
+
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 		Key:      "node.kubernetes.io/lifecycle",
 		Operator: v1.NodeSelectorOpIn,

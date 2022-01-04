@@ -62,6 +62,22 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	return attemptRate, err
 }
 
+func (sm *SQLStateManager) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+	var err error
+	nodeType := "spot"
+	err = sm.readonlyDB.Get(&nodeType, TaskResourcesExecutorNodeLifecycleSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nodeType, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching node type")}
+		} else {
+			return nodeType, errors.Wrapf(err, "Error fetching node type")
+		}
+	}
+	return nodeType, err
+}
+
 func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID string) (float32, error) {
 	var err error
 	minutes := float32(1.0)
