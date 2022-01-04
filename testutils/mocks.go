@@ -79,6 +79,11 @@ func (iatt *ImplementsAllTheThings) GetPodReAttemptRate() (float32, error) {
 	return 1.0, nil
 }
 
+func (iatt *ImplementsAllTheThings) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+	iatt.Calls = append(iatt.Calls, "GetNodeLifecycle")
+	return "spot", nil
+}
+
 func (iatt *ImplementsAllTheThings) GetTaskHistoricalRuntime(executableID string, runId string) (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetTaskHistoricalRuntime")
 	return 1.0, nil

@@ -64,6 +64,18 @@ FROM (SELECT CASE
            AND command_hash = $2
       LIMIT 30) A
 `
+const TaskResourcesExecutorNodeLifecycleSQL = `
+SELECT CASE WHEN A.c >= 1 THEN 'ondemand' ELSE 'spot' END
+FROM (SELECT count(*) as c
+      FROM TASK
+      WHERE
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '6 hour'
+           AND definition_id = $1
+           AND command_hash = $2
+           AND exit_code !=0
+      LIMIT 30) A
+`
+
 const TaskExecutionRuntimeCommandSQL = `
 SELECT percentile_disc(0.95) within GROUP (ORDER BY A.minutes) as minutes
 FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
