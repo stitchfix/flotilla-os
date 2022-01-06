@@ -106,7 +106,12 @@ func (sw *statusWorker) processTimeouts(runs []state.Run) {
 		if run.StartedAt != nil && run.ActiveDeadlineSeconds != nil {
 			runningDuration := time.Now().Sub(*run.StartedAt)
 			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
-				_ = sw.emrEngine.Terminate(run)
+				if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
+					_ = sw.emrEngine.Terminate(run)
+				} else {
+					_ = sw.ee.Terminate(run)
+				}
+
 				exitCode := int64(1)
 				finishedAt := time.Now()
 				_, _ = sw.sm.UpdateRun(run.RunID, state.Run{
