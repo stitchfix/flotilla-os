@@ -204,6 +204,8 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 
 	run.DefinitionID = definition.DefinitionID
 	run.Alias = definition.Alias
+	queuedAt := time.Now()
+	run.QueuedAt = &queuedAt
 	run.GroupName = definition.GroupName
 	if req.Description != nil {
 		run.Description = req.Description
