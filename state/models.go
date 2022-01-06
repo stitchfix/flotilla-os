@@ -215,6 +215,7 @@ type SparkSubmitJobDriver struct {
 	Class               *string   `json:"class,omitempty"`
 	WorkingDir          *string   `json:"working_dir,omitempty"`
 	NumExecutors        *int64    `json:"num_executors,omitempty"`
+	ExecutorMemory      *int64    `json:"executor_memory,omitempty"`
 }
 
 // Common fields required to execute any Executable.
