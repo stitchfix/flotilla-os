@@ -204,6 +204,8 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 
 	run.DefinitionID = definition.DefinitionID
 	run.Alias = definition.Alias
+	queuedAt := time.Now()
+	run.QueuedAt = &queuedAt
 	run.GroupName = definition.GroupName
 	if req.Description != nil {
 		run.Description = req.Description
@@ -290,6 +292,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		ActiveDeadlineSeconds: fields.ActiveDeadlineSeconds,
 		TaskType:              state.DefaultTaskType,
 		SparkExtension:        fields.SparkExtension,
+		CommandHash:           fields.CommandHash,
 	}
 
 	runEnv := es.constructEnviron(run, fields.Env)

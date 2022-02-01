@@ -47,8 +47,35 @@ FROM (SELECT CASE WHEN (exit_code = 137 or exit_reason = 'OOMKilled') THEN memor
            AND definition_id = $1
            AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
       LIMIT 30) A
-
 `
+
+const TaskResourcesExecutorCountSQL = `
+SELECT least(coalesce(cast((percentile_disc(0.99) within GROUP (ORDER BY A.executor_count)) as int), 25), 100) as executor_count
+FROM (SELECT CASE
+                 WHEN (exit_reason like '%Exception%')
+                     THEN (spark_extension -> 'spark_submit_job_driver' -> 'num_executors')::int * 1.75
+                 ELSE (spark_extension -> 'spark_submit_job_driver' -> 'num_executors')::int * 1
+                 END as executor_count
+      FROM TASK
+      WHERE
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           AND engine = 'eks-spark'
+           AND definition_id = $1
+           AND command_hash = $2
+      LIMIT 30) A
+`
+const TaskResourcesExecutorNodeLifecycleSQL = `
+SELECT CASE WHEN A.c >= 1 THEN 'ondemand' ELSE 'spot' END
+FROM (SELECT count(*) as c
+      FROM TASK
+      WHERE
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '6 hour'
+           AND definition_id = $1
+           AND command_hash = $2
+           AND exit_code !=0
+      LIMIT 30) A
+`
+
 const TaskExecutionRuntimeCommandSQL = `
 SELECT percentile_disc(0.95) within GROUP (ORDER BY A.minutes) as minutes
 FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
@@ -63,16 +90,20 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
 
 const ListFailingNodesSQL = `
 SELECT instance_dns_name
-FROM TASK
-WHERE (exit_code = 128 OR
-       pod_events @> '[{"reason": "Failed"}]' OR
-       pod_events @> '[{"reason": "FailedSync"}]' OR
-       pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
-       pod_events @> '[{"reason": "OutOfmemory"}]')
-  AND engine = 'eks'
-  AND queued_at >= NOW() - INTERVAL '12 HOURS'
-  AND instance_dns_name like 'ip-%'
-GROUP BY 1
+FROM (
+         SELECT instance_dns_name, count(*) as c
+         FROM TASK
+         WHERE (exit_code = 128 OR
+                pod_events @> '[{"reason": "Failed"}]' OR
+                pod_events @> '[{"reason": "FailedSync"}]' OR
+                pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
+                pod_events @> '[{"reason": "OutOfmemory"}]')
+           AND engine = 'eks'
+           AND queued_at >= NOW() - INTERVAL '12 HOURS'
+           AND instance_dns_name like 'ip-%'
+         GROUP BY 1
+         order by 2 desc) AS all_nodes
+WHERE c >= 5
 `
 
 const PodReAttemptRate = `

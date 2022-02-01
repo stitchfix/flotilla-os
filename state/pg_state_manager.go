@@ -62,6 +62,22 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	return attemptRate, err
 }
 
+func (sm *SQLStateManager) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+	var err error
+	nodeType := "spot"
+	err = sm.readonlyDB.Get(&nodeType, TaskResourcesExecutorNodeLifecycleSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nodeType, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Error fetching node type")}
+		} else {
+			return nodeType, errors.Wrapf(err, "Error fetching node type")
+		}
+	}
+	return nodeType, err
+}
+
 func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID string) (float32, error) {
 	var err error
 	minutes := float32(1.0)
@@ -93,6 +109,22 @@ func (sm *SQLStateManager) EstimateRunResources(executableID string, runID strin
 		}
 	}
 	return taskResources, err
+}
+
+func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+	var err error
+	executorCount := int64(25)
+	err = sm.readonlyDB.Get(&executorCount, TaskResourcesExecutorCountSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return executorCount, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
+		} else {
+			return executorCount, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
+		}
+	}
+	return executorCount, err
 }
 
 //
@@ -683,7 +715,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.SparkExtension,
 			&existing.MetricsUri,
 			&existing.Description,
-			)
+		)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)
@@ -876,10 +908,10 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$35,
 		$36,
 		$37,
-		MD5($16),
 		$38,
 		$39,
-		$40
+		$40,
+		$41
 	);
     `
 
@@ -926,6 +958,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.RunExceptions,
 		r.ActiveDeadlineSeconds,
 		r.TaskType,
+		r.CommandHash,
 		r.SparkExtension,
 		r.MetricsUri,
 		r.Description); err != nil {

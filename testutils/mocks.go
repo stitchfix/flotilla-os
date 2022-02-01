@@ -79,6 +79,11 @@ func (iatt *ImplementsAllTheThings) GetPodReAttemptRate() (float32, error) {
 	return 1.0, nil
 }
 
+func (iatt *ImplementsAllTheThings) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+	iatt.Calls = append(iatt.Calls, "GetNodeLifecycle")
+	return "spot", nil
+}
+
 func (iatt *ImplementsAllTheThings) GetTaskHistoricalRuntime(executableID string, runId string) (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetTaskHistoricalRuntime")
 	return 1.0, nil
@@ -183,6 +188,11 @@ func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
 func (iatt *ImplementsAllTheThings) EstimateRunResources(executableID string, command string) (state.TaskResources, error) {
 	iatt.Calls = append(iatt.Calls, "EstimateRunResources")
 	return state.TaskResources{}, nil
+}
+
+func (iatt *ImplementsAllTheThings) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+	iatt.Calls = append(iatt.Calls, "EstimateExecutorCount")
+	return 0, nil
 }
 
 // UpdateRun - StateManager

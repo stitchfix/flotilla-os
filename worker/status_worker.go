@@ -77,46 +77,49 @@ func (sw *statusWorker) Run() error {
 		default:
 			if *sw.engine == state.EKSEngine {
 				sw.runOnceEKS()
-				sw.runOnceEMR()
+				sw.runTimeouts()
 				time.Sleep(sw.pollInterval)
 			}
 		}
 	}
 }
 
-func (sw *statusWorker) runOnceEMR() {
+func (sw *statusWorker) runTimeouts() {
 	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -60).Format(time.RFC3339),
 		},
 		"task_type": {state.DefaultTaskType},
 		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
-	}, nil, []string{state.EKSSparkEngine})
+	}, nil, state.Engines)
 
 	if err != nil {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	runs := rl.Runs
-	sw.processEMRRuns(runs)
+	sw.processTimeouts(runs)
 }
 
-func (sw *statusWorker) processEMRRuns(runs []state.Run) {
+func (sw *statusWorker) processTimeouts(runs []state.Run) {
 	for _, run := range runs {
 		if run.StartedAt != nil && run.ActiveDeadlineSeconds != nil {
 			runningDuration := time.Now().Sub(*run.StartedAt)
 			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
-				err := sw.emrEngine.Terminate(run)
-				if err == nil {
-					exitCode := int64(1)
-					finishedAt := time.Now()
-					_, err = sw.sm.UpdateRun(run.RunID, state.Run{
-						Status:     state.StatusStopped,
-						ExitReason: aws.String(fmt.Sprintf("JobRun exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
-						ExitCode:   &exitCode,
-						FinishedAt: &finishedAt,
-					})
+				if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
+					_ = sw.emrEngine.Terminate(run)
+				} else {
+					_ = sw.ee.Terminate(run)
 				}
+
+				exitCode := int64(1)
+				finishedAt := time.Now()
+				_, _ = sw.sm.UpdateRun(run.RunID, state.Run{
+					Status:     state.StatusStopped,
+					ExitReason: aws.String(fmt.Sprintf("JobRun exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
+					ExitCode:   &exitCode,
+					FinishedAt: &finishedAt,
+				})
 			}
 		}
 	}
@@ -178,11 +181,9 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		return
 	}
 	start := time.Now()
-	updatedRunWithMetrics, _ := sw.ee.FetchPodMetrics(run)
-	_ = metrics.Timing(metrics.StatusWorkerFetchPodMetrics, time.Since(start), []string{sw.workerId}, 1)
 
 	start = time.Now()
-	updatedRun, err := sw.ee.FetchUpdateStatus(updatedRunWithMetrics)
+	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
 	if err != nil {
 		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
 	}

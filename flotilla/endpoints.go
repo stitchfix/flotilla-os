@@ -1,8 +1,10 @@
 package flotilla
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -51,6 +53,7 @@ type LaunchRequestV2 struct {
 	ClusterName           *string               `json:"cluster,omitempty"`
 	Env                   *state.EnvList        `json:"env,omitempty"`
 	Description           *string               `json:"description,omitempty"`
+	CommandHash           *string               `json:"command_hash,omitempty"`
 }
 
 //
@@ -425,6 +428,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			Engine:           &state.DefaultEngine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
+			CommandHash:      nil,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -463,6 +467,10 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
+	}
+
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			Env:              lr.Env,
@@ -476,6 +484,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			NodeLifecycle:    nil,
 			SparkExtension:   lr.SparkExtension,
 			Description:      lr.Description,
+			CommandHash:      lr.CommandHash,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -513,6 +522,10 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
+	}
+
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
@@ -537,6 +550,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
+			CommandHash:           lr.CommandHash,
 		},
 	}
 
@@ -575,6 +589,10 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if lr.CommandHash == nil && lr.Description != nil {
+		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
+	}
+
 	if lr.NodeLifecycle != nil {
 		if !utils.StringSliceContains(state.NodeLifeCycles, *lr.NodeLifecycle) {
 			ep.encodeError(w, exceptions.MalformedInput{
@@ -599,6 +617,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
+			CommandHash:           lr.CommandHash,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)

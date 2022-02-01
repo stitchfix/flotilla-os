@@ -21,6 +21,7 @@ import (
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	_ "k8s.io/client-go/kubernetes/scheme"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -82,6 +83,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	run = emr.estimateExecutorCount(run, manager)
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
@@ -365,6 +367,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		}
 	}
 
+	if run.CommandHash != nil {
+		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		if err == nil && nodeType == state.OndemandLifecycle {
+			nodeLifecycle = []string{"normal"}
+		}
+	}
+
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 		Key:      "node.kubernetes.io/lifecycle",
 		Operator: v1.NodeSelectorOpIn,
@@ -383,6 +392,38 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		},
 	}
 	return affinity
+}
+func Max(x, y int64) int64 {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) state.Run {
+	if run.CommandHash == nil {
+		return run
+	}
+	numExecutors, err := manager.EstimateExecutorCount(run.DefinitionID, *run.CommandHash)
+	if err != nil {
+		numExecutors = 25
+	}
+	if numExecutors > 0 {
+		run.SparkExtension.SparkSubmitJobDriver.NumExecutors = aws.Int64(numExecutors)
+		var applicationConf []state.Conf
+		for _, k := range run.SparkExtension.ApplicationConf {
+			if *k.Name == "spark.dynamicAllocation.maxExecutors" && k.Value != nil {
+				passedInValue, err := strconv.Atoi(*k.Value)
+				if err == nil {
+					numExecutors = Max(numExecutors, int64(passedInValue))
+				}
+				k.Value = aws.String(strconv.FormatInt(numExecutors, 10))
+			}
+			applicationConf = append(applicationConf, state.Conf{Name: k.Name, Value: k.Value})
+		}
+		run.SparkExtension.ApplicationConf = applicationConf
+	}
+	return run
 }
 
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {

@@ -214,6 +214,8 @@ type SparkSubmitJobDriver struct {
 	Jars                []string  `json:"jars,omitempty"`
 	Class               *string   `json:"class,omitempty"`
 	WorkingDir          *string   `json:"working_dir,omitempty"`
+	NumExecutors        *int64    `json:"num_executors,omitempty"`
+	ExecutorMemory      *int64    `json:"executor_memory,omitempty"`
 }
 
 // Common fields required to execute any Executable.
@@ -231,6 +233,7 @@ type ExecutionRequestCommon struct {
 	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
 	Description           *string         `json:"description,omitempty"`
+	CommandHash           *string         `json:"command_hash,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -742,7 +745,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		if sparkExtension.HiveConf != nil {
 			for _, conf := range sparkExtension.HiveConf {
 				if conf.Name != nil && strings.Contains(*conf.Name, "ConnectionPassword") {
-					*conf.Value = "****"
+					conf.Value = aws.String("****")
 				}
 			}
 		}
