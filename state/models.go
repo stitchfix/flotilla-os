@@ -724,10 +724,6 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		r.SparkExtension.Executors = executors
 	}
 
-	if r.Status == StatusRunning && r.SparkExtension.AppUri != nil {
-		r.SparkExtension.HistoryUri = r.SparkExtension.AppUri
-	}
-
 	cloudTrailNotifications := r.CloudTrailNotifications
 	if cloudTrailNotifications == nil {
 		cloudTrailNotifications = &CloudTrailNotifications{}
@@ -753,6 +749,9 @@ func (r Run) MarshalJSON() ([]byte, error) {
 					conf.Value = aws.String("****")
 				}
 			}
+		}
+		if r.Status == StatusRunning && r.SparkExtension.AppUri != nil {
+			r.SparkExtension.HistoryUri = r.SparkExtension.AppUri
 		}
 	}
 
