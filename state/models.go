@@ -750,7 +750,7 @@ func (r Run) MarshalJSON() ([]byte, error) {
 				}
 			}
 		}
-		if r.Status == StatusRunning && r.SparkExtension.AppUri != nil {
+		if r.Status != StatusStopped && r.SparkExtension.AppUri != nil {
 			r.SparkExtension.HistoryUri = r.SparkExtension.AppUri
 		}
 	}
