@@ -197,6 +197,7 @@ type SparkExtension struct {
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`
 	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
+	AppUri               *string               `json:"app_uri,omitempty"`
 	Executors            []string              `json:"executors,omitempty"`
 }
 
@@ -721,6 +722,10 @@ func (r Run) MarshalJSON() ([]byte, error) {
 		executors = removeDuplicateStr(executors)
 		sort.Sort(byExecutorName(executors))
 		r.SparkExtension.Executors = executors
+	}
+
+	if r.Status == StatusRunning && r.SparkExtension.AppUri != nil {
+		r.SparkExtension.HistoryUri = r.SparkExtension.AppUri
 	}
 
 	cloudTrailNotifications := r.CloudTrailNotifications

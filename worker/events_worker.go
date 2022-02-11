@@ -31,6 +31,7 @@ type eventsWorker struct {
 	s3Client          *s3.S3
 	kClient           kubernetes.Clientset
 	emrHistoryServer  string
+	emrAppServer      string
 	emrMetricsServer  string
 	eksMetricsServer  string
 	emrMaxPodEvents   int
@@ -49,6 +50,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
+	ew.emrAppServer = conf.GetString("emr.app_server_uri")
 	ew.emrMetricsServer = conf.GetString("emr.metrics_server_uri")
 	ew.eksMetricsServer = conf.GetString("eks.metrics_server_uri")
 	if conf.IsSet("emr.max_attempt_count") {
@@ -183,6 +185,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
+		var driverServiceName *string = nil
+
 		if err == nil {
 			for k, v := range pod.Labels {
 				if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
@@ -193,6 +197,21 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				}
 				if sparkAppId != nil && emrJobId != nil {
 					break
+				}
+			}
+		}
+		if pod != nil {
+			for _, container := range pod.Spec.Containers {
+				for _, v := range container.Env {
+					if v.Name == "SPARK_DRIVER_URL" {
+						pat := regexp.MustCompile(`.*@(.*-svc).*`)
+						matches := pat.FindAllStringSubmatch(v.Value, -1)
+						for _, match := range matches {
+							if len(match) == 2 {
+								driverServiceName = &match[1]
+							}
+						}
+					}
 				}
 			}
 		}
@@ -224,10 +243,15 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 				if sparkAppId != nil {
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
+
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
-
+					if driverServiceName != nil {
+						appUri := fmt.Sprintf("%s/job/%s", ew.emrAppServer, *driverServiceName)
+						run.SparkExtension.AppUri = &appUri
+					}
 				}
+
 				ew.setEMRMetricsUri(&run)
 
 				run, err = ew.sm.UpdateRun(run.RunID, run)
