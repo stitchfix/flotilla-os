@@ -199,6 +199,8 @@ type SparkExtension struct {
 	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
 	AppUri               *string               `json:"app_uri,omitempty"`
 	Executors            []string              `json:"executors,omitempty"`
+	ExecutorOOM          *bool                 `json:"executor_oom,omitempty"`
+	DriverOOM            *bool                 `json:"driver_oom,omitempty"`
 }
 
 type Conf struct {
