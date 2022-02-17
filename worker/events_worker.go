@@ -161,6 +161,16 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 				}
 			}
 
+			if run.SparkExtension.DriverOOM != nil && *run.SparkExtension.DriverOOM == true {
+				run.ExitReason = aws.String("Driver OOMKilled, retry with more driver memory.")
+				run.ExitCode = aws.Int64(137)
+			}
+
+			if run.SparkExtension.ExecutorOOM != nil && *run.SparkExtension.ExecutorOOM == true {
+				run.ExitReason = aws.String("Executor OOMKilled, retry with more executor memory.")
+				run.ExitCode = aws.Int64(137)
+			}
+
 		case "SUBMITTED":
 			run.Status = state.StatusPending
 		}
@@ -186,6 +196,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
+		var executorOOM *bool = nil
+		var driverOOM *bool = nil
 
 		if err == nil {
 			for k, v := range pod.Labels {
@@ -209,6 +221,20 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 						for _, match := range matches {
 							if len(match) == 2 {
 								driverServiceName = &match[1]
+							}
+						}
+					}
+				}
+			}
+
+			if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
+				for _, containerStatus := range pod.Status.ContainerStatuses {
+					if containerStatus.State.Terminated != nil {
+						if containerStatus.State.Terminated.ExitCode == 137 {
+							if strings.Contains(containerStatus.Name, "executor") {
+								executorOOM = aws.Bool(true)
+							} else {
+								driverOOM = aws.Bool(true)
 							}
 						}
 					}
@@ -240,6 +266,13 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					events = state.PodEvents{event}
 				}
 				run.PodEvents = &events
+
+				if executorOOM != nil && *executorOOM == true {
+					run.SparkExtension.ExecutorOOM = executorOOM
+				}
+				if driverOOM != nil && *driverOOM == true {
+					run.SparkExtension.DriverOOM = driverOOM
+				}
 
 				if sparkAppId != nil {
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
