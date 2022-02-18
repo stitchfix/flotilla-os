@@ -127,6 +127,38 @@ func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHas
 	return executorCount, err
 }
 
+func (sm *SQLStateManager) ExecutorOOM(executableID string, commandHash string) (bool, error) {
+	var err error
+	executorOOM := false
+	err = sm.readonlyDB.Get(&executorOOM, TaskResourcesExecutorOOMSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return executorOOM, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Resource oom for executable %s not found", executableID)}
+		} else {
+			return executorOOM, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
+		}
+	}
+	return executorOOM, err
+}
+
+func (sm *SQLStateManager) DriverOOM(executableID string, commandHash string) (bool, error) {
+	var err error
+	driverOOM := false
+	err = sm.readonlyDB.Get(&driverOOM, TaskResourcesDriverOOMSQL, executableID, commandHash)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return driverOOM, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Resource oom for driver %s not found", executableID)}
+		} else {
+			return driverOOM, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
+		}
+	}
+	return driverOOM, err
+}
+
 //
 // Name is the name of the state manager - matches value in configuration
 //

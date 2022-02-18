@@ -64,6 +64,30 @@ FROM (SELECT CASE
            AND command_hash = $2
       LIMIT 30) A
 `
+const TaskResourcesDriverOOMSQL = `
+SELECT (spark_extension -> 'driver_oom')::boolean AS driver_oom
+FROM TASK
+WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+  AND engine = 'eks-spark'
+  AND definition_id = $1
+  AND command_hash = $2
+  AND exit_code = 137
+  AND spark_extension ? 'driver_oom'
+GROUP BY 1
+`
+
+const TaskResourcesExecutorOOMSQL = `
+SELECT (spark_extension -> 'executor_oom')::boolean AS executor_oom
+FROM TASK
+WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+  AND engine = 'eks-spark'
+  AND definition_id = $1
+  AND command_hash = $2
+  AND exit_code = 137
+  AND spark_extension ? 'executor_oom'
+GROUP BY 1
+`
+
 const TaskResourcesExecutorNodeLifecycleSQL = `
 SELECT CASE WHEN A.c >= 1 THEN 'ondemand' ELSE 'spot' END
 FROM (SELECT count(*) as c

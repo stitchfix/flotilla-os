@@ -168,12 +168,12 @@ func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
 	return r, err
 }
 
-func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(emrJobId string) (state.Run, error){
+func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(emrJobId string) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "GetRunByEMRJobId")
 	var err error
 	r, ok := iatt.Runs[emrJobId]
 	if !ok {
-		err = fmt.Errorf("No run %s", emrJobId )
+		err = fmt.Errorf("No run %s", emrJobId)
 	}
 	return r, err
 }
@@ -193,6 +193,15 @@ func (iatt *ImplementsAllTheThings) EstimateRunResources(executableID string, co
 func (iatt *ImplementsAllTheThings) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
 	iatt.Calls = append(iatt.Calls, "EstimateExecutorCount")
 	return 0, nil
+}
+
+func (iatt *ImplementsAllTheThings) ExecutorOOM(executableID string, commandHash string) (bool, error) {
+	iatt.Calls = append(iatt.Calls, "ExecutorOOM")
+	return false, nil
+}
+func (iatt *ImplementsAllTheThings) DriverOOM(executableID string, commandHash string) (bool, error) {
+	iatt.Calls = append(iatt.Calls, "DriverOOM")
+	return false, nil
 }
 
 // UpdateRun - StateManager

@@ -231,10 +231,10 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				for _, containerStatus := range pod.Status.ContainerStatuses {
 					if containerStatus.State.Terminated != nil {
 						if containerStatus.State.Terminated.ExitCode == 137 {
-							if strings.Contains(containerStatus.Name, "executor") {
-								executorOOM = aws.Bool(true)
-							} else {
+							if strings.Contains(containerStatus.Name, "driver") {
 								driverOOM = aws.Bool(true)
+							} else {
+								executorOOM = aws.Bool(true)
 							}
 						}
 					}
