@@ -15,6 +15,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -437,21 +438,19 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if executorOOM {
-			//Bump up executors by 2.5x
+			//Bump up executors by 2x
 			if *k.Name == "spark.executor.memory" && k.Value != nil {
-				passedInValue, err := strconv.Atoi(*k.Value)
-				if err == nil {
-					k.Value = aws.String(strconv.FormatInt(int64(float32(passedInValue)*2.5), 10))
-				}
+				quantity := resource.MustParse(*k.Value)
+				quantity.Set(quantity.Value() * 2)
+				k.Value = aws.String(quantity.String())
 			}
 		}
 		if driverOOM {
-			//Bump up driver by 3.5x
+			//Bump up driver by 3x
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
-				passedInValue, err := strconv.Atoi(*k.Value)
-				if err == nil {
-					k.Value = aws.String(strconv.FormatInt(int64(float32(passedInValue)*3.5), 10))
-				}
+				quantity := resource.MustParse(*k.Value)
+				quantity.Set(quantity.Value() * 3)
+				k.Value = aws.String(quantity.String())
 			}
 		}
 		sparkSubmitConf = append(sparkSubmitConf, state.Conf{Name: k.Name, Value: k.Value})
