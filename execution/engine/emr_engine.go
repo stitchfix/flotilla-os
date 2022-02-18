@@ -441,8 +441,8 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
 					passedInValue = int(float32(passedInValue) * 2.5)
+					k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
 				}
-				k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
 			}
 		}
 		if driverOOM {
@@ -450,8 +450,8 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
 					passedInValue = int(float32(passedInValue) * 3.5)
+					k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
 				}
-				k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
 			}
 		}
 		sparkSubmitConf = append(sparkSubmitConf, state.Conf{Name: k.Name, Value: k.Value})
