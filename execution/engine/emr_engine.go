@@ -440,8 +440,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 			if *k.Name == "spark.executor.memory" && k.Value != nil {
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
-					passedInValue = int(float32(passedInValue) * 2.5)
-					k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
+					k.Value = aws.String(strconv.FormatInt(int64(float32(passedInValue)*2.5), 10))
 				}
 			}
 		}
@@ -449,8 +448,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
-					passedInValue = int(float32(passedInValue) * 3.5)
-					k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
+					k.Value = aws.String(strconv.FormatInt(int64(float32(passedInValue)*3.5), 10))
 				}
 			}
 		}
