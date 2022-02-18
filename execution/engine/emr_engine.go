@@ -437,6 +437,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if executorOOM {
+			//Bump up executors by 2.5x
 			if *k.Name == "spark.executor.memory" && k.Value != nil {
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
@@ -445,6 +446,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 			}
 		}
 		if driverOOM {
+			//Bump up driver by 3.5x
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
 				passedInValue, err := strconv.Atoi(*k.Value)
 				if err == nil {
