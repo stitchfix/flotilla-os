@@ -84,6 +84,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	run = emr.estimateExecutorCount(run, manager)
+	run = emr.estimateMemoryResources(run, manager)
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
@@ -423,6 +424,39 @@ func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager stat
 		}
 		run.SparkExtension.ApplicationConf = applicationConf
 	}
+	return run
+}
+
+func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager state.Manager) state.Run {
+	if run.CommandHash == nil {
+		return run
+	}
+	executorOOM, _ := manager.ExecutorOOM(run.DefinitionID, *run.CommandHash)
+	driverOOM, _ := manager.DriverOOM(run.DefinitionID, *run.CommandHash)
+
+	var sparkSubmitConf []state.Conf
+	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
+		if executorOOM {
+			if *k.Name == "spark.executor.memory" && k.Value != nil {
+				passedInValue, err := strconv.Atoi(*k.Value)
+				if err == nil {
+					passedInValue = int(float32(passedInValue) * 2.5)
+				}
+				k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
+			}
+		}
+		if driverOOM {
+			if *k.Name == "spark.driver.memory" && k.Value != nil {
+				passedInValue, err := strconv.Atoi(*k.Value)
+				if err == nil {
+					passedInValue = int(float32(passedInValue) * 3.5)
+				}
+				k.Value = aws.String(strconv.FormatInt(int64(passedInValue), 10))
+			}
+		}
+		sparkSubmitConf = append(sparkSubmitConf, state.Conf{Name: k.Name, Value: k.Value})
+	}
+	run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf = sparkSubmitConf
 	return run
 }
 

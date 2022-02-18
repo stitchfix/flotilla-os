@@ -270,16 +270,15 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 	var mounts []corev1.VolumeMount = nil
 	var volumes []corev1.Volume = nil
 	if run.Gpu != nil && *run.Gpu > 0 {
-		mounts = make([]corev1.VolumeMount,1)
-		mounts[0] = corev1.VolumeMount{Name:"shared-memory",MountPath:"/dev/shm"}
-		volumes = make([]corev1.Volume,1)
-		sharedLimit := resource.MustParse(fmt.Sprintf("%dGi",*run.Gpu * int64(2)))
-		emptyDir := corev1.EmptyDirVolumeSource{Medium:"Memory",SizeLimit:&sharedLimit}
-		volumes[0] = corev1.Volume{Name:"shared-memory",VolumeSource:corev1.VolumeSource{EmptyDir:&emptyDir}}
+		mounts = make([]corev1.VolumeMount, 1)
+		mounts[0] = corev1.VolumeMount{Name: "shared-memory", MountPath: "/dev/shm"}
+		volumes = make([]corev1.Volume, 1)
+		sharedLimit := resource.MustParse(fmt.Sprintf("%dGi", *run.Gpu*int64(2)))
+		emptyDir := corev1.EmptyDirVolumeSource{Medium: "Memory", SizeLimit: &sharedLimit}
+		volumes[0] = corev1.Volume{Name: "shared-memory", VolumeSource: corev1.VolumeSource{EmptyDir: &emptyDir}}
 	}
 	return mounts, volumes
 }
-
 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
