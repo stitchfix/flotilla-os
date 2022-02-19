@@ -438,19 +438,19 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if executorOOM {
-			//Bump up executors by 2x
+			//Bump up executors by 2x, jvm memory strings
 			if *k.Name == "spark.executor.memory" && k.Value != nil {
-				quantity := resource.MustParse(*k.Value)
+				quantity := resource.MustParse(strings.ToUpper(*k.Value))
 				quantity.Set(quantity.Value() * 2)
-				k.Value = aws.String(quantity.String())
+				k.Value = aws.String(strings.ToLower(quantity.String()))
 			}
 		}
 		if driverOOM {
-			//Bump up driver by 3x
+			//Bump up driver by 3x, jvm memory strings
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
-				quantity := resource.MustParse(*k.Value)
+				quantity := resource.MustParse(strings.ToUpper(*k.Value))
 				quantity.Set(quantity.Value() * 3)
-				k.Value = aws.String(quantity.String())
+				k.Value = aws.String(strings.ToLower(quantity.String()))
 			}
 		}
 		sparkSubmitConf = append(sparkSubmitConf, state.Conf{Name: k.Name, Value: k.Value})
