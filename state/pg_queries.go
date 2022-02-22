@@ -58,7 +58,7 @@ FROM (SELECT CASE
                  END as executor_count
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
            AND engine = 'eks-spark'
            AND definition_id = $1
            AND command_hash = $2
@@ -67,7 +67,7 @@ FROM (SELECT CASE
 const TaskResourcesDriverOOMSQL = `
 SELECT (spark_extension -> 'driver_oom')::boolean AS driver_oom
 FROM TASK
-WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
   AND engine = 'eks-spark'
   AND definition_id = $1
   AND command_hash = $2
@@ -79,7 +79,7 @@ GROUP BY 1
 const TaskResourcesExecutorOOMSQL = `
 SELECT (spark_extension -> 'executor_oom')::boolean AS executor_oom
 FROM TASK
-WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
   AND engine = 'eks-spark'
   AND definition_id = $1
   AND command_hash = $2
