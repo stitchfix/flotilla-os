@@ -41,7 +41,7 @@ SELECT cast((percentile_disc(0.99) within GROUP (ORDER BY A.max_memory_used)) * 
 FROM (SELECT CASE WHEN (exit_code = 137 or exit_reason = 'OOMKilled') THEN memory * 2 ELSE max_memory_used END as max_memory_used, cpu as max_cpu_used
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
            AND (exit_code = 137 or exit_reason = 'OOMKilled')
            AND engine = 'eks'
            AND definition_id = $1
