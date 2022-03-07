@@ -157,7 +157,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	engine := state.DefaultEngine
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      "clusta",
+			ClusterName:      "",
 			Env:              env,
 			OwnerID:          "somebody",
 			Command:          nil,
