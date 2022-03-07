@@ -82,10 +82,6 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		t.Errorf("Expected Create to populated run with non-empty RunID")
 	}
 
-	if run.ClusterName != "clusta" {
-		t.Errorf("Expected cluster name 'clusta' but was '%s'", run.ClusterName)
-	}
-
 	if run.DefinitionID != "B" {
 		t.Errorf("Expected definitionID 'B' but was '%s'", run.DefinitionID)
 	}
@@ -157,7 +153,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	engine := state.DefaultEngine
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:      "clusta",
+			ClusterName:      "",
 			Env:              env,
 			OwnerID:          "somebody",
 			Command:          nil,
@@ -186,10 +182,6 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 
 	if len(run.RunID) == 0 {
 		t.Errorf("Expected Create to populated run with non-empty RunID")
-	}
-
-	if run.ClusterName != "clusta" {
-		t.Errorf("Expected cluster name 'clusta' but was '%s'", run.ClusterName)
 	}
 
 	if run.DefinitionID != "B" {
