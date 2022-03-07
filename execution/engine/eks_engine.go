@@ -51,11 +51,11 @@ type EKSExecutionEngine struct {
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	clusters := conf.GetStringMapString("eks.clusters")
+	clusters := strings.Split(conf.GetString("eks.clusters"), ",")
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
-	for clusterName := range clusters {
+	for _, clusterName := range clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
