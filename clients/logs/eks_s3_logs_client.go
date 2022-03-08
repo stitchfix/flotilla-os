@@ -53,9 +53,9 @@ func (lc *EKSS3LogsClient) Name() string {
 // Initialize sets up the EKSS3LogsClient
 //
 func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("eks_log_driver_options")
+	//confLogOptions := conf.GetStringMapString("eks_log_driver_options")
 
-	awsRegion := confLogOptions["awslogs-region"]
+	awsRegion := conf.GetString("eks_log_driver_options_awslogs_region")
 	if len(awsRegion) == 0 {
 		awsRegion = conf.GetString("aws_default_region")
 	}
@@ -74,7 +74,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	}
 	lc.emrS3LogsBucket = conf.GetString("emr_log_bucket")
 	lc.emrS3LogsBasePath = conf.GetString("emr_log_base_path")
-	s3BucketName := confLogOptions["s3_bucket_name"]
+	s3BucketName := conf.GetString("eks_log_driver_options_s3_bucket_name")
 
 	if len(s3BucketName) == 0 {
 		return errors.Errorf(
@@ -82,7 +82,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	}
 	lc.s3Bucket = s3BucketName
 
-	s3BucketRootDir := confLogOptions["s3_bucket_root_dir"]
+	s3BucketRootDir := conf.GetString("eks_log_driver_options_s3_bucket_root_dir")
 
 	if len(s3BucketRootDir) == 0 {
 		return errors.Errorf(

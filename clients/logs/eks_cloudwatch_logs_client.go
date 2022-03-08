@@ -45,9 +45,9 @@ func (lc *EKSCloudWatchLogsClient) Name() string {
 // Initialize sets up the EKSCloudWatchLogsClient
 //
 func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("eks_log_driver_options")
+	//confLogOptions := conf.GetStringMapString("eks_log_driver_options")
 
-	awsRegion := confLogOptions["awslogs-region"]
+	awsRegion := conf.GetString("eks_log_driver_options_awslogs_region")
 	if len(awsRegion) == 0 {
 		awsRegion = conf.GetString("aws_default_region")
 	}
@@ -61,9 +61,6 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	// log.namespace in conf takes precedence over log.driver.options.awslogs-group
 	//
 	lc.logNamespace = conf.GetString("eks_log_namespace")
-	if _, ok := confLogOptions["awslogs-group"]; ok && len(lc.logNamespace) == 0 {
-		lc.logNamespace = confLogOptions["awslogs-group"]
-	}
 
 	if len(lc.logNamespace) == 0 {
 		return errors.Errorf(

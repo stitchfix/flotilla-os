@@ -113,7 +113,7 @@ func (app *App) configure(conf config.Config) {
 	app.writeTimeout = time.Duration(writeTimeout) * time.Second
 
 	app.mode = conf.GetString("flotilla_mode")
-	app.corsAllowedOrigins = conf.GetStringSlice("http_server_cors_allowed_origins")
+	app.corsAllowedOrigins = strings.Split(conf.GetString("http_server_cors_allowed_origins"), ",")
 }
 
 func (app *App) configureRoutes(ep endpoints) {
