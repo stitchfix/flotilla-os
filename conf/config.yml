@@ -1,42 +1,35 @@
-flotilla_mode: test
 aws_default_region: us-east-1
-database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable'
-readonly_database_url: 'postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable'
-create_database_schema: true
-state_manager: postgres
-queue_manager: sqs
 cluster_client: eks
+create_database_schema: true
+database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
+eks_cluster_override:
+  - clusta
+eks_log_driver_name: awslogs
+eks_log_driver_options_awslogs-group: flotilla-eks-namespace
+eks_log_driver_options_awslogs-region: us-east-1
+eks_log_namespace: flotilla-eks-namespace
+eks_log_retention_days: 90
+enabled_workers:
+  - retry
+  - submit
+execution_engine: eks
+flotilla_mode: test
+http_server_cors_allowed_origins:
+  - http://localhost:3001
+http_server_listen_address: :3000
+http_server_read_timeout_seconds: 5
+http_server_write_timeout_seconds: 10
 logs_client: cloudwatch
 metrics_client: dogstatsd
-execution_engine: eks
-enabled_workers:
-    - retry
-    - submit
-queue:
-    namespace: dev-flotilla
-    retention_seconds: 604800
-    process_time: 45
-    status: flotilla-status-updates-dev
-    status_rule: flotilla-task-status
-http:
-    server:
-        read_timeout_seconds: 5
-        write_timeout_seconds: 10
-        listen_address: ':3000'
-        cors_allowed_origins:
-            - 'http://localhost:3001'
+metrics_dogstatsd_address: 127.0.0.1:8125
+metrics_dogstatsd_namespace: my.flotilla.namespace
+metrics_dogstatsd_tags:
+  - test
 owner_id_var: FLOTILLA_RUN_OWNER_ID
-eks:
-    cluster_override: ["clusta"]
-    log:
-        namespace: flotilla-eks-namespace
-        retention_days: 90
-        driver:
-            name: awslogs
-            options: {awslogs-group: flotilla-eks-namespace, awslogs-region: us-east-1}
-metrics:
-  dogstatsd:
-    address: 127.0.0.1:8125
-    namespace: my.flotilla.namespace
-    tags:
-      - test
+queue_manager: sqs
+queue_namespace: dev-flotilla
+queue_process_time: 45
+queue_retention_seconds: 604800
+queue_status: flotilla-status-updates-dev
+queue_status_rule: flotilla-task-status
+readonly_database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable

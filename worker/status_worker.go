@@ -44,11 +44,11 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 	sw.engine = &state.EKSEngine
 	sw.emrEngine = emrEngine
-	if sw.conf.IsSet("eks.exception_extractor_url") {
+	if sw.conf.IsSet("eks_exception_extractor_url") {
 		sw.exceptionExtractorClient = &http.Client{
 			Timeout: time.Second * 5,
 		}
-		sw.exceptionExtractorUrl = sw.conf.GetString("eks.exception_extractor_url")
+		sw.exceptionExtractorUrl = sw.conf.GetString("eks_exception_extractor_url")
 	}
 	sw.setupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker")

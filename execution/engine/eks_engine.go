@@ -51,12 +51,12 @@ type EKSExecutionEngine struct {
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 //
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	clusters := strings.Split(conf.GetString("eks.clusters"), ",")
+	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
 	for _, clusterName := range clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
+		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
 			return err
@@ -70,23 +70,20 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		ee.metricsClients[clusterName] = *metricsv.NewForConfigOrDie(clientConf)
 	}
 
-	ee.jobQueue = conf.GetString("eks.job_queue")
+	ee.jobQueue = conf.GetString("eks_job_queue")
 	ee.schedulerName = "default-scheduler"
 
-	if conf.IsSet("eks.scheduler_name") {
-		ee.schedulerName = conf.GetString("eks.scheduler_name")
+	if conf.IsSet("eks_scheduler_name") {
+		ee.schedulerName = conf.GetString("eks_scheduler_name")
 	}
-	if conf.IsSet("eks.status_queue") {
-		ee.statusQueue = conf.GetString("eks.status_queue")
+	if conf.IsSet("eks_status_queue") {
+		ee.statusQueue = conf.GetString("eks_status_queue")
 	}
-	ee.jobNamespace = conf.GetString("eks.job_namespace")
-	ee.jobTtl = conf.GetInt("eks.job_ttl")
-	ee.jobSA = conf.GetString("eks.service_account")
-	if conf.IsSet("eks.ara_enabled") {
-		ee.jobARAEnabled = conf.GetBool("eks.ara_enabled")
-	} else {
-		ee.jobARAEnabled = false
-	}
+	ee.jobNamespace = conf.GetString("eks_job_namespace")
+	ee.jobTtl = conf.GetInt("eks_job_ttl")
+	ee.jobSA = conf.GetString("eks_service_account")
+	ee.jobARAEnabled = true
+
 
 	adapt, err := adapter.NewEKSAdapter()
 
@@ -102,7 +99,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 			Strict: true,
 		},
 	)
-	confLogOptions := conf.GetStringMapString("eks.manifest.storage.options")
+	confLogOptions := conf.GetStringMapString("eks_manifest_storage_options")
 	awsRegion := confLogOptions["region"]
 	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))

@@ -25,7 +25,7 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 		return errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.dogstatsd.address must be set in the config.")
 	}
 
-	addr := conf.GetString("metrics.dogstatsd.address")
+	addr := conf.GetString("metrics_dogstatsd_address")
 	client, err := statsd.New(addr)
 	if err != nil {
 		return err
@@ -33,12 +33,12 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 
 	// Set global namespace if set in config.
 	if conf.IsSet("metrics.dogstatsd.namespace") {
-		client.Namespace = conf.GetString("metrics.dogstatsd.namespace")
+		client.Namespace = conf.GetString("metrics_dogstatsd_namespace")
 	}
 
 	// Set global tags if set in config.
 	if conf.IsSet("metrics.dogstatsd.tags") {
-		tags := conf.GetStringMapString("metrics.dogstatsd.tags")
+		tags := conf.GetStringMapString("metrics_dogstatsd_tags")
 		for k, v := range tags {
 			client.Tags = append(client.Tags, fmt.Sprintf("%s:%s", k, v))
 		}
