@@ -54,18 +54,18 @@ type EMRExecutionEngine struct {
 //
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
-	emr.emrVirtualCluster = conf.GetString("emr.virtual_cluster")
-	emr.emrJobQueue = conf.GetString("emr.job_queue")
-	emr.emrJobNamespace = conf.GetString("emr.job_namespace")
-	emr.emrJobRoleArn = conf.GetString("emr.job_role_arn")
-	emr.awsRegion = conf.GetString("emr.aws_region")
-	emr.s3LogsBucket = conf.GetString("emr.log.bucket")
-	emr.s3LogsBasePath = conf.GetString("emr.log.base_path")
-	emr.s3EventLogPath = conf.GetString("emr.log.event_log_path")
-	emr.s3ManifestBucket = conf.GetString("emr.manifest.bucket")
-	emr.s3ManifestBasePath = conf.GetString("emr.manifest.base_path")
-	emr.emrJobSA = conf.GetString("eks.service_account")
-	emr.schedulerName = conf.GetString("eks.scheduler_name")
+	emr.emrVirtualCluster = conf.GetString("emr_virtual_cluster")
+	emr.emrJobQueue = conf.GetString("emr_job_queue")
+	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
+	emr.emrJobRoleArn = conf.GetString("emr_job_role_arn")
+	emr.awsRegion = conf.GetString("emr_aws_region")
+	emr.s3LogsBucket = conf.GetString("emr_log_bucket")
+	emr.s3LogsBasePath = conf.GetString("emr_log_base_path")
+	emr.s3EventLogPath = conf.GetString("emr_log_event_log_path")
+	emr.s3ManifestBucket = conf.GetString("emr_manifest_bucket")
+	emr.s3ManifestBasePath = conf.GetString("emr_manifest_base_path")
+	emr.emrJobSA = conf.GetString("eks_service_account")
+	emr.schedulerName = conf.GetString("eks_scheduler_name")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))

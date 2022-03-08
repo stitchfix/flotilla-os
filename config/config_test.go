@@ -18,9 +18,8 @@ func TestNewConfig(t *testing.T) {
 
 	confDir := "../conf"
 	c, _ = NewConfig(&confDir)
-	if !c.IsSet("queue.namespace") || c.GetString("queue.namespace") != "dev-flotilla" {
-		t.Errorf(
-			"Expected to read from conf dir [queue.namespace]:[dev-flotilla], was: %s",
-			c.GetString("queue.namespace"))
+	if !c.IsSet("queue_namespace") || c.GetString("queue_namespace") != "dev-flotilla" {
+		t.Errorf("Expected to read from conf dir [queue_namespace]:[dev-flotilla], was: %s",
+			c.GetString("queue_namespace"))
 	}
 }

@@ -237,33 +237,33 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 
 | Variable Name | Description |
 | ------------- | ----------- |
-| `worker.retry_interval` | Run frequency of the retry worker |
-| `worker.submit_interval` | Poll frequency of the submit worker |
-| `worker.status_interval` | Poll frequency of the status update worker |
-| `http.server.read_timeout_seconds` | Sets read timeout in seconds for the http server |
-| `http.server.write_timeout_seconds` | Sets the write timeout in seconds for the http server |
-| `http.server.listen_address` | The port for the http server to listen on |
+| `worker_retry_interval` | Run frequency of the retry worker |
+| `worker_submit_interval` | Poll frequency of the submit worker |
+| `worker_status_interval` | Poll frequency of the status update worker |
+| `http_server_read_timeout_seconds` | Sets read timeout in seconds for the http server |
+| `http_server_write_timeout_seconds` | Sets the write timeout in seconds for the http server |
+| `http_server_listen_address` | The port for the http server to listen on |
 | `owner_id_var` | Which environment variable containing ownership information to inject into the runtime of jobs |
 | `enabled_workers` | This variable is a list of the workers that run. Use this to control what workers run when using a multi-container deployment strategy. Valid list items include (`retry`, `submit`, and `status`) |
-| `metrics.dogstatsd.address` | Statds metrics host in Datadog format |
-| `metrics.dogstatsd.namespace` | Namespace for the metrics - for example `flotilla.` |
+| `metrics_dogstatsd_address` | Statds metrics host in Datadog format |
+| `metrics_dogstatsd_namespace` | Namespace for the metrics - for example `flotilla.` |
 | `redis_address` | Redis host for caching and locks|
 | `redis_db` | Redis db to be used - numeric |
-| `eks.clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
-| `eks.kubeconfig_basepath` | folder where the kubeconfigs are stored |
-| `eks.cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
-| `eks.cluster_override` | EKS clusters to override traffic |
-| `eks.scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
-| `eks.manifest.storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
-| `eks.manifest.storage.options.s3_bucket_name` | S3 bucket name for manifest storage. |
-| `eks.manifest.storage.options.s3_bucket_root_dir` | S3 root bucket path. |
-| `eks.log.namespace.retention_days` | Number of days to store logs. |
-| `eks.log.namespace.driver.name` | Logger name. |
-| `eks.log.namespace.driver.options.s3_bucket_name` | S3 bucket name to store logs. |
-| `eks.log.namespace.driver.options.s3_bucket_root_dir` | S3 root bucket path within the bucket.|
-| `eks.job_namespace` | Kubernetes namespace to submit jobs to. |
-| `eks.job_ttl` | default job ttl in seconds |
-| `eks.job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
+| `eks_clusters` | hash-map of cluster-name and it's associated kubeconfig (encoded in base64) |
+| `eks_kubeconfig_basepath` | folder where the kubeconfigs are stored |
+| `eks_cluster_ondemand_whitelist` | override list of cluster names where to force ondemand node types |
+| `eks_cluster_override` | EKS clusters to override traffic |
+| `eks_scheduler_name` | Custom scheduler name to use, default is `kube-scheduler` |
+| `eks_manifest_storage.options.region` | Kubernetes manifest s3 upload bucket aws region |
+| `eks_manifest_storage_options_s3_bucket_name` | S3 bucket name for manifest storage. |
+| `eks_manifest_storage_options_s3_bucket_root_dir` | S3 root bucket path. |
+| `eks_log_namespace_retention_days` | Number of days to store logs. |
+| `eks_log_namespace_driver_name` | Logger name. |
+| `eks_log_namespace_driver_options_s3_bucket_name` | S3 bucket name to store logs. |
+| `eks_log_namespace_driver_options_s3_bucket_root_dir` | S3 root bucket path within the bucket.|
+| `eks_job_namespace` | Kubernetes namespace to submit jobs to. |
+| `eks_job_ttl` | default job ttl in seconds |
+| `eks_job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
 | `eks.service_account` | Kubernetes service account to use for jobs. |
 
 ## Development

@@ -47,14 +47,14 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.log = log
 	ew.eksEngine = eksEngine
 	ew.emrEngine = emrEngine
-	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks.events_queue"), false)
-	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr.job_status_queue"), false)
-	ew.emrHistoryServer = conf.GetString("emr.history_server_uri")
-	ew.emrAppServer = conf.GetString("emr.app_server_uri")
-	ew.emrMetricsServer = conf.GetString("emr.metrics_server_uri")
-	ew.eksMetricsServer = conf.GetString("eks.metrics_server_uri")
-	if conf.IsSet("emr.max_attempt_count") {
-		ew.emrMaxPodEvents = conf.GetInt("emr.max_pod_events")
+	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks_events_queue"), false)
+	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr_job_status_queue"), false)
+	ew.emrHistoryServer = conf.GetString("emr_history_server_uri")
+	ew.emrAppServer = conf.GetString("emr_app_server_uri")
+	ew.emrMetricsServer = conf.GetString("emr_metrics_server_uri")
+	ew.eksMetricsServer = conf.GetString("eks_metrics_server_uri")
+	if conf.IsSet("emr_max_attempt_count") {
+		ew.emrMaxPodEvents = conf.GetInt("emr_max_pod_events")
 	} else {
 		ew.emrMaxPodEvents = 20000
 	}
@@ -67,9 +67,9 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrJobStatusQueue = emrJobStatusQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
-	clusterName := conf.GetStringSlice("eks.cluster_override")[0]
+	clusterName := conf.GetStringSlice("eks_cluster_override")[0]
 
-	filename := fmt.Sprintf("%s/%s", conf.GetString("eks.kubeconfig_basepath"), clusterName)
+	filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 	if err != nil {
 		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))

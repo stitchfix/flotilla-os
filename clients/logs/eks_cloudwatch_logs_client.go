@@ -45,7 +45,7 @@ func (lc *EKSCloudWatchLogsClient) Name() string {
 // Initialize sets up the EKSCloudWatchLogsClient
 //
 func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
-	confLogOptions := conf.GetStringMapString("eks.log.driver.options")
+	confLogOptions := conf.GetStringMapString("eks_log_driver_options")
 
 	awsRegion := confLogOptions["awslogs-region"]
 	if len(awsRegion) == 0 {
@@ -60,7 +60,7 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 	//
 	// log.namespace in conf takes precedence over log.driver.options.awslogs-group
 	//
-	lc.logNamespace = conf.GetString("eks.log.namespace")
+	lc.logNamespace = conf.GetString("eks_log_namespace")
 	if _, ok := confLogOptions["awslogs-group"]; ok && len(lc.logNamespace) == 0 {
 		lc.logNamespace = confLogOptions["awslogs-group"]
 	}
@@ -70,7 +70,7 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 			"EKSCloudWatchLogsClient needs one of [eks.log.driver.options.awslogs-group] or [eks.log.namespace] set in config")
 	}
 
-	lc.logRetentionInDays = int64(conf.GetInt("eks.log.retention_days"))
+	lc.logRetentionInDays = int64(conf.GetInt("eks_log_retention_days"))
 	if lc.logRetentionInDays == 0 {
 		lc.logRetentionInDays = int64(30)
 	}

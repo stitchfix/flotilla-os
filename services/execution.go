@@ -81,8 +81,8 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
 
-	es.eksClusterOverride = conf.GetString("eks.cluster_override")
-	es.eksGPUClusterOverride = conf.GetString("eks.gpu_cluster_override")
+	es.eksClusterOverride = conf.GetString("eks_cluster_override")
+	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	if conf.IsSet("check_image_validity") {
 		es.checkImageValidity = conf.GetBool("check_image_validity")
 	} else {
@@ -93,21 +93,21 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		es.baseUri = conf.GetString("base_uri")
 	}
 
-	if conf.IsSet("eks.spot_reattempt_override") {
-		es.spotReAttemptOverride = float32(conf.GetFloat64("eks.spot_reattempt_override"))
+	if conf.IsSet("eks_spot_reattempt_override") {
+		es.spotReAttemptOverride = float32(conf.GetFloat64("eks_spot_reattempt_override"))
 	} else {
 		// defaults to 5% override.
 		es.spotReAttemptOverride = float32(0.05)
 	}
 
-	if conf.IsSet("eks.spot_override") {
-		es.eksSpotOverride = conf.GetBool("eks.spot_override")
+	if conf.IsSet("eks_spot_override") {
+		es.eksSpotOverride = conf.GetBool("eks_spot_override")
 	} else {
 		es.eksSpotOverride = false
 	}
 
-	if conf.IsSet("eks.spot_threshold_minutes") {
-		es.spotThresholdMinutes = conf.GetFloat64("eks.spot_threshold_minutes")
+	if conf.IsSet("eks_spot_threshold_minutes") {
+		es.spotThresholdMinutes = conf.GetFloat64("eks_spot_threshold_minutes")
 	} else {
 		es.spotThresholdMinutes = 30.0
 	}

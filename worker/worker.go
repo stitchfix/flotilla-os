@@ -57,9 +57,9 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ek
 //
 func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
 	var interval time.Duration
-	pollIntervalString := conf.GetString(fmt.Sprintf("worker.%s_interval", workerType))
+	pollIntervalString := conf.GetString(fmt.Sprintf("worker_%s_interval", workerType))
 	if len(pollIntervalString) == 0 {
-		return interval, errors.Errorf("worker type: [%s] needs worker.%s_interval set", workerType, workerType)
+		return interval, errors.Errorf("worker type: [%s] needs worker_%s_interval set", workerType, workerType)
 	}
 	return time.ParseDuration(pollIntervalString)
 }

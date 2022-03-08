@@ -96,16 +96,16 @@ func NewApp(conf config.Config,
 }
 
 func (app *App) configure(conf config.Config) {
-	app.address = conf.GetString("http.server.listen_address")
+	app.address = conf.GetString("http_server_listen_address")
 	if len(app.address) == 0 {
 		app.address = ":5000"
 	}
 
-	readTimeout := conf.GetInt("http.server.read_timeout_seconds")
+	readTimeout := conf.GetInt("http_server_read_timeout_seconds")
 	if readTimeout == 0 {
 		readTimeout = 5
 	}
-	writeTimeout := conf.GetInt("http.server.write_timeout_seconds")
+	writeTimeout := conf.GetInt("http_server_write_timeout_seconds")
 	if writeTimeout == 0 {
 		writeTimeout = 10
 	}
@@ -113,7 +113,7 @@ func (app *App) configure(conf config.Config) {
 	app.writeTimeout = time.Duration(writeTimeout) * time.Second
 
 	app.mode = conf.GetString("flotilla_mode")
-	app.corsAllowedOrigins = conf.GetStringSlice("http.server.cors_allowed_origins")
+	app.corsAllowedOrigins = conf.GetStringSlice("http_server_cors_allowed_origins")
 }
 
 func (app *App) configureRoutes(ep endpoints) {
