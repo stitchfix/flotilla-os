@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	"github.com/DataDog/datadog-go/statsd"
-	"github.com/pkg/errors"
+	"fmt"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/stitchfix/flotilla-os/config"
+	"os"
 	"time"
 )
 
@@ -20,19 +21,10 @@ type DatadogStatsdMetricsClient struct {
 // *metrics.dogstatsd.namespace* -- fixed key you want to prefix to all the metrics
 //
 func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
-	if !conf.IsSet("metrics.dogstatsd.address") {
-		return errors.Errorf("Unable to initialize DatadogMetricsClient: metrics.dogstatsd.address must be set in the config.")
-	}
-
-	addr := conf.GetString("metrics_dogstatsd_address")
+	addr := fmt.Sprintf("%s:8125", os.Getenv("DD_AGENT_HOST"))
 	client, err := statsd.New(addr)
 	if err != nil {
 		return err
-	}
-
-	// Set global namespace if set in config.
-	if conf.IsSet("metrics.dogstatsd.namespace") {
-		client.Namespace = conf.GetString("metrics_dogstatsd_namespace")
 	}
 
 	dd.client = client

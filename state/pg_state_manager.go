@@ -190,7 +190,7 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
 	createSchema := conf.GetBool("create_database_schema")
-	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla-db"))
+	sqltrace.Register("postgres", &pq.Driver{})
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
