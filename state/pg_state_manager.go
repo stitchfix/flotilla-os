@@ -14,11 +14,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"go.uber.org/multierr"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
 )
 
 //
@@ -187,13 +190,13 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
 	createSchema := conf.GetBool("create_database_schema")
-
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla-db"))
 	var err error
-	if sm.db, err = sqlx.Open("postgres", dburl); err != nil {
+	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
 	}
 
-	if sm.readonlyDB, err = sqlx.Open("postgres", readonlyDbUrl); err != nil {
+	if sm.readonlyDB, err = sqlxtrace.Open("postgres", readonlyDbUrl); err != nil {
 		return errors.Wrap(err, "unable to open readonly postgres db")
 	}
 

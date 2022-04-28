@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
+	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 	"io"
 	"log"
 	"net/http"
@@ -69,7 +70,7 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	if flotillaMode != "test" {
 		sess := session.Must(session.NewSession(&aws.Config{
 			Region: aws.String(awsRegion)}))
-
+		sess = awstrace.WrapSession(sess)
 		lc.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	}
 	lc.emrS3LogsBucket = conf.GetString("emr_log_bucket")

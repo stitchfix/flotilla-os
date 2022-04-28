@@ -10,6 +10,7 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	kubernetestrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/k8s.io/client-go/kubernetes"
 	"gopkg.in/tomb.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -71,6 +72,8 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 
 	filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
 	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
+	clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
+
 	if err != nil {
 		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
 		return err
