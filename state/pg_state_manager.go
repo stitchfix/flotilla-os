@@ -190,12 +190,13 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
 	createSchema := conf.GetBool("create_database_schema")
-	sqltrace.Register("postgres", &pq.Driver{})
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
 	}
 
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
 	if sm.readonlyDB, err = sqlxtrace.Open("postgres", readonlyDbUrl); err != nil {
 		return errors.Wrap(err, "unable to open readonly postgres db")
 	}
