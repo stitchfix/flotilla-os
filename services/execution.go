@@ -43,19 +43,19 @@ type ExecutionService interface {
 }
 
 type executionService struct {
-	stateManager             state.Manager
-	eksClusterClient         cluster.Client
-	eksExecutionEngine       engine.Engine
-	emrExecutionEngine       engine.Engine
-	reservedEnv              map[string]func(run state.Run) string
-	eksClusterOverride       string
-	eksGPUClusterOverride    string
-	checkImageValidity       bool
-	baseUri                  string
-	spotReAttemptOverride    float32
-	eksSpotOverride          bool
-	spotThresholdMinutes     float64
-	terminateJobChannel      chan state.TerminateJob
+	stateManager          state.Manager
+	eksClusterClient      cluster.Client
+	eksExecutionEngine    engine.Engine
+	emrExecutionEngine    engine.Engine
+	reservedEnv           map[string]func(run state.Run) string
+	eksClusterOverride    string
+	eksGPUClusterOverride string
+	checkImageValidity    bool
+	baseUri               string
+	spotReAttemptOverride float32
+	eksSpotOverride       bool
+	spotThresholdMinutes  float64
+	terminateJobChannel   chan state.TerminateJob
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {

@@ -6,14 +6,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 )
 
-func setUp(t *testing.T) *mux.Router {
+func setUp(t *testing.T) *muxtrace.Router {
 	confDir := "../conf"
 	c, _ := config.NewConfig(&confDir)
 	imp := testutils.ImplementsAllTheThings{

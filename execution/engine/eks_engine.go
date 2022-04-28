@@ -16,6 +16,8 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
+	kubernetestrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/k8s.io/client-go/kubernetes"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +63,9 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		if err != nil {
 			return err
 		}
+		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
 		kClient, err := kubernetes.NewForConfig(clientConf)
+
 		_ = ee.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
 		if err != nil {
 			return err
@@ -84,7 +88,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobSA = conf.GetString("eks_service_account")
 	ee.jobARAEnabled = true
 
-
 	adapt, err := adapter.NewEKSAdapter()
 
 	if err != nil {
@@ -102,6 +105,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	awsRegion := conf.GetString("eks_manifest_storage_options_region")
 	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
+	sess = awstrace.WrapSession(sess)
 	ee.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	ee.s3Bucket = conf.GetString("eks_manifest_storage_options_s3_bucket_name")
 	ee.s3BucketRootDir = conf.GetString("eks_manifest_storage_options_s3_bucket_root_dir")

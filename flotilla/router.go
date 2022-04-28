@@ -1,12 +1,14 @@
 package flotilla
 
-import "github.com/gorilla/mux"
+import (
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
+)
 
 //
 // NewRouter creates and returns a Mux Router
 //
-func NewRouter(ep endpoints) *mux.Router {
-	r := mux.NewRouter()
+func NewRouter(ep endpoints) *muxtrace.Router {
+	r := muxtrace.NewRouter()
 	v1 := r.PathPrefix("/api/v1").Subrouter()
 
 	v1.HandleFunc("/task", ep.ListDefinitions).Methods("GET")
