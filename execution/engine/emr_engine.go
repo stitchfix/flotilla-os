@@ -119,7 +119,6 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
-		"spark.kubernetes.executor.podNamePrefix":   &run.RunID,
 		"spark.kubernetes.container.image":          &run.Image,
 		"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
@@ -252,6 +251,16 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
+
+	var memoryRequestQuantity *resource.Quantity
+	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
+		if *k.Name == "spark.executor.memory" && k.Value != nil {
+			quantity := resource.MustParse(strings.ToUpper(*k.Value))
+			quantity.Set(int64(float64(memoryRequestQuantity.Value()) * 0.5))
+			memoryRequestQuantity = &quantity
+		}
+	}
+
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -296,6 +305,14 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager),
 		},
+	}
+
+	if memoryRequestQuantity != nil && memoryRequestQuantity.Value() > 0 {
+		pod.Spec.Containers[0].Resources = v1.ResourceRequirements{
+			Requests: v1.ResourceList{
+				"memory": *memoryRequestQuantity,
+			},
+		}
 	}
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
 	return emr.writeK8ObjToS3(&pod, key)
