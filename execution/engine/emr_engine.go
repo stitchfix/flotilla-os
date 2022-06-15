@@ -252,15 +252,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
-	var memoryRequestQuantity *resource.Quantity
-	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
-		if *k.Name == "spark.executor.memory" && k.Value != nil {
-			quantity := resource.MustParse(strings.ToUpper(*k.Value))
-			quantity.Set(int64(float64(quantity.Value()) * 0.5))
-			memoryRequestQuantity = &quantity
-		}
-	}
-
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -307,13 +298,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		},
 	}
 
-	if memoryRequestQuantity != nil && memoryRequestQuantity.Value() > 0 {
-		pod.Spec.Containers[0].Resources = v1.ResourceRequirements{
-			Requests: v1.ResourceList{
-				"memory": *memoryRequestQuantity,
-			},
-		}
-	}
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
 	return emr.writeK8ObjToS3(&pod, key)
 }
@@ -457,11 +441,16 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
-		if executorOOM {
-			//Bump up executors by 2x, jvm memory strings
-			if *k.Name == "spark.executor.memory" && k.Value != nil {
+		if *k.Name == "spark.executor.memory" && k.Value != nil {
+			// Double executor memory - OOM in the last 30 days
+			if executorOOM {
 				quantity := resource.MustParse(strings.ToUpper(*k.Value))
 				quantity.Set(quantity.Value() * 2)
+				k.Value = aws.String(strings.ToLower(quantity.String()))
+			} else {
+				// Reduce executor memory by half
+				quantity := resource.MustParse(strings.ToUpper(*k.Value))
+				quantity.Set(int64(float64(quantity.Value()) * 0.5))
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			}
 		}
