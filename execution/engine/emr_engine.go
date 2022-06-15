@@ -119,6 +119,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
+		"spark.kubernetes.executor.podNamePrefix":   &run.RunID,
 		"spark.kubernetes.container.image":          &run.Image,
 		"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
