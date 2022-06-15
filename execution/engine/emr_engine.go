@@ -256,7 +256,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if *k.Name == "spark.executor.memory" && k.Value != nil {
 			quantity := resource.MustParse(strings.ToUpper(*k.Value))
-			quantity.Set(int64(float64(memoryRequestQuantity.Value()) * 0.5))
+			quantity.Set(int64(float64(quantity.Value()) * 0.5))
 			memoryRequestQuantity = &quantity
 		}
 	}
