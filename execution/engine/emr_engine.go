@@ -450,8 +450,11 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 			} else {
 				// Reduce executor memory by half
 				quantity := resource.MustParse(strings.ToUpper(*k.Value))
-				quantity.Set(int64(float64(quantity.Value()) * 0.5))
-				k.Value = aws.String(strings.ToLower(quantity.String()))
+				minVal := resource.MustParse("1G")
+				if quantity.MilliValue() > minVal.MilliValue() {
+					quantity.Set(int64(float64(quantity.Value()) * 0.5))
+					k.Value = aws.String(strings.ToLower(quantity.String()))
+				}
 			}
 		}
 		if driverOOM {
