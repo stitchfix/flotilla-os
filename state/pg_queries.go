@@ -67,7 +67,7 @@ FROM (SELECT CASE
 const TaskResourcesDriverOOMSQL = `
 SELECT (spark_extension -> 'driver_oom')::boolean AS driver_oom
 FROM TASK
-WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
   AND engine = 'eks-spark'
   AND definition_id = $1
   AND command_hash = $2
@@ -81,7 +81,7 @@ SELECT CASE WHEN A.c >= 1 THEN true::boolean ELSE false::boolean END
 FROM (SELECT count(*) as c
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
            AND definition_id = $1
            AND command_hash = $2
 		   AND engine = 'eks-spark'
