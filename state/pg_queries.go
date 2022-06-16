@@ -77,15 +77,16 @@ GROUP BY 1
 `
 
 const TaskResourcesExecutorOOMSQL = `
-SELECT (spark_extension -> 'executor_oom')::boolean AS executor_oom
-FROM TASK
-WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
-  AND engine = 'eks-spark'
-  AND definition_id = $1
-  AND command_hash = $2
-  AND exit_code = 137
-  AND spark_extension ? 'executor_oom'
-GROUP BY 1
+SELECT CASE WHEN A.c >= 1 THEN true::boolean ELSE false::boolean END
+FROM (SELECT count(*) as c
+      FROM TASK
+      WHERE
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+           AND definition_id = $1
+           AND command_hash = $2
+		   AND engine = 'eks-spark'
+           AND exit_code !=0
+      LIMIT 30) A
 `
 
 const TaskResourcesExecutorNodeLifecycleSQL = `
