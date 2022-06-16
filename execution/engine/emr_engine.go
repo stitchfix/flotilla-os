@@ -445,7 +445,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 			// 1.5x executor memory - OOM in the last 30 days
 			if executorOOM {
 				quantity := resource.MustParse(strings.ToUpper(*k.Value))
-				quantity.Set(int64(float64(quantity.Value()) * 1.5))
+				quantity.Set(int64(float64(quantity.Value()) * 1.25))
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			} else {
 				// Reduce executor memory by half
