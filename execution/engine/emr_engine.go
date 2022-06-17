@@ -479,6 +479,8 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
 
+	buffer.WriteString(fmt.Sprintf(" --conf %s=%s", "spark.kubernetes.executor.podNamePrefix", run.RunID))
+
 	if run.SparkExtension.SparkSubmitJobDriver.Class != nil {
 		buffer.WriteString(fmt.Sprintf(" --class %s", *run.SparkExtension.SparkSubmitJobDriver.Class))
 	}
