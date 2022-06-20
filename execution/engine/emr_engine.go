@@ -123,6 +123,8 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3a://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
+		"spark.default.parallelism":                 aws.String("256"),
+		"spark.sql.shuffle.partitions":              aws.String("256"),
 	}
 	hiveDefaults := map[string]*string{}
 
