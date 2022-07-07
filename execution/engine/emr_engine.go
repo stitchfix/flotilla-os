@@ -258,7 +258,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
 		},
