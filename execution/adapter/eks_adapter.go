@@ -125,7 +125,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	}
 
 	affinity := a.constructAffinity(executable, run, manager)
-	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
+	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
