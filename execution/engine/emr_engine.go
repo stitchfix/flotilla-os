@@ -258,7 +258,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
 		},
@@ -450,11 +450,10 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 				quantity.Set(int64(float64(quantity.Value()) * 1.25))
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			} else {
-				// Reduce executor memory by half
 				quantity := resource.MustParse(strings.ToUpper(*k.Value))
 				minVal := resource.MustParse("1G")
 				if quantity.MilliValue() > minVal.MilliValue() {
-					quantity.Set(int64(float64(quantity.Value()) * 0.5))
+					quantity.Set(int64(float64(quantity.Value()) * 1.0))
 					k.Value = aws.String(strings.ToLower(quantity.String()))
 				}
 			}
