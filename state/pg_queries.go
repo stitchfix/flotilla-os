@@ -94,7 +94,7 @@ SELECT CASE WHEN A.c >= 1 THEN 'ondemand' ELSE 'spot' END
 FROM (SELECT count(*) as c
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '6 hour'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '12 hour'
            AND definition_id = $1
            AND command_hash = $2
            AND exit_code !=0
@@ -138,7 +138,7 @@ FROM (
              COUNT(CASE WHEN attempt_count > 1 THEN 1 END) * 1.0 AS multiple_attempts
       FROM task
       WHERE engine = 'eks' AND
-            queued_at >= NOW() - INTERVAL '30 MINUTES' AND
+            queued_at >= NOW() - INTERVAL '180 MINUTES' AND
             node_lifecycle = 'spot') A
 `
 
