@@ -438,7 +438,7 @@ func setResourceSuffix(value string) string {
 	if strings.Contains(value, "g") || strings.Contains(value, "m") {
 		return strings.ToUpper(value)
 	}
-	if strings.Contains(value, "k") || strings.Contains(value, "K") {
+	if strings.Contains(value, "K") {
 		return strings.ToLower(value)
 	}
 	return value
