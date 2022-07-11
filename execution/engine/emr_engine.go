@@ -434,6 +434,16 @@ func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager stat
 	return run
 }
 
+func setResourceSuffix(value string) string {
+	if strings.Contains(value, "g") || strings.Contains(value, "m") {
+		return strings.ToUpper(value)
+	}
+	if strings.Contains(value, "k") || strings.Contains(value, "K") {
+		return strings.ToLower(value)
+	}
+	return value
+}
+
 func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager state.Manager) state.Run {
 	if run.CommandHash == nil {
 		return run
@@ -446,11 +456,11 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 		if *k.Name == "spark.executor.memory" && k.Value != nil {
 			// 1.5x executor memory - OOM in the last 30 days
 			if executorOOM {
-				quantity := resource.MustParse(strings.ToUpper(*k.Value))
+				quantity := resource.MustParse(setResourceSuffix(*k.Value))
 				quantity.Set(int64(float64(quantity.Value()) * 1.25))
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			} else {
-				quantity := resource.MustParse(strings.ToUpper(*k.Value))
+				quantity := resource.MustParse(setResourceSuffix(*k.Value))
 				minVal := resource.MustParse("1G")
 				if quantity.MilliValue() > minVal.MilliValue() {
 					quantity.Set(int64(float64(quantity.Value()) * 1.0))
@@ -461,7 +471,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 		if driverOOM {
 			//Bump up driver by 3x, jvm memory strings
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
-				quantity := resource.MustParse(strings.ToUpper(*k.Value))
+				quantity := resource.MustParse(setResourceSuffix(*k.Value))
 				quantity.Set(quantity.Value() * 3)
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			}
