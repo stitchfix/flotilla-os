@@ -138,7 +138,7 @@ FROM (
              COUNT(CASE WHEN attempt_count > 1 THEN 1 END) * 1.0 AS multiple_attempts
       FROM task
       WHERE engine = 'eks' AND
-            queued_at >= NOW() - INTERVAL '180 MINUTES' AND
+            queued_at >= NOW() - INTERVAL '18 MINUTES' AND
             node_lifecycle = 'spot') A
 `
 
