@@ -88,6 +88,14 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
+
+	if run.CommandHash != nil && run.NodeLifecycle != nil && *run.NodeLifecycle == state.SpotLifecycle {
+		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		if err == nil && nodeType == state.OndemandLifecycle {
+			run.NodeLifecycle = &state.OndemandLifecycle
+		}
+	}
+
 	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
@@ -205,6 +213,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
+			Labels: map[string]string{
+				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -261,6 +271,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
+			Labels: map[string]string{
+				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -396,6 +408,20 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 						MatchExpressions: requiredMatch,
 					},
 				},
+			},
+		},
+		PodAffinity: &v1.PodAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
+				Weight: 100,
+				PodAffinityTerm: v1.PodAffinityTerm{
+					Namespaces: []string{*run.Namespace},
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"flotilla-run-id": run.RunID},
+					},
+					TopologyKey: "kubernetes.io/hostname",
+				},
+			},
 			},
 		},
 	}
