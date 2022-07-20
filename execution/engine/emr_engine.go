@@ -414,7 +414,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
 				Weight: 100,
 				PodAffinityTerm: v1.PodAffinityTerm{
-					Namespaces: []string{*run.Namespace},
 					LabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"flotilla-run-id": run.RunID},
