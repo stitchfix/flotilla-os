@@ -366,7 +366,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
 		nodeLifecycle = append(nodeLifecycle, "normal")
 	} else {
-		nodeLifecycle = append(nodeLifecycle, "spot")
+		nodeLifecycle = append(nodeLifecycle, "spot", "normal")
 	}
 
 	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
