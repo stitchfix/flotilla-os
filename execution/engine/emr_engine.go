@@ -363,10 +363,10 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 
 	var nodeLifecycle []string
-	podAffinity := "spot"
+	nodePreference := "spot"
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
 		nodeLifecycle = append(nodeLifecycle, "normal")
-		podAffinity = "normal"
+		nodePreference = "normal"
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot", "normal")
 	}
@@ -411,18 +411,20 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 					},
 				},
 			},
+			PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{{
+				Weight: 50,
+				Preference: v1.NodeSelectorTerm{
+					MatchFields: []v1.NodeSelectorRequirement{{
+						Key:      "node.kubernetes.io/lifecycle",
+						Operator: v1.NodeSelectorOpIn,
+						Values:   []string{nodePreference},
+					}},
+				},
+			}},
 		},
 		PodAffinity: &v1.PodAffinity{
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
-				Weight: 80,
-				PodAffinityTerm: v1.PodAffinityTerm{
-					LabelSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"node.kubernetes.io/lifecycle": podAffinity},
-					},
-				},
-			}, {
-				Weight: 40,
+				Weight: 50,
 				PodAffinityTerm: v1.PodAffinityTerm{
 					LabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
