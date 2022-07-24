@@ -414,7 +414,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{{
 				Weight: 50,
 				Preference: v1.NodeSelectorTerm{
-					MatchFields: []v1.NodeSelectorRequirement{{
+					MatchExpressions: []v1.NodeSelectorRequirement{{
 						Key:      "node.kubernetes.io/lifecycle",
 						Operator: v1.NodeSelectorOpIn,
 						Values:   []string{nodePreference},
