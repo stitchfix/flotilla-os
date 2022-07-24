@@ -363,8 +363,10 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 
 	var nodeLifecycle []string
+	podAffinity := "spot"
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
 		nodeLifecycle = append(nodeLifecycle, "normal")
+		podAffinity = "normal"
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot", "normal")
 	}
@@ -412,7 +414,15 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		},
 		PodAffinity: &v1.PodAffinity{
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
-				Weight: 100,
+				Weight: 80,
+				PodAffinityTerm: v1.PodAffinityTerm{
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"node.kubernetes.io/lifecycle": podAffinity},
+					},
+				},
+			}, {
+				Weight: 40,
 				PodAffinityTerm: v1.PodAffinityTerm{
 					LabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
