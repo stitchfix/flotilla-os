@@ -193,16 +193,6 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
-
-		nodeList, err := manager.ListFailingNodes()
-
-		if err == nil && len(nodeList) > 0 {
-			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "kubernetes.io/hostname",
-				Operator: corev1.NodeSelectorOpNotIn,
-				Values:   nodeList,
-			})
-		}
 	}
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{

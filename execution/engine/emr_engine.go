@@ -377,16 +377,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 			Operator: v1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
-
-		nodeList, err := manager.ListFailingNodes()
-
-		if err == nil && len(nodeList) > 0 {
-			requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-				Key:      "kubernetes.io/hostname",
-				Operator: v1.NodeSelectorOpNotIn,
-				Values:   nodeList,
-			})
-		}
 	}
 
 	if run.CommandHash != nil {
