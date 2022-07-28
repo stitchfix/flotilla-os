@@ -23,7 +23,6 @@ import (
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	_ "k8s.io/client-go/kubernetes/scheme"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -436,28 +435,6 @@ func Max(x, y int64) int64 {
 }
 
 func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) state.Run {
-	if run.CommandHash == nil {
-		return run
-	}
-	numExecutors, err := manager.EstimateExecutorCount(run.DefinitionID, *run.CommandHash)
-	if err != nil {
-		numExecutors = 25
-	}
-	if numExecutors > 0 {
-		run.SparkExtension.SparkSubmitJobDriver.NumExecutors = aws.Int64(numExecutors)
-		var applicationConf []state.Conf
-		for _, k := range run.SparkExtension.ApplicationConf {
-			if *k.Name == "spark.dynamicAllocation.maxExecutors" && k.Value != nil {
-				passedInValue, err := strconv.Atoi(*k.Value)
-				if err == nil {
-					numExecutors = Max(numExecutors, int64(passedInValue))
-				}
-				k.Value = aws.String(strconv.FormatInt(numExecutors, 10))
-			}
-			applicationConf = append(applicationConf, state.Conf{Name: k.Name, Value: k.Value})
-		}
-		run.SparkExtension.ApplicationConf = applicationConf
-	}
 	return run
 }
 
