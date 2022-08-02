@@ -132,7 +132,7 @@ func (sw *statusWorker) runOnceEKS() {
 		},
 		"task_type": {state.DefaultTaskType},
 		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
-	}, nil, []string{state.EKSEngine})
+	}, nil, []string{state.EKSEngine, state.EKSSparkEngine})
 
 	if err != nil {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
