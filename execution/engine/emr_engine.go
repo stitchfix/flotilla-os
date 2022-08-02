@@ -458,10 +458,10 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if *k.Name == "spark.executor.memory" && k.Value != nil {
-			// 1.75x executor memory - OOM in the last 30 days
+			// 1.25x executor memory - OOM in the last 30 days
 			if executorOOM {
 				quantity := resource.MustParse(setResourceSuffix(*k.Value))
-				quantity.Set(int64(float64(quantity.Value()) * 1.75))
+				quantity.Set(int64(float64(quantity.Value()) * 1.25))
 				k.Value = aws.String(strings.ToLower(quantity.String()))
 			} else {
 				quantity := resource.MustParse(setResourceSuffix(*k.Value))

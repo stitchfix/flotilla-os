@@ -128,7 +128,7 @@ func (sw *statusWorker) processTimeouts(runs []state.Run) {
 func (sw *statusWorker) runOnceEKS() {
 	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -30).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -300).Format(time.RFC3339),
 		},
 		"task_type": {state.DefaultTaskType},
 		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
