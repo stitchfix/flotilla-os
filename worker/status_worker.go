@@ -87,7 +87,7 @@ func (sw *statusWorker) Run() error {
 func (sw *statusWorker) runTimeouts() {
 	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
-			time.Now().AddDate(0, 0, -60).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, -300).Format(time.RFC3339),
 		},
 		"task_type": {state.DefaultTaskType},
 		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
@@ -132,7 +132,7 @@ func (sw *statusWorker) runOnceEKS() {
 		},
 		"task_type": {state.DefaultTaskType},
 		"status":    {state.StatusNeedsRetry, state.StatusRunning, state.StatusQueued, state.StatusPending},
-	}, nil, []string{state.EKSEngine, state.EKSSparkEngine})
+	}, nil, []string{state.EKSEngine})
 
 	if err != nil {
 		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
