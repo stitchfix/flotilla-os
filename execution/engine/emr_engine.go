@@ -423,6 +423,16 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 					TopologyKey: "kubernetes.io/hostname",
 				},
 			},
+				{
+					Weight: 40,
+					PodAffinityTerm: v1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"flotilla-run-id": run.RunID},
+						},
+						TopologyKey: "topology.kubernetes.io/zone",
+					},
+				},
 			},
 		},
 	}
