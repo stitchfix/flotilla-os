@@ -249,7 +249,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager),
+			Affinity:      emr.constructAffinity(executable, run, manager, true),
 		},
 	}
 
@@ -274,6 +274,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
+			TerminationGracePeriodSeconds: aws.Int64(90),
 			Volumes: []v1.Volume{{
 				Name: "shared-lib-volume",
 				VolumeSource: v1.VolumeSource{
@@ -307,7 +308,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager),
+			Affinity:      emr.constructAffinity(executable, run, manager, false),
 		},
 	}
 
@@ -354,7 +355,7 @@ func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) *string
 	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
-func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *v1.Affinity {
+func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []v1.NodeSelectorRequirement
@@ -363,7 +364,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 
 	var nodeLifecycle []string
 	nodePreference := "spot"
-	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
+	if (run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle) || driver {
 		nodeLifecycle = append(nodeLifecycle, "normal")
 		nodePreference = "normal"
 	} else {
