@@ -123,9 +123,14 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	if volumeMounts != nil {
 		container.VolumeMounts = volumeMounts
 	}
-
 	affinity := a.constructAffinity(executable, run, manager)
-	annotations := map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "false"}
+
+	annotations := map[string]string{}
+	if run.Gpu != nil && *run.Gpu > 0 {
+		annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = "true"
+	} else {
+		annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = "false"
+	}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
