@@ -365,10 +365,10 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	var nodeLifecycle []string
 	nodePreference := "spot"
 	if (run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle) || driver {
-		nodeLifecycle = append(nodeLifecycle, "normal")
-		nodePreference = "normal"
+		nodeLifecycle = append(nodeLifecycle, "on-demand")
+		nodePreference = "on-demand"
 	} else {
-		nodeLifecycle = append(nodeLifecycle, "spot", "normal")
+		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand")
 	}
 
 	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
@@ -382,7 +382,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	if run.CommandHash != nil {
 		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
 		if err == nil && nodeType == state.OndemandLifecycle {
-			nodeLifecycle = []string{"normal"}
+			nodeLifecycle = []string{"on-demand"}
 		}
 	}
 
