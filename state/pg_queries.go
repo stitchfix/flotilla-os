@@ -58,7 +58,7 @@ FROM (SELECT CASE
                  END as executor_count
       FROM TASK
       WHERE
-           queued_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+           queued_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
            AND engine = 'eks-spark'
            AND definition_id = $1
            AND command_hash = $2
