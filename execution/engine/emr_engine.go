@@ -225,9 +225,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name:            "spark-kubernetes-driver",
-					ImagePullPolicy: v1.PullIfNotPresent,
-					Env:             emr.envOverrides(executable, run),
+					Name: "spark-kubernetes-driver",
+					Env:  emr.envOverrides(executable, run),
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      "shared-lib-volume",
@@ -238,10 +237,9 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:            fmt.Sprintf("init-driver-%s", run.RunID),
-				Image:           run.Image,
-				ImagePullPolicy: v1.PullIfNotPresent,
-				Env:             emr.envOverrides(executable, run),
+				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
@@ -286,9 +284,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name:            "spark-kubernetes-executor",
-					ImagePullPolicy: v1.PullIfNotPresent,
-					Env:             emr.envOverrides(executable, run),
+					Name: "spark-kubernetes-executor",
+					Env:  emr.envOverrides(executable, run),
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      "shared-lib-volume",
@@ -299,10 +296,9 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:            fmt.Sprintf("init-executor-%s", run.RunID),
-				Image:           run.Image,
-				ImagePullPolicy: v1.PullIfNotPresent,
-				Env:             emr.envOverrides(executable, run),
+				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      "shared-lib-volume",
