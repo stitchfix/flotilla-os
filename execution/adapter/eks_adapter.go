@@ -187,9 +187,9 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
-		nodeLifecycle = append(nodeLifecycle, "on-demand")
+		nodeLifecycle = append(nodeLifecycle, "on-demand", "normal")
 	} else {
-		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand")
+		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand", "normal")
 	}
 
 	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
