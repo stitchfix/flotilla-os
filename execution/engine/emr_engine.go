@@ -413,16 +413,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 			}},
 		},
 		PodAffinity: &v1.PodAffinity{
-			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
-				Weight: 50,
-				PodAffinityTerm: v1.PodAffinityTerm{
-					LabelSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"flotilla-run-id": run.RunID},
-					},
-					TopologyKey: "kubernetes.io/hostname",
-				},
-			},
+			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
 				{
 					Weight: 40,
 					PodAffinityTerm: v1.PodAffinityTerm{
