@@ -359,6 +359,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	if strings.HasPrefix(runId, "eks-spark") {
 		ew.processEMRPodEvents(kubernetesEvent)
+		return
 	}
 
 	layout := "2020-08-31T17:27:50Z"
