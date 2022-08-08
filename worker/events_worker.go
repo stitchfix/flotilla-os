@@ -357,7 +357,7 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
-	if strings.HasPrefix(runId, "eks-spark") {
+	if strings.HasPrefix(runId, "eks-spark") || len(runId) == 0 {
 		ew.processEMRPodEvents(kubernetesEvent)
 		return
 	}
