@@ -267,7 +267,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+				"cluster-autoscaler.kubernetes.io/safe-to-evict": emr.constructEviction(run, manager),
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
 			Labels: map[string]string{
@@ -355,6 +355,19 @@ func (emr *EMRExecutionEngine) writeStringToS3(key *string, body []byte) *string
 	return aws.String(fmt.Sprintf("s3://%s/%s", emr.s3ManifestBucket, *key))
 }
 
+func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Manager) string {
+	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
+		return "false"
+	}
+	if run.CommandHash != nil {
+		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		if err == nil && nodeType == state.OndemandLifecycle {
+			return "false"
+		}
+	}
+	return "true"
+}
+
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	executableResources := executable.GetExecutableResources()
@@ -428,12 +441,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		},
 	}
 	return affinity
-}
-func Max(x, y int64) int64 {
-	if x < y {
-		return y
-	}
-	return x
 }
 
 func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager state.Manager) state.Run {

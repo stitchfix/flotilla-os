@@ -126,11 +126,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	affinity := a.constructAffinity(executable, run, manager)
 
 	annotations := map[string]string{}
-	if run.Gpu != nil && *run.Gpu > 0 {
-		annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = "true"
-	} else {
-		annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = "false"
-	}
+	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
@@ -163,6 +159,22 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	}
 
 	return eksJob, nil
+}
+func (a *eksAdapter) constructEviction(run state.Run, manager state.Manager) string {
+	if run.Gpu != nil && *run.Gpu > 0 {
+		return "true"
+	}
+
+	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
+		return "false"
+	}
+	if run.CommandHash != nil {
+		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		if err == nil && nodeType == state.OndemandLifecycle {
+			return "false"
+		}
+	}
+	return "true"
 }
 
 func (a *eksAdapter) constructContainerPorts(executable state.Executable) []corev1.ContainerPort {
