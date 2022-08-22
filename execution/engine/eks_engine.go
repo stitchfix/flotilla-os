@@ -104,7 +104,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	)
 	awsRegion := conf.GetString("eks_manifest_storage_options_region")
 	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
-	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
+	sess := awstrace.WrapSession(session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig})))
 	sess = awstrace.WrapSession(sess)
 	ee.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	ee.s3Bucket = conf.GetString("eks_manifest_storage_options_s3_bucket_name")

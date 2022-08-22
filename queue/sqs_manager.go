@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
+	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 )
 
 //
@@ -63,8 +64,8 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	qm.namespace = conf.GetString("queue_namespace")
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(conf.GetString("aws_default_region"))}))
+		sess := awstrace.WrapSession(session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(conf.GetString("aws_default_region"))})))
 
 		qm.qc = sqs.New(sess)
 	}

@@ -68,8 +68,8 @@ func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(awsRegion)}))
+		sess := awstrace.WrapSession(session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(awsRegion)})))
 		sess = awstrace.WrapSession(sess)
 		lc.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	}

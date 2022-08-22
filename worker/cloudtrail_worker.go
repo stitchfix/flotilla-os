@@ -14,6 +14,8 @@ import (
 	"gopkg.in/tomb.v2"
 	"strings"
 	"time"
+
+		awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 )
 
 type cloudtrailWorker struct {
@@ -38,7 +40,7 @@ func (ctw *cloudtrailWorker) Initialize(conf config.Config, sm state.Manager, ek
 	_ = ctw.qm.Initialize(ctw.conf, "eks")
 
 	awsRegion := conf.GetString("eks_manifest_storage_options_region")
-	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)}))
+	sess := awstrace.WrapSession(session.Must(session.NewSession(&aws.Config{Region: aws.String(awsRegion)})))
 	ctw.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 
 	return nil

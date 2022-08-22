@@ -17,6 +17,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 )
 
 //
@@ -74,8 +75,8 @@ func (lc *EKSCloudWatchLogsClient) Initialize(conf config.Config) error {
 
 	flotillaMode := conf.GetString("flotilla_mode")
 	if flotillaMode != "test" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(awsRegion)}))
+		sess := awstrace.WrapSession(session.Must(session.NewSession(&aws.Config{
+			Region: aws.String(awsRegion)})))
 
 		lc.logsClient = cloudwatchlogs.New(sess)
 	}
