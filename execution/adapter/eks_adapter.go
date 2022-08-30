@@ -128,6 +128,11 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations := map[string]string{}
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 
+	labels := map[string]string{
+		"owner":           a.sanitizeLabel(run.User),
+		"description":     a.sanitizeLabel(*run.Description),
+		"flotilla-run-id": run.RunID}
+
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
 		ActiveDeadlineSeconds:   run.ActiveDeadlineSeconds,
@@ -136,6 +141,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: v1.ObjectMeta{
 				Annotations: annotations,
+				Labels:      labels,
 			},
 			Spec: corev1.PodSpec{
 				SchedulerName:      schedulerName,
@@ -432,4 +438,13 @@ func (a *eksAdapter) sanitizeEnvVar(key string) string {
 	// Environment variable names can't contain spaces.
 	key = strings.Replace(key, " ", "", -1)
 	return key
+}
+
+func (a *eksAdapter) sanitizeLabel(label string) string {
+	label = strings.Replace(label, "@", "_", -1)
+	label = strings.Replace(label, ":", "_", -1)
+	label = strings.Replace(label, " ", "_", -1)
+	label = strings.Replace(label, "/", "-", -1)
+	label = label[0:62]
+	return label
 }
