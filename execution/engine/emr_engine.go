@@ -271,8 +271,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
 			Labels: map[string]string{
-				"owner":           emr.sanitizeLabel(run.User),
-				"description":     emr.sanitizeLabel(*run.Description),
 				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{
@@ -316,17 +314,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "executor-template"))
 	return emr.writeK8ObjToS3(&pod, key)
-}
-
-func (emr *EMRExecutionEngine) sanitizeLabel(label string) string {
-	label = strings.Replace(label, "@", "_", -1)
-	label = strings.Replace(label, ":", "_", -1)
-	label = strings.Replace(label, " ", "_", -1)
-	label = strings.Replace(label, "/", "-", -1)
-	if len(label) > 63 {
-		label = label[0:62]
-	}
-	return label
 }
 
 func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *string {

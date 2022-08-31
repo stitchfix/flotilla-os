@@ -437,15 +437,3 @@ func (a *eksAdapter) sanitizeEnvVar(key string) string {
 	key = strings.Replace(key, " ", "", -1)
 	return key
 }
-
-func (a *eksAdapter) sanitizeLabel(label string) string {
-	label = strings.Replace(label, "@", "_", -1)
-	label = strings.Replace(label, ":", "_", -1)
-	label = strings.Replace(label, " ", "_", -1)
-	label = strings.Replace(label, "/", "-", -1)
-	if len(label) > 63 {
-		label = label[0:62]
-	}
-
-	return label
-}
