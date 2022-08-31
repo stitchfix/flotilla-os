@@ -117,19 +117,12 @@ func (app *App) configure(conf config.Config) {
 }
 
 func (app *App) configureRoutes(ep endpoints) {
-	if app.mode == "dev" || app.mode == "test" {
-		app.logger.Log(
-			"message", "WARNING - enabling CORS",
-			"origins", strings.Join(app.corsAllowedOrigins, ","))
-		router := NewRouter(ep)
-		c := cors.New(cors.Options{
-			AllowedOrigins: app.corsAllowedOrigins,
-			AllowedMethods: []string{"GET", "DELETE", "POST", "PUT"},
-		})
-		app.handler = c.Handler(router)
-	} else {
-		app.handler = NewRouter(ep)
-	}
+	router := NewRouter(ep)
+	c := cors.New(cors.Options{
+		AllowedOrigins: app.corsAllowedOrigins,
+		AllowedMethods: []string{"GET", "DELETE", "POST", "PUT"},
+	})
+	app.handler = c.Handler(router)
 }
 
 func (app *App) initializeEKSWorkers(
