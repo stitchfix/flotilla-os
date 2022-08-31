@@ -445,6 +445,9 @@ func (a *eksAdapter) sanitizeLabel(label string) string {
 	label = strings.Replace(label, ":", "_", -1)
 	label = strings.Replace(label, " ", "_", -1)
 	label = strings.Replace(label, "/", "-", -1)
-	label = label[0:62]
+	if len(label) > 63 {
+		label = label[0:62]
+	}
+
 	return label
 }
