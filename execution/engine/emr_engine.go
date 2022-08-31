@@ -213,8 +213,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
 			Labels: map[string]string{
-				"owner":           emr.sanitizeLabel(run.User),
-				"description":     emr.sanitizeLabel(*run.Description),
 				"flotilla-run-id": run.RunID},
 		},
 		Spec: v1.PodSpec{

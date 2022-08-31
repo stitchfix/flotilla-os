@@ -129,8 +129,6 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 
 	labels := map[string]string{
-		"owner":           a.sanitizeLabel(run.User),
-		"description":     a.sanitizeLabel(*run.Description),
 		"flotilla-run-id": run.RunID}
 
 	jobSpec := batchv1.JobSpec{
