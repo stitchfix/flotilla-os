@@ -76,6 +76,14 @@ WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
 GROUP BY 1
 `
 
+const TaskIdempotenceKeyCheckSQL = `
+SELECT run_id
+FROM task
+WHERE idempotence_key = $1 and (exit_code = 0 or exit_code is null) and queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+ORDER BY queued_at desc
+LIMIT 1
+`
+
 const TaskResourcesExecutorOOMSQL = `
 SELECT CASE WHEN A.c >= 1 THEN true::boolean ELSE false::boolean END
 FROM (SELECT count(*) as c
@@ -187,7 +195,8 @@ select t.run_id                          as runid,
        active_deadline_seconds           as activedeadlineseconds,
        spark_extension::TEXT             as sparkextension,
        metrics_uri                       as metricsuri,
-       description                       as description
+       description                       as description,
+	   idempotence_key                   as idempotencekey
 from task t
 `
 

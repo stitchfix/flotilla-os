@@ -60,6 +60,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 			Engine:           &engine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
+			IdempotenceKey:   nil,
 		},
 	}
 	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
@@ -162,6 +163,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 			Engine:           &engine,
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
+			IdempotenceKey:   nil,
 		},
 	}
 	run, err := es.CreateDefinitionRunByAlias("aliasB", &req)

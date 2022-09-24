@@ -607,9 +607,16 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	u2 := Run{
 		Status: StatusNeedsRetry,
 	}
-	sm.UpdateRun("run3", u)
+	_, e := sm.UpdateRun("run3", u)
+	if e != nil {
+		t.Errorf("Error while updating %v", e)
+	}
 
-	r, _ := sm.GetRun("run3")
+	r, e := sm.GetRun("run3")
+
+	if e != nil {
+		t.Errorf("Error in GetRun %v", e)
+	}
 	if *r.ExitCode != ec {
 		t.Errorf("Expected update to set exit code to %v but was %v", ec, *r.ExitCode)
 	}
