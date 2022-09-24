@@ -77,11 +77,15 @@ GROUP BY 1
 `
 
 const TaskIdempotenceKeyCheckSQL = `
+WITH runs as (
+    SELECT run_id
+    FROM task
+    WHERE idempotence_key = $1
+      and (exit_code = 0 or exit_code is null)
+      and queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days')
 SELECT run_id
-FROM task
-WHERE idempotence_key = $1 and (exit_code = 0 or exit_code is null) and queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
-ORDER BY queued_at desc
-LIMIT 1
+FROM runs
+LIMIT 1;
 `
 
 const TaskResourcesExecutorOOMSQL = `
