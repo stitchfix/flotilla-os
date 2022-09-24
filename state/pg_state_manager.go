@@ -131,13 +131,13 @@ func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHas
 }
 func (sm *SQLStateManager) CheckIdempotenceKey(idempotenceKey string) (string, error) {
 	var err error
-	var runId *string
-	err = sm.readonlyDB.Get(runId, TaskIdempotenceKeyCheckSQL, idempotenceKey)
+	runId := ""
+	err = sm.readonlyDB.Get(&runId, TaskIdempotenceKeyCheckSQL, idempotenceKey)
 
-	if runId == nil || err != nil {
+	if err != nil || len(runId) == 0 {
 		err = errors.New("no run_id found for idempotence key")
 	}
-	return *runId, err
+	return runId, err
 }
 
 func (sm *SQLStateManager) ExecutorOOM(executableID string, commandHash string) (bool, error) {

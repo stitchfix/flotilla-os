@@ -519,7 +519,7 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 		priorRunId, err := es.stateManager.CheckIdempotenceKey(*run.IdempotenceKey)
 		if err == nil && len(priorRunId) > 0 {
 			priorRun, err := es.Get(priorRunId)
-			if err != nil {
+			if err == nil {
 				return priorRun, nil
 			}
 		}

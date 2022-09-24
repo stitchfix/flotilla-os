@@ -79,7 +79,7 @@ GROUP BY 1
 const TaskIdempotenceKeyCheckSQL = `
 SELECT run_id
 FROM task
-WHERE idempotence_key = $1 and (exit_code = 0 || exit_code is nil)
+WHERE idempotence_key = $1 and (exit_code = 0 || exit_code is null)
 ORDER BY queued_at desc
 LIMIT 1
 `

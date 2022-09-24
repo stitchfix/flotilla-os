@@ -239,7 +239,7 @@ func (iatt *ImplementsAllTheThings) ListWorkers(engine string) (state.WorkersLis
 
 func (iatt *ImplementsAllTheThings) CheckIdempotenceKey(idempotenceKey string) (string, error) {
 	iatt.Calls = append(iatt.Calls, "CheckIdempotenceKey")
-	return idempotenceKey, nil
+	return "42", nil
 }
 
 // GetWorker - StateManager
