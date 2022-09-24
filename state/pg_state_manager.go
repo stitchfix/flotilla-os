@@ -811,7 +811,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		spark_extension = $38,
 		metrics_uri = $39,
 		description = $40,
-		idempotence_key = $41,
+		idempotence_key = $41
     WHERE run_id = $1;
     `
 
