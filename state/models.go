@@ -237,6 +237,7 @@ type ExecutionRequestCommon struct {
 	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
 	Description           *string         `json:"description,omitempty"`
 	CommandHash           *string         `json:"command_hash,omitempty"`
+	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -482,6 +483,7 @@ type Run struct {
 	SparkExtension          *SparkExtension          `json:"spark_extension,omitempty"`
 	MetricsUri              *string                  `json:"metrics_uri,omitempty"`
 	Description             *string                  `json:"description,omitempty"`
+	IdempotenceKey          *string                  `json:"idempotence_key,omitempty"`
 }
 
 //
@@ -628,6 +630,10 @@ func (d *Run) UpdateWith(other Run) {
 
 	if other.Description != nil {
 		d.Description = other.Description
+	}
+
+	if other.IdempotenceKey != nil {
+		d.IdempotenceKey = other.IdempotenceKey
 	}
 
 	if other.MemoryLimit != nil {

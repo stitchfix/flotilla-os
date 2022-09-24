@@ -54,6 +54,7 @@ type Manager interface {
 	GetPodReAttemptRate() (float32, error)
 	GetNodeLifecycle(executableID string, commandHash string) (string, error)
 	GetTaskHistoricalRuntime(executableID string, runId string) (float32, error)
+	CheckIdempotenceKey(idempotenceKey string) (string, error)
 
 	GetRunByEMRJobId(string) (Run, error)
 }

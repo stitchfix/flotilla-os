@@ -129,6 +129,16 @@ func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHas
 	}
 	return executorCount, err
 }
+func (sm *SQLStateManager) CheckIdempotenceKey(idempotenceKey string) (string, error) {
+	var err error
+	var runId *string
+	err = sm.readonlyDB.Get(runId, TaskIdempotenceKeyCheckSQL, idempotenceKey)
+
+	if runId == nil || err != nil {
+		err = errors.New("no run_id found for idempotence key")
+	}
+	return *runId, err
+}
 
 func (sm *SQLStateManager) ExecutorOOM(executableID string, commandHash string) (bool, error) {
 	var err error
@@ -751,6 +761,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.SparkExtension,
 			&existing.MetricsUri,
 			&existing.Description,
+			&existing.IdempotenceKey,
 		)
 	}
 	if err != nil {
@@ -799,7 +810,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		active_deadline_seconds = $37,
 		spark_extension = $38,
 		metrics_uri = $39,
-		description = $40
+		description = $40,
+		idempotence_key = $41,
     WHERE run_id = $1;
     `
 
@@ -844,7 +856,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.ActiveDeadlineSeconds,
 		existing.SparkExtension,
 		existing.MetricsUri,
-		existing.Description); err != nil {
+		existing.Description,
+		existing.IdempotenceKey); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -905,7 +918,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		command_hash,
 		spark_extension,
 		metrics_uri,
-		description
+		description,
+	    idempotence_key
     ) VALUES (
         $1,
 		$2,
@@ -947,7 +961,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$38,
 		$39,
 		$40,
-		$41
+		$41,
+        $42
 	);
     `
 
@@ -997,7 +1012,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.CommandHash,
 		r.SparkExtension,
 		r.MetricsUri,
-		r.Description); err != nil {
+		r.Description,
+		r.IdempotenceKey); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}

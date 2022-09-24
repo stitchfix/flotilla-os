@@ -76,6 +76,14 @@ WHERE queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
 GROUP BY 1
 `
 
+const TaskIdempotenceKeyCheckSQL = `
+SELECT run_id
+FROM task
+WHERE idempotence_key = $1 and (exit_code = 0 || exit_code is nil)
+ORDER BY queued_at desc
+LIMIT 1
+`
+
 const TaskResourcesExecutorOOMSQL = `
 SELECT CASE WHEN A.c >= 1 THEN true::boolean ELSE false::boolean END
 FROM (SELECT count(*) as c

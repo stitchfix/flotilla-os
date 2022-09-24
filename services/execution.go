@@ -207,6 +207,10 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 		run.Description = req.Description
 	}
 
+	if req.IdempotenceKey != nil {
+		run.IdempotenceKey = req.IdempotenceKey
+	}
+
 	return run, nil
 }
 
@@ -511,6 +515,16 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 //
 func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error) {
 	var err error
+	if run.IdempotenceKey != nil {
+		priorRunId, err := es.stateManager.CheckIdempotenceKey(*run.IdempotenceKey)
+		if err == nil && len(priorRunId) > 0 {
+			priorRun, err := es.Get(priorRunId)
+			if err != nil {
+				return priorRun, nil
+			}
+		}
+	}
+
 	// Save run to source of state - it is *CRITICAL* to do this
 	// -before- queuing to avoid processing unsaved runs
 	if err = es.stateManager.CreateRun(run); err != nil {
