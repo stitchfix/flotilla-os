@@ -54,6 +54,7 @@ type LaunchRequestV2 struct {
 	Env                   *state.EnvList        `json:"env,omitempty"`
 	Description           *string               `json:"description,omitempty"`
 	CommandHash           *string               `json:"command_hash,omitempty"`
+	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
 }
 
 //
@@ -485,6 +486,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			SparkExtension:   lr.SparkExtension,
 			Description:      lr.Description,
 			CommandHash:      lr.CommandHash,
+			IdempotenceKey:   lr.IdempotenceKey,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -551,6 +553,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
 			CommandHash:           lr.CommandHash,
+			IdempotenceKey:        lr.IdempotenceKey,
 		},
 	}
 
@@ -618,6 +621,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			SparkExtension:        lr.SparkExtension,
 			Description:           lr.Description,
 			CommandHash:           lr.CommandHash,
+			IdempotenceKey:        lr.IdempotenceKey,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)

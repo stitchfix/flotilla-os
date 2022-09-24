@@ -195,7 +195,8 @@ select t.run_id                          as runid,
        active_deadline_seconds           as activedeadlineseconds,
        spark_extension::TEXT             as sparkextension,
        metrics_uri                       as metricsuri,
-       description                       as description
+       description                       as description,
+	   idempotence_key                   as idempotencekey
 from task t
 `
 
