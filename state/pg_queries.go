@@ -200,7 +200,8 @@ select t.run_id                          as runid,
        spark_extension::TEXT             as sparkextension,
        metrics_uri                       as metricsuri,
        description                       as description,
-	   idempotence_key                   as idempotencekey
+	   idempotence_key                   as idempotencekey,
+       "user"                            as user
 from task t
 `
 

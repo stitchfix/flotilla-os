@@ -762,6 +762,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.MetricsUri,
 			&existing.Description,
 			&existing.IdempotenceKey,
+			&existing.User,
 		)
 	}
 	if err != nil {
@@ -811,7 +812,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		spark_extension = $38,
 		metrics_uri = $39,
 		description = $40,
-		idempotence_key = $41
+		idempotence_key = $41,
+		"user" = $42
     WHERE run_id = $1;
     `
 
@@ -857,7 +859,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.SparkExtension,
 		existing.MetricsUri,
 		existing.Description,
-		existing.IdempotenceKey); err != nil {
+		existing.IdempotenceKey,
+		existing.User); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -919,7 +922,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		spark_extension,
 		metrics_uri,
 		description,
-	    idempotence_key
+	    idempotence_key,
+	    "user"
     ) VALUES (
         $1,
 		$2,
@@ -962,7 +966,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$39,
 		$40,
 		$41,
-        $42
+        $42,
+        $43
 	);
     `
 
@@ -1013,7 +1018,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.SparkExtension,
 		r.MetricsUri,
 		r.Description,
-		r.IdempotenceKey); err != nil {
+		r.IdempotenceKey,
+		r.User); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
