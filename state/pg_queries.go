@@ -201,7 +201,7 @@ select t.run_id                          as runid,
        metrics_uri                       as metricsuri,
        description                       as description,
 	   idempotence_key                   as idempotencekey,
-       user                              as user
+       "user"                            as user
 from task t
 `
 

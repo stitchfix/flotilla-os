@@ -813,7 +813,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		metrics_uri = $39,
 		description = $40,
 		idempotence_key = $41,
-		user = $42
+		"user" = $42
     WHERE run_id = $1;
     `
 
@@ -923,7 +923,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		metrics_uri,
 		description,
 	    idempotence_key,
-	    user
+	    "user"
     ) VALUES (
         $1,
 		$2,
