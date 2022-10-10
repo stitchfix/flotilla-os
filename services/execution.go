@@ -180,6 +180,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	if fields.Gpu != nil && *fields.Gpu > 0 {
 		fields.ClusterName = es.eksGPUClusterOverride
 	}
+	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Construct run object with StatusQueued and new UUID4 run id
