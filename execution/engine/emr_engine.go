@@ -717,5 +717,6 @@ func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 
 func (emr *EMRExecutionEngine) sanitizeLabel(key string) string {
 	key = strings.TrimSpace(key)
-	return regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
+	key = regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
+	return strings.TrimPrefix(key, "_")
 }
