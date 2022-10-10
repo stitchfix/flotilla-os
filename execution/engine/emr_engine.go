@@ -206,14 +206,26 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
+
+	labels := map[string]string{
+		"flotilla-run-id": run.RunID,
+		"owner":           emr.sanitizeLabel(run.User),
+	}
+
+	if run.Description != nil {
+		info := strings.Split(*run.Description, "/")
+
+		for i, s := range info {
+			labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
+		}
+	}
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
-			Labels: map[string]string{
-				"flotilla-run-id": run.RunID},
+			Labels: labels,
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{{
@@ -263,6 +275,19 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
+	labels := map[string]string{
+		"flotilla-run-id": run.RunID,
+		"owner":           emr.sanitizeLabel(run.User),
+	}
+
+	if run.Description != nil {
+		info := strings.Split(*run.Description, "/")
+
+		for i, s := range info {
+			labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
+		}
+	}
+
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -270,8 +295,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				"cluster-autoscaler.kubernetes.io/safe-to-evict": emr.constructEviction(run, manager),
 				"prometheus.io/scrape":                           "true",
 				"flotilla-run-id":                                run.RunID},
-			Labels: map[string]string{
-				"flotilla-run-id": run.RunID},
+			Labels: labels,
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: aws.Int64(90),
@@ -689,4 +713,9 @@ func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 	optLogin := "-l"
 	optStr := "-ce"
 	return []string{bashCmd, optLogin, optStr, cmdString}
+}
+
+func (emr *EMRExecutionEngine) sanitizeLabel(key string) string {
+	key = strings.TrimSpace(key)
+	return regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
 }

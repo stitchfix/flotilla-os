@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -129,7 +130,17 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 
 	labels := map[string]string{
-		"flotilla-run-id": run.RunID}
+		"flotilla-run-id": run.RunID,
+		"owner":           a.sanitizeLabel(run.User),
+	}
+
+	if run.Description != nil {
+		info := strings.Split(*run.Description, "/")
+
+		for i, s := range info {
+			labels[fmt.Sprintf("info%v", i)] = a.sanitizeLabel(s)
+		}
+	}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
@@ -436,4 +447,9 @@ func (a *eksAdapter) sanitizeEnvVar(key string) string {
 	// Environment variable names can't contain spaces.
 	key = strings.Replace(key, " ", "", -1)
 	return key
+}
+
+func (a *eksAdapter) sanitizeLabel(key string) string {
+	key = strings.TrimSpace(key)
+	return regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
 }
