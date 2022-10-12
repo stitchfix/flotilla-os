@@ -719,5 +719,9 @@ func (emr *EMRExecutionEngine) sanitizeLabel(key string) string {
 	key = strings.TrimSpace(key)
 	key = regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
 	key = strings.TrimPrefix(key, "_")
-	return strings.ToLower(key)
+	key = strings.ToLower(key)
+	if len(key) > 63 {
+		key = key[:63]
+	}
+	return key
 }
