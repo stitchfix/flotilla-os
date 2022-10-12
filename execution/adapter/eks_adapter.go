@@ -134,13 +134,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		"owner":           a.sanitizeLabel(run.User),
 	}
 
-	if run.Description != nil {
-		info := strings.Split(*run.Description, "/")
-
-		for i, s := range info {
-			labels[fmt.Sprintf("info%v", i)] = a.sanitizeLabel(s)
-		}
-	}
+	//if run.Description != nil {
+	//	info := strings.Split(*run.Description, "/")
+	//
+	//	for i, s := range info {
+	//		labels[fmt.Sprintf("info%v", i)] = a.sanitizeLabel(s)
+	//	}
+	//}
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,

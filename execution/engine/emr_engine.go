@@ -212,13 +212,13 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		"owner":           emr.sanitizeLabel(run.User),
 	}
 
-	if run.Description != nil {
-		info := strings.Split(*run.Description, "/")
-
-		for i, s := range info {
-			labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
-		}
-	}
+	//if run.Description != nil {
+	//	info := strings.Split(*run.Description, "/")
+	//
+	//	for i, s := range info {
+	//		labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
+	//	}
+	//}
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
