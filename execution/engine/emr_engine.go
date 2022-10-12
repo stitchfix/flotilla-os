@@ -280,13 +280,13 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		"owner":           emr.sanitizeLabel(run.User),
 	}
 
-	if run.Description != nil {
-		info := strings.Split(*run.Description, "/")
-
-		for i, s := range info {
-			labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
-		}
-	}
+	//if run.Description != nil {
+	//	info := strings.Split(*run.Description, "/")
+	//
+	//	for i, s := range info {
+	//		labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
+	//	}
+	//}
 
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
