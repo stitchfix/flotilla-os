@@ -61,6 +61,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			IdempotenceKey:   nil,
+			Arch:             nil,
 		},
 	}
 	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
@@ -164,6 +165,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			IdempotenceKey:   nil,
+			Arch:             nil,
 		},
 	}
 	run, err := es.CreateDefinitionRunByAlias("aliasB", &req)

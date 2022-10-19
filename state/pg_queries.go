@@ -201,7 +201,8 @@ select t.run_id                          as runid,
        metrics_uri                       as metricsuri,
        description                       as description,
 	   idempotence_key                   as idempotencekey,
-       coalesce("user", '')              as user
+       coalesce("user", '')              as user,
+	   coalesce(arch, '')                as arch
 from task t
 `
 

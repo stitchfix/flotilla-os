@@ -209,7 +209,6 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	affinity := &corev1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
-
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
 
 	var nodeLifecycle []string
@@ -217,6 +216,11 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		nodeLifecycle = append(nodeLifecycle, "on-demand", "normal")
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand", "normal")
+	}
+
+	arch := []string{"amd64"}
+	if run.Arch != nil && *run.Arch == "arm64" {
+		arch = []string{"arm64"}
 	}
 
 	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
@@ -231,6 +235,12 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		Key:      "node.kubernetes.io/lifecycle",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
+	})
+
+	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+		Key:      "kubernetes.io/arch",
+		Operator: corev1.NodeSelectorOpIn,
+		Values:   arch,
 	})
 
 	affinity = &corev1.Affinity{

@@ -212,6 +212,10 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 		run.IdempotenceKey = req.IdempotenceKey
 	}
 
+	if req.Arch != nil {
+		run.Arch = req.Arch
+	}
+
 	return run, nil
 }
 
