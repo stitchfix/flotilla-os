@@ -398,6 +398,10 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	var requiredMatch []v1.NodeSelectorRequirement
 
 	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	arch := []string{"amd64"}
+	if run.Arch != nil && *run.Arch == "arm64" {
+		arch = []string{"arm64"}
+	}
 
 	var nodeLifecycle []string
 	nodePreference := "spot"
@@ -429,6 +433,11 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		Values:   nodeLifecycle,
 	})
 
+	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+		Key:      "kubernetes.io/arch",
+		Operator: v1.NodeSelectorOpIn,
+		Values:   arch,
+	})
 	affinity = &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{

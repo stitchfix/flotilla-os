@@ -55,6 +55,7 @@ type LaunchRequestV2 struct {
 	Description           *string               `json:"description,omitempty"`
 	CommandHash           *string               `json:"command_hash,omitempty"`
 	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
+	Arch                  *string               `json:"arch,omitempty"`
 }
 
 //
@@ -487,6 +488,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Description:      lr.Description,
 			CommandHash:      lr.CommandHash,
 			IdempotenceKey:   lr.IdempotenceKey,
+			Arch:             lr.Arch,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -554,6 +556,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Description:           lr.Description,
 			CommandHash:           lr.CommandHash,
 			IdempotenceKey:        lr.IdempotenceKey,
+			Arch:                  lr.Arch,
 		},
 	}
 
@@ -622,6 +625,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Description:           lr.Description,
 			CommandHash:           lr.CommandHash,
 			IdempotenceKey:        lr.IdempotenceKey,
+			Arch:                  lr.Arch,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
