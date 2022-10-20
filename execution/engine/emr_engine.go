@@ -397,7 +397,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []v1.NodeSelectorRequirement
 
-	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	gpuNodeTypes := state.GPUNodeTypes
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
 		arch = []string{"arm64"}

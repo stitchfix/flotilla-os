@@ -209,7 +209,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	affinity := &corev1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
-	gpuNodeTypes := []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge"}
+	gpuNodeTypes := state.GPUNodeTypes
 
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
@@ -333,13 +333,6 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest)
 	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit)
 
-	//mapping to p3 instance types.
-	if run.Gpu != nil && *run.Gpu > 0 {
-		cpuLimit = *run.Gpu * 7500
-		cpuRequest = *run.Gpu * 6000
-		memLimit = *run.Gpu * 60000
-		memRequest = *run.Gpu * 50000
-	}
 	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
