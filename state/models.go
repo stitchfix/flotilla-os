@@ -69,6 +69,8 @@ var MaxLogLines = int64(256)
 
 var EKSBackoffLimit = int32(0)
 
+var GPUNodeTypes = []string{"p3.2xlarge", "p3.8xlarge", "p3.16xlarge", "g5.xlarge", "g5.2xlarge", "g5.4xlarge", "g5.8xlarge", "g5.12xlarge", "g5.16xlarge", "g5.24xlarge", "g5.48xlarge"}
+
 var WorkerTypes = map[string]bool{
 	"retry":  true,
 	"submit": true,
