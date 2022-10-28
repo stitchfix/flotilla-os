@@ -177,7 +177,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 }
 func (a *eksAdapter) constructEviction(run state.Run, manager state.Manager) string {
 	if run.Gpu != nil && *run.Gpu > 0 {
-		return "true"
+		return "false"
 	}
 
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
