@@ -47,6 +47,7 @@ type EKSExecutionEngine struct {
 	s3Bucket        string
 	s3BucketRootDir string
 	statusQueue     string
+	sidecarCommand  []string
 }
 
 //
@@ -87,7 +88,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks_job_ttl")
 	ee.jobSA = conf.GetString("eks_service_account")
 	ee.jobARAEnabled = true
-
+	ee.sidecarCommand = conf.GetStringSlice("eks_sidecar_command")
 	adapt, err := adapter.NewEKSAdapter()
 
 	if err != nil {
@@ -115,7 +116,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled, ee.sidecarCommand)
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
@@ -175,7 +176,6 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 
 func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 	podList, err := ee.getPodList(run)
-
 	if err != nil {
 		return run, err
 	}
@@ -185,16 +185,19 @@ func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
 		run.PodName = &pod.Name
 		run.Namespace = &pod.Namespace
 		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
-			container := pod.Spec.Containers[len(pod.Spec.Containers)-1]
-			cpu := container.Resources.Requests.Cpu().ScaledValue(resource.Milli)
-			cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
-			run.Cpu = &cpu
-			run.CpuLimit = &cpuLimit
-			run = ee.getInstanceDetails(pod, run)
-			mem := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
-			run.Memory = &mem
-			memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
-			run.MemoryLimit = &memLimit
+			for _, container := range pod.Spec.Containers {
+				if container.Name != "sidecar" {
+					cpu := container.Resources.Requests.Cpu().ScaledValue(resource.Milli)
+					cpuLimit := container.Resources.Limits.Cpu().ScaledValue(resource.Milli)
+					run.Cpu = &cpu
+					run.CpuLimit = &cpuLimit
+					run = ee.getInstanceDetails(pod, run)
+					mem := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
+					run.Memory = &mem
+					memLimit := container.Resources.Limits.Memory().ScaledValue(resource.Mega)
+					run.MemoryLimit = &memLimit
+				}
+			}
 		}
 	}
 	return run, nil

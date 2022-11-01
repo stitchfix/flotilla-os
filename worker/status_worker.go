@@ -272,16 +272,6 @@ func (sw *statusWorker) extractExceptions(runID string) {
 	}
 }
 
-func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
-	updatedRun, err := sw.ee.FetchPodMetrics(run)
-	if err == nil {
-		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
-			updatedRun.MaxCpuUsed != run.MaxCpuUsed {
-			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
-		}
-	}
-}
-
 func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	var err error
 	var startedAt, finishedAt time.Time

@@ -15,7 +15,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool, sidecarCommand []string) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -55,10 +55,13 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 		updated.Status = state.StatusStopped
 		if pod != nil {
 			if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
-				containerStatus := pod.Status.ContainerStatuses[len(pod.Status.ContainerStatuses)-1]
-				if containerStatus.State.Terminated != nil {
-					updated.ExitReason = &containerStatus.State.Terminated.Reason
-					exitCode = int64(containerStatus.State.Terminated.ExitCode)
+				for _, containerStatus := range pod.Status.ContainerStatuses {
+					if containerStatus.Name != "sidecar" {
+						if containerStatus.State.Terminated != nil {
+							updated.ExitReason = &containerStatus.State.Terminated.Reason
+							exitCode = int64(containerStatus.State.Terminated.ExitCode)
+						}
+					}
 				}
 			}
 		}
@@ -66,11 +69,14 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	}
 
 	if pod != nil && len(pod.Spec.Containers) > 0 {
-		container := pod.Spec.Containers[0]
-		//First three lines are injected by Flotilla, strip those out.
-		if len(container.Command) > 3 {
-			cmd := strings.Join(container.Command[3:], "\n")
-			updated.Command = &cmd
+		for _, container := range pod.Spec.Containers {
+			if container.Name != "sidecar" {
+				//First three lines are injected by Flotilla, strip those out.
+				if len(container.Command) > 3 {
+					cmd := strings.Join(container.Command[3:], "\n")
+					updated.Command = &cmd
+				}
+			}
 		}
 	}
 
@@ -98,7 +104,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
 //
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool, sidecarCommand []string) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -134,6 +140,19 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		"owner":           a.sanitizeLabel(run.User),
 	}
 
+	sidecarContainer := corev1.Container{
+		Name:    "sidecar",
+		Image:   run.Image,
+		Command: sidecarCommand,
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("25m"),
+				corev1.ResourceCPU:    resource.MustParse("15M"),
+			},
+		},
+		Env: a.envOverrides(executable, run),
+	}
+
 	//if run.Description != nil {
 	//	info := strings.Split(*run.Description, "/")
 	//
@@ -154,7 +173,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 			},
 			Spec: corev1.PodSpec{
 				SchedulerName:      schedulerName,
-				Containers:         []corev1.Container{container},
+				Containers:         []corev1.Container{container, sidecarContainer},
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
 				Affinity:           affinity,
@@ -438,6 +457,44 @@ func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []
 				Value: pairs[key],
 			})
 		}
+	}
+
+	res = append(res, corev1.EnvVar{
+		Name: "CPU",
+		ValueFrom: &corev1.EnvVarSource{
+			ResourceFieldRef: &corev1.ResourceFieldSelector{
+				ContainerName: run.RunID,
+				Resource:      "requests.cpu",
+				Divisor:       resource.MustParse("1m"),
+			},
+		},
+	},
+		corev1.EnvVar{
+			Name: "MEMORY",
+			ValueFrom: &corev1.EnvVarSource{
+				ResourceFieldRef: &corev1.ResourceFieldSelector{
+					ContainerName: run.RunID,
+					Resource:      "requests.memory",
+				},
+			},
+		},
+	)
+	if run.Gpu != nil && *run.Gpu > 0 {
+		res = append(res, corev1.EnvVar{
+			Name: "GPU",
+			ValueFrom: &corev1.EnvVarSource{
+				ResourceFieldRef: &corev1.ResourceFieldSelector{
+					ContainerName: run.RunID,
+					Resource:      "requests.nvidia.com/gpu",
+				},
+			},
+		})
+	} else {
+		res = append(res, corev1.EnvVar{
+			Name:  "GPU",
+			Value: "0",
+		})
+
 	}
 	return res
 }
