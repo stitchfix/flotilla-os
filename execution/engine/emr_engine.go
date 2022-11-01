@@ -47,7 +47,7 @@ type EMRExecutionEngine struct {
 	s3ManifestBucket    string
 	s3ManifestBasePath  string
 	serializer          *k8sJson.Serializer
-	sidecarCommand      []string
+	sidecarCommand      string
 	sidecarImage        string
 }
 
@@ -69,7 +69,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.emrJobSA = conf.GetString("eks_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 	emr.sidecarImage = conf.GetString("emr_sidecar_image")
-	emr.sidecarCommand = conf.GetStringSlice("emr_sidecar_command")
+	emr.sidecarCommand = conf.GetString("emr_sidecar_command")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
@@ -254,7 +254,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				{
 					Name:    "sidecar",
 					Image:   emr.sidecarImage,
-					Command: emr.sidecarCommand,
+					Command: emr.constructCmdSlice(&emr.sidecarCommand),
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							v1.ResourceMemory: resource.MustParse("25m"),
@@ -337,7 +337,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				{
 					Name:    "sidecar",
 					Image:   emr.sidecarImage,
-					Command: emr.sidecarCommand,
+					Command: emr.constructCmdSlice(&emr.sidecarCommand),
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							v1.ResourceMemory: resource.MustParse("25m"),

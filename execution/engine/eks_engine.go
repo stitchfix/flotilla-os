@@ -47,7 +47,7 @@ type EKSExecutionEngine struct {
 	s3Bucket        string
 	s3BucketRootDir string
 	statusQueue     string
-	sidecarCommand  []string
+	sidecarCommand  string
 }
 
 //
@@ -88,7 +88,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks_job_ttl")
 	ee.jobSA = conf.GetString("eks_service_account")
 	ee.jobARAEnabled = true
-	ee.sidecarCommand = conf.GetStringSlice("eks_sidecar_command")
+	ee.sidecarCommand = conf.GetString("eks_sidecar_command")
 	adapt, err := adapter.NewEKSAdapter()
 
 	if err != nil {
