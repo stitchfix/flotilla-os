@@ -47,6 +47,8 @@ type EMRExecutionEngine struct {
 	s3ManifestBucket    string
 	s3ManifestBasePath  string
 	serializer          *k8sJson.Serializer
+	sidecarCommand      []string
+	sidecarImage        string
 }
 
 //
@@ -66,6 +68,8 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.s3ManifestBasePath = conf.GetString("emr_manifest_base_path")
 	emr.emrJobSA = conf.GetString("eks_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
+	emr.sidecarImage = conf.GetString("emr_sidecar_image")
+	emr.sidecarCommand = conf.GetStringSlice("emr_sidecar_command")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
@@ -247,6 +251,18 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 					},
 					WorkingDir: workingDir,
 				},
+				{
+					Name:    "sidecar",
+					Image:   emr.sidecarImage,
+					Command: emr.sidecarCommand,
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("25m"),
+							v1.ResourceCPU:    resource.MustParse("15M"),
+						},
+					},
+					Env: append(emr.envOverrides(executable, run)),
+				},
 			},
 			InitContainers: []v1.Container{{
 				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
@@ -317,6 +333,18 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 						},
 					},
 					WorkingDir: workingDir,
+				},
+				{
+					Name:    "sidecar",
+					Image:   emr.sidecarImage,
+					Command: emr.sidecarCommand,
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("25m"),
+							v1.ResourceCPU:    resource.MustParse("15M"),
+						},
+					},
+					Env: append(emr.envOverrides(executable, run)),
 				},
 			},
 			InitContainers: []v1.Container{{
@@ -700,6 +728,28 @@ func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run sta
 			},
 		},
 	})
+
+	res = append(res, v1.EnvVar{
+		Name: "CPU",
+		ValueFrom: &v1.EnvVarSource{
+			ResourceFieldRef: &v1.ResourceFieldSelector{
+				ContainerName: "spark-kubernetes-executor",
+				Resource:      "requests.cpu",
+				Divisor:       resource.MustParse("1m"),
+			},
+		},
+	},
+		v1.EnvVar{
+			Name: "MEMORY",
+			ValueFrom: &v1.EnvVarSource{
+				ResourceFieldRef: &v1.ResourceFieldSelector{
+					ContainerName: "spark-kubernetes-executor",
+					Resource:      "requests.memory",
+				},
+			},
+		},
+	)
+
 	return res
 }
 
