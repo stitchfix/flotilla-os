@@ -257,8 +257,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 					Command: emr.constructCmdSlice(&emr.sidecarCommand),
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("25m"),
-							v1.ResourceCPU:    resource.MustParse("15M"),
+							v1.ResourceMemory: resource.MustParse("25M"),
+							v1.ResourceCPU:    resource.MustParse("15m"),
 						},
 					},
 					Env: append(emr.envOverrides(executable, run)),
@@ -340,8 +340,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 					Command: emr.constructCmdSlice(&emr.sidecarCommand),
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("25m"),
-							v1.ResourceCPU:    resource.MustParse("15M"),
+							v1.ResourceMemory: resource.MustParse("25M"),
+							v1.ResourceCPU:    resource.MustParse("15m"),
 						},
 					},
 					Env: append(emr.envOverrides(executable, run)),
@@ -745,6 +745,7 @@ func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run sta
 				ResourceFieldRef: &v1.ResourceFieldSelector{
 					ContainerName: "spark-kubernetes-executor",
 					Resource:      "requests.memory",
+					Divisor:       resource.MustParse("1M"),
 				},
 			},
 		},

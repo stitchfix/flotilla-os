@@ -146,8 +146,8 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		Command: a.constructCmdSlice(sidecarCommand),
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("25m"),
-				corev1.ResourceCPU:    resource.MustParse("15M"),
+				corev1.ResourceMemory: resource.MustParse("25M"),
+				corev1.ResourceCPU:    resource.MustParse("15m"),
 			},
 		},
 		Env: a.envOverrides(executable, run),
@@ -475,6 +475,7 @@ func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []
 				ResourceFieldRef: &corev1.ResourceFieldSelector{
 					ContainerName: run.RunID,
 					Resource:      "requests.memory",
+					Divisor:       resource.MustParse("1M"),
 				},
 			},
 		},
