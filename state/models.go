@@ -28,7 +28,7 @@ var DefaultTaskType = "task"
 
 var MinCPU = int64(256)
 
-var MaxCPU = int64(64000)
+var MaxCPU = int64(128000)
 
 var MinMem = int64(512)
 
