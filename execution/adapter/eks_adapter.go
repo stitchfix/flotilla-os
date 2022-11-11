@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -482,13 +483,8 @@ func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []
 	)
 	if run.Gpu != nil && *run.Gpu > 0 {
 		res = append(res, corev1.EnvVar{
-			Name: "GPU",
-			ValueFrom: &corev1.EnvVarSource{
-				ResourceFieldRef: &corev1.ResourceFieldSelector{
-					ContainerName: run.RunID,
-					Resource:      "requests.nvidia.com/gpu",
-				},
-			},
+			Name:  "GPU",
+			Value: strconv.FormatInt(*run.Gpu, 10),
 		})
 	} else {
 		res = append(res, corev1.EnvVar{
