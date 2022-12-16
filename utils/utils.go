@@ -1,9 +1,8 @@
 package utils
 
 import (
-	"reflect"
-
 	"github.com/pkg/errors"
+	"reflect"
 )
 
 // StringSliceContains checks is a string slice contains a particular string.
