@@ -293,6 +293,10 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		CommandHash:           fields.CommandHash,
 	}
 
+	if fields.Labels != nil {
+		run.Labels = *fields.Labels
+	}
+
 	runEnv := es.constructEnviron(run, fields.Env)
 	run.Env = &runEnv
 	return run, nil
