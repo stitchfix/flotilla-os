@@ -56,11 +56,10 @@ type LaunchRequestV2 struct {
 	CommandHash           *string               `json:"command_hash,omitempty"`
 	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
 	Arch                  *string               `json:"arch,omitempty"`
+	Labels                *state.Labels         `json:"labels,omitempty"`
 }
 
-//
 // RunTags represents which user is responsible for a task run
-//
 type RunTags struct {
 	OwnerEmail string `json:"owner_email"`
 	TeamName   string `json:"team_name"`
@@ -454,6 +453,8 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check if OnwerEmail is present in lr.EventLabels
+
 	if len(lr.RunTags.OwnerEmail) == 0 || len(lr.RunTags.TeamName) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
@@ -489,6 +490,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			CommandHash:      lr.CommandHash,
 			IdempotenceKey:   lr.IdempotenceKey,
 			Arch:             lr.Arch,
+			Labels:           lr.Labels,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -557,10 +559,12 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			CommandHash:           lr.CommandHash,
 			IdempotenceKey:        lr.IdempotenceKey,
 			Arch:                  lr.Arch,
+			Labels:                lr.Labels,
 		},
 	}
 
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
+
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -626,6 +630,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			CommandHash:           lr.CommandHash,
 			IdempotenceKey:        lr.IdempotenceKey,
 			Arch:                  lr.Arch,
+			Labels:                lr.Labels,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
@@ -821,7 +826,7 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Get information about an active worker.
+// Get information about an active worker.
 func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	worker, err := ep.workerService.Get(vars["worker_type"], state.DefaultEngine)

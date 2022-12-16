@@ -17,11 +17,9 @@ import (
 	"github.com/stitchfix/flotilla-os/state"
 )
 
-//
 // ExecutionService interacts with the state manager and queue manager to queue runs, and perform
 // CRUD operations on them
 // * Acts as an intermediary layer between state and the execution engine
-//
 type ExecutionService interface {
 	CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error)
 	CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error)
@@ -62,9 +60,7 @@ func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error)
 	return es.eksExecutionEngine.GetEvents(run)
 }
 
-//
 // NewExecutionService configures and returns an ExecutionService
-//
 func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, sm state.Manager, eksClusterClient cluster.Client, emrExecutionEngine engine.Engine) (ExecutionService, error) {
 	es := executionService{
 		stateManager:       sm,
@@ -131,10 +127,8 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	return &es, nil
 }
 
-//
 // ReservedVariables returns the list of reserved run environment variable
 // names
-//
 func (es *executionService) ReservedVariables() []string {
 	var keys []string
 	for k := range es.reservedEnv {
@@ -143,9 +137,7 @@ func (es *executionService) ReservedVariables() []string {
 	return keys
 }
 
-//
 // Create constructs and queues a new Run on the cluster specified.
-//
 func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinition(definitionID)
@@ -156,9 +148,7 @@ func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID strin
 	return es.createFromDefinition(definition, req)
 }
 
-//
 // Create constructs and queues a new Run on the cluster specified, based on an alias
-//
 func (es *executionService) CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	// Ensure definition exists
 	definition, err := es.stateManager.GetDefinitionByAlias(alias)
@@ -216,6 +206,9 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 		run.Arch = req.Arch
 	}
 
+	if req.Labels != nil {
+		run.Labels = *req.Labels
+	}
 	return run, nil
 }
 
@@ -327,10 +320,8 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 	return state.EnvList(runEnv)
 }
 
-//
 // List returns a list of Runs
 // * validates definition_id and status filters
-//
 func (es *executionService) List(
 	limit int,
 	offset int,
@@ -362,16 +353,12 @@ func (es *executionService) List(
 	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine, state.EKSSparkEngine})
 }
 
-//
 // Get returns the run with the given runID
-//
 func (es *executionService) Get(runID string) (state.Run, error) {
 	return es.stateManager.GetRun(runID)
 }
 
-//
 // UpdateStatus is for supporting some legacy runs that still manually update their status
-//
 func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error {
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
@@ -478,23 +465,18 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 	}
 }
 
-//
 // Terminate stops the run with the given runID
-//
 func (es *executionService) Terminate(runID string, userInfo state.UserInfo) error {
 	es.terminateJobChannel <- state.TerminateJob{RunID: runID, UserInfo: userInfo}
 	go es.terminateWorker(es.terminateJobChannel)
 	return nil
 }
 
-//
 // ListClusters returns a list of all execution clusters available
-//
 func (es *executionService) ListClusters() ([]string, error) {
 	return []string{}, nil
 }
 
-//
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
 func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.ExecutionRequestCommon) {
 	if fields.Engine == nil {
@@ -514,10 +496,8 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 	}
 }
 
-//
 // createAndEnqueueRun creates a run object in the DB, enqueues it, then
 // updates the db's run object with a new `queued_at` field.
-//
 func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error) {
 	var err error
 	if run.IdempotenceKey != nil {
@@ -574,9 +554,7 @@ func (es *executionService) CreateTemplateRunByTemplateName(templateName string,
 		errors.New(fmt.Sprintf("invalid template name or version, template_name: %s, template_version: %s", templateName, templateVersion))
 }
 
-//
 // Create constructs and queues a new Run on the cluster specified.
-//
 func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
 	// Ensure template exists
 	template, err := es.stateManager.GetTemplateByID(templateID)

@@ -2,15 +2,17 @@ package adapter
 
 import (
 	"fmt"
+	utils "github.com/stitchfix/flotilla-os/execution"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type EKSAdapter interface {
@@ -19,19 +21,15 @@ type EKSAdapter interface {
 }
 type eksAdapter struct{}
 
-//
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
-//
 func NewEKSAdapter() (EKSAdapter, error) {
 	adapter := eksAdapter{}
 	return &adapter, nil
 }
 
-//
 // Adapting Kubernetes batch/v1 job to a Flotilla run object.
 // This method maps the exit code & timestamps from Kubernetes to Flotilla's Run object.
-//
 func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error) {
 	updated := run
 	if job.Status.Active == 1 && job.Status.CompletionTime == nil {
@@ -89,7 +87,6 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 	return updated, nil
 }
 
-//
 // Adapting Flotilla run object to Kubernetes batch/v1 job.
 // 1. Construction of the cmd that will be run.
 // 2. Resources associated to a pod (includes Adaptive Resource Allocation)
@@ -97,7 +94,6 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 4. Port mappings.
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
-//
 func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, sa string, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 
@@ -129,10 +125,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations := map[string]string{}
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 
-	labels := map[string]string{
-		"flotilla-run-id": run.RunID,
-		"owner":           a.sanitizeLabel(run.User),
-	}
+	labels := utils.GetLabels(run)
 
 	//if run.Description != nil {
 	//	info := strings.Split(*run.Description, "/")

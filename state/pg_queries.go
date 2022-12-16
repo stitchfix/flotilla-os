@@ -1,8 +1,6 @@
 package state
 
-//
 // DefinitionSelect postgres specific query for definitions
-//
 const DefinitionSelect = `
 select td.definition_id                    as definitionid,
        td.adaptive_resource_allocation     as adaptiveresourceallocation,
@@ -20,19 +18,13 @@ select td.definition_id                    as definitionid,
 from (select * from task_def) td
 `
 
-//
 // ListDefinitionsSQL postgres specific query for listing definitions
-//
 const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
 
-//
 // GetDefinitionSQL postgres specific query for getting a single definition
-//
 const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 
-//
 // GetDefinitionByAliasSQL get definition by alias
-//
 const GetDefinitionByAliasSQL = DefinitionSelect + "\nwhere alias = $1"
 
 const TaskResourcesSelectCommandSQL = `
@@ -154,9 +146,7 @@ FROM (
             node_lifecycle = 'spot') A
 `
 
-//
 // RunSelect postgres specific query for runs
-//
 const RunSelect = `
 select t.run_id                          as runid,
        coalesce(t.definition_id, '')     as definitionid,
@@ -202,56 +192,41 @@ select t.run_id                          as runid,
        description                       as description,
 	   idempotence_key                   as idempotencekey,
        coalesce("user", '')              as user,
-	   coalesce(arch, '')                as arch
+	   coalesce(arch, '')                as arch,
+	   labels::TEXT                      as labels
 from task t
 `
 
-//
 // ListRunsSQL postgres specific query for listing runs
-//
 const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
 
-//
 // GetRunSQL postgres specific query for getting a single run
-//
 const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 
 const GetRunSQLByEMRJobId = RunSelect + "\nwhere spark_extension->>'emr_job_id' = $1"
 
-//
 // GetRunSQLForUpdate postgres specific query for getting a single run
 // for update
-//
 const GetRunSQLForUpdate = GetRunSQL + " for update"
 
-//
 // GroupsSelect postgres specific query for getting existing definition
 // group_names
-//
 const GroupsSelect = `
 select distinct group_name from task_def
 `
 
-//
 // TagsSelect postgres specific query for getting existing definition tags
-//
 const TagsSelect = `
 select distinct text from tags
 `
 
-//
 // ListGroupsSQL postgres specific query for listing definition group_names
-//
 const ListGroupsSQL = GroupsSelect + "\n%s order by group_name asc limit $1 offset $2"
 
-//
 // ListTagsSQL postgres specific query for listing definition tags
-//
 const ListTagsSQL = TagsSelect + "\n%s order by text asc limit $1 offset $2"
 
-//
 // WorkerSelect postgres specific query for workers
-//
 const WorkerSelect = `
   select
     worker_type        as workertype,
@@ -260,23 +235,17 @@ const WorkerSelect = `
   from worker
 `
 
-//
 // ListWorkersSQL postgres specific query for listing workers
-//
 const ListWorkersSQL = WorkerSelect
 
 const GetWorkerEngine = WorkerSelect + "\nwhere engine = $1"
 
-//
 // GetWorkerSQL postgres specific query for retrieving data for a specific
 // worker type.
-//
 const GetWorkerSQL = WorkerSelect + "\nwhere worker_type = $1 and engine = $2"
 
-//
 // GetWorkerSQLForUpdate postgres specific query for retrieving data for a specific
 // worker type; locks the row.
-//
 const GetWorkerSQLForUpdate = GetWorkerSQL + " for update"
 
 // TemplateSelect selects a template

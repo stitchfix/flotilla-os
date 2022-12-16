@@ -3,14 +3,13 @@ package flotilla
 import (
 	"bytes"
 	"encoding/json"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
+	"net/http/httptest"
+	"testing"
 )
 
 func setUp(t *testing.T) *muxtrace.Router {
@@ -180,7 +179,7 @@ func TestEndpoints_CreateRun2(t *testing.T) {
 func TestEndpoints_CreateRun4(t *testing.T) {
 	router := setUp(t)
 
-	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}}`
+	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}, "labels": {"foo": "bar"}}`
 	req := httptest.NewRequest("PUT", "/api/v4/task/A/execute", bytes.NewBufferString(newRun))
 	w := httptest.NewRecorder()
 
@@ -208,6 +207,11 @@ func TestEndpoints_CreateRun4(t *testing.T) {
 
 	if r.Status != state.StatusQueued {
 		t.Errorf("Expected new run to have status [%s] but was [%s]", state.StatusQueued, r.Status)
+	}
+
+	if len(r.Labels) != 1 || r.Labels["foo"] != "bar" {
+		labelRes, _ := json.Marshal(r.Labels)
+		t.Errorf(string(labelRes))
 	}
 
 	if r.User != "flotilla" {

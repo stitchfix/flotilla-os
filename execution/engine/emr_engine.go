@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	utils "github.com/stitchfix/flotilla-os/execution"
+
+	"regexp"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -22,13 +27,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	_ "k8s.io/client-go/kubernetes/scheme"
-	"regexp"
-	"strings"
 )
 
-//
 // EMRExecutionEngine submits runs to EMR-EKS.
-//
 type EMRExecutionEngine struct {
 	sqsQueueManager     queue.Manager
 	log                 flotillaLog.Logger
@@ -49,9 +50,7 @@ type EMRExecutionEngine struct {
 	serializer          *k8sJson.Serializer
 }
 
-//
 // Initialize configures the EMRExecutionEngine and initializes internal clients
-//
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 	emr.emrVirtualCluster = conf.GetString("emr_virtual_cluster")
@@ -207,10 +206,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
-	labels := map[string]string{
-		"flotilla-run-id": run.RunID,
-		"owner":           emr.sanitizeLabel(run.User),
-	}
+	labels := utils.GetLabels(run)
 
 	//if run.Description != nil {
 	//	info := strings.Split(*run.Description, "/")
@@ -275,10 +271,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
-	labels := map[string]string{
-		"flotilla-run-id": run.RunID,
-		"owner":           emr.sanitizeLabel(run.User),
-	}
+	labels := utils.GetLabels(run)
 
 	//if run.Description != nil {
 	//	info := strings.Split(*run.Description, "/")
@@ -722,15 +715,4 @@ func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 	optLogin := "-l"
 	optStr := "-ce"
 	return []string{bashCmd, optLogin, optStr, cmdString}
-}
-
-func (emr *EMRExecutionEngine) sanitizeLabel(key string) string {
-	key = strings.TrimSpace(key)
-	key = regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
-	key = strings.TrimPrefix(key, "_")
-	key = strings.ToLower(key)
-	if len(key) > 63 {
-		key = key[:63]
-	}
-	return key
 }

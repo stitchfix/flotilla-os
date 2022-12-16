@@ -13,10 +13,8 @@ import (
 	"github.com/stitchfix/flotilla-os/state"
 )
 
-//
 // ImplementsAllTheThings defines a struct which implements many of the interfaces
 // to facilitate easier testing
-//
 type ImplementsAllTheThings struct {
 	T                       *testing.T
 	Calls                   []string                    // Collects calls
@@ -396,7 +394,7 @@ func (iatt *ImplementsAllTheThings) PollRuns() ([]engine.RunReceipt, error) {
 	return r, nil
 }
 
-//PollStatus - Execution Engine
+// PollStatus - Execution Engine
 func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollStatus")
 	if len(iatt.StatusUpdatesAsRuns) == 0 {

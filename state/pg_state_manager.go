@@ -24,9 +24,7 @@ import (
 	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
 )
 
-//
 // SQLStateManager uses postgresql to manage state
-//
 type SQLStateManager struct {
 	db         *sqlx.DB
 	readonlyDB *sqlx.DB
@@ -172,17 +170,13 @@ func (sm *SQLStateManager) DriverOOM(executableID string, commandHash string) (b
 	return driverOOM, err
 }
 
-//
 // Name is the name of the state manager - matches value in configuration
-//
 func (sm *SQLStateManager) Name() string {
 	return "postgres"
 }
 
-//
 // likeFields are the set of fields
 // that are filtered using a `like` clause
-//
 var likeFields = map[string]bool{
 	"image":       true,
 	"alias":       true,
@@ -192,9 +186,7 @@ var likeFields = map[string]bool{
 	"exit_reason": true,
 }
 
-//
 // Initialize creates tables if they do not exist
-//
 func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	dburl := conf.GetString("database_url")
 	readonlyDbUrl := conf.GetString("readonly_database_url")
@@ -294,7 +286,6 @@ func (sm *SQLStateManager) orderBy(obj IOrderable, field string, order string) (
 	return "", errors.Errorf("Invalid order string, must be one of ('asc', 'desc'), was %s", order)
 }
 
-//
 // ListDefinitions returns a DefinitionList
 // limit: limit the result to this many definitions
 // offset: start the results at this offset
@@ -302,7 +293,6 @@ func (sm *SQLStateManager) orderBy(obj IOrderable, field string, order string) (
 // order: 'asc' or 'desc'
 // filters: map of field filters on Definition - joined with AND
 // envFilters: map of environment variable filters - joined with AND
-//
 func (sm *SQLStateManager) ListDefinitions(
 	limit int, offset int, sortBy string,
 	order string, filters map[string][]string,
@@ -336,9 +326,7 @@ func (sm *SQLStateManager) ListDefinitions(
 	return result, nil
 }
 
-//
 // GetDefinition returns a single definition by id
-//
 func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
 	var err error
 	var definition Definition
@@ -354,9 +342,7 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 	return definition, nil
 }
 
-//
 // GetDefinitionByAlias returns a single definition by id
-//
 func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error) {
 	var err error
 	var definition Definition
@@ -372,10 +358,8 @@ func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error
 	return definition, err
 }
 
-//
 // UpdateDefinition updates a definition
 // - updates can be partial
-//
 func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) (Definition, error) {
 	var (
 		err      error
@@ -479,10 +463,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 	return existing, nil
 }
 
-//
 // CreateDefinition creates the passed in definition object
 // - error if definition already exists
-//
 func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	var err error
 
@@ -567,9 +549,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	return nil
 }
 
-//
 // DeleteDefinition deletes definition and associated runs and environment variables
-//
 func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	var err error
 
@@ -598,7 +578,6 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 	return nil
 }
 
-//
 // ListRuns returns a RunList
 // limit: limit the result to this many runs
 // offset: start the results at this offset
@@ -606,7 +585,6 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // order: 'asc' or 'desc'
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
-//
 func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
 
 	var err error
@@ -648,9 +626,7 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	return result, nil
 }
 
-//
 // GetRun gets run by id
-//
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	var err error
 	var r Run
@@ -696,9 +672,7 @@ func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	return r, nil
 }
 
-//
 // UpdateRun updates run with updates - can be partial
-//
 func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	start := time.Now()
 	var (
@@ -764,6 +738,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.IdempotenceKey,
 			&existing.User,
 			&existing.Arch,
+			&existing.Labels,
 		)
 	}
 	if err != nil {
@@ -815,7 +790,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		description = $40,
 		idempotence_key = $41,
 		"user" = $42,
-		arch = $43
+		arch = $43,
+		labels = $44
     WHERE run_id = $1;
     `
 
@@ -863,7 +839,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Description,
 		existing.IdempotenceKey,
 		existing.User,
-		existing.Arch); err != nil {
+		existing.Arch,
+		existing.Labels); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -877,9 +854,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	return existing, nil
 }
 
-//
 // CreateRun creates the passed in run
-//
 func (sm *SQLStateManager) CreateRun(r Run) error {
 	var err error
 	insert := `
@@ -927,7 +902,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		description,
 	    idempotence_key,
 	    "user",
-	    arch
+	    arch,
+	    labels
     ) VALUES (
         $1,
 		$2,
@@ -972,7 +948,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$41,
         $42,
         $43,
-        $44
+        $44,
+        $45
 	);
     `
 
@@ -1025,7 +1002,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Description,
 		r.IdempotenceKey,
 		r.User,
-		r.Arch); err != nil {
+		r.Arch,
+		r.Labels); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -1037,9 +1015,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	return nil
 }
 
-//
 // ListGroups returns a list of the existing group names.
-//
 func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (GroupsList, error) {
 	var (
 		err         error
@@ -1066,9 +1042,7 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 	return result, nil
 }
 
-//
 // ListTags returns a list of the existing tags.
-//
 func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsList, error) {
 	var (
 		err         error
@@ -1095,9 +1069,7 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	return result, nil
 }
 
-//
 // initWorkerTable initializes the `worker` table with values from the config
-//
 func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration (set to 1 as default)
 
@@ -1141,9 +1113,7 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	return nil
 }
 
-//
 // ListWorkers returns list of workers
-//
 func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 	var err error
 	var result WorkersList
@@ -1163,9 +1133,7 @@ func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 	return result, nil
 }
 
-//
 // GetWorker returns data for a single worker.
-//
 func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker, err error) {
 	if err := sm.readonlyDB.Get(&w, GetWorkerSQL, workerType, engine); err != nil {
 		if err == sql.ErrNoRows {
@@ -1178,9 +1146,7 @@ func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker
 	return
 }
 
-//
 // UpdateWorker updates a single worker.
-//
 func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Worker, error) {
 	var (
 		err      error
@@ -1225,9 +1191,7 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 	return existing, nil
 }
 
-//
 // BatchUpdateWorker updates multiple workers.
-//
 func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, error) {
 	var existing WorkersList
 
@@ -1242,9 +1206,7 @@ func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, er
 	return sm.ListWorkers(DefaultEngine)
 }
 
-//
 // Cleanup close any open resources
-//
 func (sm *SQLStateManager) Cleanup() error {
 	return multierr.Combine(sm.db.Close(), sm.readonlyDB.Close())
 }
@@ -1469,6 +1431,20 @@ func (tjs TemplatePayload) Value() (driver.Value, error) {
 	return res, nil
 }
 
+// Value to db
+func (e Labels) Value() (driver.Value, error) {
+	res, _ := json.Marshal(e)
+	return res, nil
+}
+
+func (e *Labels) Scan(value interface{}) error {
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
+}
+
 // GetTemplateByID returns a single template by id.
 func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
 	var err error
@@ -1592,9 +1568,7 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
 	return nil
 }
 
-//
 // GetExecutableByExecutableType returns a single executable by id.
-//
 func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string) (Executable, error) {
 	switch t {
 	case ExecutableTypeDefinition:
