@@ -31,8 +31,8 @@ func TestSanitizeLabel(t *testing.T) {
 		},
 		{
 			name:     "replaces special chars",
-			input:    "a*",
-			expected: "a_",
+			input:    "a*s",
+			expected: "a_s",
 		},
 		{
 			name:     "trims spaces",
@@ -44,6 +44,17 @@ func TestSanitizeLabel(t *testing.T) {
 			input:    "_a",
 			expected: "a",
 		},
+		{
+			name:     "removes trailing _'s",
+			input:    "a_",
+			expected: "a",
+		},
+		{
+			name:     "removes repeated trailing _'s",
+			input:    "a_____",
+			expected: "a",
+		},
+
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
