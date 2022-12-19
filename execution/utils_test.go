@@ -49,6 +49,12 @@ func TestSanitizeLabel(t *testing.T) {
 			input:    "a_",
 			expected: "a",
 		},
+		{
+			name:     "removes repeated trailing _'s",
+			input:    "a_____",
+			expected: "a",
+		},
+
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
