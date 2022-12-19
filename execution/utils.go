@@ -33,6 +33,13 @@ func SanitizeLabel(key string) string {
 	if len(key) > 63 {
 		key = key[:63]
 	}
-	key = strings.TrimSuffix(key, "_")
+    	for {
+        	tempKey = strings.TrimSuffix(key, "_")
+		if tempKey == key {
+		    break
+		}
+		key = tempKey
+    	}
+
 	return key
 }
