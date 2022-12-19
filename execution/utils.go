@@ -34,7 +34,7 @@ func SanitizeLabel(key string) string {
 		key = key[:63]
 	}
     	for {
-        	tempKey = strings.TrimSuffix(key, "_")
+        	tempKey := strings.TrimSuffix(key, "_")
 		if tempKey == key {
 		    break
 		}
