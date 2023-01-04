@@ -124,7 +124,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 
 	annotations := map[string]string{}
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
-	annotations["prometheus.io/port"] = "8085"
+	annotations["prometheus.io/port"] = "9090"
 	annotations["prometheus.io/scrape"] = "true"
 
 	labels := utils.GetLabels(run)
