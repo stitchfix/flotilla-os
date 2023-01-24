@@ -231,19 +231,19 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 				})
 			} else if *run.Memory < 128000 && *run.Cpu < 36000 {
 				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "beta.kubernetes.io/instance-type",
+					Key:      "sfix/instance.size",
 					Operator: corev1.NodeSelectorOpIn,
 					Values:   []string{"medium"},
 				})
 			} else if *run.Memory < 256000 && *run.Cpu < 48000 {
 				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "beta.kubernetes.io/instance-type",
+					Key:      "sfix/instance.size",
 					Operator: corev1.NodeSelectorOpIn,
 					Values:   []string{"large"},
 				})
 			} else {
 				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "beta.kubernetes.io/instance-type",
+					Key:      "sfix/instance.size",
 					Operator: corev1.NodeSelectorOpIn,
 					Values:   []string{"xlarge"},
 				})
