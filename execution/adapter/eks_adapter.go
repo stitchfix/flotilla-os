@@ -217,37 +217,12 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Values:   gpuNodeTypes,
 		})
 		//adding node group affinities for non-gpu runs
-		if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
+		if *run.Memory < 32000 && *run.Cpu < 8000 {
 			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "beta.kubernetes.io/instance-type",
-				Operator: corev1.NodeSelectorOpNotIn,
-				Values:   gpuNodeTypes,
+				Key:      "sfix/instance.size",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   []string{"small"},
 			})
-			if *run.Memory < 32000 && *run.Cpu < 8000 {
-				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "sfix/instance.size",
-					Operator: corev1.NodeSelectorOpIn,
-					Values:   []string{"small"},
-				})
-			} else if *run.Memory < 128000 && *run.Cpu < 36000 {
-				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "sfix/instance.size",
-					Operator: corev1.NodeSelectorOpIn,
-					Values:   []string{"medium"},
-				})
-			} else if *run.Memory < 256000 && *run.Cpu < 48000 {
-				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "sfix/instance.size",
-					Operator: corev1.NodeSelectorOpIn,
-					Values:   []string{"large"},
-				})
-			} else {
-				requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-					Key:      "sfix/instance.size",
-					Operator: corev1.NodeSelectorOpIn,
-					Values:   []string{"xlarge"},
-				})
-			}
 		}
 	}
 
