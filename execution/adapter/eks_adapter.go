@@ -217,7 +217,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Values:   gpuNodeTypes,
 		})
 		//adding node group affinities for non-gpu runs
-		if *run.Memory < 32000 && *run.Cpu < 8000 {
+		if *run.Memory < 12750 && *run.Cpu < 3800 {
 			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
 				Key:      "sfix/instance.size",
 				Operator: corev1.NodeSelectorOpIn,
