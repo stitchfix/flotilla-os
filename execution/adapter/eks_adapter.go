@@ -300,7 +300,7 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 		mounts = make([]corev1.VolumeMount, 1)
 		mounts[0] = corev1.VolumeMount{Name: "shared-memory", MountPath: "/dev/shm"}
 		volumes = make([]corev1.Volume, 1)
-		sharedLimit := resource.MustParse(fmt.Sprintf("%dGi", *run.Gpu*int64(3)))
+		sharedLimit := resource.MustParse(fmt.Sprintf("%dGi", *run.Gpu*int64(8)))
 		emptyDir := corev1.EmptyDirVolumeSource{Medium: "Memory", SizeLimit: &sharedLimit}
 		volumes[0] = corev1.Volume{Name: "shared-memory", VolumeSource: corev1.VolumeSource{EmptyDir: &emptyDir}}
 	}
