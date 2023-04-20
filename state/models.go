@@ -32,7 +32,7 @@ var MaxCPU = int64(128000)
 
 var MinMem = int64(512)
 
-var MaxMem = int64(500000)
+var MaxMem = int64(350000)
 
 var TTLSecondsAfterFinished = int32(3600)
 
