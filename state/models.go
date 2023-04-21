@@ -34,6 +34,8 @@ var MinMem = int64(512)
 
 var MaxMem = int64(350000)
 
+var MaxGPUMem = int64(750000)
+
 var TTLSecondsAfterFinished = int32(3600)
 
 var SpotActiveDeadlineSeconds = int64(172800)
