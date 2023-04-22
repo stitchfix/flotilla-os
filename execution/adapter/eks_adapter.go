@@ -308,6 +308,8 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 }
 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
+	isGPUJob := run.Gpu != nil && *run.Gpu > 0
+
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
@@ -325,13 +327,13 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 		memLimit = memRequest
 	}
 
-	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest)
-	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit)
+	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)
+	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit, isGPUJob)
 
 	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
-func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
+func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (int64, int64) {
 	if cpu < state.MinCPU {
 		cpu = state.MinCPU
 	}
@@ -341,8 +343,13 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64) (int64, int64) {
 	if mem < state.MinMem {
 		mem = state.MinMem
 	}
-	if mem > state.MaxMem {
-		mem = state.MaxMem
+	maxMem := state.MaxMem
+	if isGPUJob {
+		maxMem = state.MaxGPUMem
+	}
+
+	if mem > maxMem {
+		mem = maxMem
 	}
 	return cpu, mem
 }
