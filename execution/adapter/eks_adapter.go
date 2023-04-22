@@ -308,11 +308,8 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 }
 
 func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
-	isGPUJob := bool(false)
+	isGPUJob := run.Gpu != nil && *run.Gpu > 0
 
-	if run.Gpu != nil && *run.Gpu > 0 {
-		isGPUJob = true
-	}
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
