@@ -334,23 +334,28 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 }
 
 func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (int64, int64) {
+	maxMem := state.MaxMem
+	maxCPU := state.MaxCPU
+
+	if isGPUJob {
+		maxMem = state.MaxGPUMem
+		maxCPU = state.MaxGPUCPU
+	}
+
 	if cpu < state.MinCPU {
 		cpu = state.MinCPU
 	}
-	if cpu > state.MaxCPU {
-		cpu = state.MaxCPU
+	if cpu > maxCPU {
+		cpu = maxCPU
 	}
+
 	if mem < state.MinMem {
 		mem = state.MinMem
 	}
-	maxMem := state.MaxMem
-	if isGPUJob {
-		maxMem = state.MaxGPUMem
-	}
-
 	if mem > maxMem {
 		mem = maxMem
 	}
+
 	return cpu, mem
 }
 
