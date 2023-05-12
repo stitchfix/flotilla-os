@@ -201,7 +201,7 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
 		toleration := corev1.Toleration{
 			Key:      "nvidia.com/gpu",
-			Operator: "Equals",
+			Operator: "Equal",
 			Value:    "true",
 			Effect:   "NoSchedule",
 		}
