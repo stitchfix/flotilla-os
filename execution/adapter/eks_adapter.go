@@ -121,6 +121,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 		container.VolumeMounts = volumeMounts
 	}
 	affinity := a.constructAffinity(executable, run, manager)
+	tolerations := a.constructTolerations(executable, run)
 
 	annotations := map[string]string{}
 	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
@@ -145,6 +146,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
 				Affinity:           affinity,
+				Tolerations:        tolerations,
 			},
 		},
 	}
@@ -190,6 +192,22 @@ func (a *eksAdapter) constructContainerPorts(executable state.Executable) []core
 		}
 	}
 	return containerPorts
+}
+
+func (a *eksAdapter) constructTolerations(executable state.Executable, run state.Run) []corev1.Toleration {
+	executableResources := executable.GetExecutableResources()
+	tolerations := []corev1.Toleration{}
+
+	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
+		toleration := corev1.Toleration{
+			Key:      "nvidia.com/gpu",
+			Operator: "Equals",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		}
+		tolerations = append(tolerations, toleration)
+	}
+	return tolerations
 }
 
 func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
