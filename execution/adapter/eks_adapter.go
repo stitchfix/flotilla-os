@@ -218,7 +218,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Values:   gpuNodeTypes,
 		})
 		//adding node group preferred affinities for non-gpu runs
-		if *run.Memory < 12000 && *run.Cpu < 3800 {
+		if *run.Memory < 10000 && *run.Cpu < 3200 {
 			preferredMatches = append(preferredMatches, corev1.PreferredSchedulingTerm{
 				Weight: 1,
 				Preference: corev1.NodeSelectorTerm{
