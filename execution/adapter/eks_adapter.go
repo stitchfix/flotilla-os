@@ -196,6 +196,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	affinity := &corev1.Affinity{}
 	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
+	var preferredMatches []corev1.PreferredSchedulingTerm
 	gpuNodeTypes := state.GPUNodeTypes
 
 	var nodeLifecycle []string
@@ -216,12 +217,17 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 			Operator: corev1.NodeSelectorOpNotIn,
 			Values:   gpuNodeTypes,
 		})
-		//adding node group affinities for non-gpu runs
+		//adding node group preferred affinities for non-gpu runs
 		if *run.Memory < 12000 && *run.Cpu < 3800 {
-			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "sfix/instance.size",
-				Operator: corev1.NodeSelectorOpIn,
-				Values:   []string{"small"},
+			preferredMatches = append(preferredMatches, corev1.PreferredSchedulingTerm{
+				Weight: 1,
+				Preference: corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{{
+						Key:      "sfix/instance.size",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{"small"},
+					}},
+				},
 			})
 		}
 	}
@@ -247,6 +253,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 					},
 				},
 			},
+			PreferredDuringSchedulingIgnoredDuringExecution: preferredMatches,
 		},
 	}
 
