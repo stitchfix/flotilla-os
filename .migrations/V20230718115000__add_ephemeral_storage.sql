@@ -1,1 +1,2 @@
-ALTER TABLE task_def ADD COLUMN IF NOT EXISTS ephemeral_storage integer;
+ALTER TABLE task_def ADD COLUMN IF NOT EXISTS ephemeral_storage INTEGER;
+ALTER TABLE task ADD COLUMN IF NOT EXISTS ephemeral_storage INTEGER;

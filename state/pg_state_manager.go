@@ -503,7 +503,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       cpu,
       gpu,
       adaptive_resource_allocation,
-	  ephemeral_storage
+	  disk
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
     `
