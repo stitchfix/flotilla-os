@@ -261,9 +261,12 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 }
 
 func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+	var ephemeralStorageRequestQuantity resource.Quantity
+	maxEphemeralStorage := state.MaxEphemeralStorage
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
-	cpuLimit, memLimit, ephemeralStorageLimit, cpuRequest, memRequest, ephemeralStorageRequest := a.adaptiveResources(executable, run, manager, araEnabled)
+
+	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
 
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
@@ -271,20 +274,11 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	memLimitQuantity := resource.MustParse(fmt.Sprintf("%dM", memLimit))
 	memRequestQuantity := resource.MustParse(fmt.Sprintf("%dM", memRequest))
 
-	ephemeralStorageRequestQuantity := resource.MustParse(fmt.Sprintf("%dM", ephemeralStorageRequest))
-
-	// currently not imposing an ephermeralStorageLimit
-	if ephemeralStorageLimit != nil {
-		_ = resource.MustParse(fmt.Sprintf("%dM", ephemeralStorageLimit))
-		//limits[corev1.ResourceEphemeralStorage] = ephemeralStorageLimitQuantity
-	}
-
 	limits[corev1.ResourceCPU] = cpuLimitQuantity
 	limits[corev1.ResourceMemory] = memLimitQuantity
 
 	requests[corev1.ResourceCPU] = cpuRequestQuantity
 	requests[corev1.ResourceMemory] = memRequestQuantity
-	requests[corev1.ResourceEphemeralStorage] = ephemeralStorageRequestQuantity
 
 	executableResources := executable.GetExecutableResources()
 	if run.Gpu != nil && *run.Gpu > 0 {
@@ -299,9 +293,18 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 
 	run.Memory = aws.Int64(memRequestQuantity.ScaledValue(resource.Mega))
 	run.Cpu = aws.Int64(cpuRequestQuantity.ScaledValue(resource.Milli))
-	run.EphemeralStorage = aws.Int64(ephemeralStorageRequestQuantity.ScaledValue(resource.Mega))
 	run.MemoryLimit = aws.Int64(memLimitQuantity.ScaledValue(resource.Mega))
 	run.CpuLimit = aws.Int64(cpuLimitQuantity.ScaledValue(resource.Milli))
+
+	if run.EphemeralStorage != nil {
+		ephemeralStorageRequest := *run.EphemeralStorage
+		if ephemeralStorageRequest > maxEphemeralStorage {
+			ephemeralStorageRequest = maxEphemeralStorage
+		}
+		ephemeralStorageRequestQuantity = resource.MustParse(fmt.Sprintf("%dM", ephemeralStorageRequest))
+		requests[corev1.ResourceEphemeralStorage] = ephemeralStorageRequestQuantity
+		run.EphemeralStorage = aws.Int64(ephemeralStorageRequestQuantity.ScaledValue(resource.Mega))
+	}
 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits:   limits,
@@ -324,17 +327,11 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 	return mounts, volumes
 }
 
-func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, *int64, int64, int64, *int64) {
+func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	isGPUJob := run.Gpu != nil && *run.Gpu > 0
 
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
-	var ephemeralStorageRequest *int64
-	var ephemeralStorageLimit *int64
-
-	if run.EphemeralStorage != nil {
-		ephemeralStorageRequest = run.EphemeralStorage
-	}
 
 	estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
 	if err == nil {
@@ -350,16 +347,15 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 		memLimit = memRequest
 	}
 
-	cpuRequest, memRequest, ephemeralStorageRequest = a.checkResourceBounds(cpuRequest, memRequest, ephemeralStorageRequest, isGPUJob)
-	cpuLimit, memLimit, ephemeralStorageLimit = a.checkResourceBounds(cpuLimit, memLimit, ephemeralStorageRequest, isGPUJob)
+	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)
+	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit, isGPUJob)
 
-	return cpuLimit, memLimit, ephemeralStorageLimit, cpuRequest, memRequest, ephemeralStorageRequest
+	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
-func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, ephemeralStorage *int64, isGPUJob bool) (int64, int64, *int64) {
+func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (int64, int64) {
 	maxMem := state.MaxMem
 	maxCPU := state.MaxCPU
-	maxEphemeralStorage := state.MaxEphemeralStorage
 
 	if isGPUJob {
 		maxMem = state.MaxGPUMem
@@ -380,12 +376,7 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, ephemeralStorage 
 		mem = maxMem
 	}
 
-	if ephemeralStorage != nil {
-		if *ephemeralStorage > maxEphemeralStorage {
-			ephemeralStorage = &maxEphemeralStorage
-		}
-	}
-	return cpu, mem, ephemeralStorage
+	return cpu, mem
 }
 
 func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executable) (int64, int64) {
