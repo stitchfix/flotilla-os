@@ -38,6 +38,8 @@ var MaxMem = int64(350000)
 
 var MaxGPUMem = int64(750000)
 
+var MaxEphemeralStorage = int64(5000)
+
 var TTLSecondsAfterFinished = int32(3600)
 
 var SpotActiveDeadlineSeconds = int64(172800)
@@ -149,6 +151,7 @@ type ExecutableResources struct {
 	Memory                     *int64     `json:"memory,omitempty"`
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
+	EphemeralStorage           *int64     `json:"ephemeral_storage,omitempty"`
 	Env                        *EnvList   `json:"env"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 	Ports                      *PortsList `json:"ports,omitempty"`
@@ -361,6 +364,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	}
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
+	}
+	if other.EphemeralStorage != nil {
+		d.EphemeralStorage = other.EphemeralStorage
 	}
 	if other.AdaptiveResourceAllocation != nil {
 		d.AdaptiveResourceAllocation = other.AdaptiveResourceAllocation
