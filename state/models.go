@@ -151,7 +151,7 @@ type ExecutableResources struct {
 	Memory                     *int64     `json:"memory,omitempty"`
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
-	EphemeralStorage           *int64     `json:"ephemeral_storage,omitempty"`
+	EphemeralStorage           *int64     `json:"ephemeral_storage,omitempty" db:"ephemeral_storage"`
 	Env                        *EnvList   `json:"env"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 	Ports                      *PortsList `json:"ports,omitempty"`
