@@ -38,6 +38,8 @@ var MaxMem = int64(350000)
 
 var MaxGPUMem = int64(750000)
 
+var MaxEphemeralStorage = int64(5000)
+
 var TTLSecondsAfterFinished = int32(3600)
 
 var SpotActiveDeadlineSeconds = int64(172800)
@@ -149,6 +151,7 @@ type ExecutableResources struct {
 	Memory                     *int64     `json:"memory,omitempty"`
 	Gpu                        *int64     `json:"gpu,omitempty"`
 	Cpu                        *int64     `json:"cpu,omitempty"`
+	EphemeralStorage           *int64     `json:"ephemeral_storage,omitempty" db:"ephemeral_storage"`
 	Env                        *EnvList   `json:"env"`
 	AdaptiveResourceAllocation *bool      `json:"adaptive_resource_allocation,omitempty"`
 	Ports                      *PortsList `json:"ports,omitempty"`
@@ -362,6 +365,9 @@ func (d *Definition) UpdateWith(other Definition) {
 	if other.Cpu != nil {
 		d.Cpu = other.Cpu
 	}
+	if other.EphemeralStorage != nil {
+		d.EphemeralStorage = other.EphemeralStorage
+	}
 	if other.AdaptiveResourceAllocation != nil {
 		d.AdaptiveResourceAllocation = other.AdaptiveResourceAllocation
 	}
@@ -457,7 +463,7 @@ type Run struct {
 	ExitReason              *string                  `json:"exit_reason,omitempty"`
 	Engine                  *string                  `json:"engine,omitempty"`
 	NodeLifecycle           *string                  `json:"node_lifecycle,omitempty"`
-	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty"`
+	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty" db:"ephemeral_storage"`
 	PodName                 *string                  `json:"pod_name,omitempty"`
 	Namespace               *string                  `json:"namespace,omitempty"`
 	MaxMemoryUsed           *int64                   `json:"max_memory_used,omitempty"`

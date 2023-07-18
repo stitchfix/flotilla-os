@@ -46,6 +46,7 @@ type LaunchRequestV2 struct {
 	Memory                *int64
 	Cpu                   *int64
 	Gpu                   *int64
+	EphemeralStorage      *int64 `json:"ephemeral_storage,omitempty"`
 	Engine                *string
 	NodeLifecycle         *string               `json:"node_lifecycle"`
 	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
@@ -551,6 +552,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Memory:                lr.Memory,
 			Cpu:                   lr.Cpu,
 			Gpu:                   lr.Gpu,
+			EphemeralStorage:      lr.EphemeralStorage,
 			Engine:                lr.Engine,
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,
@@ -622,6 +624,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Memory:                lr.Memory,
 			Cpu:                   lr.Cpu,
 			Gpu:                   lr.Gpu,
+			EphemeralStorage:      lr.EphemeralStorage,
 			Engine:                lr.Engine,
 			NodeLifecycle:         lr.NodeLifecycle,
 			ActiveDeadlineSeconds: lr.ActiveDeadlineSeconds,

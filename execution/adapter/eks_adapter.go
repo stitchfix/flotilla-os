@@ -261,8 +261,11 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 }
 
 func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+	var ephemeralStorageRequestQuantity resource.Quantity
+	maxEphemeralStorage := state.MaxEphemeralStorage
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
+
 	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
 
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
@@ -292,6 +295,16 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	run.Cpu = aws.Int64(cpuRequestQuantity.ScaledValue(resource.Milli))
 	run.MemoryLimit = aws.Int64(memLimitQuantity.ScaledValue(resource.Mega))
 	run.CpuLimit = aws.Int64(cpuLimitQuantity.ScaledValue(resource.Milli))
+
+	if run.EphemeralStorage != nil {
+		ephemeralStorageRequest := *run.EphemeralStorage
+		if ephemeralStorageRequest > maxEphemeralStorage {
+			ephemeralStorageRequest = maxEphemeralStorage
+		}
+		ephemeralStorageRequestQuantity = resource.MustParse(fmt.Sprintf("%dM", ephemeralStorageRequest))
+		requests[corev1.ResourceEphemeralStorage] = ephemeralStorageRequestQuantity
+		run.EphemeralStorage = aws.Int64(ephemeralStorageRequestQuantity.ScaledValue(resource.Mega))
+	}
 
 	resourceRequirements := corev1.ResourceRequirements{
 		Limits:   limits,
@@ -388,6 +401,7 @@ func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executa
 			mem = *executableResources.Memory
 		}
 	}
+
 	// 4. Override for very large memory requests.
 	// Remove after migration.
 	if mem >= 36864 && mem < 131072 && (executableResources.Gpu == nil || *executableResources.Gpu == 0) {
