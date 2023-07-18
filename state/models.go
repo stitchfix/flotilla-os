@@ -463,7 +463,7 @@ type Run struct {
 	ExitReason              *string                  `json:"exit_reason,omitempty"`
 	Engine                  *string                  `json:"engine,omitempty"`
 	NodeLifecycle           *string                  `json:"node_lifecycle,omitempty"`
-	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty"`
+	EphemeralStorage        *int64                   `json:"ephemeral_storage,omitempty" db:"ephemeral_storage"`
 	PodName                 *string                  `json:"pod_name,omitempty"`
 	Namespace               *string                  `json:"namespace,omitempty"`
 	MaxMemoryUsed           *int64                   `json:"max_memory_used,omitempty"`
