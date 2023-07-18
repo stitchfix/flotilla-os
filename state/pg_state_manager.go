@@ -419,7 +419,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       cpu = $7,
       gpu = $8,
       adaptive_resource_allocation = $9,
-      disk = $10
+      ephemeral_storage = $10
     WHERE definition_id = $1;
     `
 	if _, err = tx.Exec(
@@ -503,7 +503,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       cpu,
       gpu,
       adaptive_resource_allocation,
-	  disk
+	  ephemeral_storage
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
     `
