@@ -145,11 +145,11 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		}
 	}
 
-	s3Obj, err := s3Client.GetObjectWithContext(
+	s3Obj, err := lc.s3Client.GetObjectWithContext(
 		context.Background(),
 		&s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
+			Bucket: aws.String(lc.emrS3LogsBucket),
+			Key:    aws.String(*key),
 		}, func(r *request.Request) {
 			// Otherwise we get an unzipped response.
 			r.HTTPRequest.Header.Add("Accept-Encoding", "gzip")
