@@ -145,7 +145,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 	}
 
 	s3List, _ := lc.s3Client.ListObjects(&s3.ListObjectsInput{
-		Bucket:                   nil,
+		Bucket:                   aws.String(lc.emrS3LogsBucket),
 		EncodingType:             nil,
 		MaxKeys:                  nil,
 		OptionalObjectAttributes: nil,
