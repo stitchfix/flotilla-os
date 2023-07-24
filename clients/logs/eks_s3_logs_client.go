@@ -144,22 +144,12 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		}
 	}
 
-	s3Head, _ := lc.s3Client.GetObject(&s3.GetObjectInput{
-		Bucket:                  aws.String(lc.emrS3LogsBucket),
-		Key:                     aws.String(*key),
-		ResponseContentType:     aws.String("text/plain"),
-		ResponseContentEncoding: aws.String("gzip"),
-	})
-
-	if s3Head != nil {
-
-	}
-
 	s3Obj, err := lc.s3Client.GetObject(&s3.GetObjectInput{
-		Bucket:              aws.String(lc.emrS3LogsBucket),
-		Key:                 aws.String(*key),
-		ResponseContentType: aws.String("application/x-gzip"),
+		Bucket: aws.String(lc.emrS3LogsBucket),
+		Key:    aws.String(*key),
 	})
+
+	lc.logger.Println(s3Obj.ContentLength)
 
 	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
 		defer s3Obj.Body.Close()
