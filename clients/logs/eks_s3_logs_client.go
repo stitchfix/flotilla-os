@@ -149,12 +149,26 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		Key:    aws.String(*key),
 	})
 
-	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
+
+	if s3Obj != nil && err == nil {
 		defer s3Obj.Body.Close()
-		gr, err := gzip.NewReader(s3Obj.Body)
-		if err != nil {
-			return "", aws.String(""), errors.Errorf("No driver logs found")
+
+		if s3Obj.ContentLength != nil && *s3Obj.ContentLength < int64(10000000) {
+			return "", aws.String(""), errors.Errorf("Logs > 10MB, will not display.")
 		}
+		var gr io.ReadCloser
+		if s3Obj.ContentType != nil && *s3Obj.ContentType == "application/x-gzip" {
+			// Case where Spark < 3.3
+			newReader, err := gzip.NewReader(s3Obj.Body)
+			if err != nil {
+				return "", aws.String(""), err
+			}
+			gr = newReader
+		} else {
+			// Case where Spark >= 3.3
+			gr = s3Obj.Body
+		}
+		
 		defer gr.Close()
 		reader := bufio.NewReader(gr)
 		var b0 bytes.Buffer
