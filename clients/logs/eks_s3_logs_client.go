@@ -149,7 +149,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		Key:    aws.String(*key),
 	})
 
-	lc.logger.Println(s3Obj.ContentLength)
+	lc.logger.Println(*s3Obj.ContentLength)
 
 	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
 		defer s3Obj.Body.Close()
