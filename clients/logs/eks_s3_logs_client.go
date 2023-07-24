@@ -144,19 +144,15 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		}
 	}
 
-	s3List, _ := lc.s3Client.ListObjects(&s3.ListObjectsInput{
-		Bucket:                   aws.String(lc.emrS3LogsBucket),
-		EncodingType:             nil,
-		MaxKeys:                  nil,
-		OptionalObjectAttributes: nil,
-		Prefix:                   nil,
-		RequestPayer:             nil,
+	s3Head, _ := lc.s3Client.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(lc.emrS3LogsBucket),
+		Key:    aws.String(*key),
 	})
 
-	if s3List == nil {
+	if s3Head != nil {
 
 	}
-
+	
 	s3Obj, err := lc.s3Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(lc.emrS3LogsBucket),
 		Key:    aws.String(*key),
