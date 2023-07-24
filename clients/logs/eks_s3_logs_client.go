@@ -149,7 +149,7 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		Key:    aws.String(*key),
 	})
 
-	if s3Obj != nil && err == nil {
+	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
 		defer s3Obj.Body.Close()
 		gr, err := gzip.NewReader(s3Obj.Body)
 		if err != nil {

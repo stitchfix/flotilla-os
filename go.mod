@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
-	github.com/aws/aws-sdk-go v1.40.18
+	github.com/aws/aws-sdk-go v1.44.307
 	github.com/containerd/continuity v0.0.0-20200107194136-26c1120b8d41 // indirect
 	github.com/docker/cli v0.0.0-20190702184337-39e22d9db677 // indirect
 	github.com/docker/distribution v0.0.0-20190628181051-be07be99045e // indirect
