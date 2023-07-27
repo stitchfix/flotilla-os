@@ -285,15 +285,18 @@ func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
 func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	var err error
 	var startedAt, finishedAt time.Time
+	var duration float64
 	var env state.EnvList
 	var command string
 
 	if update.StartedAt != nil {
 		startedAt = *update.StartedAt
+		duration = time.Now().Sub(startedAt).Seconds()
 	}
 
 	if update.FinishedAt != nil {
 		finishedAt = *update.FinishedAt
+		duration = finishedAt.Sub(startedAt).Seconds()
 	}
 
 	if update.Env != nil {
@@ -316,6 +319,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"status", update.Status,
 			"started_at", startedAt,
 			"finished_at", finishedAt,
+			"duration", duration,
 			"instance_id", update.InstanceID,
 			"instance_dns_name", update.InstanceDNSName,
 			"group_name", update.GroupName,
@@ -335,6 +339,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 			"status", update.Status,
 			"started_at", startedAt,
 			"finished_at", finishedAt,
+			"duration", duration,
 			"instance_id", update.InstanceID,
 			"instance_dns_name", update.InstanceDNSName,
 			"group_name", update.GroupName,
