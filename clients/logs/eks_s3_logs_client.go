@@ -3,10 +3,12 @@ package logs
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
@@ -144,18 +146,27 @@ func (lc *EKSS3LogsClient) emrLogsToMessageString(run state.Run, lastSeen *strin
 		}
 	}
 
-	s3Obj, err := lc.s3Client.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(lc.emrS3LogsBucket),
-		Key:    aws.String(*key),
-	})
+	s3Obj, err := lc.s3Client.GetObjectWithContext(
+		context.Background(),
+		&s3.GetObjectInput{
+			Bucket: aws.String(lc.emrS3LogsBucket),
+			Key:    aws.String(*key),
+		}, func(r *request.Request) {
+			// Otherwise we get an unzipped response.
+			r.HTTPRequest.Header.Add("Accept-Encoding", "gzip")
+		})
 
-	lc.logger.Println(*s3Obj.ContentLength)
+	if s3Obj != nil && err == nil {
 
-	if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
+		if s3Obj.ContentLength != nil && *s3Obj.ContentLength > int64(10000000) {
+			return "", aws.String(""), errors.Errorf("Logs > 10MB, will not display.")
+		}
+
+    if s3Obj != nil && err == nil && *s3Obj.ContentLength < int64(10000000) {
 		defer s3Obj.Body.Close()
 		gr, err := gzip.NewReader(s3Obj.Body)
 		if err != nil {
-			return "", aws.String(""), errors.Errorf("No driver logs found")
+			return "", aws.String(""), err
 		}
 		defer gr.Close()
 		reader := bufio.NewReader(gr)

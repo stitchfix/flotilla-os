@@ -6,7 +6,7 @@ import (
 )
 
 //
-// Manager interface for CRUD operations on
+// Manager interface for CRUD operations
 // on definitions and runs
 //
 type Manager interface {
