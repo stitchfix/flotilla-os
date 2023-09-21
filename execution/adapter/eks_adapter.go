@@ -109,12 +109,13 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	volumeMounts, volumes := a.constructVolumeMounts(executable, run, manager, araEnabled)
 
 	container := corev1.Container{
-		Name:      run.RunID,
-		Image:     run.Image,
-		Command:   cmdSlice,
-		Resources: resourceRequirements,
-		Env:       a.envOverrides(executable, run),
-		Ports:     a.constructContainerPorts(executable),
+		Name:            run.RunID,
+		Image:           run.Image,
+		ImagePullPolicy: corev1.PullAlways,
+		Command:         cmdSlice,
+		Resources:       resourceRequirements,
+		Env:             a.envOverrides(executable, run),
+		Ports:           a.constructContainerPorts(executable),
 	}
 
 	if volumeMounts != nil {
