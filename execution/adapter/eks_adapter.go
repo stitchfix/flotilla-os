@@ -228,24 +228,8 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		arch = []string{"arm64"}
 	}
 
-	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
-		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: corev1.NodeSelectorOpNotIn,
-			Values:   gpuNodeTypes,
-		})
-		//adding node group affinities for non-gpu runs
-		if *run.Memory < 12000 && *run.Cpu < 3800 {
-			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "sfix/instance.size",
-				Operator: corev1.NodeSelectorOpIn,
-				Values:   []string{"small"},
-			})
-		}
-	}
-
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "node.kubernetes.io/lifecycle",
+		Key:      "karpenter.sh/capacity-type",
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
