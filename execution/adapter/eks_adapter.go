@@ -213,10 +213,8 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 
 func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
-	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
-	gpuNodeTypes := state.GPUNodeTypes
 
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
