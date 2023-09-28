@@ -144,6 +144,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 				SchedulerName:      schedulerName,
 				Containers:         []corev1.Container{container},
 				RestartPolicy:      corev1.RestartPolicyNever,
+				ServiceAccountName: sa,
 				Affinity:           affinity,
 				Tolerations:        tolerations,
 			},
