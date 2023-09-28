@@ -384,12 +384,12 @@ func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Ma
 	return "true"
 }
 
-func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []corev1.Toleration {
+func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []v1.Toleration {
 	executableResources := executable.GetExecutableResources()
-	tolerations := []corev1.Toleration{}
+	tolerations := []v1.Toleration{}
 
 	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
-		toleration := corev1.Toleration{
+		toleration := v1.Toleration{
 			Key:      "nvidia.com/gpu",
 			Operator: "Equal",
 			Value:    "true",
