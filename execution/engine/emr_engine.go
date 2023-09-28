@@ -257,6 +257,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, true),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
@@ -383,6 +384,22 @@ func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Ma
 	return "true"
 }
 
+func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []corev1.Toleration {
+	executableResources := executable.GetExecutableResources()
+	tolerations := []corev1.Toleration{}
+
+	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
+		toleration := corev1.Toleration{
+			Key:      "nvidia.com/gpu",
+			Operator: "Equal",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		}
+		tolerations = append(tolerations, toleration)
+	}
+	return tolerations
+}
+
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	executableResources := executable.GetExecutableResources()
@@ -401,14 +418,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		nodePreference = "on-demand"
 	} else {
 		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand")
-	}
-
-	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
-		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: v1.NodeSelectorOpNotIn,
-			Values:   gpuNodeTypes,
-		})
 	}
 
 	if run.CommandHash != nil {
@@ -442,7 +451,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 				Weight: 50,
 				Preference: v1.NodeSelectorTerm{
 					MatchExpressions: []v1.NodeSelectorRequirement{{
-						Key:      "node.kubernetes.io/lifecycle",
+						Key:      "karpenter.sh/capacity-type",
 						Operator: v1.NodeSelectorOpIn,
 						Values:   []string{nodePreference},
 					}},
