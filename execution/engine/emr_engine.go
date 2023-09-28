@@ -402,10 +402,8 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
-	executableResources := executable.GetExecutableResources()
 	var requiredMatch []v1.NodeSelectorRequirement
 
-	gpuNodeTypes := state.GPUNodeTypes
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
 		arch = []string{"arm64"}
