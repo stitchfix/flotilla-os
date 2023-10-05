@@ -426,7 +426,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	}
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "node.kubernetes.io/lifecycle",
+		Key:      "karpenter.sh/capacity-type",
 		Operator: v1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
