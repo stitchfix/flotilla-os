@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -316,10 +315,22 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 			return err
 		} else {
 			var parsedLine s3Log
-			err := json.Unmarshal(line, &parsedLine)
-			if err != nil {
-				return err
+
+			splitLines := strings.Split(string(line), " ")
+			if len(splitLines) > 0 {
+
+				layout := "2006-01-02T15:04:05.999999999Z"
+				timestamp, err := time.Parse(layout, splitLines[0])
+				if err != nil {
+					fmt.Println("Error:", err)
+					return err
+				}
+
+				parsedLine.Time = timestamp
+				parsedLine.Stream = splitLines[1]
+				parsedLine.Log = strings.Join(splitLines[3:], " ")
 			}
+
 			_, err = io.WriteString(w, parsedLine.Log)
 			if err != nil {
 				return err
