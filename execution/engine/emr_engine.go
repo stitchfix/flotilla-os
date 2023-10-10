@@ -218,8 +218,9 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id":                                run.RunID},
+				"karpenter.sh/do-not-evict": "true",
+				"prometheus.io/scrape":      "true",
+				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
@@ -285,8 +286,9 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id":                                run.RunID},
+				"karpenter.sh/do-not-evict": "true",
+				"prometheus.io/scrape":      "true",
+				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
