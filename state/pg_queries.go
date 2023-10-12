@@ -14,6 +14,7 @@ select td.definition_id                    as definitionid,
        td.cpu                              as cpu,
        td.gpu                              as gpu,
        td.ephemeral_storage 			   as ephemeral_storage,
+       td.requires_docker 				   as requires_docker,
        array_to_json('{""}'::TEXT[])::TEXT as tags,
        array_to_json('{}'::INT[])::TEXT    as ports
 from (select * from task_def) td

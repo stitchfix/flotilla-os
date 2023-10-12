@@ -420,7 +420,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       gpu = $8,
       adaptive_resource_allocation = $9,
       ephemeral_storage = $10,
-	  is_privileged = $11
+	  requires_docker = $11
     WHERE definition_id = $1;
     `
 	if _, err = tx.Exec(
@@ -435,7 +435,7 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Gpu,
 		existing.AdaptiveResourceAllocation,
 		existing.EphemeralStorage,
-		existing.IsPrivileged); err != nil {
+		existing.RequiresDocker); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
