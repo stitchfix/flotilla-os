@@ -241,6 +241,7 @@ type ExecutionRequestCommon struct {
 	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 	Arch                  *string         `json:"arch,omitempty"`
 	Labels                *Labels         `json:"labels,omitempty"`
+	IsPrivileged          *bool           `json:"is_privileged,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -275,6 +276,7 @@ type Definition struct {
 	Alias        string `json:"alias"`
 	Command      string `json:"command,omitempty"`
 	TaskType     string `json:"task_type,omitempty"`
+	IsPrivileged bool   `json:"is-privileged,omitempty"`
 	ExecutableResources
 }
 
@@ -483,6 +485,7 @@ type Run struct {
 	IdempotenceKey          *string                  `json:"idempotence_key,omitempty"`
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
+	RequiresDocker          bool                     `json:"requires_docker,omitempty"`
 }
 
 // UpdateWith updates this run with information from another
