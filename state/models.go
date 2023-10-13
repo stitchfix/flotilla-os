@@ -275,7 +275,7 @@ type Definition struct {
 	Alias          string `json:"alias"`
 	Command        string `json:"command,omitempty"`
 	TaskType       string `json:"task_type,omitempty"`
-	RequiresDocker bool   `json:"requires_docker,omitempty"`
+	RequiresDocker bool   `json:"requires_docker,omitempty" db:"requires_docker"`
 	ExecutableResources
 }
 
