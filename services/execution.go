@@ -291,7 +291,6 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		TaskType:              state.DefaultTaskType,
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
-		RequiresDocker:        fields.RequiresDocker,
 	}
 
 	if fields.Labels != nil {
