@@ -506,7 +506,7 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       gpu,
       adaptive_resource_allocation,
 	  ephemeral_storage,
-      requires_docker,
+      requires_docker
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
     `
