@@ -505,9 +505,10 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       cpu,
       gpu,
       adaptive_resource_allocation,
-	  ephemeral_storage
+	  ephemeral_storage,
+      requires_docker,
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
     `
 
 	if _, err = tx.Exec(insert,
@@ -521,7 +522,8 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 		d.Cpu,
 		d.Gpu,
 		d.AdaptiveResourceAllocation,
-		d.EphemeralStorage); err != nil {
+		d.EphemeralStorage,
+		d.RequiresDocker); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
