@@ -1,0 +1,1 @@
+ALTER TABLE task_def ADD COLUMN IF NOT EXISTS requires_docker BOOLEAN;

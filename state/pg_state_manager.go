@@ -419,7 +419,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       cpu = $7,
       gpu = $8,
       adaptive_resource_allocation = $9,
-      ephemeral_storage = $10
+      ephemeral_storage = $10,
+	  requires_docker = $11
     WHERE definition_id = $1;
     `
 	if _, err = tx.Exec(
@@ -433,7 +434,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Cpu,
 		existing.Gpu,
 		existing.AdaptiveResourceAllocation,
-		existing.EphemeralStorage); err != nil {
+		existing.EphemeralStorage,
+		existing.RequiresDocker); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -503,9 +505,10 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       cpu,
       gpu,
       adaptive_resource_allocation,
-	  ephemeral_storage
+	  ephemeral_storage,
+      requires_docker
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
     `
 
 	if _, err = tx.Exec(insert,
@@ -519,7 +522,8 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 		d.Cpu,
 		d.Gpu,
 		d.AdaptiveResourceAllocation,
-		d.EphemeralStorage); err != nil {
+		d.EphemeralStorage,
+		d.RequiresDocker); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)

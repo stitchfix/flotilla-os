@@ -319,6 +319,21 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 		emptyDir := corev1.EmptyDirVolumeSource{Medium: "Memory", SizeLimit: &sharedLimit}
 		volumes[0] = corev1.Volume{Name: "shared-memory", VolumeSource: corev1.VolumeSource{EmptyDir: &emptyDir}}
 	}
+	if run.RequiresDocker {
+		volumes = append(volumes, corev1.Volume{
+			Name: "dockersock",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/var/run/docker.sock",
+					Type: nil,
+				},
+			},
+		})
+		mounts = append(mounts, corev1.VolumeMount{
+			Name:      "dockersock",
+			MountPath: "/var/run/docker.sock",
+		})
+	}
 	return mounts, volumes
 }
 

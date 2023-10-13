@@ -270,11 +270,12 @@ type TerminateJob struct {
 
 // task definition. It implements the `Executable` interface.
 type Definition struct {
-	DefinitionID string `json:"definition_id"`
-	GroupName    string `json:"group_name,omitempty"`
-	Alias        string `json:"alias"`
-	Command      string `json:"command,omitempty"`
-	TaskType     string `json:"task_type,omitempty"`
+	DefinitionID   string `json:"definition_id"`
+	GroupName      string `json:"group_name,omitempty"`
+	Alias          string `json:"alias"`
+	Command        string `json:"command,omitempty"`
+	TaskType       string `json:"task_type,omitempty"`
+	RequiresDocker bool   `json:"requires_docker,omitempty" db:"requires_docker"`
 	ExecutableResources
 }
 
@@ -483,6 +484,7 @@ type Run struct {
 	IdempotenceKey          *string                  `json:"idempotence_key,omitempty"`
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
+	RequiresDocker          bool                     `json:"requires_docker,omitempty"`
 }
 
 // UpdateWith updates this run with information from another
