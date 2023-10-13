@@ -209,6 +209,7 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 	if req.Labels != nil {
 		run.Labels = *req.Labels
 	}
+
 	return run, nil
 }
 
@@ -291,6 +292,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		TaskType:              state.DefaultTaskType,
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
+		RequiresDocker:        fields.RequiresDocker,
 	}
 
 	if fields.Labels != nil {

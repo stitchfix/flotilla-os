@@ -241,6 +241,7 @@ type ExecutionRequestCommon struct {
 	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 	Arch                  *string         `json:"arch,omitempty"`
 	Labels                *Labels         `json:"labels,omitempty"`
+	RequiresDocker        bool            `json:"requires_docker,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
