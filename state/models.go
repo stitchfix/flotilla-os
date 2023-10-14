@@ -485,7 +485,7 @@ type Run struct {
 	IdempotenceKey          *string                  `json:"idempotence_key,omitempty"`
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
-	RequiresDocker          bool                     `json:"requires_docker,omitempty"`
+	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 }
 
 // UpdateWith updates this run with information from another
