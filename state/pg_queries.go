@@ -195,7 +195,8 @@ select t.run_id                          as runid,
 	   idempotence_key                   as idempotencekey,
        coalesce("user", '')              as user,
 	   coalesce(arch, '')                as arch,
-	   labels::TEXT                      as labels
+	   labels::TEXT                      as labels,
+	   coalesce(requires_docker,false)   as requires_docker
 from task t
 `
 
