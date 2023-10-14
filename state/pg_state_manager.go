@@ -747,6 +747,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.User,
 			&existing.Arch,
 			&existing.Labels,
+			&existing.RequiresDocker,
 		)
 	}
 	if err != nil {
@@ -799,7 +800,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		idempotence_key = $41,
 		"user" = $42,
 		arch = $43,
-		labels = $44
+		labels = $44,
+		requires_docker = $45
     WHERE run_id = $1;
     `
 
@@ -848,7 +850,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.IdempotenceKey,
 		existing.User,
 		existing.Arch,
-		existing.Labels); err != nil {
+		existing.Labels,
+		existing.RequiresDocker); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -911,7 +914,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	    idempotence_key,
 	    "user",
 	    arch,
-	    labels
+	    labels,
+		requires_docker
     ) VALUES (
         $1,
 		$2,
@@ -957,7 +961,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
         $42,
         $43,
         $44,
-        $45
+        $45,
+        $46
 	);
     `
 
@@ -1011,7 +1016,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.IdempotenceKey,
 		r.User,
 		r.Arch,
-		r.Labels); err != nil {
+		r.Labels,
+		r.RequiresDocker); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
