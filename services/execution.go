@@ -166,7 +166,10 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	)
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
-	fields.ClusterName = es.eksClusterOverride
+	if es.eksClusterOverride != "" {
+		fields.ClusterName = es.eksClusterOverride
+	}
+
 	if fields.Gpu != nil && *fields.Gpu > 0 {
 		fields.ClusterName = es.eksGPUClusterOverride
 	}
