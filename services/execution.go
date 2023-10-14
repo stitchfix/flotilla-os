@@ -194,6 +194,7 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 	queuedAt := time.Now()
 	run.QueuedAt = &queuedAt
 	run.GroupName = definition.GroupName
+	run.RequiresDocker = definition.RequiresDocker
 	if req.Description != nil {
 		run.Description = req.Description
 	}
