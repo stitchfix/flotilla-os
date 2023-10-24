@@ -111,7 +111,6 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	container := corev1.Container{
 		Name:            run.RunID,
 		Image:           run.Image,
-		ImagePullPolicy: corev1.PullAlways,
 		Command:         cmdSlice,
 		Resources:       resourceRequirements,
 		Env:             a.envOverrides(executable, run),
