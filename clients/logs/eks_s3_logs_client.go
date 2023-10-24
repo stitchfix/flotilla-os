@@ -316,19 +316,9 @@ func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.Resp
 		} else {
 			var parsedLine s3Log
 
-			splitLines := strings.Split(string(line), " ")
-			if len(splitLines) > 0 {
-
-				layout := "2006-01-02T15:04:05.999999999Z"
-				timestamp, err := time.Parse(layout, splitLines[0])
-				if err != nil {
-					fmt.Println("Error:", err)
-					return err
-				}
-
-				parsedLine.Time = timestamp
-				parsedLine.Stream = splitLines[1]
-				parsedLine.Log = strings.Join(splitLines[3:], " ")
+			err := json.Unmarshal(line, &parsedLine)
+			if err != nil {
+				return err
 			}
 
 			_, err = io.WriteString(w, parsedLine.Log)
@@ -386,23 +376,10 @@ func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, start
 			return acc, currentPosition, err
 		} else {
 			var parsedLine s3Log
-
-			splitLines := strings.Split(string(line), " ")
-			if len(splitLines) > 0 {
-
-				layout := "2006-01-02T15:04:05.999999999Z"
-				timestamp, err := time.Parse(layout, splitLines[0])
-				if err != nil {
-					fmt.Println("Error:", err)
-					return "", 0, err
-				}
-
-				parsedLine.Time = timestamp
-				parsedLine.Stream = splitLines[1]
-				parsedLine.Log = strings.Join(splitLines[3:], " ")
+			err := json.Unmarshal(line, &parsedLine)
+			if err == nil {
+				acc = fmt.Sprintf("%s%s", acc, parsedLine.Log)
 			}
-
-			acc = fmt.Sprintf("%s%s", acc, parsedLine.Log)
 		}
 	}
 
