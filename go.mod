@@ -9,11 +9,13 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/aws/aws-sdk-go v1.40.18
+	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gorilla/mux v1.7.4-0.20190701202633-d83b6ffe499a
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/jmoiron/sqlx v1.2.1-0.20190426154859-38398a30ed85
+	github.com/kr/pty v1.1.8 // indirect
 	github.com/lib/pq v1.10.2
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pkg/errors v0.9.1

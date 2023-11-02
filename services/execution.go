@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -54,6 +55,7 @@ type executionService struct {
 	eksSpotOverride       bool
 	spotThresholdMinutes  float64
 	terminateJobChannel   chan state.TerminateJob
+	validEksClusters           []string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -77,6 +79,7 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
 
+	es.validEksClusters = strings.Split(conf.GetString("eks_clusters"), ",")
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	if conf.IsSet("check_image_validity") {
@@ -173,6 +176,23 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	if fields.Gpu != nil && *fields.Gpu > 0 {
 		fields.ClusterName = es.eksGPUClusterOverride
 	}
+
+	// TargetCluster defined in the task definition has the highest precedence
+	if definition.TargetCluster != "" {
+		fields.ClusterName = definition.TargetCluster
+	}
+
+	clusterIsValid := false
+	for _, validCluster := range(es.validEksClusters) {
+		if validCluster == fields.ClusterName {
+			clusterIsValid = true
+			break
+		}
+	}
+	if !clusterIsValid {
+		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
+	}
+
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
 
@@ -198,6 +218,7 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 	run.QueuedAt = &queuedAt
 	run.GroupName = definition.GroupName
 	run.RequiresDocker = definition.RequiresDocker
+
 	if req.Description != nil {
 		run.Description = req.Description
 	}
