@@ -55,7 +55,7 @@ type executionService struct {
 	eksSpotOverride       bool
 	spotThresholdMinutes  float64
 	terminateJobChannel   chan state.TerminateJob
-	validEksClusters           []string
+	validEksClusters      []string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -183,7 +183,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	}
 
 	clusterIsValid := false
-	for _, validCluster := range(es.validEksClusters) {
+	for _, validCluster := range es.validEksClusters {
 		if validCluster == fields.ClusterName {
 			clusterIsValid = true
 			break

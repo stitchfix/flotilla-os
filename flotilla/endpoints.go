@@ -529,6 +529,21 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	isValidCluster := false
+	clusters, _ := ep.executionService.ListClusters()
+	for _, c := range clusters {
+		if lr.ClusterName == nil || *lr.ClusterName == c {
+			isValidCluster = true
+			break
+		}
+	}
+
+	if !isValidCluster {
+		ep.encodeError(w, exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", lr.ClusterName, clusters)})
+		return
+	}
+
 	if lr.CommandHash == nil && lr.Description != nil {
 		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}
@@ -546,6 +561,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			ClusterName:           *lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,

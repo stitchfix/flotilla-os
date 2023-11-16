@@ -27,9 +27,7 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-//
 // EKSExecutionEngine submits runs to EKS.
-//
 type EKSExecutionEngine struct {
 	kClients        map[string]kubernetes.Clientset
 	metricsClients  map[string]metricsv.Clientset
@@ -49,9 +47,7 @@ type EKSExecutionEngine struct {
 	statusQueue     string
 }
 
-//
 // Initialize configures the EKSExecutionEngine and initializes internal clients
-//
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
 	ee.kClients = make(map[string]kubernetes.Clientset)
@@ -252,7 +248,7 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
-		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
+		exitReason := fmt.Sprintf(err.Error())
 		run.ExitReason = &exitReason
 		return err
 	}
@@ -312,27 +308,21 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 
 // PollStatus is a dummy function as EKS does not emit task status
 // change events.
-//
 func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
 
-//
 // Reads off SQS queue and generates a Run object based on the runId
 func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
 	return state.Run{}, nil
 }
 
-//
 // Define returns a blank task definition and an error for the EKS engine.
-//
 func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
 	return td, errors.New("Definition of tasks are only for ECSs.")
 }
 
-//
 // Deregister returns an error for the EKS engine.
-//
 func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
 }
