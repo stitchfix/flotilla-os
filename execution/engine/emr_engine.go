@@ -57,7 +57,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	for _, c := range conf.GetStringSlice("eks_clusters") {
 		emr.emrVirtualCluster[c] = conf.GetString(fmt.Sprintf("emr_virtual_cluster_id_%s", c))
 		if emr.emrVirtualCluster[c] == "" {
-			emr.log.Log("emr_virtual_cluster_warning", fmt.Sprintf("EKS cluster %s does not have an associated EMR cluster ID", c))
+			emr.log.Log("emr_virtual_cluster_warning", fmt.Sprintf("EKS cluster %s does not have an associated EMR cluster ID", c), "expected_config_key", emr.emrVirtualCluster[c])
 		}
 	}
 
