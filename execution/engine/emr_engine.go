@@ -53,6 +53,7 @@ type EMRExecutionEngine struct {
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
+	emr.emrVirtualCluster = make(map[string]string)
 	for _, c := range conf.GetStringSlice("eks_clusters") {
 		emr.emrVirtualCluster[c] = conf.GetString(fmt.Sprintf("emr_virtual_cluster_id_%s", c))
 		if emr.emrVirtualCluster[c] == "" {
