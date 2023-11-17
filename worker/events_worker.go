@@ -69,6 +69,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
 	//clusterName := conf.GetStringSlice("eks_cluster_override")[0]
+	ew.kClientSet = make(map[string]kubernetes.Clientset)
 	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
 	for _, clusterName := range clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
