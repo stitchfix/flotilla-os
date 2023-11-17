@@ -30,7 +30,7 @@ type eventsWorker struct {
 	queue             string
 	emrJobStatusQueue string
 	s3Client          *s3.S3
-	kClient           kubernetes.Clientset
+	kClientSet        map[string]kubernetes.Clientset
 	emrHistoryServer  string
 	emrAppServer      string
 	emrMetricsServer  string
@@ -68,22 +68,23 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrJobStatusQueue = emrJobStatusQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
-	clusterName := conf.GetStringSlice("eks_cluster_override")[0]
-
-	filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-	clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-	clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
-
-	if err != nil {
-		_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
-		return err
+	//clusterName := conf.GetStringSlice("eks_cluster_override")[0]
+	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
+	for _, clusterName := range clusters {
+		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
+		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
+		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
+		if err != nil {
+			_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
+			return err
+		}
+		kClient, err := kubernetes.NewForConfig(clientConf)
+		if err != nil {
+			_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
+			return err
+		}
+		ew.kClientSet[clusterName] = *kClient
 	}
-	kClient, err := kubernetes.NewForConfig(clientConf)
-	if err != nil {
-		_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
-		return err
-	}
-	ew.kClient = *kClient
 	return nil
 }
 
@@ -195,7 +196,8 @@ func (ew *eventsWorker) runOnce() {
 }
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
-		pod, err := ew.kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
+		kClient := ew.kClientSet[kubernetesEvent.InvolvedObject.Namespace]
+		pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
