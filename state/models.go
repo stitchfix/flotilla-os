@@ -1132,6 +1132,7 @@ type InvolvedObject struct {
 type EventLabels struct {
 	ControllerUid string `json:"controller-uid,omitempty"`
 	JobName       string `json:"job-name,omitempty"`
+	ClusterName   string `json:"cluster-name,omitempty"`
 }
 
 type Metadata struct {

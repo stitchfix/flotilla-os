@@ -197,7 +197,7 @@ func (ew *eventsWorker) runOnce() {
 }
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
-		kClient := ew.kClientSet[kubernetesEvent.InvolvedObject.Namespace]
+		kClient := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
 		pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
 		var sparkAppId *string = nil

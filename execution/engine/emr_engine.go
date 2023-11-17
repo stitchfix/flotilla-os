@@ -54,7 +54,8 @@ type EMRExecutionEngine struct {
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 	emr.emrVirtualCluster = make(map[string]string)
-	for _, c := range conf.GetStringSlice("eks_clusters") {
+	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
+	for _, c := range clusters {
 		configKey := fmt.Sprintf("emr_virtual_cluster_id_%s", c)
 		emr.emrVirtualCluster[c] = conf.GetString(configKey)
 		if emr.emrVirtualCluster[c] == "" {

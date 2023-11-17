@@ -10,6 +10,10 @@ import (
 func GetLabels(run state.Run) map[string]string {
 	var labels = make(map[string]string)
 
+	if run.ClusterName != "" {
+		labels["cluster-name"] = SanitizeLabel(run.ClusterName)
+	}
+
 	if run.RunID != "" {
 		labels["flotilla-run-id"] = SanitizeLabel(run.RunID)
 	}
@@ -33,13 +37,13 @@ func SanitizeLabel(key string) string {
 	if len(key) > 63 {
 		key = key[:63]
 	}
-    	for {
-        	tempKey := strings.TrimSuffix(key, "_")
+	for {
+		tempKey := strings.TrimSuffix(key, "_")
 		if tempKey == key {
-		    break
+			break
 		}
 		key = tempKey
-    	}
+	}
 
 	return key
 }
