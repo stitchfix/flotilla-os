@@ -37,7 +37,7 @@ type EMRExecutionEngine struct {
 	emrJobNamespace     string
 	emrJobRoleArn       string
 	emrJobSA            string
-	emrVirtualCluster   string
+	emrVirtualCluster   map[string]string
 	emrContainersClient *emrcontainers.EMRContainers
 	schedulerName       string
 	s3Client            *s3.S3
@@ -53,7 +53,13 @@ type EMRExecutionEngine struct {
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
-	emr.emrVirtualCluster = conf.GetString("emr_virtual_cluster")
+	for _, c := range conf.GetStringSlice("eks_clusters") {
+		emr.emrVirtualCluster[c] = conf.GetString(fmt.Sprintf("emr_virtual_cluster_id_%s", c))
+		if emr.emrVirtualCluster[c] == "" {
+			emr.log.Log("EMR virtual cluster warning", "warning", fmt.Sprintf("EKS cluster %s does not have an associated EMR cluster ID", c))
+		}
+	}
+
 	emr.emrJobQueue = conf.GetString("emr_job_queue")
 	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
 	emr.emrJobRoleArn = conf.GetString("emr_job_role_arn")
@@ -158,7 +164,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
-
+	clusterID := emr.emrVirtualCluster[run.ClusterName]
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -179,7 +185,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			}},
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
-		VirtualClusterId: &emr.emrVirtualCluster,
+		VirtualClusterId: &clusterID,
 	}
 	return startJobRunInput
 }
