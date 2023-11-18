@@ -11,7 +11,7 @@ func GetLabels(run state.Run) map[string]string {
 	var labels = make(map[string]string)
 
 	if run.ClusterName != "" {
-		labels["cluster-name"] = SanitizeLabel(run.ClusterName)
+		labels["cluster-name"] = run.ClusterName
 	}
 
 	if run.RunID != "" {
