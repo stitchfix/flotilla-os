@@ -54,7 +54,6 @@ func TestSanitizeLabel(t *testing.T) {
 			input:    "a_____",
 			expected: "a",
 		},
-
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -91,6 +90,7 @@ func TestGetLabels(t *testing.T) {
 				},
 			},
 			want: map[string]string{
+				"cluster-name":    "A",
 				"flotilla-run-id": "runa",
 				"kube_foo":        "bar",
 				"team":            "awesomeness",
