@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"math/rand"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,9 @@ type executionService struct {
 	emrExecutionEngine    engine.Engine
 	reservedEnv           map[string]func(run state.Run) string
 	eksClusterOverride    string
+	eksClusterDefault     string
 	eksGPUClusterOverride string
+	eksGPUClusterDefault  string
 	checkImageValidity    bool
 	baseUri               string
 	spotReAttemptOverride float32
@@ -82,6 +85,13 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	es.validEksClusters = strings.Split(conf.GetString("eks_clusters"), ",")
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
+	es.eksClusterDefault = conf.GetString("eks_cluster_default")
+	es.eksGPUClusterDefault = conf.GetString("eks_gpu_cluster_default")
+
+	if !slices.Contains(es.validEksClusters, es.eksClusterDefault) || !slices.Contains(es.validEksClusters, es.eksGPUClusterDefault) {
+		return nil, fmt.Errorf("an invalid cluster has been set as a default\nvalid_clusters:%s\neks_cluster_default:%s\neks_gpu_cluster_default:%s", es.validEksClusters, es.eksClusterDefault, es.eksGPUClusterDefault)
+	}
+
 	if conf.IsSet("check_image_validity") {
 		es.checkImageValidity = conf.GetBool("check_image_validity")
 	} else {
@@ -167,19 +177,35 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		run state.Run
 		err error
 	)
+
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
-	if es.eksClusterOverride != "" {
-		fields.ClusterName = es.eksClusterOverride
+
+	/*
+		cluster is set based on the following precedence (low to high):
+			1. Default cluster from config
+			2. Cluster from task definition
+			3. Cluster from API/req
+
+		cluster is then checked for validity.
+
+		if required, cluster overrides should be introduced and set here
+	*/
+
+	if fields.ClusterName == "" {
+		if fields.Gpu != nil && *fields.Gpu > 0 {
+			fields.ClusterName = es.eksClusterDefault
+		} else {
+			fields.ClusterName = es.eksClusterDefault
+		}
 	}
 
-	if fields.Gpu != nil && *fields.Gpu > 0 {
-		fields.ClusterName = es.eksGPUClusterOverride
-	}
-
-	// TargetCluster defined in the task definition has the highest precedence
 	if definition.TargetCluster != "" {
 		fields.ClusterName = definition.TargetCluster
+	}
+
+	if req.ClusterName != "" {
+		fields.ClusterName = req.ClusterName
 	}
 
 	clusterIsValid := false
@@ -189,6 +215,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 			break
 		}
 	}
+
 	if !clusterIsValid {
 		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}

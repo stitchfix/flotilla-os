@@ -2,8 +2,8 @@ aws_default_region: us-east-1
 cluster_client: eks
 create_database_schema: true
 database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
-eks_cluster_override:
-  - clusta
+eks_clusters: 'clusta'
+eks_default_cluster: 'clusta'
 eks_log_driver_name: awslogs
 eks_log_driver_options_awslogs-group: flotilla-eks-namespace
 eks_log_driver_options_awslogs-region: us-east-1
