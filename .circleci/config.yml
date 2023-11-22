@@ -2,7 +2,7 @@
 version: 2
 jobs:
   build:
-    working_directory: /go/src/github.com/stitchfix/flotilla-os
+    working_directory: ~/go/src/github.com/stitchfix/flotilla-os
     docker:
       - image: cimg/go:1.21
         environment:
