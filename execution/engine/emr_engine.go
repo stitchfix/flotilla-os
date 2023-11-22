@@ -37,7 +37,7 @@ type EMRExecutionEngine struct {
 	emrJobNamespace     string
 	emrJobRoleArn       string
 	emrJobSA            string
-	emrVirtualCluster   map[string]string
+	emrVirtualClusters  map[string]string
 	emrContainersClient *emrcontainers.EMRContainers
 	schedulerName       string
 	s3Client            *s3.S3
@@ -53,15 +53,8 @@ type EMRExecutionEngine struct {
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
-	emr.emrVirtualCluster = make(map[string]string)
-	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
-	for _, c := range clusters {
-		configKey := fmt.Sprintf("emr_virtual_cluster_id_%s", c)
-		emr.emrVirtualCluster[c] = conf.GetString(configKey)
-		if emr.emrVirtualCluster[c] == "" {
-			emr.log.Log("emr_virtual_cluster_warning", fmt.Sprintf("EKS cluster %s does not have an associated EMR cluster ID", c), "expected_config_key", configKey)
-		}
-	}
+	emr.emrVirtualClusters = make(map[string]string)
+	emr.emrVirtualClusters = conf.GetStringMapString("emr_virtual_clusters")
 
 	emr.emrJobQueue = conf.GetString("emr_job_queue")
 	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
@@ -167,7 +160,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
-	clusterID := emr.emrVirtualCluster[run.ClusterName]
+	clusterID := emr.emrVirtualClusters[run.ClusterName]
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
