@@ -157,7 +157,6 @@ func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID strin
 	if err != nil {
 		return state.Run{}, err
 	}
-
 	return es.createFromDefinition(definition, req)
 }
 

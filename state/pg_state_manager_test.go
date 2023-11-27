@@ -13,7 +13,11 @@ import (
 )
 
 func getDB(conf config.Config) *sqlx.DB {
-	db, err := sqlx.Connect("postgres", conf.GetString("database_url"))
+	dbURL := conf.GetString("database_url")
+	if dbURL == "" {
+		log.Fatal("no dburl")
+	}
+	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +26,6 @@ func getDB(conf config.Config) *sqlx.DB {
 
 func setUp() Manager {
 	conf, _ := config.NewConfig(nil)
-
 	db := getDB(conf)
 	os.Setenv("STATE_MANAGER", "postgres")
 	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
@@ -129,7 +132,6 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-
 	if dl.Total != expectedTotal {
 		t.Errorf("Expected %v total definitions, got %v", expectedTotal, dl.Total)
 	}
