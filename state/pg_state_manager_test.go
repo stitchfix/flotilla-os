@@ -27,8 +27,14 @@ func getDB(conf config.Config) *sqlx.DB {
 func setUp() Manager {
 	conf, _ := config.NewConfig(nil)
 	db := getDB(conf)
-	os.Setenv("STATE_MANAGER", "postgres")
-	os.Setenv("CREATE_DATABASE_SCHEMA", "true")
+	err := os.Setenv("STATE_MANAGER", "postgres")
+	if err != nil {
+		log.Fatal("error setting env, STATE_MANAGER")
+	}
+	err = os.Setenv("CREATE_DATABASE_SCHEMA", "true")
+	if err != nil {
+		log.Fatal("error setting env, CREATE_DATABASE_SCHEMA")
+	}
 	sm, err := NewStateManager(conf)
 	fmt.Println(err)
 
