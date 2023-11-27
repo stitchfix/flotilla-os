@@ -31,6 +31,8 @@ jobs:
       - run:
           name: Set Up DB
           command: |
+            pwd
+            ls -a
             flyway baseline -configFiles=./.migrations/dev.conf \
               -user=flotilla \
               -password=flotilla

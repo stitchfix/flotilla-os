@@ -540,7 +540,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	if !isValidCluster {
 		ep.encodeError(w, exceptions.MissingResource{
-			ErrorString: fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", lr.ClusterName, clusters)})
+			ErrorString: fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", *lr.ClusterName, clusters)})
 		return
 	}
 

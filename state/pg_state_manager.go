@@ -1093,6 +1093,7 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration (set to 1 as default)
 
 	for _, engine := range Engines {
+		fmt.Printf("init worker table for %s engine", engine)
 		retryCount := int64(1)
 		if c.IsSet(fmt.Sprintf("worker.%s.retry_worker_count_per_instance", engine)) {
 			retryCount = int64(c.GetInt("worker.ecs.retry_worker_count_per_instance"))
