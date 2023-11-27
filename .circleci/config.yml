@@ -33,11 +33,11 @@ jobs:
           command: |
             pwd
             ls -a
-            flyway baseline -configFiles=.migrations/dev.conf \
+            flyway baseline -configFiles=./.migrations/dev.conf \
               -user=flotilla \
               -password=flotilla
-            flyway migrate -configFiles=.migrations/dev.conf \
-              -locations=filesystem:/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
+            flyway migrate -configFiles=./.migrations/dev.conf \
+              -locations=filesystem:~/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
               -user=flotilla \
               -password=flotilla
       - run: go get ./...
