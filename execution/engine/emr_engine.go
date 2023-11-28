@@ -420,6 +420,14 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	var requiredMatch []v1.NodeSelectorRequirement
+	nodeLifecycleKey := "karpenter.sh/capacity-type"
+	nodeArchKey := "kubernetes.io/arch"
+
+	switch run.ClusterName {
+	case "flotilla-eks-infra-c":
+		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
+		nodeArchKey = "kubernetes.io/arch"
+	}
 
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
@@ -443,13 +451,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	}
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "karpenter.sh/capacity-type",
+		Key:      nodeLifecycleKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/arch",
+		Key:      nodeArchKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   arch,
 	})
@@ -466,7 +474,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 				Weight: 50,
 				Preference: v1.NodeSelectorTerm{
 					MatchExpressions: []v1.NodeSelectorRequirement{{
-						Key:      "karpenter.sh/capacity-type",
+						Key:      nodeLifecycleKey,
 						Operator: v1.NodeSelectorOpIn,
 						Values:   []string{nodePreference},
 					}},
