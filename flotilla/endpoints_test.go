@@ -192,7 +192,7 @@ func TestEndpoints_CreateRun4(t *testing.T) {
 	}
 
 	if resp.StatusCode != 200 {
-		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+		t.Errorf("Expected status 200, was %v\n%v", resp.StatusCode, resp.Body)
 	}
 
 	r := state.Run{}
