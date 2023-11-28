@@ -108,6 +108,8 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.s3BucketRootDir = conf.GetString("eks_manifest_storage_options_s3_bucket_root_dir")
 
 	ee.adapter = adapt
+	fmt.Printf("EKS Engine initialized\nClusters: %s\n", ee.clusters)
+
 	return nil
 }
 

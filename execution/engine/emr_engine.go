@@ -82,6 +82,8 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 			Strict: true,
 		},
 	)
+
+	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\n", emr.emrVirtualClusters)
 	return nil
 }
 
