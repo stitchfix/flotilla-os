@@ -37,6 +37,7 @@ type ExecutionService interface {
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
+	GetDefaultCluster() string
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
@@ -83,6 +84,9 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	}
 
 	es.validEksClusters = strings.Split(conf.GetString("eks_clusters"), ",")
+	for k, _ := range es.validEksClusters {
+		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
+	}
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	es.eksClusterDefault = conf.GetString("eks_cluster_default")
@@ -529,7 +533,11 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 
 // ListClusters returns a list of all execution clusters available
 func (es *executionService) ListClusters() ([]string, error) {
-	return []string{}, nil
+	return es.validEksClusters, nil
+}
+
+func (es *executionService) GetDefaultCluster() string {
+	return es.eksClusterDefault
 }
 
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes

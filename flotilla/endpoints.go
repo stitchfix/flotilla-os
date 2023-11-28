@@ -531,16 +531,24 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	isValidCluster := false
 	clusters, _ := ep.executionService.ListClusters()
+
+	if lr.ClusterName == nil {
+		cl := ep.executionService.GetDefaultCluster()
+		lr.ClusterName = &cl
+	}
+
 	for _, c := range clusters {
-		if lr.ClusterName == nil || *lr.ClusterName == c {
+		if c == *lr.ClusterName {
 			isValidCluster = true
 			break
 		}
 	}
 
 	if !isValidCluster {
+		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", *lr.ClusterName, clusters)
+		fmt.Println(msg)
 		ep.encodeError(w, exceptions.MissingResource{
-			ErrorString: fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", *lr.ClusterName, clusters)})
+			ErrorString: msg})
 		return
 	}
 
