@@ -196,50 +196,53 @@ func (ew *eventsWorker) runOnce() {
 }
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
-		kClient := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
-		pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
 		var executorOOM *bool = nil
 		var driverOOM *bool = nil
 
-		if err == nil {
-			for k, v := range pod.Labels {
-				if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
-					emrJobId = aws.String(v)
-				}
-				if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
-					sparkAppId = aws.String(v)
-				}
-				if sparkAppId != nil && emrJobId != nil {
-					break
+		kClient, ok := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
+
+		if ok {
+			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
+			if err == nil {
+				for k, v := range pod.Labels {
+					if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
+						emrJobId = aws.String(v)
+					}
+					if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
+						sparkAppId = aws.String(v)
+					}
+					if sparkAppId != nil && emrJobId != nil {
+						break
+					}
 				}
 			}
-		}
-		if pod != nil {
-			for _, container := range pod.Spec.Containers {
-				for _, v := range container.Env {
-					if v.Name == "SPARK_DRIVER_URL" {
-						pat := regexp.MustCompile(`.*@(.*-svc).*`)
-						matches := pat.FindAllStringSubmatch(v.Value, -1)
-						for _, match := range matches {
-							if len(match) == 2 {
-								driverServiceName = &match[1]
+			if pod != nil {
+				for _, container := range pod.Spec.Containers {
+					for _, v := range container.Env {
+						if v.Name == "SPARK_DRIVER_URL" {
+							pat := regexp.MustCompile(`.*@(.*-svc).*`)
+							matches := pat.FindAllStringSubmatch(v.Value, -1)
+							for _, match := range matches {
+								if len(match) == 2 {
+									driverServiceName = &match[1]
+								}
 							}
 						}
 					}
 				}
-			}
 
-			if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
-				for _, containerStatus := range pod.Status.ContainerStatuses {
-					if containerStatus.State.Terminated != nil {
-						if containerStatus.State.Terminated.ExitCode == 137 {
-							if strings.Contains(containerStatus.Name, "driver") {
-								driverOOM = aws.Bool(true)
-							} else {
-								executorOOM = aws.Bool(true)
+				if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
+					for _, containerStatus := range pod.Status.ContainerStatuses {
+						if containerStatus.State.Terminated != nil {
+							if containerStatus.State.Terminated.ExitCode == 137 {
+								if strings.Contains(containerStatus.Name, "driver") {
+									driverOOM = aws.Bool(true)
+								} else {
+									executorOOM = aws.Bool(true)
+								}
 							}
 						}
 					}
