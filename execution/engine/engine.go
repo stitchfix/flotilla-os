@@ -21,7 +21,6 @@ type Engine interface {
 	GetEvents(run state.Run) (state.PodEventList, error)
 	FetchUpdateStatus(run state.Run) (state.Run, error)
 	FetchPodMetrics(run state.Run) (state.Run, error)
-	GetClusters() []string
 	// Legacy methods from the ECS era. Here for backwards compatibility.
 	Define(definition state.Definition) (state.Definition, error)
 	Deregister(definition state.Definition) error
