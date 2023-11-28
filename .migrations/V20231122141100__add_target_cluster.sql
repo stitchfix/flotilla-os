@@ -1,1 +1,1 @@
-ALTER TABLE task_def ADD COLUMN IF NOT EXISTS target_cluster BOOLEAN;
+ALTER TABLE task_def ADD COLUMN IF NOT EXISTS target_cluster STRING;
