@@ -32,7 +32,7 @@ type eventsWorker struct {
 	s3Client          *s3.S3
 	kClientSet        map[string]kubernetes.Clientset
 	emrHistoryServer  string
-	emrAppServer      string
+	emrAppServer      map[string]string
 	emrMetricsServer  string
 	eksMetricsServer  string
 	emrMaxPodEvents   int
@@ -51,7 +51,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	eventsQueue, err := ew.qm.QurlFor(conf.GetString("eks_events_queue"), false)
 	emrJobStatusQueue, err := ew.qm.QurlFor(conf.GetString("emr_job_status_queue"), false)
 	ew.emrHistoryServer = conf.GetString("emr_history_server_uri")
-	ew.emrAppServer = conf.GetString("emr_app_server_uri")
+	ew.emrAppServer = conf.GetStringMapString("emr_app_server_uri")
 	ew.emrMetricsServer = conf.GetString("emr_metrics_server_uri")
 	ew.eksMetricsServer = conf.GetString("eks_metrics_server_uri")
 	if conf.IsSet("emr_max_attempt_count") {
@@ -284,11 +284,10 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 				if sparkAppId != nil {
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
-
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 					if driverServiceName != nil {
-						appUri := fmt.Sprintf("%s/job/%s", ew.emrAppServer, *driverServiceName)
+						appUri := fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
 						run.SparkExtension.AppUri = &appUri
 					}
 				}
