@@ -87,6 +87,7 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	for k, _ := range es.validEksClusters {
 		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
 	}
+
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	es.eksClusterDefault = conf.GetString("eks_cluster_default")

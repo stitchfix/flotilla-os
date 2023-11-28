@@ -45,15 +45,16 @@ type EKSExecutionEngine struct {
 	s3Bucket        string
 	s3BucketRootDir string
 	statusQueue     string
+	clusters        []string
 }
 
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
+	ee.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
-	for _, clusterName := range clusters {
+	for _, clusterName := range ee.clusters {
 		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
 		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
 		if err != nil {
@@ -108,6 +109,10 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 	ee.adapter = adapt
 	return nil
+}
+
+func (ee *EKSExecutionEngine) GetClusters() []string {
+	return ee.clusters
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {

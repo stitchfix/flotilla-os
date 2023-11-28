@@ -85,6 +85,17 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
+func (emr *EMRExecutionEngine) GetClusters() []string {
+	var clusters []string
+	for k, v := range emr.emrVirtualClusters {
+		if v != "" {
+			clusters = append(clusters, k)
+		}
+	}
+
+	return clusters
+}
+
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
