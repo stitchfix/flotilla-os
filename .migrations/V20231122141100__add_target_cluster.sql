@@ -1,1 +1,1 @@
-ALTER TABLE task_def ADD COLUMN IF NOT EXISTS target_cluster STRING;
+ALTER TABLE task_def ADD COLUMN IF NOT EXISTS target_cluster VARCHAR;
