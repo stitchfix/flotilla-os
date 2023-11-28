@@ -15,6 +15,7 @@ select td.definition_id                    as definitionid,
        td.gpu                              as gpu,
        td.ephemeral_storage 			   as ephemeral_storage,
        coalesce(td.requires_docker, false) as requires_docker,
+       td.target_cluster 				   as target_cluster,
        array_to_json('{""}'::TEXT[])::TEXT as tags,
        array_to_json('{}'::INT[])::TEXT    as ports
 from (select * from task_def) td
