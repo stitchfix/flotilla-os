@@ -109,12 +109,12 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	volumeMounts, volumes := a.constructVolumeMounts(executable, run, manager, araEnabled)
 
 	container := corev1.Container{
-		Name:            run.RunID,
-		Image:           run.Image,
-		Command:         cmdSlice,
-		Resources:       resourceRequirements,
-		Env:             a.envOverrides(executable, run),
-		Ports:           a.constructContainerPorts(executable),
+		Name:      run.RunID,
+		Image:     run.Image,
+		Command:   cmdSlice,
+		Resources: resourceRequirements,
+		Env:       a.envOverrides(executable, run),
+		Ports:     a.constructContainerPorts(executable),
 	}
 
 	if volumeMounts != nil {
@@ -213,6 +213,14 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	affinity := &corev1.Affinity{}
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
+	nodeLifecycleKey := "karpenter.sh/capacity-type"
+	nodeArchKey := "kubernetes.io/arch"
+
+	switch run.ClusterName {
+	case "flotilla-eks-infra-c":
+		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
+		nodeArchKey = "kubernetes.io/arch"
+	}
 
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
@@ -227,13 +235,13 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	}
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "karpenter.sh/capacity-type",
+		Key:      nodeLifecycleKey,
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/arch",
+		Key:      nodeArchKey,
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   arch,
 	})

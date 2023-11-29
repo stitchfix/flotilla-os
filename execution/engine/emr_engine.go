@@ -37,7 +37,7 @@ type EMRExecutionEngine struct {
 	emrJobNamespace     string
 	emrJobRoleArn       string
 	emrJobSA            string
-	emrVirtualCluster   string
+	emrVirtualClusters  map[string]string
 	emrContainersClient *emrcontainers.EMRContainers
 	schedulerName       string
 	s3Client            *s3.S3
@@ -53,7 +53,9 @@ type EMRExecutionEngine struct {
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
-	emr.emrVirtualCluster = conf.GetString("emr_virtual_cluster")
+	emr.emrVirtualClusters = make(map[string]string)
+	emr.emrVirtualClusters = conf.GetStringMapString("emr_virtual_clusters")
+
 	emr.emrJobQueue = conf.GetString("emr_job_queue")
 	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
 	emr.emrJobRoleArn = conf.GetString("emr_job_role_arn")
@@ -80,7 +82,20 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 			Strict: true,
 		},
 	)
+
+	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\n", emr.emrVirtualClusters)
 	return nil
+}
+
+func (emr *EMRExecutionEngine) GetClusters() []string {
+	var clusters []string
+	for k, v := range emr.emrVirtualClusters {
+		if v != "" {
+			clusters = append(clusters, k)
+		}
+	}
+
+	return clusters
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
@@ -158,7 +173,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
-
+	clusterID := emr.emrVirtualClusters[run.ClusterName]
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -179,7 +194,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			}},
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
-		VirtualClusterId: &emr.emrVirtualCluster,
+		VirtualClusterId: &clusterID,
 	}
 	return startJobRunInput
 }
@@ -405,6 +420,14 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	var requiredMatch []v1.NodeSelectorRequirement
+	nodeLifecycleKey := "karpenter.sh/capacity-type"
+	nodeArchKey := "kubernetes.io/arch"
+
+	switch run.ClusterName {
+	case "flotilla-eks-infra-c":
+		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
+		nodeArchKey = "kubernetes.io/arch"
+	}
 
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
@@ -428,13 +451,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	}
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "karpenter.sh/capacity-type",
+		Key:      nodeLifecycleKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/arch",
+		Key:      nodeArchKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   arch,
 	})
@@ -451,7 +474,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 				Weight: 50,
 				Preference: v1.NodeSelectorTerm{
 					MatchExpressions: []v1.NodeSelectorRequirement{{
-						Key:      "karpenter.sh/capacity-type",
+						Key:      nodeLifecycleKey,
 						Operator: v1.NodeSelectorOpIn,
 						Values:   []string{nodePreference},
 					}},

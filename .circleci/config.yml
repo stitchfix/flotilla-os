@@ -2,9 +2,9 @@
 version: 2
 jobs:
   build:
-    working_directory: /go/src/github.com/stitchfix/flotilla-os
+    working_directory: ~/go/src/github.com/stitchfix/flotilla-os
     docker:
-      - image: circleci/golang:1.15
+      - image: cimg/go:1.21
         environment:
           FLOTILLA_MODE: test
           DATABASE_URL: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
@@ -12,7 +12,7 @@ jobs:
           PG_USER: flotilla
           PG_HOST: 127.0.0.1
           GO111MODULE: "on"
-      - image: circleci/postgres:9.6.2-alpine
+      - image: cimg/postgres:11.19
         environment:
           POSTGRES_USER: flotilla
           POSTGRES_DB: flotilla
@@ -31,11 +31,13 @@ jobs:
       - run:
           name: Set Up DB
           command: |
+            pwd
+            ls -a
             flyway baseline -configFiles=./.migrations/dev.conf \
               -user=flotilla \
               -password=flotilla
             flyway migrate -configFiles=./.migrations/dev.conf \
-              -locations=filesystem:/go/src/github.com/stitchfix/flotilla-os/.migrations/ \
+              -locations=filesystem:./.migrations/ \
               -user=flotilla \
               -password=flotilla
       - run: go get ./...

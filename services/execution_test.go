@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -27,16 +28,22 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"B": "b/",
 		},
 	}
-	es, _ := NewExecutionService(c, &imp, &imp, &imp, &imp)
+
+	es, err := NewExecutionService(c, &imp, &imp, &imp, &imp)
+	if err != nil {
+		log.Fatalf("error seting up execution service: %s", err.Error())
+	}
 	return es, &imp
 }
 
 func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 	// Tests valid create
 	es, imp := setUp(t)
+
 	env := &state.EnvList{
 		{Name: "K1", Value: "V1"},
 	}
+
 	expectedCalls := map[string]bool{
 		"GetDefinition":            true,
 		"CreateRun":                true,
@@ -64,6 +71,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 			Arch:             nil,
 		},
 	}
+
 	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
 	if err != nil {
 		t.Errorf(err.Error())

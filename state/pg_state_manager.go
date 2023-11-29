@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -12,7 +13,6 @@ import (
 	"database/sql"
 	"math"
 	"strings"
-	"time"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -192,6 +192,7 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
 	createSchema := conf.GetBool("create_database_schema")
+	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
@@ -420,7 +421,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
       gpu = $8,
       adaptive_resource_allocation = $9,
       ephemeral_storage = $10,
-	  requires_docker = $11
+	  requires_docker = $11,
+      target_cluster = $12
     WHERE definition_id = $1;
     `
 	if _, err = tx.Exec(
@@ -435,7 +437,8 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 		existing.Gpu,
 		existing.AdaptiveResourceAllocation,
 		existing.EphemeralStorage,
-		existing.RequiresDocker); err != nil {
+		existing.RequiresDocker,
+		existing.TargetCluster); err != nil {
 		return existing, errors.Wrapf(err, "issue updating definition [%s]", definitionID)
 	}
 
@@ -505,10 +508,11 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
       cpu,
       gpu,
       adaptive_resource_allocation,
-	  ephemeral_storage,
-      requires_docker
+      ephemeral_storage,
+      requires_docker,
+      target_cluster
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
     `
 
 	if _, err = tx.Exec(insert,
@@ -523,7 +527,8 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 		d.Gpu,
 		d.AdaptiveResourceAllocation,
 		d.EphemeralStorage,
-		d.RequiresDocker); err != nil {
+		d.RequiresDocker,
+		d.TargetCluster); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(
 			err, "issue creating new task definition with alias [%s] and id [%s]", d.DefinitionID, d.Alias)
@@ -1088,6 +1093,7 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 	// Get worker count from configuration (set to 1 as default)
 
 	for _, engine := range Engines {
+		fmt.Printf("init worker table for %s engine", engine)
 		retryCount := int64(1)
 		if c.IsSet(fmt.Sprintf("worker.%s.retry_worker_count_per_instance", engine)) {
 			retryCount = int64(c.GetInt("worker.ecs.retry_worker_count_per_instance"))

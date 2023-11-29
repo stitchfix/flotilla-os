@@ -276,6 +276,7 @@ type Definition struct {
 	Command        string `json:"command,omitempty"`
 	TaskType       string `json:"task_type,omitempty"`
 	RequiresDocker bool   `json:"requires_docker,omitempty" db:"requires_docker"`
+	TargetCluster  string `json:"target_cluster,omitempty" db:"target_cluster"`
 	ExecutableResources
 }
 
@@ -1131,6 +1132,7 @@ type InvolvedObject struct {
 type EventLabels struct {
 	ControllerUid string `json:"controller-uid,omitempty"`
 	JobName       string `json:"job-name,omitempty"`
+	ClusterName   string `json:"cluster-name,omitempty"`
 }
 
 type Metadata struct {

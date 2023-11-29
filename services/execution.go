@@ -7,7 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"math/rand"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
@@ -35,6 +37,7 @@ type ExecutionService interface {
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]string, error)
+	GetDefaultCluster() string
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
@@ -47,13 +50,16 @@ type executionService struct {
 	emrExecutionEngine    engine.Engine
 	reservedEnv           map[string]func(run state.Run) string
 	eksClusterOverride    string
+	eksClusterDefault     string
 	eksGPUClusterOverride string
+	eksGPUClusterDefault  string
 	checkImageValidity    bool
 	baseUri               string
 	spotReAttemptOverride float32
 	eksSpotOverride       bool
 	spotThresholdMinutes  float64
 	terminateJobChannel   chan state.TerminateJob
+	validEksClusters      []string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -77,8 +83,20 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 		ownerKey = "FLOTILLA_RUN_OWNER_ID"
 	}
 
+	es.validEksClusters = strings.Split(conf.GetString("eks_clusters"), ",")
+	for k, _ := range es.validEksClusters {
+		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
+	}
+
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
+	es.eksClusterDefault = conf.GetString("eks_cluster_default")
+	es.eksGPUClusterDefault = conf.GetString("eks_gpu_cluster_default")
+
+	if !slices.Contains(es.validEksClusters, es.eksClusterDefault) || !slices.Contains(es.validEksClusters, es.eksGPUClusterDefault) {
+		return nil, fmt.Errorf("an invalid cluster has been set as a default\nvalid_clusters:%s\neks_cluster_default:%s\neks_gpu_cluster_default:%s", es.validEksClusters, es.eksClusterDefault, es.eksGPUClusterDefault)
+	}
+
 	if conf.IsSet("check_image_validity") {
 		es.checkImageValidity = conf.GetBool("check_image_validity")
 	} else {
@@ -144,7 +162,6 @@ func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID strin
 	if err != nil {
 		return state.Run{}, err
 	}
-
 	return es.createFromDefinition(definition, req)
 }
 
@@ -164,15 +181,49 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		run state.Run
 		err error
 	)
+
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
-	if es.eksClusterOverride != "" {
-		fields.ClusterName = es.eksClusterOverride
+
+	/*
+		cluster is set based on the following precedence (low to high):
+			1. Default cluster from config
+			2. Cluster from task definition
+			3. Cluster from API/req
+
+		cluster is then checked for validity.
+
+		if required, cluster overrides should be introduced and set here
+	*/
+
+	if fields.ClusterName == "" {
+		if fields.Gpu != nil && *fields.Gpu > 0 {
+			fields.ClusterName = es.eksClusterDefault
+		} else {
+			fields.ClusterName = es.eksClusterDefault
+		}
 	}
 
-	if fields.Gpu != nil && *fields.Gpu > 0 {
-		fields.ClusterName = es.eksGPUClusterOverride
+	if definition.TargetCluster != "" {
+		fields.ClusterName = definition.TargetCluster
 	}
+
+	if req.ClusterName != "" {
+		fields.ClusterName = req.ClusterName
+	}
+
+	clusterIsValid := false
+	for _, validCluster := range es.validEksClusters {
+		if validCluster == fields.ClusterName {
+			clusterIsValid = true
+			break
+		}
+	}
+
+	if !clusterIsValid {
+		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
+	}
+
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
 
@@ -198,6 +249,7 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 	run.QueuedAt = &queuedAt
 	run.GroupName = definition.GroupName
 	run.RequiresDocker = definition.RequiresDocker
+
 	if req.Description != nil {
 		run.Description = req.Description
 	}
@@ -482,7 +534,11 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 
 // ListClusters returns a list of all execution clusters available
 func (es *executionService) ListClusters() ([]string, error) {
-	return []string{}, nil
+	return es.validEksClusters, nil
+}
+
+func (es *executionService) GetDefaultCluster() string {
+	return es.eksClusterDefault
 }
 
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes
