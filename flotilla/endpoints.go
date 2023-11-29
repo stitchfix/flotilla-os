@@ -545,11 +545,13 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isValidCluster {
-		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s", *lr.ClusterName, clusters)
-		fmt.Println(msg)
-		ep.encodeError(w, exceptions.MissingResource{
-			ErrorString: msg})
-		return
+		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, ep.executionService.GetDefaultCluster())
+		ep.logger.Log(
+			"message", msg,
+			"launch_request", fmt.Sprintf("%q", lr),
+			"operation", "CreateRunV4",
+		)
+		*lr.ClusterName = ep.executionService.GetDefaultCluster()
 	}
 
 	if lr.CommandHash == nil && lr.Description != nil {
