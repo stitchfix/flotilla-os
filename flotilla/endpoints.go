@@ -41,14 +41,14 @@ type LaunchRequest struct {
 }
 
 type LaunchRequestV2 struct {
-	RunTags               RunTags `json:"run_tags"`
-	Command               *string
-	Memory                *int64
-	Cpu                   *int64
-	Gpu                   *int64
-	EphemeralStorage      *int64 `json:"ephemeral_storage,omitempty"`
-	Engine                *string
-	NodeLifecycle         *string               `json:"node_lifecycle"`
+	RunTags               RunTags               `json:"run_tags"`
+	Command               *string               `json:"command,omitempty"`
+	Memory                *int64                `json:"memory,omitempty"`
+	Cpu                   *int64                `json:"cpu,omitempty"`
+	Gpu                   *int64                `json:"gpu,omitempty"`
+	EphemeralStorage      *int64                `json:"ephemeral_storage,omitempty"`
+	Engine                *string               `json:"engine,omitempty"`
+	NodeLifecycle         *string               `json:"node_lifecycle,omitempty"`
 	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
 	ClusterName           *string               `json:"cluster,omitempty"`
@@ -545,13 +545,21 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isValidCluster {
-		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, ep.executionService.GetDefaultCluster())
+		defaultCluster := ep.executionService.GetDefaultCluster()
+		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, defaultCluster)
+		lrStruct, err := json.Marshal(lr)
+		if err != nil {
+			ep.logger.Log(
+				"message", msg,
+				"launch_request", fmt.Sprintf("%q", lrStruct),
+				"operation", "CreateRunV4",
+			)
+		}
 		ep.logger.Log(
 			"message", msg,
-			"launch_request", fmt.Sprintf("%q", lr),
 			"operation", "CreateRunV4",
 		)
-		*lr.ClusterName = ep.executionService.GetDefaultCluster()
+		*lr.ClusterName = defaultCluster
 	}
 
 	if lr.CommandHash == nil && lr.Description != nil {
