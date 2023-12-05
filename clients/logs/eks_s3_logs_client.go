@@ -24,10 +24,8 @@ import (
 	"time"
 )
 
-//
 // EKSS3LogsClient corresponds with the aws logs driver
 // for ECS and returns logs for runs
-//
 type EKSS3LogsClient struct {
 	logRetentionInDays int64
 	logNamespace       string
@@ -45,16 +43,12 @@ type s3Log struct {
 	Time   time.Time `json:"time"`
 }
 
-//
 // Name returns the name of the logs client
-//
 func (lc *EKSS3LogsClient) Name() string {
 	return "eks-s3"
 }
 
-//
 // Initialize sets up the EKSS3LogsClient
-//
 func (lc *EKSS3LogsClient) Initialize(conf config.Config) error {
 	//confLogOptions := conf.GetStringMapString("eks_log_driver_options")
 
@@ -225,14 +219,14 @@ func (lc *EKSS3LogsClient) Logs(executable state.Executable, run state.Run, last
 	return "", aws.String(""), errors.Errorf("No logs.")
 }
 
-//
 // Logs returns all logs from the log stream identified by handle since lastSeen
-//
 func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
+
 	if run.Engine == nil || *run.Engine == state.EKSEngine {
 		result, err := lc.getS3Object(run)
-
-		if result != nil && err == nil {
+		if err != nil {
+			return err
+		} else if result != nil {
 			return lc.logsToMessage(result, w)
 		}
 	}
@@ -242,9 +236,7 @@ func (lc *EKSS3LogsClient) LogsText(executable state.Executable, run state.Run, 
 	return nil
 }
 
-//
 // Fetch S3Object associated with the pod's log.
-//
 func (lc *EKSS3LogsClient) getS3Object(run state.Run) (*s3.GetObjectOutput, error) {
 	//Pod isn't there yet - dont return a 404
 	//if run.PodName == nil {
@@ -295,16 +287,12 @@ func (lc *EKSS3LogsClient) getS3Key(s3Key *string) (*s3.GetObjectOutput, error) 
 	return result, nil
 }
 
-//
 // Formulate dir name on S3.
-//
 func (lc *EKSS3LogsClient) toS3DirName(run state.Run) string {
 	return fmt.Sprintf("%s/%s", lc.s3BucketRootDir, run.RunID)
 }
 
-//
 // Converts log messages from S3 to strings - returns the contents of the entire file.
-//
 func (lc *EKSS3LogsClient) logsToMessage(result *s3.GetObjectOutput, w http.ResponseWriter) error {
 	reader := bufio.NewReader(result.Body)
 	for {
@@ -336,9 +324,7 @@ func (lc *EKSS3LogsClient) logsEMR(w http.ResponseWriter) error {
 	return nil
 }
 
-//
 // Converts log messages from S3 to strings, takes a starting offset.
-//
 func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, startingPosition int64) (string, int64, error) {
 	acc := ""
 	currentPosition := int64(0)
