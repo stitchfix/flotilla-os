@@ -423,10 +423,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 		} else {
 			_ = kubernetesEvent.Done()
 		}
-	} else {
-		_ = ew.log.Log("message", "error getting run in event worker", "run", runId, "error", fmt.Sprintf("%+v", err))
 	}
-
 }
 
 func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (string, error) {
