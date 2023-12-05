@@ -218,9 +218,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 						break
 					}
 				}
-			} else {
-				_ = ew.log.Log("message", "error querying kubernetes event", "emrJobId", emrJobId, "cluster", kubernetesEvent.InvolvedObject.Labels.ClusterName, "error", fmt.Sprintf("%+v", err))
 			}
+
 			if pod != nil {
 				for _, container := range pod.Spec.Containers {
 					for _, v := range container.Env {
