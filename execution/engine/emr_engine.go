@@ -463,7 +463,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	})
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "spark",
+		Key:      "emr",
 		Operator: v1.NodeSelectorOpIn,
 		Values:   []string{"true"},
 	})
