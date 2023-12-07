@@ -402,13 +402,18 @@ func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Ma
 }
 
 func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []v1.Toleration {
+	executableResources := executable.GetExecutableResources()
 	tolerations := []v1.Toleration{}
-	tolerations = append(tolerations, v1.Toleration{
-		Key:      "spark",
-		Operator: "Equal",
-		Value:    "true",
-		Effect:   "NoSchedule",
-	})
+
+	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
+		toleration := v1.Toleration{
+			Key:      "nvidia.com/gpu",
+			Operator: "Equal",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		}
+		tolerations = append(tolerations, toleration)
+	}
 	return tolerations
 }
 
@@ -456,6 +461,13 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		Operator: v1.NodeSelectorOpIn,
 		Values:   arch,
 	})
+
+	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+		Key:      "spark",
+		Operator: v1.NodeSelectorOpIn,
+		Values:   []string{"true"},
+	})
+
 	affinity = &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
