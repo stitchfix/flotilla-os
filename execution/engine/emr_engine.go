@@ -402,18 +402,15 @@ func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Ma
 }
 
 func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []v1.Toleration {
-	executableResources := executable.GetExecutableResources()
 	tolerations := []v1.Toleration{}
 
-	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
-		toleration := v1.Toleration{
-			Key:      "nvidia.com/gpu",
-			Operator: "Equal",
-			Value:    "true",
-			Effect:   "NoSchedule",
-		}
-		tolerations = append(tolerations, toleration)
-	}
+	tolerations = append(tolerations, v1.Toleration{
+		Key:      "emr",
+		Operator: "Equal",
+		Value:    "true",
+		Effect:   "NoSchedule",
+	})
+
 	return tolerations
 }
 
