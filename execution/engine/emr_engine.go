@@ -460,14 +460,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		Values:   arch,
 	})
 
-	if run.ClusterName == "flotilla-cluster-koi" {
-		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-			Key:      "emr",
-			Operator: v1.NodeSelectorOpIn,
-			Values:   []string{"true"},
-		})
-	}
-
 	affinity = &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
