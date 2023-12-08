@@ -342,6 +342,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, false),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
