@@ -198,7 +198,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	if fields.ClusterName == "" {
 		if fields.Gpu != nil && *fields.Gpu > 0 {
-			fields.ClusterName = es.eksClusterDefault
+			fields.ClusterName = es.eksGPUClusterDefault
 		} else {
 			fields.ClusterName = es.eksClusterDefault
 		}
@@ -209,18 +209,12 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	}
 
 	if req.ClusterName != "" {
-		fields.ClusterName = req.ClusterName
-	}
-
-	clusterIsValid := false
-	for _, validCluster := range es.validEksClusters {
-		if validCluster == fields.ClusterName {
-			clusterIsValid = true
-			break
+		if es.isClusterValid(req.ClusterName) {
+			fields.ClusterName = req.ClusterName
 		}
 	}
 
-	if !clusterIsValid {
+	if !es.isClusterValid(fields.ClusterName) {
 		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
 
@@ -662,4 +656,11 @@ func (es *executionService) constructRunFromTemplate(template state.Template, re
 	run.ExecutionRequestCustom = req.GetExecutionRequestCustom()
 
 	return run, nil
+}
+
+func (es *executionService) isClusterValid(clusterName string) bool {
+	if slices.Contains(es.validEksClusters, clusterName) {
+		return true
+	}
+	return false
 }
