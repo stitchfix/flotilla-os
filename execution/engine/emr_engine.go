@@ -420,9 +420,11 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	var requiredMatch []v1.NodeSelectorRequirement
 	nodeLifecycleKey := "karpenter.sh/capacity-type"
 	nodeArchKey := "kubernetes.io/arch"
+	newCluster := true
 
 	switch run.ClusterName {
 	case "flotilla-eks-infra-c":
+		newCluster = false
 		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
 		nodeArchKey = "kubernetes.io/arch"
 	}
@@ -460,7 +462,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		Values:   arch,
 	})
 
-	if run.ClusterName == "flotilla-cluster-koi" {
+	if newCluster {
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 			Key:      "emr",
 			Operator: v1.NodeSelectorOpIn,
