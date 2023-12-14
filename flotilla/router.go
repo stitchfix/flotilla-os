@@ -4,9 +4,7 @@ import (
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
-//
 // NewRouter creates and returns a Mux Router
-//
 func NewRouter(ep endpoints) *muxtrace.Router {
 	r := muxtrace.NewRouter()
 	v1 := r.PathPrefix("/api/v1").Subrouter()
@@ -70,6 +68,7 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v6.HandleFunc("/tags", ep.GetTags).Methods("GET")
 	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
 	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
+	v6.HandleFunc("/will", ep.HeyWill).Methods("GET")
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
 	v7.HandleFunc("/template/{template_id}/execute", ep.CreateTemplateRun).Methods("PUT")
@@ -81,5 +80,6 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v7.HandleFunc("/template/{template_id}/history", ep.ListTemplateRuns).Methods("GET")
 	v7.HandleFunc("/template/{template_id}/history/{run_id}", ep.GetRun).Methods("GET")
 	v7.HandleFunc("/template/{template_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
+
 	return r
 }
