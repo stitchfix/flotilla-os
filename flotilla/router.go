@@ -68,7 +68,6 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v6.HandleFunc("/tags", ep.GetTags).Methods("GET")
 	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
 	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
-	v6.HandleFunc("/will", ep.HeyWill).Methods("GET")
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
 	v7.HandleFunc("/template/{template_id}/execute", ep.CreateTemplateRun).Methods("PUT")
