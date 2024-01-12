@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	utils "github.com/stitchfix/flotilla-os/execution"
 
 	"regexp"
@@ -146,6 +147,23 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
 		"spark.default.parallelism":                 aws.String("256"),
 		"spark.sql.shuffle.partitions":              aws.String("256"),
+
+		// PrometheusServlet metrics config
+		"spark.metrics.conf.*.sink.prometheusServlet.class": aws.String("org.apache.spark.metrics.sink.PrometheusServlet"),
+		"spark.metrics.conf.*.sink.prometheusServlet.path":  aws.String("/metrics/driver/prometheus"),
+		"master.sink.prometheusServlet.path":                aws.String("/metrics/master/prometheus"),
+		"applications.sink.prometheusServlet.path":          aws.String("/metrics/applications/prometheus"),
+
+		// Metrics grouped per component instance and source namespace e.g., Component instance = Driver or Component instance = shuffleService
+		"spark.kubernetes.driver.service.annotation.prometheus.io/port":   aws.String("4040"),
+		"spark.kubernetes.driver.service.annotation.prometheus.io/path":   aws.String("/metrics/driver/prometheus/"),
+		"spark.kubernetes.driver.service.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
+
+		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
+		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
+		"spark.kubernetes.driver.annotation.prometheus.io/path":   aws.String("/metrics/executors/prometheus/"),
+		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
+		"spark.ui.prometheus.enabled":                             aws.String(fmt.Sprintf("true")),
 	}
 	hiveDefaults := map[string]*string{}
 
@@ -234,7 +252,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"karpenter.sh/do-not-evict": "true",
-				"prometheus.io/scrape":      "true",
 				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
@@ -302,7 +319,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"karpenter.sh/do-not-evict": "true",
-				"prometheus.io/scrape":      "true",
 				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
