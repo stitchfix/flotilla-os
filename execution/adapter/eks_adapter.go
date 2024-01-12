@@ -350,18 +350,20 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
-	estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
-	if err == nil {
-		cpuRequest = estimatedResources.Cpu
-		memRequest = estimatedResources.Memory
-	}
+	if !isGPUJob {
+		estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
+		if err == nil {
+			cpuRequest = estimatedResources.Cpu
+			memRequest = estimatedResources.Memory
+		}
 
-	if cpuRequest > cpuLimit {
-		cpuLimit = cpuRequest
-	}
+		if cpuRequest > cpuLimit {
+			cpuLimit = cpuRequest
+		}
 
-	if memRequest > memLimit {
-		memLimit = memRequest
+		if memRequest > memLimit {
+			memLimit = memRequest
+		}
 	}
 
 	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)
