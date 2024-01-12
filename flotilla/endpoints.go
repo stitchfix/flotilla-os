@@ -1080,7 +1080,3 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		ep.encodeResponse(w, created)
 	}
 }
-
-func (ep *endpoints) HeyWill(w http.ResponseWriter, r *http.Request) {
-	ep.encodeResponse(w, "hey Will")
-}
