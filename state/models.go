@@ -30,13 +30,13 @@ var MinCPU = int64(256)
 
 var MaxCPU = int64(60000)
 
-var MaxGPUCPU = int64(128000)
+var MaxGPUCPU = int64(94000)
 
 var MinMem = int64(512)
 
 var MaxMem = int64(350000)
 
-var MaxGPUMem = int64(750000)
+var MaxGPUMem = int64(376000)
 
 var MaxEphemeralStorage = int64(5000)
 
