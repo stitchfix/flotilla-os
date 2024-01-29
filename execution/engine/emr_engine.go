@@ -148,7 +148,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.default.parallelism":                 aws.String("256"),
 		"spark.sql.shuffle.partitions":              aws.String("256"),
 
-		// PrometheusServlet metrics configd
+		// PrometheusServlet metrics config
 		"spark.metrics.conf.*.sink.prometheusServlet.class": aws.String("org.apache.spark.metrics.sink.PrometheusServlet"),
 		"spark.metrics.conf.*.sink.prometheusServlet.path":  aws.String("/metrics/driver/prometheus"),
 		"master.sink.prometheusServlet.path":                aws.String("/metrics/master/prometheus"),
