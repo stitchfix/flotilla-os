@@ -148,7 +148,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.default.parallelism":                 aws.String("256"),
 		"spark.sql.shuffle.partitions":              aws.String("256"),
 
-		// PrometheusServlet metrics config
+		// PrometheusServlet metrics configd
 		"spark.metrics.conf.*.sink.prometheusServlet.class": aws.String("org.apache.spark.metrics.sink.PrometheusServlet"),
 		"spark.metrics.conf.*.sink.prometheusServlet.path":  aws.String("/metrics/driver/prometheus"),
 		"master.sink.prometheusServlet.path":                aws.String("/metrics/master/prometheus"),
@@ -158,6 +158,11 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.service.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.kubernetes.driver.service.annotation.prometheus.io/path":   aws.String("/metrics/driver/prometheus/"),
 		"spark.kubernetes.driver.service.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
+
+		// Datadog Metrics
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names": aws.String("[\"spark\"]"),
+    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
+    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances": aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
 
 		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
 		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
