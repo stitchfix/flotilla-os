@@ -213,9 +213,11 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	affinity := &corev1.Affinity{}
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
+	//todo move to config
 	nodeLifecycleKey := "karpenter.sh/capacity-type"
 	nodeArchKey := "kubernetes.io/arch"
 
+	//todo remove post migration
 	switch run.ClusterName {
 	case "flotilla-eks-infra-c":
 		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
@@ -229,6 +231,7 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand", "normal")
 	}
 
+	//todo move to config
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
 		arch = []string{"arm64"}

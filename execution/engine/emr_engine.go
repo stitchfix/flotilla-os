@@ -434,10 +434,12 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	var requiredMatch []v1.NodeSelectorRequirement
+	//todo move to config
 	nodeLifecycleKey := "karpenter.sh/capacity-type"
 	nodeArchKey := "kubernetes.io/arch"
-	newCluster := true
 
+	newCluster := true
+	//todo remove post migration
 	switch run.ClusterName {
 	case "flotilla-eks-infra-c":
 		newCluster = false
@@ -478,6 +480,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		Values:   arch,
 	})
 
+	//todo remove conditional after migration
 	if newCluster {
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 			Key:      "emr",

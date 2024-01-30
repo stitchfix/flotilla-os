@@ -374,6 +374,8 @@ func (lc *EKSS3LogsClient) logsToMessageString(result *s3.GetObjectOutput, start
 }
 
 func parseLines(input []byte) (s3Log, error) {
+	//handling both dockerengine and containterd log formats
+	//TODO I don't love this - clean up post migration
 	var parsedInput s3Log
 	err := json.Unmarshal(input, &parsedInput)
 	if err != nil {
