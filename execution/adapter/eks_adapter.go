@@ -109,22 +109,21 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	volumeMounts, volumes := a.constructVolumeMounts(executable, run, manager, araEnabled)
 
 	container := corev1.Container{
-		Name:            run.RunID,
-		Image:           run.Image,
-		ImagePullPolicy: corev1.PullAlways,
-		Command:         cmdSlice,
-		Resources:       resourceRequirements,
-		Env:             a.envOverrides(executable, run),
-		Ports:           a.constructContainerPorts(executable),
+		Name:      run.RunID,
+		Image:     run.Image,
+		Command:   cmdSlice,
+		Resources: resourceRequirements,
+		Env:       a.envOverrides(executable, run),
+		Ports:     a.constructContainerPorts(executable),
 	}
 
 	if volumeMounts != nil {
 		container.VolumeMounts = volumeMounts
 	}
 	affinity := a.constructAffinity(executable, run, manager)
+	tolerations := a.constructTolerations(executable, run)
 
 	annotations := map[string]string{}
-	annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"] = a.constructEviction(run, manager)
 	annotations["prometheus.io/port"] = "9090"
 	annotations["prometheus.io/scrape"] = "true"
 
@@ -146,6 +145,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
 				Affinity:           affinity,
+				Tolerations:        tolerations,
 			},
 		},
 	}
@@ -193,12 +193,36 @@ func (a *eksAdapter) constructContainerPorts(executable state.Executable) []core
 	return containerPorts
 }
 
+func (a *eksAdapter) constructTolerations(executable state.Executable, run state.Run) []corev1.Toleration {
+	executableResources := executable.GetExecutableResources()
+	tolerations := []corev1.Toleration{}
+
+	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
+		toleration := corev1.Toleration{
+			Key:      "nvidia.com/gpu",
+			Operator: "Equal",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		}
+		tolerations = append(tolerations, toleration)
+	}
+	return tolerations
+}
+
 func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
-	executableResources := executable.GetExecutableResources()
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
-	gpuNodeTypes := state.GPUNodeTypes
+	//todo move to config
+	nodeLifecycleKey := "karpenter.sh/capacity-type"
+	nodeArchKey := "kubernetes.io/arch"
+
+	//todo remove post migration
+	switch run.ClusterName {
+	case "flotilla-eks-infra-c":
+		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
+		nodeArchKey = "kubernetes.io/arch"
+	}
 
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
@@ -207,40 +231,20 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand", "normal")
 	}
 
+	//todo move to config
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
 		arch = []string{"arm64"}
 	}
 
-	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
-		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: corev1.NodeSelectorOpNotIn,
-			Values:   gpuNodeTypes,
-		})
-		//adding node group preferred affinities for non-gpu runs
-		if *run.Memory < 10000 && *run.Cpu < 2800 {
-			preferredMatches = append(preferredMatches, corev1.PreferredSchedulingTerm{
-				Weight: 1,
-				Preference: corev1.NodeSelectorTerm{
-					MatchExpressions: []corev1.NodeSelectorRequirement{{
-						Key:      "sfix/instance.size",
-						Operator: corev1.NodeSelectorOpIn,
-						Values:   []string{"small"},
-					}},
-				},
-			})
-		}
-	}
-
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "node.kubernetes.io/lifecycle",
+		Key:      nodeLifecycleKey,
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
 
 	requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/arch",
+		Key:      nodeArchKey,
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   arch,
 	})
@@ -325,6 +329,21 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 		emptyDir := corev1.EmptyDirVolumeSource{Medium: "Memory", SizeLimit: &sharedLimit}
 		volumes[0] = corev1.Volume{Name: "shared-memory", VolumeSource: corev1.VolumeSource{EmptyDir: &emptyDir}}
 	}
+	if run.RequiresDocker {
+		volumes = append(volumes, corev1.Volume{
+			Name: "dockersock",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/var/run/docker.sock",
+					Type: nil,
+				},
+			},
+		})
+		mounts = append(mounts, corev1.VolumeMount{
+			Name:      "dockersock",
+			MountPath: "/var/run/docker.sock",
+		})
+	}
 	return mounts, volumes
 }
 
@@ -334,18 +353,20 @@ func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Ru
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
-	estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
-	if err == nil {
-		cpuRequest = estimatedResources.Cpu
-		memRequest = estimatedResources.Memory
-	}
+	if !isGPUJob {
+		estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
+		if err == nil {
+			cpuRequest = estimatedResources.Cpu
+			memRequest = estimatedResources.Memory
+		}
 
-	if cpuRequest > cpuLimit {
-		cpuLimit = cpuRequest
-	}
+		if cpuRequest > cpuLimit {
+			cpuLimit = cpuRequest
+		}
 
-	if memRequest > memLimit {
-		memLimit = memRequest
+		if memRequest > memLimit {
+			memLimit = memRequest
+		}
 	}
 
 	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)

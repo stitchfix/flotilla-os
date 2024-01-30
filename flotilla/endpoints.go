@@ -41,14 +41,14 @@ type LaunchRequest struct {
 }
 
 type LaunchRequestV2 struct {
-	RunTags               RunTags `json:"run_tags"`
-	Command               *string
-	Memory                *int64
-	Cpu                   *int64
-	Gpu                   *int64
-	EphemeralStorage      *int64 `json:"ephemeral_storage,omitempty"`
-	Engine                *string
-	NodeLifecycle         *string               `json:"node_lifecycle"`
+	RunTags               RunTags               `json:"run_tags"`
+	Command               *string               `json:"command,omitempty"`
+	Memory                *int64                `json:"memory,omitempty"`
+	Cpu                   *int64                `json:"cpu,omitempty"`
+	Gpu                   *int64                `json:"gpu,omitempty"`
+	EphemeralStorage      *int64                `json:"ephemeral_storage,omitempty"`
+	Engine                *string               `json:"engine,omitempty"`
+	NodeLifecycle         *string               `json:"node_lifecycle,omitempty"`
 	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
 	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
 	ClusterName           *string               `json:"cluster,omitempty"`
@@ -529,6 +529,39 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	isValidCluster := false
+	clusters, _ := ep.executionService.ListClusters()
+
+	if lr.ClusterName == nil {
+		cl := ep.executionService.GetDefaultCluster()
+		lr.ClusterName = &cl
+	}
+
+	for _, c := range clusters {
+		if c == *lr.ClusterName {
+			isValidCluster = true
+			break
+		}
+	}
+
+	if !isValidCluster {
+		defaultCluster := ep.executionService.GetDefaultCluster()
+		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, defaultCluster)
+		lrStruct, err := json.Marshal(lr)
+		if err != nil {
+			ep.logger.Log(
+				"message", msg,
+				"launch_request", fmt.Sprintf("%q", lrStruct),
+				"operation", "CreateRunV4",
+			)
+		}
+		ep.logger.Log(
+			"message", msg,
+			"operation", "CreateRunV4",
+		)
+		*lr.ClusterName = defaultCluster
+	}
+
 	if lr.CommandHash == nil && lr.Description != nil {
 		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}
@@ -546,6 +579,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			ClusterName:           *lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,

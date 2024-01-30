@@ -9,9 +9,7 @@ import (
 	"github.com/stitchfix/flotilla-os/state"
 )
 
-//
 // Engine defines the execution engine interface.
-//
 type Engine interface {
 	Initialize(conf config.Config) error
 	Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error)
@@ -23,7 +21,6 @@ type Engine interface {
 	GetEvents(run state.Run) (state.PodEventList, error)
 	FetchUpdateStatus(run state.Run) (state.Run, error)
 	FetchPodMetrics(run state.Run) (state.Run, error)
-
 	// Legacy methods from the ECS era. Here for backwards compatibility.
 	Define(definition state.Definition) (state.Definition, error)
 	Deregister(definition state.Definition) error
@@ -33,9 +30,7 @@ type RunReceipt struct {
 	queue.RunReceipt
 }
 
-//
 // NewExecutionEngine initializes and returns a new Engine
-//
 func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logger log.Logger) (Engine, error) {
 	switch name {
 	case state.EKSEngine:

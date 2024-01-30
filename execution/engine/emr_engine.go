@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	utils "github.com/stitchfix/flotilla-os/execution"
 
 	"regexp"
@@ -37,7 +38,7 @@ type EMRExecutionEngine struct {
 	emrJobNamespace     string
 	emrJobRoleArn       string
 	emrJobSA            string
-	emrVirtualCluster   string
+	emrVirtualClusters  map[string]string
 	emrContainersClient *emrcontainers.EMRContainers
 	schedulerName       string
 	s3Client            *s3.S3
@@ -53,7 +54,9 @@ type EMRExecutionEngine struct {
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
-	emr.emrVirtualCluster = conf.GetString("emr_virtual_cluster")
+	emr.emrVirtualClusters = make(map[string]string)
+	emr.emrVirtualClusters = conf.GetStringMapString("emr_virtual_clusters")
+
 	emr.emrJobQueue = conf.GetString("emr_job_queue")
 	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
 	emr.emrJobRoleArn = conf.GetString("emr_job_role_arn")
@@ -80,7 +83,20 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 			Strict: true,
 		},
 	)
+
+	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\n", emr.emrVirtualClusters)
 	return nil
+}
+
+func (emr *EMRExecutionEngine) GetClusters() []string {
+	var clusters []string
+	for k, v := range emr.emrVirtualClusters {
+		if v != "" {
+			clusters = append(clusters, k)
+		}
+	}
+
+	return clusters
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
@@ -131,6 +147,28 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.eventLog.enabled":                    aws.String(fmt.Sprintf("true")),
 		"spark.default.parallelism":                 aws.String("256"),
 		"spark.sql.shuffle.partitions":              aws.String("256"),
+
+		// PrometheusServlet metrics config
+		"spark.metrics.conf.*.sink.prometheusServlet.class": aws.String("org.apache.spark.metrics.sink.PrometheusServlet"),
+		"spark.metrics.conf.*.sink.prometheusServlet.path":  aws.String("/metrics/driver/prometheus"),
+		"master.sink.prometheusServlet.path":                aws.String("/metrics/master/prometheus"),
+		"applications.sink.prometheusServlet.path":          aws.String("/metrics/applications/prometheus"),
+
+		// Metrics grouped per component instance and source namespace e.g., Component instance = Driver or Component instance = shuffleService
+		"spark.kubernetes.driver.service.annotation.prometheus.io/port":   aws.String("4040"),
+		"spark.kubernetes.driver.service.annotation.prometheus.io/path":   aws.String("/metrics/driver/prometheus/"),
+		"spark.kubernetes.driver.service.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
+
+		// Datadog Metrics
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names": aws.String("[\"spark\"]"),
+    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
+    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances": aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
+
+		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
+		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
+		"spark.kubernetes.driver.annotation.prometheus.io/path":   aws.String("/metrics/executors/prometheus/"),
+		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
+		"spark.ui.prometheus.enabled":                             aws.String(fmt.Sprintf("true")),
 	}
 	hiveDefaults := map[string]*string{}
 
@@ -158,7 +196,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
-
+	clusterID := emr.emrVirtualClusters[run.ClusterName]
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -179,7 +217,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			}},
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
-		VirtualClusterId: &emr.emrVirtualCluster,
+		VirtualClusterId: &clusterID,
 	}
 	return startJobRunInput
 }
@@ -218,9 +256,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
-				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id":                                run.RunID},
+				"karpenter.sh/do-not-evict": "true",
+				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
@@ -258,6 +295,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, true),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
@@ -285,9 +323,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"cluster-autoscaler.kubernetes.io/safe-to-evict": emr.constructEviction(run, manager),
-				"prometheus.io/scrape":                           "true",
-				"flotilla-run-id":                                run.RunID},
+				"karpenter.sh/do-not-evict": "true",
+				"flotilla-run-id":           run.RunID},
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
@@ -326,6 +363,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, false),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
@@ -385,12 +423,35 @@ func (emr *EMRExecutionEngine) constructEviction(run state.Run, manager state.Ma
 	return "true"
 }
 
+func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []v1.Toleration {
+	tolerations := []v1.Toleration{}
+
+	tolerations = append(tolerations, v1.Toleration{
+		Key:      "emr",
+		Operator: "Equal",
+		Value:    "true",
+		Effect:   "NoSchedule",
+	})
+
+	return tolerations
+}
+
 func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
 	affinity := &v1.Affinity{}
-	executableResources := executable.GetExecutableResources()
 	var requiredMatch []v1.NodeSelectorRequirement
+	//todo move to config
+	nodeLifecycleKey := "karpenter.sh/capacity-type"
+	nodeArchKey := "kubernetes.io/arch"
 
-	gpuNodeTypes := state.GPUNodeTypes
+	newCluster := true
+	//todo remove post migration
+	switch run.ClusterName {
+	case "flotilla-eks-infra-c":
+		newCluster = false
+		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
+		nodeArchKey = "kubernetes.io/arch"
+	}
+
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
 		arch = []string{"arm64"}
@@ -405,14 +466,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand")
 	}
 
-	if (executableResources.Gpu == nil || *executableResources.Gpu <= 0) && (run.Gpu == nil || *run.Gpu <= 0) {
-		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-			Key:      "beta.kubernetes.io/instance-type",
-			Operator: v1.NodeSelectorOpNotIn,
-			Values:   gpuNodeTypes,
-		})
-	}
-
 	if run.CommandHash != nil {
 		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
 		if err == nil && nodeType == state.OndemandLifecycle {
@@ -421,16 +474,26 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	}
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "node.kubernetes.io/lifecycle",
+		Key:      nodeLifecycleKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   nodeLifecycle,
 	})
 
 	requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-		Key:      "kubernetes.io/arch",
+		Key:      nodeArchKey,
 		Operator: v1.NodeSelectorOpIn,
 		Values:   arch,
 	})
+
+	//todo remove conditional after migration
+	if newCluster {
+		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+			Key:      "emr",
+			Operator: v1.NodeSelectorOpIn,
+			Values:   []string{"true"},
+		})
+	}
+
 	affinity = &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
@@ -444,7 +507,7 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 				Weight: 50,
 				Preference: v1.NodeSelectorTerm{
 					MatchExpressions: []v1.NodeSelectorRequirement{{
-						Key:      "node.kubernetes.io/lifecycle",
+						Key:      nodeLifecycleKey,
 						Operator: v1.NodeSelectorOpIn,
 						Values:   []string{nodePreference},
 					}},

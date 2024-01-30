@@ -30,13 +30,13 @@ var MinCPU = int64(256)
 
 var MaxCPU = int64(60000)
 
-var MaxGPUCPU = int64(128000)
+var MaxGPUCPU = int64(94000)
 
 var MinMem = int64(512)
 
 var MaxMem = int64(350000)
 
-var MaxGPUMem = int64(750000)
+var MaxGPUMem = int64(376000)
 
 var MaxEphemeralStorage = int64(5000)
 
@@ -270,11 +270,13 @@ type TerminateJob struct {
 
 // task definition. It implements the `Executable` interface.
 type Definition struct {
-	DefinitionID string `json:"definition_id"`
-	GroupName    string `json:"group_name,omitempty"`
-	Alias        string `json:"alias"`
-	Command      string `json:"command,omitempty"`
-	TaskType     string `json:"task_type,omitempty"`
+	DefinitionID   string `json:"definition_id"`
+	GroupName      string `json:"group_name,omitempty"`
+	Alias          string `json:"alias"`
+	Command        string `json:"command,omitempty"`
+	TaskType       string `json:"task_type,omitempty"`
+	RequiresDocker bool   `json:"requires_docker,omitempty" db:"requires_docker"`
+	TargetCluster  string `json:"target_cluster,omitempty" db:"target_cluster"`
 	ExecutableResources
 }
 
@@ -483,6 +485,7 @@ type Run struct {
 	IdempotenceKey          *string                  `json:"idempotence_key,omitempty"`
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
+	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 }
 
 // UpdateWith updates this run with information from another
@@ -1129,6 +1132,7 @@ type InvolvedObject struct {
 type EventLabels struct {
 	ControllerUid string `json:"controller-uid,omitempty"`
 	JobName       string `json:"job-name,omitempty"`
+	ClusterName   string `json:"cluster-name,omitempty"`
 }
 
 type Metadata struct {

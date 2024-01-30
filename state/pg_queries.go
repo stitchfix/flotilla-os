@@ -14,6 +14,8 @@ select td.definition_id                    as definitionid,
        td.cpu                              as cpu,
        td.gpu                              as gpu,
        td.ephemeral_storage 			   as ephemeral_storage,
+       coalesce(td.requires_docker, false) as requires_docker,
+       coalesce(td.target_cluster, '')     as target_cluster,
        array_to_json('{""}'::TEXT[])::TEXT as tags,
        array_to_json('{}'::INT[])::TEXT    as ports
 from (select * from task_def) td
@@ -194,7 +196,8 @@ select t.run_id                          as runid,
 	   idempotence_key                   as idempotencekey,
        coalesce("user", '')              as user,
 	   coalesce(arch, '')                as arch,
-	   labels::TEXT                      as labels
+	   labels::TEXT                      as labels,
+	   coalesce(requires_docker,false)   as requires_docker
 from task t
 `
 
