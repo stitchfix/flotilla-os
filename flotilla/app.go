@@ -51,7 +51,6 @@ func NewApp(conf config.Config,
 	eksClusterClient cluster.Client,
 	eksQueueManager queue.Manager,
 	emrExecutionEngine engine.Engine,
-	emrQueueManager queue.Manager,
 ) (App, error) {
 	var app App
 	app.logger = log

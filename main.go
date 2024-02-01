@@ -62,14 +62,6 @@ func main() {
 	}
 
 	//
-	// Get registry client for validating images
-	//
-	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize registry client"))
-		os.Exit(1)
-	}
-
-	//
 	// Get cluster client for validating definitions
 	// against execution clusters
 	//
@@ -96,12 +88,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	emrQueueManager, err := queue.NewQueueManager(c, state.EKSSparkEngine)
-	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
-		os.Exit(1)
-	}
-
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. EKS)
@@ -117,7 +103,16 @@ func main() {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EMR execution engine"))
 		os.Exit(1)
 	}
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager)
+
+	app, err := flotilla.NewApp(c,
+		logger,
+		eksLogsClient,
+		eksExecutionEngine,
+		stateManager,
+		eksClusterClient,
+		eksQueueManager,
+		emrExecutionEngine)
+
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

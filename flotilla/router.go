@@ -14,8 +14,13 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v1.HandleFunc("/task/{definition_id}", ep.GetDefinition).Methods("GET")
 	v1.HandleFunc("/task/{definition_id}", ep.UpdateDefinition).Methods("PUT")
 	v1.HandleFunc("/task/{definition_id}", ep.DeleteDefinition).Methods("DELETE")
+
+	// this is where airflow/draft create tasks
 	v1.HandleFunc("/task/{definition_id}/execute", ep.CreateRun).Methods("PUT")
+
 	v1.HandleFunc("/task/alias/{alias}", ep.GetDefinitionByAlias).Methods("GET")
+
+	// this is where airflow/draft create tasks
 	v1.HandleFunc("/task/alias/{alias}/execute", ep.CreateRunByAlias).Methods("PUT")
 
 	v1.HandleFunc("/history", ep.ListRuns).Methods("GET")
@@ -46,12 +51,14 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 
 	v6 := r.PathPrefix("/api/v6").Subrouter()
 	v6.HandleFunc("/task", ep.ListDefinitions).Methods("GET")
+	// This is called a generic task in Futura Operator
 	v6.HandleFunc("/task", ep.CreateDefinition).Methods("POST")
 	v6.HandleFunc("/task/{definition_id}", ep.GetDefinition).Methods("GET")
 	v6.HandleFunc("/task/{definition_id}", ep.UpdateDefinition).Methods("PUT")
 	v6.HandleFunc("/task/{definition_id}", ep.DeleteDefinition).Methods("DELETE")
 	v6.HandleFunc("/task/{definition_id}/execute", ep.CreateRunV4).Methods("PUT")
 	v6.HandleFunc("/task/alias/{alias}", ep.GetDefinitionByAlias).Methods("GET")
+	// this is where Airflow/Draft create tasks
 	v6.HandleFunc("/task/alias/{alias}/execute", ep.CreateRunByAlias).Methods("PUT")
 
 	v6.HandleFunc("/history", ep.ListRuns).Methods("GET")

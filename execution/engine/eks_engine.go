@@ -29,15 +29,18 @@ import (
 
 // EKSExecutionEngine submits runs to EKS.
 type EKSExecutionEngine struct {
-	kClients        map[string]kubernetes.Clientset
-	metricsClients  map[string]metricsv.Clientset
-	adapter         adapter.EKSAdapter
-	qm              queue.Manager
-	log             flotillaLog.Logger
-	jobQueue        string
-	jobNamespace    string
+	kClients       map[string]kubernetes.Clientset
+	metricsClients map[string]metricsv.Clientset
+	adapter        adapter.EKSAdapter
+	qm             queue.Manager
+	log            flotillaLog.Logger
+	jobQueue       string
+
+	// TODO: these two should be changed for Koco
+	jobNamespace string
+	jobSA        string
+
 	jobTtl          int
-	jobSA           string
 	jobARAEnabled   bool
 	schedulerName   string
 	serializer      *k8sJson.Serializer

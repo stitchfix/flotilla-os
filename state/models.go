@@ -241,6 +241,10 @@ type ExecutionRequestCommon struct {
 	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 	Arch                  *string         `json:"arch,omitempty"`
 	Labels                *Labels         `json:"labels,omitempty"`
+	EKSNameSpace          *string         `json:"eks_name_space,omitempty"`      // EKS name space used for this req
+	EKSServiceAccount     *string         `json:"eks_service_account,omitempty"` // EKS service account used for this req
+	S3BucketList          *[]string       `json:"s3_bucket_list,omitempty"`      // List of S3 buckets that pods created by this req can write
+	KocoReq               *string         `json:"koco_req,omitempty"`            // signed STS request from req header
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -486,6 +490,11 @@ type Run struct {
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
+	EKSNameSpace            *string                  `json:"eks_name_space,omitempty"`      // EKS name space used for this req
+	EKSServiceAccount       *string                  `json:"eks_service_account,omitempty"` // EKS service account used for this req
+	S3BucketList            *[]string                `json:"s3_bucket_list,omitempty"`      // List of S3 buckets that pods created by this req can write
+	// TODO: will this expire?
+	KocoReq *string `json:"koco_req,omitempty"` // signed STS request from req header
 }
 
 // UpdateWith updates this run with information from another

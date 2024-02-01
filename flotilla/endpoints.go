@@ -58,6 +58,10 @@ type LaunchRequestV2 struct {
 	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
 	Arch                  *string               `json:"arch,omitempty"`
 	Labels                *state.Labels         `json:"labels,omitempty"`
+	EKSNameSpace          *string               `json:"eks_name_space,omitempty"`      // EKS name space used for this req
+	EKSServiceAccount     *string               `json:"eks_service_account,omitempty"` // EKS service account used for this req
+	S3BucketList          *[]string             `json:"s3_bucket_list,omitempty"`      // List of S3 buckets that pods created by this req can write
+	KocoReq               *string               `json:"koco_req,omitempty"`            // signed STS request from req header
 }
 
 // RunTags represents which user is responsible for a task run
@@ -224,7 +228,7 @@ func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// Creates new definition.
+// CreateDefinition Creates new definition.
 func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
@@ -245,7 +249,7 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Updates existing definition.
+// UpdateDefinition Updates existing definition.
 func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	var definition state.Definition
 	err := ep.decodeRequest(r, &definition)
@@ -618,6 +622,16 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	// enforce signed sts request to present in the header
+	kocoReq := r.Header.Get("StitchFix-Koco-Signed-Sts-Request")
+	if kocoReq == "" {
+		missingHeader := "StitchFix-Koco-Signed-Sts-Request"
+		ep.encodeError(w, exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("missing %s in the request header, "+
+				"please make sure sidecar is running if you are calling from a laptop", missingHeader)})
 		return
 	}
 
