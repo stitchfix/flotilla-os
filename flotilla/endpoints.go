@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
+	"github.com/stitchfix/flotilla-os/clients/acl"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
@@ -23,6 +24,7 @@ type endpoints struct {
 	templateService   services.TemplateService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
+	aclClient         acl.Client
 	logger            flotillaLog.Logger
 }
 
@@ -58,6 +60,7 @@ type LaunchRequestV2 struct {
 	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
 	Arch                  *string               `json:"arch,omitempty"`
 	Labels                *state.Labels         `json:"labels,omitempty"`
+	SAOverride            *string               `json:"sa_override,omitempty"`
 }
 
 // RunTags represents which user is responsible for a task run
@@ -454,8 +457,13 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if OnwerEmail is present in lr.EventLabels
+	err = ep.aclClient.AnnotateLaunchRequest(r.Header, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	// check if OwnerEmail is present in lr.EventLabels
 	if len(lr.RunTags.OwnerEmail) == 0 || len(lr.RunTags.TeamName) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
@@ -492,6 +500,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:   lr.IdempotenceKey,
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
+			SAOverride:       lr.SAOverride,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
