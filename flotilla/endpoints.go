@@ -524,6 +524,12 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = ep.aclClient.AnnotateLaunchRequest(r.Header, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
@@ -605,6 +611,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:        lr.IdempotenceKey,
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
+			ServiceAccount:        lr.ServiceAccount,
 		},
 	}
 
