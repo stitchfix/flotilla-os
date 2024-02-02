@@ -103,6 +103,10 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
+	if run.ServiceAccount == nil {
+		run.ServiceAccount = aws.String(emr.emrJobSA)
+	}
+
 	if run.CommandHash != nil && run.NodeLifecycle != nil && *run.NodeLifecycle == state.SpotLifecycle {
 		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
 		if err == nil && nodeType == state.OndemandLifecycle {
@@ -293,9 +297,10 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
-			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager, true),
-			Tolerations:   emr.constructTolerations(executable, run),
+			RestartPolicy:      v1.RestartPolicyNever,
+			Affinity:           emr.constructAffinity(executable, run, manager, true),
+			Tolerations:        emr.constructTolerations(executable, run),
+			ServiceAccountName: *run.ServiceAccount,
 		},
 	}
 
@@ -361,9 +366,10 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
-			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager, false),
-			Tolerations:   emr.constructTolerations(executable, run),
+			RestartPolicy:      v1.RestartPolicyNever,
+			Affinity:           emr.constructAffinity(executable, run, manager, false),
+			Tolerations:        emr.constructTolerations(executable, run),
+			ServiceAccountName: *run.ServiceAccount,
 		},
 	}
 

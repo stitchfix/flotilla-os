@@ -241,7 +241,7 @@ type ExecutionRequestCommon struct {
 	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 	Arch                  *string         `json:"arch,omitempty"`
 	Labels                *Labels         `json:"labels,omitempty"`
-	SAOverride            *string         `json:"sa_override,omitempty"`
+	ServiceAccount        *string         `json:"service_account,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -487,7 +487,7 @@ type Run struct {
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
-	SAOverride              *string                  `json:"sa_override,omitempty" db:"sa_override"`
+	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
 }
 
 // UpdateWith updates this run with information from another

@@ -60,7 +60,7 @@ type LaunchRequestV2 struct {
 	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
 	Arch                  *string               `json:"arch,omitempty"`
 	Labels                *state.Labels         `json:"labels,omitempty"`
-	SAOverride            *string               `json:"sa_override,omitempty"`
+	ServiceAccount        *string               `json:"service_account,omitempty"`
 }
 
 // RunTags represents which user is responsible for a task run
@@ -500,7 +500,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:   lr.IdempotenceKey,
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
-			SAOverride:       lr.SAOverride,
+			ServiceAccount:   lr.ServiceAccount,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)

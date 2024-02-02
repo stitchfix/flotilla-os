@@ -118,11 +118,11 @@ func (ee *EKSExecutionEngine) GetClusters() []string {
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	serviceAccount := ee.jobSA
-	if run.SAOverride != nil {
-		serviceAccount = *run.SAOverride
+	if run.ServiceAccount == nil {
+		run.ServiceAccount = aws.String(ee.jobSA)
 	}
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, serviceAccount, ee.schedulerName, manager, ee.jobARAEnabled)
+
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
