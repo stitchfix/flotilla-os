@@ -1188,3 +1188,36 @@ type Detail struct {
 	StateDetails     *string `json:"stateDetails,omitempty"`
 	Message          *string `json:"message,omitempty"`
 }
+
+type LaunchRequest struct {
+	ClusterName *string  `json:"cluster,omitempty"`
+	Env         *EnvList `json:"env,omitempty"`
+}
+
+type LaunchRequestV2 struct {
+	RunTags               RunTags         `json:"run_tags"`
+	Command               *string         `json:"command,omitempty"`
+	Memory                *int64          `json:"memory,omitempty"`
+	Cpu                   *int64          `json:"cpu,omitempty"`
+	Gpu                   *int64          `json:"gpu,omitempty"`
+	EphemeralStorage      *int64          `json:"ephemeral_storage,omitempty"`
+	Engine                *string         `json:"engine,omitempty"`
+	NodeLifecycle         *string         `json:"node_lifecycle,omitempty"`
+	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
+	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
+	ClusterName           *string         `json:"cluster,omitempty"`
+	Env                   *EnvList        `json:"env,omitempty"`
+	Description           *string         `json:"description,omitempty"`
+	CommandHash           *string         `json:"command_hash,omitempty"`
+	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
+	Arch                  *string         `json:"arch,omitempty"`
+	Labels                *Labels         `json:"labels,omitempty"`
+	ServiceAccount        *string         `json:"service_account,omitempty"`
+}
+
+// RunTags represents which user is responsible for a task run
+type RunTags struct {
+	OwnerEmail string `json:"owner_email"`
+	TeamName   string `json:"team_name"`
+	OwnerID    string `json:"owner_id"`
+}
