@@ -197,7 +197,8 @@ select t.run_id                          as runid,
        coalesce("user", '')              as user,
 	   coalesce(arch, '')                as arch,
 	   labels::TEXT                      as labels,
-	   coalesce(requires_docker,false)   as requires_docker
+	   coalesce(requires_docker,false)   as requires_docker,
+	   service_account 				 	 as service_account
 from task t
 `
 

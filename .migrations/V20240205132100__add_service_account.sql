@@ -1,0 +1,1 @@
+ALTER TABLE task ADD COLUMN IF NOT EXISTS service_account VARCHAR;
