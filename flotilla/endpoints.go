@@ -424,7 +424,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ep.middlewareClient.AnnotateLaunchRequest(r.Header, &lr)
+	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -491,7 +491,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ep.middlewareClient.AnnotateLaunchRequest(r.Header, &lr)
+	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
 		return

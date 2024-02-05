@@ -6,7 +6,7 @@ import (
 )
 
 type Client interface {
-	AnnotateLaunchRequest(headers http.Header, lr *state.LaunchRequestV2) error
+	AnnotateLaunchRequest(headers *http.Header, lr *state.LaunchRequestV2) error
 }
 
 type MiddlewareClient struct{}
@@ -15,6 +15,6 @@ func NewClient() (Client, error) {
 	return &MiddlewareClient{}, nil
 }
 
-func (mwC *MiddlewareClient) AnnotateLaunchRequest(headers http.Header, lr *state.LaunchRequestV2) error {
+func (mwC MiddlewareClient) AnnotateLaunchRequest(headers *http.Header, lr *state.LaunchRequestV2) error {
 	return nil
 }
