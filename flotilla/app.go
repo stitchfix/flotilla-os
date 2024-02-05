@@ -1,6 +1,7 @@
 package flotilla
 
 import (
+	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/queue"
 	"net/http"
 	"strings"
@@ -77,13 +78,14 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing definition service")
 	}
-
+	middlewareClient, err := middleware.NewClient()
 	ep := endpoints{
 		executionService:  executionService,
 		eksLogService:     eksLogService,
 		workerService:     workerService,
 		templateService:   templateService,
 		logger:            log,
+		middlewareClient:  middlewareClient,
 		definitionService: definitionService,
 	}
 
