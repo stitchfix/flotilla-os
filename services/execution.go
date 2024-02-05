@@ -341,6 +341,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		TaskType:              state.DefaultTaskType,
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
+		ServiceAccount:        fields.ServiceAccount,
 	}
 
 	if fields.Labels != nil {

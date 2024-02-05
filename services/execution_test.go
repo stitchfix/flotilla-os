@@ -54,6 +54,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 	}
 
 	cmd := "_test_cmd_"
+	sa := "fooAccount"
 	cpu := int64(512)
 	engine := state.DefaultEngine
 	req := state.DefinitionExecutionRequest{
@@ -69,6 +70,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 			NodeLifecycle:    nil,
 			IdempotenceKey:   nil,
 			Arch:             nil,
+			ServiceAccount:   &sa,
 		},
 	}
 
@@ -133,6 +135,13 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		}
 	}
 
+	if run.ServiceAccount == nil {
+		t.Errorf("Expected non-nil service account")
+	} else {
+		if *run.ServiceAccount != sa {
+			t.Errorf("Unexpected service account, found [%s], exptecting [%s]", *run.ServiceAccount, sa)
+		}
+	}
 	includesExpected := false
 	for _, e := range *run.Env {
 		if e.Name == "K1" && e.Value == "V1" {
