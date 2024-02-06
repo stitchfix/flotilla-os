@@ -53,6 +53,7 @@ func NewApp(conf config.Config,
 	eksQueueManager queue.Manager,
 	emrExecutionEngine engine.Engine,
 	emrQueueManager queue.Manager,
+	middlewareClient middleware.Client,
 ) (App, error) {
 	var app App
 	app.logger = log
@@ -78,7 +79,6 @@ func NewApp(conf config.Config,
 	if err != nil {
 		return app, errors.Wrap(err, "problem initializing definition service")
 	}
-	middlewareClient, err := middleware.NewClient()
 	ep := endpoints{
 		executionService:  executionService,
 		eksLogService:     eksLogService,

@@ -9,12 +9,12 @@ type Client interface {
 	AnnotateLaunchRequest(headers *http.Header, lr *state.LaunchRequestV2) error
 }
 
-type MiddlewareClient struct{}
+type middlewareClient struct{}
 
 func NewClient() (Client, error) {
-	return &MiddlewareClient{}, nil
+	return &middlewareClient{}, nil
 }
 
-func (mwC MiddlewareClient) AnnotateLaunchRequest(headers *http.Header, lr *state.LaunchRequestV2) error {
+func (mwC middlewareClient) AnnotateLaunchRequest(headers *http.Header, lr *state.LaunchRequestV2) error {
 	return nil
 }
