@@ -36,7 +36,7 @@ func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEng
 	wm.pollInterval = pollInterval
 
 	if err := wm.InitializeWorkers(); err != nil {
-		return errors.Errorf("WorkerManager unable to initialize workers. engine")
+		return errors.Errorf("WorkerManager unable to initialize workers: %s", err.Error())
 	}
 
 	return nil
@@ -46,11 +46,9 @@ func (wm *workerManager) GetTomb() *tomb.Tomb {
 	return &wm.t
 }
 
-//
 // InitializeWorkers will first check the DB for the total count per instance
 // of each worker type (retry, submit, or status), start each worker's  `Run`
 // goroutine via tomb, then append the worker to the appropriate slice.
-//
 func (wm *workerManager) InitializeWorkers() error {
 	workerList, err := wm.sm.ListWorkers(state.EKSEngine)
 
