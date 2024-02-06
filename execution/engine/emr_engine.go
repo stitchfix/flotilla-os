@@ -66,7 +66,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.s3EventLogPath = conf.GetString("emr_log_event_log_path")
 	emr.s3ManifestBucket = conf.GetString("emr_manifest_bucket")
 	emr.s3ManifestBasePath = conf.GetString("emr_manifest_base_path")
-	emr.emrJobSA = conf.GetString("eks_service_account")
+	emr.emrJobSA = conf.GetString("eks_default_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
@@ -102,6 +102,10 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
+
+	if run.ServiceAccount == nil {
+		run.ServiceAccount = aws.String(emr.emrJobSA)
+	}
 
 	if run.CommandHash != nil && run.NodeLifecycle != nil && *run.NodeLifecycle == state.SpotLifecycle {
 		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
@@ -160,9 +164,9 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.service.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
 
 		// Datadog Metrics
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names": aws.String("[\"spark\"]"),
-    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
-    	"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances": aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names":  aws.String("[\"spark\"]"),
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
 
 		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
 		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String(fmt.Sprintf("true")),
@@ -293,9 +297,10 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
-			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager, true),
-			Tolerations:   emr.constructTolerations(executable, run),
+			RestartPolicy:      v1.RestartPolicyNever,
+			Affinity:           emr.constructAffinity(executable, run, manager, true),
+			Tolerations:        emr.constructTolerations(executable, run),
+			ServiceAccountName: *run.ServiceAccount,
 		},
 	}
 
@@ -361,9 +366,10 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
-			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager, false),
-			Tolerations:   emr.constructTolerations(executable, run),
+			RestartPolicy:      v1.RestartPolicyNever,
+			Affinity:           emr.constructAffinity(executable, run, manager, false),
+			Tolerations:        emr.constructTolerations(executable, run),
+			ServiceAccountName: *run.ServiceAccount,
 		},
 	}
 

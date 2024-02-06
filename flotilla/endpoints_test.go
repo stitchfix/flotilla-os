@@ -3,6 +3,7 @@ package flotilla
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
@@ -40,7 +41,8 @@ func setUp(t *testing.T) *muxtrace.Router {
 	ds, _ := services.NewDefinitionService(&imp)
 	es, _ := services.NewExecutionService(c, &imp, &imp, &imp, &imp)
 	ls, _ := services.NewLogService(&imp, &imp)
-	ep := endpoints{definitionService: ds, executionService: es, eksLogService: ls}
+	mwc, _ := middleware.NewClient()
+	ep := endpoints{definitionService: ds, executionService: es, eksLogService: ls, middlewareClient: mwc}
 	return NewRouter(ep)
 }
 

@@ -241,6 +241,7 @@ type ExecutionRequestCommon struct {
 	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
 	Arch                  *string         `json:"arch,omitempty"`
 	Labels                *Labels         `json:"labels,omitempty"`
+	ServiceAccount        *string         `json:"service_account,omitempty"`
 }
 
 type ExecutionRequestCustom map[string]interface{}
@@ -486,6 +487,7 @@ type Run struct {
 	Arch                    *string                  `json:"arch,omitempty"`
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
+	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
 }
 
 // UpdateWith updates this run with information from another
@@ -1185,4 +1187,37 @@ type Detail struct {
 	FailureReason    *string `json:"failureReason,omitempty"`
 	StateDetails     *string `json:"stateDetails,omitempty"`
 	Message          *string `json:"message,omitempty"`
+}
+
+type LaunchRequest struct {
+	ClusterName *string  `json:"cluster,omitempty"`
+	Env         *EnvList `json:"env,omitempty"`
+}
+
+type LaunchRequestV2 struct {
+	RunTags               RunTags         `json:"run_tags"`
+	Command               *string         `json:"command,omitempty"`
+	Memory                *int64          `json:"memory,omitempty"`
+	Cpu                   *int64          `json:"cpu,omitempty"`
+	Gpu                   *int64          `json:"gpu,omitempty"`
+	EphemeralStorage      *int64          `json:"ephemeral_storage,omitempty"`
+	Engine                *string         `json:"engine,omitempty"`
+	NodeLifecycle         *string         `json:"node_lifecycle,omitempty"`
+	ActiveDeadlineSeconds *int64          `json:"active_deadline_seconds,omitempty"`
+	SparkExtension        *SparkExtension `json:"spark_extension,omitempty"`
+	ClusterName           *string         `json:"cluster,omitempty"`
+	Env                   *EnvList        `json:"env,omitempty"`
+	Description           *string         `json:"description,omitempty"`
+	CommandHash           *string         `json:"command_hash,omitempty"`
+	IdempotenceKey        *string         `json:"idempotence_key,omitempty"`
+	Arch                  *string         `json:"arch,omitempty"`
+	Labels                *Labels         `json:"labels,omitempty"`
+	ServiceAccount        *string         `json:"service_account,omitempty"`
+}
+
+// RunTags represents which user is responsible for a task run
+type RunTags struct {
+	OwnerEmail string `json:"owner_email"`
+	TeamName   string `json:"team_name"`
+	OwnerID    string `json:"owner_id"`
 }

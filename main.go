@@ -7,6 +7,7 @@ import (
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	"github.com/stitchfix/flotilla-os/flotilla"
@@ -117,7 +118,12 @@ func main() {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EMR execution engine"))
 		os.Exit(1)
 	}
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager)
+	middlewareClient, err := middleware.NewClient()
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize middleware client"))
+		os.Exit(1)
+	}
+	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager, middlewareClient)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

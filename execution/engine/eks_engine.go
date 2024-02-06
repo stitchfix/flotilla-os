@@ -82,7 +82,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 	ee.jobNamespace = conf.GetString("eks_job_namespace")
 	ee.jobTtl = conf.GetInt("eks_job_ttl")
-	ee.jobSA = conf.GetString("eks_service_account")
+	ee.jobSA = conf.GetString("eks_default_service_account")
 	ee.jobARAEnabled = true
 
 	adapt, err := adapter.NewEKSAdapter()
@@ -118,7 +118,11 @@ func (ee *EKSExecutionEngine) GetClusters() []string {
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.jobSA, ee.schedulerName, manager, ee.jobARAEnabled)
+	if run.ServiceAccount == nil {
+		run.ServiceAccount = aws.String(ee.jobSA)
+	}
+
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {

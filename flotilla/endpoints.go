@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
+	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/services"
@@ -23,6 +24,7 @@ type endpoints struct {
 	templateService   services.TemplateService
 	eksLogService     services.LogService
 	workerService     services.WorkerService
+	middlewareClient  middleware.Client
 	logger            flotillaLog.Logger
 }
 
@@ -33,38 +35,6 @@ type listRequest struct {
 	order      string
 	filters    map[string][]string
 	envFilters map[string]string
-}
-
-type LaunchRequest struct {
-	ClusterName *string        `json:"cluster,omitempty"`
-	Env         *state.EnvList `json:"env,omitempty"`
-}
-
-type LaunchRequestV2 struct {
-	RunTags               RunTags               `json:"run_tags"`
-	Command               *string               `json:"command,omitempty"`
-	Memory                *int64                `json:"memory,omitempty"`
-	Cpu                   *int64                `json:"cpu,omitempty"`
-	Gpu                   *int64                `json:"gpu,omitempty"`
-	EphemeralStorage      *int64                `json:"ephemeral_storage,omitempty"`
-	Engine                *string               `json:"engine,omitempty"`
-	NodeLifecycle         *string               `json:"node_lifecycle,omitempty"`
-	ActiveDeadlineSeconds *int64                `json:"active_deadline_seconds,omitempty"`
-	SparkExtension        *state.SparkExtension `json:"spark_extension,omitempty"`
-	ClusterName           *string               `json:"cluster,omitempty"`
-	Env                   *state.EnvList        `json:"env,omitempty"`
-	Description           *string               `json:"description,omitempty"`
-	CommandHash           *string               `json:"command_hash,omitempty"`
-	IdempotenceKey        *string               `json:"idempotence_key,omitempty"`
-	Arch                  *string               `json:"arch,omitempty"`
-	Labels                *state.Labels         `json:"labels,omitempty"`
-}
-
-// RunTags represents which user is responsible for a task run
-type RunTags struct {
-	OwnerEmail string `json:"owner_email"`
-	TeamName   string `json:"team_name"`
-	OwnerID    string `json:"owner_id"`
 }
 
 func (ep *endpoints) getURLParam(v url.Values, key string, defaultValue string) string {
@@ -411,7 +381,7 @@ func (ep *endpoints) GetPayload(w http.ResponseWriter, r *http.Request) {
 
 // Creates a new Run (deprecated). Only present for legacy support.
 func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
-	var lr LaunchRequest
+	var lr state.LaunchRequest
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
@@ -447,15 +417,20 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 // Creates a new Run (deprecated). Only present for legacy support.
 func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
-	var lr LaunchRequestV2
+	var lr state.LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
 
-	// check if OnwerEmail is present in lr.EventLabels
+	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
 
+	// check if OwnerEmail is present in lr.EventLabels
 	if len(lr.RunTags.OwnerEmail) == 0 || len(lr.RunTags.TeamName) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_email] and [team_name]")})
@@ -492,6 +467,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:   lr.IdempotenceKey,
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
+			ServiceAccount:   lr.ServiceAccount,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -508,10 +484,16 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 
 // Creates a new Run.
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
-	var lr LaunchRequestV2
+	var lr state.LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
+		return
+	}
+
+	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
 		return
 	}
 
@@ -596,6 +578,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:        lr.IdempotenceKey,
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
+			ServiceAccount:        lr.ServiceAccount,
 		},
 	}
 
@@ -614,7 +597,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 // Creates a new Run based on definition alias.
 func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
-	var lr LaunchRequestV2
+	var lr state.LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
