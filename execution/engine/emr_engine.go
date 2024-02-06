@@ -66,7 +66,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.s3EventLogPath = conf.GetString("emr_log_event_log_path")
 	emr.s3ManifestBucket = conf.GetString("emr_manifest_bucket")
 	emr.s3ManifestBasePath = conf.GetString("emr_manifest_base_path")
-	emr.emrJobSA = conf.GetString("eks_service_account")
+	emr.emrJobSA = conf.GetString("eks_default_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
