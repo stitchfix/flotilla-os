@@ -15,7 +15,7 @@ import (
 func getDB(conf config.Config) *sqlx.DB {
 	dbURL := conf.GetString("database_url")
 	if dbURL == "" {
-		log.Fatal("no dburl")
+		dbURL = "postgresql://postgres:docker@localhost/postgres?sslmode=disable"
 	}
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
