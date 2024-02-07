@@ -100,12 +100,10 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	emr.log.Log("message", "Executing EMR task", "run_id", run.RunID, "service_acount", run.ServiceAccount)
-
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
-	if run.ServiceAccount == nil {
+	if run.ServiceAccount == nil || *run.ServiceAccount == "" {
 		run.ServiceAccount = aws.String(emr.emrJobSA)
 	}
 
