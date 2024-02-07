@@ -36,7 +36,7 @@ type EMRExecutionEngine struct {
 	log                 flotillaLog.Logger
 	emrJobQueue         string
 	emrJobNamespace     string
-	emrJobRoleArn       string
+	emrJobRoleArn       map[string]string
 	emrJobSA            string
 	emrVirtualClusters  map[string]string
 	emrContainersClient *emrcontainers.EMRContainers
@@ -59,7 +59,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 	emr.emrJobQueue = conf.GetString("emr_job_queue")
 	emr.emrJobNamespace = conf.GetString("emr_job_namespace")
-	emr.emrJobRoleArn = conf.GetString("emr_job_role_arn")
+	emr.emrJobRoleArn = conf.GetStringMapString("emr_job_role_arn")
 	emr.awsRegion = conf.GetString("emr_aws_region")
 	emr.s3LogsBucket = conf.GetString("emr_log_bucket")
 	emr.s3LogsBasePath = conf.GetString("emr_log_base_path")
@@ -200,6 +200,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 }
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
+	roleArn := emr.emrJobRoleArn[*run.ServiceAccount]
 	clusterID := emr.emrVirtualClusters[run.ClusterName]
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
@@ -212,7 +213,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 			},
 			ApplicationConfiguration: emr.generateApplicationConf(executable, run, manager),
 		},
-		ExecutionRoleArn: &emr.emrJobRoleArn,
+		ExecutionRoleArn: &roleArn,
 		JobDriver: &emrcontainers.JobDriver{
 			SparkSubmitJobDriver: &emrcontainers.SparkSubmitJobDriver{
 				EntryPoint:            run.SparkExtension.SparkSubmitJobDriver.EntryPoint,
