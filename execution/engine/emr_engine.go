@@ -593,8 +593,6 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
 
-	buffer.WriteString(fmt.Sprintf(" --conf %s=%s", "spark.kubernetes.authenticate.driver.serviceAccountName", run.ServiceAccount))
-
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
 	}
