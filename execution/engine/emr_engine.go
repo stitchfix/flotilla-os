@@ -105,7 +105,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
-	if run.ServiceAccount == nil {
+	if run.ServiceAccount == nil || *run.ServiceAccount == "" {
 		run.ServiceAccount = aws.String(emr.emrJobSA)
 	}
 
