@@ -109,6 +109,8 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.ServiceAccount = aws.String(emr.emrJobSA)
 	}
 
+	emr.log.Log("message", "Executing EMR task 2", "run_id", run.RunID, "service_acount", run.ServiceAccount)
+
 	if run.CommandHash != nil && run.NodeLifecycle != nil && *run.NodeLifecycle == state.SpotLifecycle {
 		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
 		if err == nil && nodeType == state.OndemandLifecycle {
