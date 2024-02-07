@@ -84,7 +84,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		},
 	)
 
-	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\n", emr.emrVirtualClusters)
+	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)
 	return nil
 }
 
@@ -100,6 +100,8 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	emr.log.Log("message", "Executing EMR task", "run_id", run.RunID, "service_acount", run.ServiceAccount)
+
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
@@ -120,6 +122,8 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	if err == nil {
 		emrJobManifest = emr.writeStringToS3(emrJobManifest, obj)
 	}
+
+	emr.log.Log("message", "Start EMR JobRun", "ExecutionRoleArn", startJobRunInput.ExecutionRoleArn)
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
