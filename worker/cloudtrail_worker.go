@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-		awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
+	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 )
 
 type cloudtrailWorker struct {
@@ -50,9 +50,7 @@ func (ctw *cloudtrailWorker) GetTomb() *tomb.Tomb {
 	return &ctw.t
 }
 
-//
 // Run lists queues, consumes runs from them, and executes them using the execution engine
-//
 func (ctw *cloudtrailWorker) Run() error {
 	for {
 		select {
@@ -105,7 +103,7 @@ func (ctw *cloudtrailWorker) processS3Keys(cloudTrailS3File state.CloudTrailS3Fi
 }
 
 func (ctw *cloudtrailWorker) processCloudTrailNotifications(ctn state.CloudTrailNotifications) {
-	sa := ctw.conf.GetString("eks_service_account")
+	sa := ctw.conf.GetString("eks_default_service_account")
 	runIdRecordMap := make(map[string][]state.Record)
 	for _, record := range ctn.Records {
 		if strings.Contains(record.UserIdentity.Arn, sa) && strings.Contains(record.UserIdentity.Arn, "eks-") {

@@ -297,10 +297,9 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
-			RestartPolicy:      v1.RestartPolicyNever,
-			Affinity:           emr.constructAffinity(executable, run, manager, true),
-			Tolerations:        emr.constructTolerations(executable, run),
-			ServiceAccountName: *run.ServiceAccount,
+			RestartPolicy: v1.RestartPolicyNever,
+			Affinity:      emr.constructAffinity(executable, run, manager, true),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
@@ -366,10 +365,9 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
-			RestartPolicy:      v1.RestartPolicyNever,
-			Affinity:           emr.constructAffinity(executable, run, manager, false),
-			Tolerations:        emr.constructTolerations(executable, run),
-			ServiceAccountName: *run.ServiceAccount,
+			RestartPolicy: v1.RestartPolicyNever,
+			Affinity:      emr.constructAffinity(executable, run, manager, false),
+			Tolerations:   emr.constructTolerations(executable, run),
 		},
 	}
 
@@ -593,6 +591,8 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(run state.Run, manager st
 func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf(" --name %s", run.RunID))
+
+	buffer.WriteString(fmt.Sprintf(" --conf %s=%s", "spark.kubernetes.authenticate.driver.serviceAccountName", run.ServiceAccount))
 
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		buffer.WriteString(fmt.Sprintf(" --conf %s=%s", *k.Name, *k.Value))
