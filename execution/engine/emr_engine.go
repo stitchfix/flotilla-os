@@ -100,8 +100,6 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	emr.log.Log("message", "Executing EMR task", "run_id", run.RunID)
-
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
