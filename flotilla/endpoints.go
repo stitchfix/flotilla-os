@@ -604,6 +604,12 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
