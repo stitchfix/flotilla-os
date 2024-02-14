@@ -657,6 +657,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			IdempotenceKey:        lr.IdempotenceKey,
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
+			ServiceAccount:        lr.ServiceAccount,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
