@@ -325,14 +325,6 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 
 	labels := utils.GetLabels(run)
 
-	//if run.Description != nil {
-	//	info := strings.Split(*run.Description, "/")
-	//
-	//	for i, s := range info {
-	//		labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
-	//	}
-	//}
-
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
