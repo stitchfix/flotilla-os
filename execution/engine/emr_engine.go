@@ -267,13 +267,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 
 	labels := utils.GetLabels(run)
 
-	//if run.Description != nil {
-	//	info := strings.Split(*run.Description, "/")
-	//
-	//	for i, s := range info {
-	//		labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
-	//	}
-	//}
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -282,18 +275,36 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
+			Volumes: []v1.Volume{{
+				Name: "shared-lib-volume",
+				VolumeSource: v1.VolumeSource{
+					EmptyDir: &(v1.EmptyDirVolumeSource{}),
+				},
+			}},
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name:       "spark-kubernetes-driver",
-					Env:        emr.envOverrides(executable, run),
+					Name: "spark-kubernetes-driver",
+					Env:  emr.envOverrides(executable, run),
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      "shared-lib-volume",
+							MountPath: "/var/lib/app",
+						},
+					},
 					WorkingDir: workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:    fmt.Sprintf("init-driver-%s", run.RunID),
-				Image:   run.Image,
-				Env:     emr.envOverrides(executable, run),
+				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
+				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "shared-lib-volume",
+						MountPath: "/var/lib/app",
+					},
+				},
 				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
@@ -314,6 +325,14 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 
 	labels := utils.GetLabels(run)
 
+	//if run.Description != nil {
+	//	info := strings.Split(*run.Description, "/")
+	//
+	//	for i, s := range info {
+	//		labels[fmt.Sprintf("info%v", i)] = emr.sanitizeLabel(s)
+	//	}
+	//}
+
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -324,18 +343,36 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: aws.Int64(90),
-			SchedulerName:                 emr.schedulerName,
+			Volumes: []v1.Volume{{
+				Name: "shared-lib-volume",
+				VolumeSource: v1.VolumeSource{
+					EmptyDir: &(v1.EmptyDirVolumeSource{}),
+				},
+			}},
+			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name:       "spark-kubernetes-executor",
-					Env:        emr.envOverrides(executable, run),
+					Name: "spark-kubernetes-executor",
+					Env:  emr.envOverrides(executable, run),
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      "shared-lib-volume",
+							MountPath: "/var/lib/app",
+						},
+					},
 					WorkingDir: workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:    fmt.Sprintf("init-executor-%s", run.RunID),
-				Image:   run.Image,
-				Env:     emr.envOverrides(executable, run),
+				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
+				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "shared-lib-volume",
+						MountPath: "/var/lib/app",
+					},
+				},
 				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
