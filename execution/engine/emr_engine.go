@@ -181,6 +181,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 
 		// PVC creation and use for mounting EBS volumes to jobs
 		// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
+		// This requires the a CSI Driver to be deployed in the cluster
 		"spark.kubernetes.driver.ownPersistentVolumeClaim":                                                            aws.String("true"),
 		"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":   aws.String(pvcName),
 		"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":          aws.String("/var/lib/app/"),
