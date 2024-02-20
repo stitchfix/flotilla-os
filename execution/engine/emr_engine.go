@@ -185,13 +185,13 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 			// PVC creation and use for mounting EBS volumes to jobs
 			// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
 			// This requires the a CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":                                                               aws.String("true"),
-			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim":                                                       aws.String("true"),
-			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
-			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
-			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
-			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
-			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
+			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("true"),
+			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("true"),
+			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
+			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
+			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
+			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
+			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("150Gi"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
@@ -306,9 +306,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 
 	labels := utils.GetLabels(run)
 
-	// TODO Remove after migration
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName)
-
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -317,14 +314,24 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
-			Volumes:       volumes, // TODO Remove after Migration
+			Volumes: []v1.Volume{{
+				Name: "shared-lib-volume",
+				VolumeSource: v1.VolumeSource{
+					EmptyDir: &(v1.EmptyDirVolumeSource{}),
+				},
+			}},
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name:         "spark-kubernetes-driver",
-					Env:          emr.envOverrides(executable, run),
-					VolumeMounts: volumeMounts, // TODO Remove after Migration
-					WorkingDir:   workingDir,
+					Name: "spark-kubernetes-driver",
+					Env:  emr.envOverrides(executable, run),
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      "shared-lib-volume",
+							MountPath: "/var/lib/app",
+						},
+					},
+					WorkingDir: workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
@@ -381,16 +388,11 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
-				Image: run.Image,
-				Env:   emr.envOverrides(executable, run),
-				VolumeMounts: []v1.VolumeMount{
-					{
-						Name:      "shared-lib-volume",
-						MountPath: "/var/lib/app",
-					},
-				},
-				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
+				Name:         fmt.Sprintf("init-executor-%s", run.RunID),
+				Image:        run.Image,
+				Env:          emr.envOverrides(executable, run),
+				VolumeMounts: volumeMounts, // TODO Remove after Migration
+				Command:      emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, false),
