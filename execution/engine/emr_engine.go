@@ -328,11 +328,16 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:         fmt.Sprintf("init-driver-%s", run.RunID),
-				Image:        run.Image,
-				Env:          emr.envOverrides(executable, run),
-				VolumeMounts: volumeMounts, // TODO Remove after Migration
-				Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
+				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
+				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "shared-lib-volume",
+						MountPath: "/var/lib/app",
+					},
+				},
+				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, true),
@@ -376,11 +381,16 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:         fmt.Sprintf("init-executor-%s", run.RunID),
-				Image:        run.Image,
-				Env:          emr.envOverrides(executable, run),
-				VolumeMounts: volumeMounts, // TODO Remove after Migration
-				Command:      emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
+				Name:  fmt.Sprintf("init-executor-%s", run.RunID),
+				Image: run.Image,
+				Env:   emr.envOverrides(executable, run),
+				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "shared-lib-volume",
+						MountPath: "/var/lib/app",
+					},
+				},
+				Command: emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, false),
