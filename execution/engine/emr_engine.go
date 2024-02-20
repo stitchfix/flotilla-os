@@ -187,6 +187,11 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 			// This requires the a CSI Driver to be deployed in the cluster
 			"spark.kubernetes.driver.ownPersistentVolumeClaim":                                                               aws.String("true"),
 			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim":                                                       aws.String("true"),
+			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
+			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
+			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
+			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
+			"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("150Gi"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
