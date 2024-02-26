@@ -183,17 +183,17 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	if run.ClusterName != "flotilla-eks-infra-c" {
 		sparkExtras := map[string]*string{
 			// PVC creation and use for mounting EBS volumes to jobs
-			// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
-			// This requires the a CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("true"),
-			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("true"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
+			// Uses the default storage class though we could add more config here to support that to see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
+			// This requires the CSI Driver to be deployed in the cluster
+			//"spark.kubernetes.driver.ownPersistentVolumeClaim": aws.String("true"),
+			//"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("true"),
+			//"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("150Gi"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("250Gi"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":           aws.String("/var/lib/app/"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":       aws.String("false"),
