@@ -185,8 +185,9 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 			// PVC creation and use for mounting EBS volumes to jobs
 			// Uses the default storage class though we could add more config here to support that to see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
 			// This requires the CSI Driver to be deployed in the cluster
-			//"spark.kubernetes.driver.ownPersistentVolumeClaim": aws.String("true"),
-			//"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("true"),
+			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("true"),
+			"spark.kubernetes.driver.reusePersistentVolumeClaim":       aws.String("false"),
+			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("false"),
 			//"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
 			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
