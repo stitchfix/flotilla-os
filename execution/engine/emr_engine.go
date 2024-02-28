@@ -130,7 +130,7 @@ func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, 
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	// Create PVC before job submission only if not in infra-c
-	if clusterName != "flotilla-eks-infra-c" {
+	if run.ClusterName != "flotilla-eks-infra-c" {
 		err := emr.createPVC(run)
 		if err != nil {
 			return run, false, emr.log.Log("error creating PVC", "error", err.Error())
@@ -225,7 +225,6 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 			"spark.kubernetes.driver.reusePersistentVolumeClaim":       aws.String("false"),
 			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("false"),
 
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit": aws.String("250Gi"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName": aws.String(pvcName),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":        aws.String("/var/lib/app/"),
 			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":    aws.String("false"),
@@ -755,7 +754,7 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 	}
 	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess)}, 1)
 
-	if clusterName != "flotilla-eks-infra-c" {
+	if run.ClusterName != "flotilla-eks-infra-c" {
 		err = emr.deletePVC(run)
 		if err != nil {
 			emr.log.Log("error deleting PVC", "error", err.Error())
