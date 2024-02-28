@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
 	utils "github.com/stitchfix/flotilla-os/execution"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"regexp"
 	"strings"
@@ -49,6 +50,8 @@ type EMRExecutionEngine struct {
 	s3ManifestBucket    string
 	s3ManifestBasePath  string
 	serializer          *k8sJson.Serializer
+	clusters            []string
+	kClients            map[string]kubernetes.Clientset
 }
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
@@ -84,6 +87,24 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		},
 	)
 
+	// Create K8s Client
+	emr.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
+	emr.kClients = make(map[string]kubernetes.Clientset)
+	for _, clusterName := range emr.clusters {
+		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
+		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
+		if err != nil {
+			return fmt.Errorf("error building kubeconfig: %v", err)
+		}
+
+		kClient, err := kubernetes.NewForConfig(clientConf)
+		_ = emr.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
+		if err != nil {
+			return fmt.Errorf("error creating kubernetes client: %v", err)
+		}
+		emr.kClients[clusterName] = *kClient
+	}
+
 	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)
 	return nil
 }
@@ -99,7 +120,22 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 	return clusters
 }
 
+func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	kClient, ok := emr.kClients[run.ClusterName]
+	if !ok {
+		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
+	}
+	return kClient, nil
+}
+
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	// Create PVC before job submission only if not in infra-c
+	if clusterName != "flotilla-eks-infra-c" {
+		err := emr.createPVC(run)
+		if err != nil {
+			return run, false, emr.log.Log("error creating PVC", "error", err.Error())
+		}
+	}
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
@@ -145,7 +181,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
 	// Determine the dynamic PVC name
-	// pvcName := "spark-ebs-volume-" + run.RunID
+	pvcName := run.RunID
 
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
@@ -185,19 +221,14 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 			// PVC creation and use for mounting EBS volumes to jobs
 			// Uses the default storage class though we could add more config here to support that to see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
 			// This requires the CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("true"),
+			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("false"),
 			"spark.kubernetes.driver.reusePersistentVolumeClaim":       aws.String("false"),
 			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("false"),
-			//"spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("250Gi"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":           aws.String("/var/lib/app/"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":       aws.String("false"),
+
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit": aws.String("250Gi"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName": aws.String(pvcName),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":        aws.String("/var/lib/app/"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":    aws.String("false"),
 		}
 		for key, value := range sparkExtras {
 			sparkDefaults[key] = value
@@ -295,6 +326,57 @@ func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMoun
 	}
 
 	return volumes, volumeMounts
+}
+
+// createPVC creates a PVC for the EMR job run based on run id
+func (emr *EMRExecutionEngine) createPVC(run state.Run) error {
+	// Define the PVC
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      run.RunID, // Unique PVC name based on run id
+			Namespace: emr.emrJobNamespace,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteMany, // ReadWriteMany is required for shared storage
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: resource.MustParse("1200Gi"), // 1200GB tells FSx it needs to use SSDs
+				},
+			},
+			StorageClassName: aws.String("fsx-sc"), // Storage class name for FSx for Lustre
+		},
+	}
+
+	// Use Kubernetes client to create the PVC
+	kClient, err := emr.getKClient(run)
+	if err != nil {
+		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
+		run.ExitReason = &exitReason
+		return nil
+	}
+	_, err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Create(pvc)
+	if err != nil {
+		return emr.log.Log("pvc creation error", "error", err.Error())
+	}
+	return nil
+}
+
+// deletePVC deletes a PVC for the EMR job run based on run id
+func (emr *EMRExecutionEngine) deletePVC(run state.Run) error {
+	pvcName := run.RunID
+	kClient, err := emr.getKClient(run)
+	if err != nil {
+		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
+		run.ExitReason = &exitReason
+		return nil
+	}
+	err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Delete(pvcName, &metav1.DeleteOptions{})
+	if err != nil {
+		return emr.log.Log("pvc deletion error", "error", err.Error())
+	}
+	return nil
 }
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
@@ -672,6 +754,13 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 		_ = emr.log.Log("EMR job termination error", "error", err.Error())
 	}
 	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess)}, 1)
+
+	if clusterName != "flotilla-eks-infra-c" {
+		err = emr.deletePVC(run)
+		if err != nil {
+			emr.log.Log("error deleting PVC", "error", err.Error())
+		}
+	}
 	return err
 }
 
