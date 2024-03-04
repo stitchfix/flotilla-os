@@ -3,12 +3,11 @@ package state
 import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/log"
 )
 
-//
 // Manager interface for CRUD operations
 // on definitions and runs
-//
 type Manager interface {
 	Name() string
 	Initialize(conf config.Config) error
@@ -59,11 +58,9 @@ type Manager interface {
 	GetRunByEMRJobId(string) (Run, error)
 }
 
-//
 // NewStateManager sets up and configures a new statemanager
 // - if no `state_manager` is configured, will use postgres
-//
-func NewStateManager(conf config.Config) (Manager, error) {
+func NewStateManager(conf config.Config, logger log.Logger) (Manager, error) {
 	name := "postgres"
 	if conf.IsSet("state_manager") {
 		name = conf.GetString("state_manager")
@@ -71,7 +68,7 @@ func NewStateManager(conf config.Config) (Manager, error) {
 
 	switch name {
 	case "postgres":
-		pgm := &SQLStateManager{}
+		pgm := &SQLStateManager{log: logger}
 		err := pgm.Initialize(conf)
 		if err != nil {
 			return nil, errors.Wrap(err, "problem initializing SQLStateManager")
