@@ -129,13 +129,7 @@ func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, 
 }
 
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	// Create PVC before job submission only if not in infra-c
-	if run.ClusterName != "flotilla-eks-infra-c" {
-		err := emr.createPVC(run)
-		if err != nil {
-			return run, false, emr.log.Log("error creating PVC", "error", err.Error())
-		}
-	}
+
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
@@ -300,7 +294,7 @@ func generateVolumesForCluster(clusterName string, run state.Run) ([]v1.Volume, 
 			Name: "shared-lib-volume",
 			VolumeSource: v1.VolumeSource{
 				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: run.RunID,
+					ClaimName: "fsx",
 				},
 			},
 		}
@@ -818,12 +812,6 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 	}
 	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess)}, 1)
 
-	if run.ClusterName != "flotilla-eks-infra-c" {
-		err = emr.deletePVC(run)
-		if err != nil {
-			emr.log.Log("error deleting PVC", "error", err.Error())
-		}
-	}
 	return err
 }
 
