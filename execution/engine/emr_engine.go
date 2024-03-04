@@ -304,13 +304,14 @@ func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMoun
 				EmptyDir: &(v1.EmptyDirVolumeSource{}),
 			},
 		}
+		volumeMount := v1.VolumeMount{
+			Name:      "shared-lib-volume",
+			MountPath: "/var/lib/app",
+		}
 		volumes = append(volumes, specificVolume)
+		volumeMounts = append(volumeMounts, volumeMount)
 	}
-	volumeMount := v1.VolumeMount{
-		Name:      "shared-lib-volume",
-		MountPath: "/var/lib/app",
-	}
-	volumeMounts = append(volumeMounts, volumeMount)
+
 	return volumes, volumeMounts
 }
 
