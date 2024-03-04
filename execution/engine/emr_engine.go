@@ -4,13 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	utils "github.com/stitchfix/flotilla-os/execution"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -18,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
+	utils "github.com/stitchfix/flotilla-os/execution"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
@@ -28,7 +22,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	"regexp"
+	"strings"
 )
 
 // EMRExecutionEngine submits runs to EMR-EKS.
@@ -206,6 +204,25 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.ui.prometheus.enabled":                             aws.String("true"),
 	}
+	//todo post migration merge in generateApplicationConf
+	if run.ClusterName != "flotilla-eks-infra-c" {
+		sparkExtras := map[string]*string{
+			// PVC creation and use for mounting EBS volumes to jobs
+			// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
+			// This requires the a CSI Driver to be deployed in the cluster
+			"spark.kubernetes.driver.ownPersistentVolumeClaim":                                                               aws.String("true"),
+			"spark.kubernetes.driver.reusePersistentVolumeClaim":                                                             aws.String("false"),
+			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim":                                                       aws.String("false"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("250Gi"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":           aws.String("/var/lib/app/"),
+			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":       aws.String("false"),
+		}
+		for key, value := range sparkExtras {
+			sparkDefaults[key] = value
+		}
+	}
 	hiveDefaults := map[string]*string{}
 
 	for _, k := range run.SparkExtension.ApplicationConf {
@@ -275,7 +292,7 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 
 // generates volumes and volumemounts depending on cluster name.
 // TODO delete after migration
-func generateVolumesForCluster(clusterName string, run state.Run) ([]v1.Volume, []v1.VolumeMount) {
+func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var volumeMounts []v1.VolumeMount
 
@@ -288,18 +305,6 @@ func generateVolumesForCluster(clusterName string, run state.Run) ([]v1.Volume, 
 			},
 		}
 		volumes = append(volumes, specificVolume)
-	} else {
-		// Define the specific volume
-		specificVolume := v1.Volume{
-			Name: "shared-lib-volume",
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: "fsx",
-				},
-			},
-		}
-		volumes = append(volumes, specificVolume)
-
 	}
 	volumeMount := v1.VolumeMount{
 		Name:      "shared-lib-volume",
@@ -307,133 +312,6 @@ func generateVolumesForCluster(clusterName string, run state.Run) ([]v1.Volume, 
 	}
 	volumeMounts = append(volumeMounts, volumeMount)
 	return volumes, volumeMounts
-}
-
-// createPVC creates a PVC for the EMR job run based on run id
-func (emr *EMRExecutionEngine) createPVC(run state.Run) error {
-	// Define the PVC
-	pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      run.RunID, // Unique PVC name based on run id
-			Namespace: emr.emrJobNamespace,
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteMany, // ReadWriteMany is required for shared storage
-			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("1200Gi"), // 1200GB tells FSx it needs to use SSDs
-				},
-			},
-			StorageClassName: aws.String("fsx-sc"), // Storage class name for FSx for Lustre
-		},
-	}
-	// FSX comes up with filesystem set to root we need to rewrite permissions
-	// to allow the user to write to the shared volume
-	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("chmod-fsx-pod-%s", run.RunID),
-			Namespace: emr.emrJobNamespace,
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:  "chmod-fsx-container",
-					Image: "amazonlinux:2",
-					Command: []string{
-						"sh",
-						"-c",
-						"chown -hR +999:+65534 /var/lib/app",
-					},
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      "shared-lib-volume",
-							MountPath: "/var/lib/app",
-						},
-					},
-				},
-			},
-			RestartPolicy: v1.RestartPolicyNever,
-			Volumes: []v1.Volume{
-				{
-					Name: "shared-lib-volume",
-					VolumeSource: v1.VolumeSource{
-						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: run.RunID,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Use Kubernetes client to create the PVC
-	kClient, err := emr.getKClient(run)
-	if err != nil {
-		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
-		run.ExitReason = &exitReason
-		return nil
-	}
-
-	_, err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Create(pvc)
-	if err != nil {
-		return emr.log.Log("pvc creation error", "error", err.Error())
-	}
-
-	// Check if PVC is bound
-	isBound := false
-	maxRetries := 60                  // Number of retries before giving up
-	retryInterval := 10 * time.Second // Time to wait between retries
-
-	for i := 0; i < maxRetries && !isBound; i++ {
-		if i > 0 {
-			time.Sleep(retryInterval)
-		}
-		pvc, err := kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Get(run.RunID, metav1.GetOptions{})
-		if err != nil {
-			// Handle error (log or return)
-			return emr.log.Log("failed to get PVC status", "error", err.Error())
-		}
-		if pvc.Status.Phase == v1.ClaimBound {
-			isBound = true
-		} else {
-			emr.log.Log("waiting for PVC to be bound", "status", pvc.Status.Phase)
-			fmt.Sprintf("Waiting for PVC this can take a few minutes, status: %s", pvc.Status.Phase)
-		}
-	}
-
-	if !isBound {
-		// Handle the case where the PVC is not bound within the expected time frame
-		return fmt.Errorf("PVC %s is not bound after waiting", run.RunID)
-	}
-
-	_, err = kClient.CoreV1().Pods(emr.emrJobNamespace).Create(pod)
-	if err != nil {
-		return emr.log.Log("file system set permissions", "error", err.Error())
-	}
-	return nil
-}
-
-// deletePVC deletes a PVC for the EMR job run based on run id
-func (emr *EMRExecutionEngine) deletePVC(run state.Run) error {
-	pvcName := run.RunID
-	kClient, err := emr.getKClient(run)
-	if err != nil {
-		exitReason := fmt.Sprintf("Invalid cluster name - %s", run.ClusterName)
-		run.ExitReason = &exitReason
-		return nil
-	}
-	err = kClient.CoreV1().Pods(emr.emrJobNamespace).Delete(fmt.Sprintf("chmod-fsx-pod-%s", run.RunID), &metav1.DeleteOptions{})
-	if err != nil {
-		return emr.log.Log("Error Removing chmod pod", "error", err.Error())
-	}
-	err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Delete(pvcName, &metav1.DeleteOptions{})
-	if err != nil {
-		return emr.log.Log("pvc deletion error", "error", err.Error())
-	}
-
-	return nil
 }
 
 func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, run state.Run, manager state.Manager) *string {
