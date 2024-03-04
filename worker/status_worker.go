@@ -65,9 +65,7 @@ func (sw *statusWorker) GetTomb() *tomb.Tomb {
 	return &sw.t
 }
 
-//
 // Run updates status of tasks
-//
 func (sw *statusWorker) Run() error {
 	for {
 		select {
@@ -212,7 +210,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		}
 
 	} else {
-		if run.Status != updatedRun.Status && (updatedRun.PodName == run.PodName) {
+		if run.Status != updatedRun.Status && (*updatedRun.PodName == *run.PodName) {
 			sw.logStatusUpdate(updatedRun)
 			if updatedRun.ExitCode != nil {
 				go sw.cleanupRun(run.RunID)
