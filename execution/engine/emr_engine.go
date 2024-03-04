@@ -430,10 +430,15 @@ func (emr *EMRExecutionEngine) deletePVC(run state.Run) error {
 		run.ExitReason = &exitReason
 		return nil
 	}
+	err = kClient.CoreV1().Pods(emr.emrJobNamespace).Delete(fmt.Sprintf("chmod-fsx-pod-%s", run.RunID), &metav1.DeleteOptions{})
+	if err != nil {
+		return emr.log.Log("Error Removing chmod pod", "error", err.Error())
+	}
 	err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Delete(pvcName, &metav1.DeleteOptions{})
 	if err != nil {
 		return emr.log.Log("pvc deletion error", "error", err.Error())
 	}
+
 	return nil
 }
 
