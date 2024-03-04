@@ -180,9 +180,6 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
-	// Determine the dynamic PVC name
-	pvcName := run.RunID
-
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
@@ -214,24 +211,6 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.annotation.prometheus.io/path":   aws.String("/metrics/executors/prometheus/"),
 		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.ui.prometheus.enabled":                             aws.String("true"),
-	}
-	//todo post migration merge in generateApplicationConf
-	if run.ClusterName != "flotilla-eks-infra-c" {
-		sparkExtras := map[string]*string{
-			// PVC creation and use for mounting EBS volumes to jobs
-			// Uses the default storage class though we could add more config here to support that to see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
-			// This requires the CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("false"),
-			"spark.kubernetes.driver.reusePersistentVolumeClaim":       aws.String("false"),
-			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("false"),
-
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName": aws.String(pvcName),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":        aws.String("/var/lib/app/"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":    aws.String("false"),
-		}
-		for key, value := range sparkExtras {
-			sparkDefaults[key] = value
-		}
 	}
 	hiveDefaults := map[string]*string{}
 
@@ -302,7 +281,7 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 
 // generates volumes and volumemounts depending on cluster name.
 // TODO delete after migration
-func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMount) {
+func generateVolumesForCluster(clusterName string, run state.Run) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var volumeMounts []v1.VolumeMount
 
@@ -315,15 +294,24 @@ func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMoun
 			},
 		}
 		volumes = append(volumes, specificVolume)
-
-		// Define the corresponding volume mount
-		specificVolumeMount := v1.VolumeMount{
-			Name:      "shared-lib-volume",
-			MountPath: "/var/lib/app",
+	} else {
+		// Define the specific volume
+		specificVolume := v1.Volume{
+			Name: "shared-lib-volume",
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: run.RunID,
+				},
+			},
 		}
-		volumeMounts = append(volumeMounts, specificVolumeMount)
-	}
+		volumes = append(volumes, specificVolume)
 
+	}
+	volumeMount := v1.VolumeMount{
+		Name:      "shared-lib-volume",
+		MountPath: "/var/lib/app",
+	}
+	volumeMounts = append(volumeMounts, volumeMount)
 	return volumes, volumeMounts
 }
 
@@ -518,7 +506,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	labels := utils.GetLabels(run)
 
 	// TODO Remove after migration
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName)
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, run)
 
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
@@ -530,13 +518,13 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: aws.Int64(90),
-			Volumes:                       volumes, // TODO Remove after Migration
+			Volumes:                       volumes,
 			SchedulerName:                 emr.schedulerName,
 			Containers: []v1.Container{
 				{
 					Name:         "spark-kubernetes-executor",
 					Env:          emr.envOverrides(executable, run),
-					VolumeMounts: volumeMounts, // TODO Remove after Migration
+					VolumeMounts: volumeMounts,
 					WorkingDir:   workingDir,
 				},
 			},
@@ -544,7 +532,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				Name:         fmt.Sprintf("init-executor-%s", run.RunID),
 				Image:        run.Image,
 				Env:          emr.envOverrides(executable, run),
-				VolumeMounts: volumeMounts, // TODO Remove after Migration
+				VolumeMounts: volumeMounts,
 				Command:      emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
