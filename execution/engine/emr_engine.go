@@ -7,9 +7,9 @@ import (
 	utils "github.com/stitchfix/flotilla-os/execution"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -347,6 +347,44 @@ func (emr *EMRExecutionEngine) createPVC(run state.Run) error {
 			StorageClassName: aws.String("fsx-sc"), // Storage class name for FSx for Lustre
 		},
 	}
+	// FSX comes up with filesystem set to root we need to rewrite permissions
+	// to allow the user to write to the shared volume
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("chmod-fsx-pod-%s", run.RunID),
+			Namespace: emr.emrJobNamespace,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "chmod-fsx-container",
+					Image: "amazonlinux:2",
+					Command: []string{
+						"sh",
+						"-c",
+						"chown -hR +999:+65534 /var/lib/app",
+					},
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      "shared-lib-volume",
+							MountPath: "/var/lib/app",
+						},
+					},
+				},
+			},
+			RestartPolicy: v1.RestartPolicyNever,
+			Volumes: []v1.Volume{
+				{
+					Name: "shared-lib-volume",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: run.RunID,
+						},
+					},
+				},
+			},
+		},
+	}
 
 	// Use Kubernetes client to create the PVC
 	kClient, err := emr.getKClient(run)
@@ -355,9 +393,42 @@ func (emr *EMRExecutionEngine) createPVC(run state.Run) error {
 		run.ExitReason = &exitReason
 		return nil
 	}
+
 	_, err = kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Create(pvc)
 	if err != nil {
 		return emr.log.Log("pvc creation error", "error", err.Error())
+	}
+
+	// Check if PVC is bound
+	isBound := false
+	maxRetries := 100                 // Number of retries before giving up
+	retryInterval := 10 * time.Second // Time to wait between retries
+
+	for i := 0; i < maxRetries && !isBound; i++ {
+		if i > 0 {
+			time.Sleep(retryInterval)
+		}
+		pvc, err := kClient.CoreV1().PersistentVolumeClaims(emr.emrJobNamespace).Get(run.RunID, metav1.GetOptions{})
+		if err != nil {
+			// Handle error (log or return)
+			return emr.log.Log("failed to get PVC status", "error", err.Error())
+		}
+		if pvc.Status.Phase == v1.ClaimBound {
+			isBound = true
+		} else {
+			emr.log.Log("waiting for PVC to be bound", "status", pvc.Status.Phase)
+			fmt.Sprintf("Waiting for PVC this can take a few minutes, status: %s", pvc.Status.Phase)
+		}
+	}
+
+	if !isBound {
+		// Handle the case where the PVC is not bound within the expected time frame
+		return fmt.Errorf("PVC %s is not bound after waiting", run.RunID)
+	}
+
+	_, err = kClient.CoreV1().Pods(emr.emrJobNamespace).Create(pod)
+	if err != nil {
+		return emr.log.Log("file system set permissions", "error", err.Error())
 	}
 	return nil
 }
