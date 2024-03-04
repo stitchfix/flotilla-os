@@ -2,6 +2,8 @@ package state
 
 import (
 	"fmt"
+	gklog "github.com/go-kit/kit/log"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"log"
 	"os"
 	"testing"
@@ -35,7 +37,13 @@ func setUp() Manager {
 	if err != nil {
 		log.Fatal("error setting env, CREATE_DATABASE_SCHEMA")
 	}
-	sm, err := NewStateManager(conf)
+
+	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	l = gklog.With(l, "ts", gklog.DefaultTimestampUTC)
+	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
+	logger := flotillaLog.NewLogger(l, eventSinks)
+
+	sm, err := NewStateManager(conf, logger)
 	fmt.Println(err)
 
 	insertDefinitions(db)

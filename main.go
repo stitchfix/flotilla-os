@@ -56,7 +56,7 @@ func main() {
 	// Get state manager for reading and writing
 	// state about definitions and runs
 	//
-	stateManager, err := state.NewStateManager(c)
+	stateManager, err := state.NewStateManager(c, logger)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize state manager"))
 		os.Exit(1)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -28,6 +29,7 @@ import (
 type SQLStateManager struct {
 	db         *sqlx.DB
 	readonlyDB *sqlx.DB
+	log        log.Logger
 }
 
 func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
@@ -194,6 +196,7 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	createSchema := conf.GetBool("create_database_schema")
 	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
+
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
@@ -869,7 +872,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	}
 
 	_ = metrics.Timing(metrics.EngineUpdateRun, time.Since(start), []string{existing.ClusterName}, 1)
-
+	go sm.logStatusUpdate(existing)
 	return existing, nil
 }
 
@@ -1036,7 +1039,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	if err = tx.Commit(); err != nil {
 		return errors.WithStack(err)
 	}
-
+	go sm.logStatusUpdate(r)
 	return nil
 }
 
@@ -1605,5 +1608,78 @@ func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string)
 		return nil, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("executable type of [%s] not valid.", t),
 		}
+	}
+}
+
+func (sm *SQLStateManager) logStatusUpdate(update Run) {
+	var err error
+	var startedAt, finishedAt time.Time
+	var duration float64
+	var env EnvList
+	var command string
+
+	if update.StartedAt != nil {
+		startedAt = *update.StartedAt
+		duration = time.Now().Sub(startedAt).Seconds()
+	}
+
+	if update.FinishedAt != nil {
+		finishedAt = *update.FinishedAt
+		duration = finishedAt.Sub(startedAt).Seconds()
+	}
+
+	if update.Env != nil {
+		env = *update.Env
+	}
+
+	if update.Command != nil {
+		command = *update.Command
+	}
+
+	if update.ExitCode != nil {
+		err = sm.log.Event("eventClassName", "FlotillaTaskStatus",
+			"run_id", update.RunID,
+			"definition_id", update.DefinitionID,
+			"alias", update.Alias,
+			"image", update.Image,
+			"cluster_name", update.ClusterName,
+			"command", command,
+			"exit_code", *update.ExitCode,
+			"status", update.Status,
+			"started_at", startedAt,
+			"finished_at", finishedAt,
+			"duration", duration,
+			"instance_id", update.InstanceID,
+			"instance_dns_name", update.InstanceDNSName,
+			"group_name", update.GroupName,
+			"user", update.User,
+			"task_type", update.TaskType,
+			"env", env,
+			"executable_id", update.ExecutableID,
+			"executable_type", update.ExecutableType)
+	} else {
+		err = sm.log.Event("eventClassName", "FlotillaTaskStatus",
+			"run_id", update.RunID,
+			"definition_id", update.DefinitionID,
+			"alias", update.Alias,
+			"image", update.Image,
+			"cluster_name", update.ClusterName,
+			"command", command,
+			"status", update.Status,
+			"started_at", startedAt,
+			"finished_at", finishedAt,
+			"duration", duration,
+			"instance_id", update.InstanceID,
+			"instance_dns_name", update.InstanceDNSName,
+			"group_name", update.GroupName,
+			"user", update.User,
+			"task_type", update.TaskType,
+			"env", env,
+			"executable_id", update.ExecutableID,
+			"executable_type", update.ExecutableType)
+	}
+
+	if err != nil {
+		sm.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
 }
