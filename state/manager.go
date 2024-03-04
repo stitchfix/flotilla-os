@@ -10,7 +10,7 @@ import (
 // on definitions and runs
 type Manager interface {
 	Name() string
-	Initialize(conf config.Config, logger log.Logger) error
+	Initialize(conf config.Config) error
 	Cleanup() error
 	ListDefinitions(
 		limit int, offset int, sortBy string,
@@ -60,7 +60,7 @@ type Manager interface {
 
 // NewStateManager sets up and configures a new statemanager
 // - if no `state_manager` is configured, will use postgres
-func NewStateManager(conf config.Config, log log.Logger) (Manager, error) {
+func NewStateManager(conf config.Config, logger log.Logger) (Manager, error) {
 	name := "postgres"
 	if conf.IsSet("state_manager") {
 		name = conf.GetString("state_manager")
@@ -68,8 +68,8 @@ func NewStateManager(conf config.Config, log log.Logger) (Manager, error) {
 
 	switch name {
 	case "postgres":
-		pgm := &SQLStateManager{}
-		err := pgm.Initialize(conf, log)
+		pgm := &SQLStateManager{log: logger}
+		err := pgm.Initialize(conf)
 		if err != nil {
 			return nil, errors.Wrap(err, "problem initializing SQLStateManager")
 		}

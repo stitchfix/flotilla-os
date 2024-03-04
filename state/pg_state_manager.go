@@ -189,14 +189,13 @@ var likeFields = map[string]bool{
 }
 
 // Initialize creates tables if they do not exist
-func (sm *SQLStateManager) Initialize(conf config.Config, log log.Logger) error {
+func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	dburl := conf.GetString("database_url")
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
 	createSchema := conf.GetBool("create_database_schema")
 	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
-	sm.log = log
 
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
