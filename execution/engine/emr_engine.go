@@ -401,7 +401,7 @@ func (emr *EMRExecutionEngine) createPVC(run state.Run) error {
 
 	// Check if PVC is bound
 	isBound := false
-	maxRetries := 100                 // Number of retries before giving up
+	maxRetries := 60                  // Number of retries before giving up
 	retryInterval := 10 * time.Second // Time to wait between retries
 
 	for i := 0; i < maxRetries && !isBound; i++ {
