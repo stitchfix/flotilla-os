@@ -873,7 +873,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 	}
 
 	_ = metrics.Timing(metrics.EngineUpdateRun, time.Since(start), []string{existing.ClusterName}, 1)
-
+	go sm.logStatusUpdate(existing)
 	return existing, nil
 }
 
@@ -1040,7 +1040,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	if err = tx.Commit(); err != nil {
 		return errors.WithStack(err)
 	}
-
+	go sm.logStatusUpdate(r)
 	return nil
 }
 
