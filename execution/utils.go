@@ -1,11 +1,57 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/stitchfix/flotilla-os/state"
+	"log"
 	"regexp"
 	"strings"
-
-	"github.com/stitchfix/flotilla-os/state"
 )
+
+// SetSparkDatadogConfig sets the values needed for Spark Datadog integration
+func SetSparkDatadogConfig(run state.Run) string {
+	var customTags []string
+
+	// This will always be present
+	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
+
+	// These might not exist
+	if team, exists := run.Labels["team"]; exists && team != "" {
+		customTags = append(customTags, fmt.Sprintf("team:%s", team))
+	} else {
+		customTags = append(customTags, "team:unknown")
+	}
+
+	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
+		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
+	} else {
+		customTags = append(customTags, "kube_workflow:unknown")
+	}
+
+	if kubeTaskName, exists := run.Labels["kube_task_name"]; exists && kubeTaskName != "" {
+		customTags = append(customTags, fmt.Sprintf("kube_task_name:%s", kubeTaskName))
+	} else {
+		customTags = append(customTags, "kube_task_name:unknown")
+	}
+
+	existingConfig := map[string]interface{}{
+		"spark_url":          "http://%host%:4040",
+		"spark_cluster_mode": "spark_driver_mode",
+		"cluster_name":       run.ClusterName,
+		"tags":               customTags,
+	}
+
+	// Convert the existingConfig map into a JSON string
+	existingConfigBytes, err := json.Marshal(existingConfig)
+
+	// We should never reach here as this will always be a valid JSON
+	if err != nil {
+		log.Printf("Failed to marshal existingConfig: %v", err)
+		return ""
+	}
+	return string(existingConfigBytes)
+}
 
 func GetLabels(run state.Run) map[string]string {
 	var labels = make(map[string]string)

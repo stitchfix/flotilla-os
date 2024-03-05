@@ -196,7 +196,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		// Datadog Metrics
 		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names":  aws.String("[\"spark\"]"),
 		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String(utils.SetSparkDatadogConfig(run)),
 
 		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
 		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String("true"),
