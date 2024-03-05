@@ -174,7 +174,8 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
 	// Define custom tags
 	customTags := fmt.Sprintf("[\"flotilla_run_id:%s\", \"team:%s\", \"kube_workflow:%s\", \"kube_task_name:%s\"]",
-		run.RunID, run.Labels["team"],
+		run.RunID,
+		run.Labels["team"],
 		run.Labels["kube_workflow"],
 		run.Labels["kube_task_name"],
 	)
