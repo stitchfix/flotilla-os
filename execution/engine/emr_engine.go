@@ -172,6 +172,16 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
+	// Define custom tags
+	customTags := fmt.Sprintf("[\"flotilla_run_id:%s\", \"team:%s\", \"kube_workflow:%s\", \"kube_task_name:%s\"]",
+		run.RunID, run.Labels["team"],
+		run.Labels["kube_workflow"],
+		run.Labels["kube_task_name"],
+	)
+	existingConfigString := fmt.Sprintf("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"%s\"}]", run.ClusterName)
+	// Add custom tags to the existing configuration string
+	updatedConfigString := strings.TrimSuffix(existingConfigString, "]") + ", \"tags\":" + customTags + "]"
+
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
@@ -196,7 +206,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		// Datadog Metrics
 		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names":  aws.String("[\"spark\"]"),
 		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
+		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String(updatedConfigString),
 
 		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
 		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String("true"),
