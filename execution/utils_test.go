@@ -162,6 +162,4 @@ func TestSetSparkDatadogConfig(t *testing.T) {
 			t.Errorf("Expected tag %s not found in result", expectedTag)
 		}
 	}
-
-	// Additional checks can be added here, such as verifying the other fields (spark_url, spark_cluster_mode, cluster_name)
 }
