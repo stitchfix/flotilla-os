@@ -16,15 +16,22 @@ func SetSparkDatadogConfig(run state.Run) string {
 	// This will always be present
 	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
 
-	// These might not
+	// These might not exist
 	if team, exists := run.Labels["team"]; exists && team != "" {
 		customTags = append(customTags, fmt.Sprintf("team:%s", team))
+	} else {
+		customTags = append(customTags, "team:unknown")
 	}
 	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
 		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
+	} else {
+		customTags = append(customTags, "kube_workflow:unknown")
 	}
+
 	if kubeTaskName, exists := run.Labels["kube_task_name"]; exists && kubeTaskName != "" {
 		customTags = append(customTags, fmt.Sprintf("kube_task_name:%s", kubeTaskName))
+	} else {
+		customTags = append(customTags, "kube_task_name:unknown")
 	}
 
 	existingConfig := map[string]interface{}{
