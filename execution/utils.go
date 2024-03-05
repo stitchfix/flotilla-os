@@ -1,11 +1,37 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/stitchfix/flotilla-os/state"
+	"log"
 	"regexp"
 	"strings"
-
-	"github.com/stitchfix/flotilla-os/state"
 )
+
+// SetSparkDatadogConfig sets the values needed for Spark Datadog integration
+func SetSparkDatadogConfig(run state.Run) string {
+	customTags := []string{
+		fmt.Sprintf("flotilla_run_id:%s", run.RunID),
+		fmt.Sprintf("team:%s", run.Labels["team"]),
+		fmt.Sprintf("kube_workflow:%s", run.Labels["kube_workflow"]),
+		fmt.Sprintf("kube_task_name:%s", run.Labels["kube_task_name"]),
+	}
+	existingConfig := map[string]interface{}{
+		"spark_url":          "http://%host%:4040",
+		"spark_cluster_mode": "spark_driver_mode",
+		"cluster_name":       run.ClusterName,
+		"tags":               customTags,
+	}
+
+	// Convert the existingConfig map into a JSON string
+	existingConfigBytes, err := json.Marshal(existingConfig)
+	if err != nil {
+		// Proper error handling should be in place
+		log.Fatalf("Error marshaling config to JSON: %v", err)
+	}
+	return string(existingConfigBytes)
+}
 
 func GetLabels(run state.Run) map[string]string {
 	var labels = make(map[string]string)
