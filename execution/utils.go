@@ -11,12 +11,22 @@ import (
 
 // SetSparkDatadogConfig sets the values needed for Spark Datadog integration
 func SetSparkDatadogConfig(run state.Run) string {
-	customTags := []string{
-		fmt.Sprintf("flotilla_run_id:%s", run.RunID),
-		fmt.Sprintf("team:%s", run.Labels["team"]),
-		fmt.Sprintf("kube_workflow:%s", run.Labels["kube_workflow"]),
-		fmt.Sprintf("kube_task_name:%s", run.Labels["kube_task_name"]),
+	var customTags []string
+
+	// This will always be present
+	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
+
+	// These might not
+	if team, exists := run.Labels["team"]; exists && team != "" {
+		customTags = append(customTags, fmt.Sprintf("team:%s", team))
 	}
+	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
+		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
+	}
+	if kubeTaskName, exists := run.Labels["kube_task_name"]; exists && kubeTaskName != "" {
+		customTags = append(customTags, fmt.Sprintf("kube_task_name:%s", kubeTaskName))
+	}
+
 	existingConfig := map[string]interface{}{
 		"spark_url":          "http://%host%:4040",
 		"spark_cluster_mode": "spark_driver_mode",
