@@ -22,6 +22,7 @@ func SetSparkDatadogConfig(run state.Run) string {
 	} else {
 		customTags = append(customTags, "team:unknown")
 	}
+
 	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
 		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
 	} else {
