@@ -27,8 +27,8 @@ func SetSparkDatadogConfig(run state.Run) string {
 	// Convert the existingConfig map into a JSON string
 	existingConfigBytes, err := json.Marshal(existingConfig)
 	if err != nil {
-		// Proper error handling should be in place
-		log.Fatalf("Error marshaling config to JSON: %v", err)
+		log.Printf("Failed to marshal existingConfig: %v", err)
+		return ""
 	}
 	return string(existingConfigBytes)
 }
