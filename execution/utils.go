@@ -14,10 +14,8 @@ import (
 func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
 
-	// This will always be present
 	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
 
-	// These might not exist
 	if team, exists := run.Labels["team"]; exists && team != "" {
 		customTags = append(customTags, fmt.Sprintf("team:%s", team))
 	} else {
@@ -52,7 +50,6 @@ func SetSparkDatadogConfig(run state.Run) *string {
 		},
 	}
 
-	// Convert the datadogConfig map into a JSON string
 	datadogConfigBytes, err := json.Marshal(datadogConfig)
 
 	// We should never reach here as this will always be a valid JSON
