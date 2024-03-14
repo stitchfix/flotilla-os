@@ -10,6 +10,22 @@ import (
 	"strings"
 )
 
+type DatadogConfig struct {
+	Checks map[string]IntegrationConfig `json:"checks"`
+}
+
+type IntegrationConfig struct {
+	InitConfig map[string]interface{} `json:"init_config"`
+	Instances  []InstanceConfig       `json:"instances"`
+}
+
+type InstanceConfig struct {
+	SparkURL         string   `json:"spark_url"`
+	SparkClusterMode string   `json:"spark_cluster_mode"`
+	ClusterName      string   `json:"cluster_name"`
+	Tags             []string `json:"tags"`
+}
+
 // SetSparkDatadogConfig sets the values needed for Spark Datadog integration
 func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
@@ -34,16 +50,16 @@ func SetSparkDatadogConfig(run state.Run) *string {
 		customTags = append(customTags, "kube_task_name:unknown")
 	}
 
-	datadogConfig := map[string]interface{}{
-		"checks": map[string]interface{}{
-			"spark": map[string]interface{}{
-				"init_config": map[string]interface{}{},
-				"instances": []interface{}{
-					map[string]interface{}{
-						"spark_url":          "http://%host%:4040",
-						"spark_cluster_mode": "spark_driver_mode",
-						"cluster_name":       run.ClusterName,
-						"tags":               customTags,
+	datadogConfig := DatadogConfig{
+		Checks: map[string]IntegrationConfig{
+			"spark": {
+				InitConfig: map[string]interface{}{},
+				Instances: []InstanceConfig{
+					{
+						SparkURL:         "http://%host%:4040",
+						SparkClusterMode: "spark_driver_mode",
+						ClusterName:      run.ClusterName,
+						Tags:             customTags,
 					},
 				},
 			},
