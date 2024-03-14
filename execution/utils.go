@@ -10,22 +10,6 @@ import (
 	"strings"
 )
 
-type DatadogConfig struct {
-	Checks map[string]IntegrationConfig `json:"checks"`
-}
-
-type IntegrationConfig struct {
-	InitConfig map[string]interface{} `json:"init_config"`
-	Instances  []InstanceConfig       `json:"instances"`
-}
-
-type InstanceConfig struct {
-	SparkURL         string   `json:"spark_url"`
-	SparkClusterMode string   `json:"spark_cluster_mode"`
-	ClusterName      string   `json:"cluster_name"`
-	Tags             []string `json:"tags"`
-}
-
 // SetSparkDatadogConfig sets the values needed for Spark Datadog integration
 func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
@@ -38,23 +22,14 @@ func SetSparkDatadogConfig(run state.Run) *string {
 	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_workflow", "unknown"))
 	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_task_name", "unknown"))
 
-	datadogConfig := DatadogConfig{
-		Checks: map[string]IntegrationConfig{
-			"spark": {
-				InitConfig: map[string]interface{}{},
-				Instances: []InstanceConfig{
-					{
-						SparkURL:         "http://%host%:4040",
-						SparkClusterMode: "spark_driver_mode",
-						ClusterName:      run.ClusterName,
-						Tags:             customTags,
-					},
-				},
-			},
-		},
+	existingConfig := map[string]interface{}{
+		"spark_url":          "http://%host%:4040",
+		"spark_cluster_mode": "spark_driver_mode",
+		"cluster_name":       run.ClusterName,
+		"tags":               customTags,
 	}
 
-	datadogConfigBytes, err := json.Marshal(datadogConfig)
+	datadogConfigBytes, err := json.Marshal(existingConfig)
 
 	// We should never reach here as this will always be a valid JSON
 	if err != nil {
