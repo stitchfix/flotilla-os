@@ -30,25 +30,13 @@ type InstanceConfig struct {
 func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
 
+	// Always present tag
 	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
 
-	if team, exists := run.Labels["team"]; exists && team != "" {
-		customTags = append(customTags, fmt.Sprintf("team:%s", team))
-	} else {
-		customTags = append(customTags, "team:unknown")
-	}
-
-	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
-		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
-	} else {
-		customTags = append(customTags, "kube_workflow:unknown")
-	}
-
-	if kubeTaskName, exists := run.Labels["kube_task_name"]; exists && kubeTaskName != "" {
-		customTags = append(customTags, fmt.Sprintf("kube_task_name:%s", kubeTaskName))
-	} else {
-		customTags = append(customTags, "kube_task_name:unknown")
-	}
+	// Labels that may or may not exist
+	customTags = append(customTags, getTagOrDefault(run.Labels, "team", "unknown"))
+	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_workflow", "unknown"))
+	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_task_name", "unknown"))
 
 	datadogConfig := DatadogConfig{
 		Checks: map[string]IntegrationConfig{
@@ -74,6 +62,13 @@ func SetSparkDatadogConfig(run state.Run) *string {
 		return nil
 	}
 	return aws.String(string(datadogConfigBytes))
+}
+
+func getTagOrDefault(labels map[string]string, labelName, defaultValue string) string {
+	if value, exists := labels[labelName]; exists && value != "" {
+		return fmt.Sprintf("%s:%s", labelName, value)
+	}
+	return fmt.Sprintf("%s:%s", labelName, defaultValue)
 }
 
 func GetLabels(run state.Run) map[string]string {
