@@ -172,7 +172,6 @@ func TestSetSparkDatadogConfig(t *testing.T) {
 		t.Fatalf("Tags are not in the expected format or missing")
 	}
 
-	// Check each expected tag
 	for _, expectedTag := range expectedTags {
 		found := false
 		for _, tag := range tags {
