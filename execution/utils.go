@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"regexp"
@@ -10,7 +11,7 @@ import (
 )
 
 // SetSparkDatadogConfig sets the values needed for Spark Datadog integration
-func SetSparkDatadogConfig(run state.Run) string {
+func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
 
 	// This will always be present
@@ -35,22 +36,31 @@ func SetSparkDatadogConfig(run state.Run) string {
 		customTags = append(customTags, "kube_task_name:unknown")
 	}
 
-	existingConfig := map[string]interface{}{
-		"spark_url":          "http://%host%:4040",
-		"spark_cluster_mode": "spark_driver_mode",
-		"cluster_name":       run.ClusterName,
-		"tags":               customTags,
+	datadogConfig := map[string]interface{}{
+		"checks": map[string]interface{}{
+			"spark": map[string]interface{}{
+				"init_config": map[string]interface{}{},
+				"instances": []interface{}{
+					map[string]interface{}{
+						"spark_url":          "http://%host%:4040",
+						"spark_cluster_mode": "spark_driver_mode",
+						"cluster_name":       run.ClusterName,
+						"tags":               customTags,
+					},
+				},
+			},
+		},
 	}
 
-	// Convert the existingConfig map into a JSON string
-	existingConfigBytes, err := json.Marshal(existingConfig)
+	// Convert the datadogConfig map into a JSON string
+	datadogConfigBytes, err := json.Marshal(datadogConfig)
 
 	// We should never reach here as this will always be a valid JSON
 	if err != nil {
 		log.Printf("Failed to marshal existingConfig: %v", err)
-		return ""
+		return nil
 	}
-	return string(existingConfigBytes)
+	return aws.String(string(datadogConfigBytes))
 }
 
 func GetLabels(run state.Run) map[string]string {
