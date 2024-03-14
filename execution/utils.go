@@ -3,54 +3,72 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	"log"
 	"regexp"
 	"strings"
 )
 
+type DatadogConfig struct {
+	Checks map[string]IntegrationConfig `json:"checks"`
+}
+
+type IntegrationConfig struct {
+	InitConfig map[string]interface{} `json:"init_config"`
+	Instances  []InstanceConfig       `json:"instances"`
+}
+
+type InstanceConfig struct {
+	SparkURL         string   `json:"spark_url"`
+	SparkClusterMode string   `json:"spark_cluster_mode"`
+	ClusterName      string   `json:"cluster_name"`
+	Tags             []string `json:"tags"`
+}
+
 // SetSparkDatadogConfig sets the values needed for Spark Datadog integration
-func SetSparkDatadogConfig(run state.Run) string {
+func SetSparkDatadogConfig(run state.Run) *string {
 	var customTags []string
 
-	// This will always be present
+	// Always present tag
 	customTags = append(customTags, fmt.Sprintf("flotilla_run_id:%s", run.RunID))
 
-	// These might not exist
-	if team, exists := run.Labels["team"]; exists && team != "" {
-		customTags = append(customTags, fmt.Sprintf("team:%s", team))
-	} else {
-		customTags = append(customTags, "team:unknown")
+	// Labels that may or may not exist
+	customTags = append(customTags, getTagOrDefault(run.Labels, "team", "unknown"))
+	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_workflow", "unknown"))
+	customTags = append(customTags, getTagOrDefault(run.Labels, "kube_task_name", "unknown"))
+
+	datadogConfig := DatadogConfig{
+		Checks: map[string]IntegrationConfig{
+			"spark": {
+				InitConfig: map[string]interface{}{},
+				Instances: []InstanceConfig{
+					{
+						SparkURL:         "http://%host%:4040",
+						SparkClusterMode: "spark_driver_mode",
+						ClusterName:      run.ClusterName,
+						Tags:             customTags,
+					},
+				},
+			},
+		},
 	}
 
-	if kubeWorkflow, exists := run.Labels["kube_workflow"]; exists && kubeWorkflow != "" {
-		customTags = append(customTags, fmt.Sprintf("kube_workflow:%s", kubeWorkflow))
-	} else {
-		customTags = append(customTags, "kube_workflow:unknown")
-	}
-
-	if kubeTaskName, exists := run.Labels["kube_task_name"]; exists && kubeTaskName != "" {
-		customTags = append(customTags, fmt.Sprintf("kube_task_name:%s", kubeTaskName))
-	} else {
-		customTags = append(customTags, "kube_task_name:unknown")
-	}
-
-	existingConfig := map[string]interface{}{
-		"spark_url":          "http://%host%:4040",
-		"spark_cluster_mode": "spark_driver_mode",
-		"cluster_name":       run.ClusterName,
-		"tags":               customTags,
-	}
-
-	// Convert the existingConfig map into a JSON string
-	existingConfigBytes, err := json.Marshal(existingConfig)
+	datadogConfigBytes, err := json.Marshal(datadogConfig)
 
 	// We should never reach here as this will always be a valid JSON
 	if err != nil {
 		log.Printf("Failed to marshal existingConfig: %v", err)
-		return ""
+		return nil
 	}
-	return string(existingConfigBytes)
+	return aws.String(string(datadogConfigBytes))
+}
+
+func getTagOrDefault(labels map[string]string, labelName, defaultValue string) string {
+	if value, exists := labels[labelName]; exists && value != "" {
+		return fmt.Sprintf("%s:%s", labelName, value)
+	}
+	return fmt.Sprintf("%s:%s", labelName, defaultValue)
 }
 
 func GetLabels(run state.Run) map[string]string {

@@ -135,25 +135,47 @@ func TestSetSparkDatadogConfig(t *testing.T) {
 		"kube_task_name:test-task",
 	}
 
-	// Call the function under test
 	result := SetSparkDatadogConfig(run)
 
-	// Unmarshal the result into a map for easy inspection
+	if result == nil {
+		t.Fatalf("Expected a non-nil result")
+	}
+
 	var resultMap map[string]interface{}
-	err := json.Unmarshal([]byte(result), &resultMap)
+	err := json.Unmarshal([]byte(*result), &resultMap)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal JSON result: %v", err)
 	}
 
-	// Check each expected tag
-	tags, ok := resultMap["tags"].([]interface{})
+	checks, ok := resultMap["checks"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Checks are missing or not in the expected format")
+	}
+
+	spark, ok := checks["spark"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Spark configuration missing or not in the expected format")
+	}
+
+	instances, ok := spark["instances"].([]interface{})
+	if !ok || len(instances) == 0 {
+		t.Fatalf("Instances are missing, empty, or not in the expected format")
+	}
+
+	instance, ok := instances[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("Instance is not in the expected format")
+	}
+
+	tags, ok := instance["tags"].([]interface{})
 	if !ok {
 		t.Fatalf("Tags are not in the expected format or missing")
 	}
+
 	for _, expectedTag := range expectedTags {
 		found := false
 		for _, tag := range tags {
-			if tag == expectedTag {
+			if strTag, ok := tag.(string); ok && strTag == expectedTag {
 				found = true
 				break
 			}
