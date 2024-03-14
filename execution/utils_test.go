@@ -120,7 +120,7 @@ func TestSetSparkDatadogConfig(t *testing.T) {
 	run := state.Run{
 		RunID: "test-run-id",
 		Labels: map[string]string{
-			"team":           "test-team",
+			"team":           "test",
 			"kube_workflow":  "test-workflow",
 			"kube_task_name": "test-task",
 		},
@@ -130,7 +130,7 @@ func TestSetSparkDatadogConfig(t *testing.T) {
 	// Expected tags in the JSON output
 	expectedTags := []string{
 		"flotilla_run_id:test-run-id",
-		"team:test-team",
+		"team:test",
 		"kube_workflow:test-workflow",
 		"kube_task_name:test-task",
 	}
