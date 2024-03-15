@@ -204,25 +204,7 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.ui.prometheus.enabled":                             aws.String("true"),
 	}
-	//todo post migration merge in generateApplicationConf
-	if run.ClusterName != "flotilla-eks-infra-c" {
-		sparkExtras := map[string]*string{
-			// PVC creation and use for mounting EBS volumes to jobs
-			// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
-			// This requires the a CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":                                                               aws.String("true"),
-			"spark.kubernetes.driver.reusePersistentVolumeClaim":                                                             aws.String("false"),
-			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim":                                                       aws.String("false"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("250Gi"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":           aws.String("/var/lib/app/"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":       aws.String("false"),
-		}
-		for key, value := range sparkExtras {
-			sparkDefaults[key] = value
-		}
-	}
+
 	hiveDefaults := map[string]*string{}
 
 	for _, k := range run.SparkExtension.ApplicationConf {
@@ -291,26 +273,38 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 }
 
 // generates volumes and volumemounts depending on cluster name.
-// TODO delete after migration
-func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMount) {
+// TODO cleanup after migration
+func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var volumeMounts []v1.VolumeMount
 
-	if clusterName == "flotilla-eks-infra-c" {
-		// Define the specific volume
+	if clusterName == "flotilla-eks-infra-c" || isEmptyDir {
+		// Use a emptyDir volume
 		specificVolume := v1.Volume{
 			Name: "shared-lib-volume",
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &(v1.EmptyDirVolumeSource{}),
 			},
 		}
-		volumeMount := v1.VolumeMount{
-			Name:      "shared-lib-volume",
-			MountPath: "/var/lib/app",
-		}
+
 		volumes = append(volumes, specificVolume)
-		volumeMounts = append(volumeMounts, volumeMount)
+	} else {
+		// Use the persistent volume claim
+		sharedLibVolume := v1.Volume{
+			Name: "shared-lib-volume",
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "s3-claim",
+				},
+			},
+		}
+		volumes = append(volumes, sharedLibVolume)
 	}
+	volumeMount := v1.VolumeMount{
+		Name:      "shared-lib-volume",
+		MountPath: "/var/lib/app",
+	}
+	volumeMounts = append(volumeMounts, volumeMount)
 
 	return volumes, volumeMounts
 }
@@ -325,6 +319,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 
 	labels := utils.GetLabels(run)
 
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
+
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -333,37 +329,22 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
-			Volumes: []v1.Volume{{
-				Name: "shared-lib-volume",
-				VolumeSource: v1.VolumeSource{
-					EmptyDir: &(v1.EmptyDirVolumeSource{}),
-				},
-			}},
+			Volumes:       volumes,
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name: "spark-kubernetes-driver",
-					Env:  emr.envOverrides(executable, run),
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      "shared-lib-volume",
-							MountPath: "/var/lib/app",
-						},
-					},
-					WorkingDir: workingDir,
+					Name:         "spark-kubernetes-driver",
+					Env:          emr.envOverrides(executable, run),
+					VolumeMounts: volumeMounts,
+					WorkingDir:   workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
-				Image: run.Image,
-				Env:   emr.envOverrides(executable, run),
-				VolumeMounts: []v1.VolumeMount{
-					{
-						Name:      "shared-lib-volume",
-						MountPath: "/var/lib/app",
-					},
-				},
-				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
+				Name:         fmt.Sprintf("init-driver-%s", run.RunID),
+				Image:        run.Image,
+				Env:          emr.envOverrides(executable, run),
+				VolumeMounts: volumeMounts,
+				Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, true),
@@ -384,7 +365,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	labels := utils.GetLabels(run)
 
 	// TODO Remove after migration
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName)
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, false)
 
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
