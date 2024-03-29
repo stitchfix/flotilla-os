@@ -102,7 +102,7 @@ func TestGetLabels(t *testing.T) {
 				"kube_foo":        "bar",
 				"kube_task_name":  "foo",
 				"team":            "awesomeness",
-				"owner":           "userA",
+				"owner":           "usera",
 			},
 		},
 		{

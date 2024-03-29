@@ -23,7 +23,9 @@ func GetLabels(run state.Run) map[string]string {
 
 	// Forces the workflow name to be the task name if not set this is for manually created tasks
 	if _, exists := run.Labels["kube_workflow"]; !exists {
-		labels["kube_workflow"] = SanitizeLabel(run.Labels["kube_task_name"])
+		if _, exists := run.Labels["kube_task_name"]; exists {
+			labels["kube_workflow"] = SanitizeLabel(run.Labels["kube_task_name"])
+		}
 	}
 
 	for k, v := range run.Labels {
