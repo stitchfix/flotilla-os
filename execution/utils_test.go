@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"github.com/stitchfix/flotilla-os/state"
 	"reflect"
 	"strings"
@@ -84,16 +83,26 @@ func TestGetLabels(t *testing.T) {
 			name: "should return labels for run with definition",
 			args: args{
 				run: state.Run{
-					DefinitionID: "A", ClusterName: "A", GroupName: "groupA", RunID: "runA", Labels: map[string]string{
-						"kube_foo": "bar", "team": "awesomeness",
+					DefinitionID: "A",
+					ClusterName:  "A",
+					GroupName:    "groupA",
+					RunID:        "runA",
+					User:         "userA",
+					Labels: map[string]string{
+						"kube_foo":       "bar",
+						"team":           "awesomeness",
+						"kube_task_name": "foo",
 					},
 				},
 			},
 			want: map[string]string{
 				"cluster-name":    "A",
 				"flotilla-run-id": "runa",
+				"kube_workflow":   "foo",
 				"kube_foo":        "bar",
+				"kube_task_name":  "foo",
 				"team":            "awesomeness",
+				"owner":           "usera",
 			},
 		},
 		{
@@ -111,55 +120,5 @@ func TestGetLabels(t *testing.T) {
 				t.Errorf("GetLabels() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-// TestSetSparkDatadogConfig tests the SetSparkDatadogConfig function
-func TestSetSparkDatadogConfig(t *testing.T) {
-	// Define a test run object
-	run := state.Run{
-		RunID: "test-run-id",
-		Labels: map[string]string{
-			"team":           "test",
-			"kube_workflow":  "test-workflow",
-			"kube_task_name": "test-task",
-		},
-		ClusterName: "test-cluster",
-	}
-
-	// Expected tags in the JSON output
-	expectedTags := []string{
-		"flotilla_run_id:test-run-id",
-		"team:test",
-		"kube_workflow:test-workflow",
-		"kube_task_name:test-task",
-	}
-
-	// Call the function under test
-	result := SetSparkDatadogConfig(run)
-
-	// Unmarshal the result into a map for easy inspection
-	var resultMap map[string]interface{}
-	err := json.Unmarshal([]byte(*result), &resultMap)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal JSON result: %v", err)
-	}
-
-	// Check each expected tag
-	tags, ok := resultMap["tags"].([]interface{})
-	if !ok {
-		t.Fatalf("Tags are not in the expected format or missing")
-	}
-	for _, expectedTag := range expectedTags {
-		found := false
-		for _, tag := range tags {
-			if tag == expectedTag {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected tag %s not found in result", expectedTag)
-		}
 	}
 }
