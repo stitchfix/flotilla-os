@@ -360,7 +360,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	labels := utils.GetLabels(run)
 
 	// TODO Remove after migration
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, false)
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
 
 	pod := v1.Pod{
 		Status: v1.PodStatus{},

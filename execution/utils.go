@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/stitchfix/flotilla-os/state"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -15,6 +16,7 @@ func GetLabels(run state.Run) map[string]string {
 
 	if run.RunID != "" {
 		labels["flotilla-run-id"] = SanitizeLabel(run.RunID)
+		labels["flotilla-run-mode"] = SanitizeLabel(os.Getenv("FLOTILLA_MODE"))
 	}
 
 	if run.User != "" {
