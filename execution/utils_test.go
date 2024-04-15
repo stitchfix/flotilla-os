@@ -74,7 +74,7 @@ func TestGetLabels(t *testing.T) {
 		args args
 		want map[string]string
 	}
-	os.Setenv("FLOTILLA_RUN_MODE", "test")
+	os.Setenv("FLOTILLA_MODE", "test")
 
 	tests = []struct {
 		name string

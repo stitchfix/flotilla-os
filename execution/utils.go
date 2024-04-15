@@ -16,7 +16,7 @@ func GetLabels(run state.Run) map[string]string {
 
 	if run.RunID != "" {
 		labels["flotilla-run-id"] = SanitizeLabel(run.RunID)
-		labels["flotilla-run-mode"] = SanitizeLabel(os.Getenv("FLOTILLA_RUN_MODE"))
+		labels["flotilla-run-mode"] = SanitizeLabel(os.Getenv("FLOTILLA_MODE"))
 	}
 
 	if run.User != "" {
