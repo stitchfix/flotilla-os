@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/stitchfix/flotilla-os/state"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -73,6 +74,7 @@ func TestGetLabels(t *testing.T) {
 		args args
 		want map[string]string
 	}
+	os.Setenv("FLOTILLA_RUN_MODE", "test")
 
 	tests = []struct {
 		name string
@@ -96,13 +98,14 @@ func TestGetLabels(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"cluster-name":    "A",
-				"flotilla-run-id": "runa",
-				"kube_workflow":   "foo",
-				"kube_foo":        "bar",
-				"kube_task_name":  "foo",
-				"team":            "awesomeness",
-				"owner":           "usera",
+				"cluster-name":      "A",
+				"flotilla-run-id":   "runa",
+				"kube_workflow":     "foo",
+				"kube_foo":          "bar",
+				"kube_task_name":    "foo",
+				"team":              "awesomeness",
+				"owner":             "usera",
+				"flotilla-run-mode": "test",
 			},
 		},
 		{
