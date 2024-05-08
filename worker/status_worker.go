@@ -210,7 +210,15 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		}
 
 	} else {
-		if run.Status != updatedRun.Status && (*updatedRun.PodName == *run.PodName) {
+		fullUpdate := false
+
+		if run.PodName != nil {
+			if *run.PodName == *updatedRun.PodName && run.Status != updatedRun.Status {
+				fullUpdate = true
+			}
+		}
+
+		if fullUpdate {
 			sw.logStatusUpdate(updatedRun)
 			if updatedRun.ExitCode != nil {
 				go sw.cleanupRun(run.RunID)

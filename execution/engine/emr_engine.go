@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	utils "github.com/stitchfix/flotilla-os/execution"
-
-	"regexp"
-	"strings"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -17,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
+	utils "github.com/stitchfix/flotilla-os/execution"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
@@ -27,7 +22,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	"regexp"
+	"strings"
 )
 
 // EMRExecutionEngine submits runs to EMR-EKS.
@@ -49,6 +48,8 @@ type EMRExecutionEngine struct {
 	s3ManifestBucket    string
 	s3ManifestBasePath  string
 	serializer          *k8sJson.Serializer
+	clusters            []string
+	kClients            map[string]kubernetes.Clientset
 }
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
@@ -84,6 +85,24 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		},
 	)
 
+	// Create K8s Client
+	emr.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
+	emr.kClients = make(map[string]kubernetes.Clientset)
+	for _, clusterName := range emr.clusters {
+		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
+		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
+		if err != nil {
+			return fmt.Errorf("error building kubeconfig: %v", err)
+		}
+
+		kClient, err := kubernetes.NewForConfig(clientConf)
+		_ = emr.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
+		if err != nil {
+			return fmt.Errorf("error creating kubernetes client: %v", err)
+		}
+		emr.kClients[clusterName] = *kClient
+	}
+
 	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)
 	return nil
 }
@@ -99,7 +118,16 @@ func (emr *EMRExecutionEngine) GetClusters() []string {
 	return clusters
 }
 
+func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	kClient, ok := emr.kClients[run.ClusterName]
+	if !ok {
+		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
+	}
+	return kClient, nil
+}
+
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
@@ -144,9 +172,6 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 }
 
 func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
-	// Determine the dynamic PVC name
-	// pvcName := "spark-ebs-volume-" + run.RunID
-
 	sparkDefaults := map[string]*string{
 		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(executable, run, manager),
 		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(executable, run, manager),
@@ -168,40 +193,13 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.service.annotation.prometheus.io/path":   aws.String("/metrics/driver/prometheus/"),
 		"spark.kubernetes.driver.service.annotation.prometheus.io/scrape": aws.String("true"),
 
-		// Datadog Metrics
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.check_names":  aws.String("[\"spark\"]"),
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.init_configs": aws.String("[{}]"),
-		"spark.kubernetes.driver.annotation.ad.datadoghq.com/spark-kubernetes-driver.instances":    aws.String("[{\"spark_url\": \"http://%%host%%:4040\", \"spark_cluster_mode\": \"spark_driver_mode\", \"cluster_name\": \"spark-k8s\"}]"),
-
 		// Executor-level metrics are sent from each executor to the driver. Prometheus endpoint at: /metrics/executors/prometheus
 		"spark.kubernetes.driver.annotation.prometheus.io/scrape": aws.String("true"),
 		"spark.kubernetes.driver.annotation.prometheus.io/path":   aws.String("/metrics/executors/prometheus/"),
 		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.ui.prometheus.enabled":                             aws.String("true"),
 	}
-	//todo post migration merge in generateApplicationConf
-	if run.ClusterName != "flotilla-eks-infra-c" {
-		sparkExtras := map[string]*string{
-			// PVC creation and use for mounting EBS volumes to jobs
-			// Uses the default stroage class though we could add more config here to support that too see. https://spark.apache.org/docs/latest/running-on-kubernetes.html#pvc-oriented-executor-pod-allocation
-			// This requires the a CSI Driver to be deployed in the cluster
-			"spark.kubernetes.driver.ownPersistentVolumeClaim":         aws.String("true"),
-			"spark.kubernetes.driver.waitToReusePersistentVolumeClaim": aws.String("true"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass":   aws.String("gp2"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":      aws.String("20Gi"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":      aws.String("OnDemand"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":             aws.String("/var/lib/app/"),
-			// "spark.kubernetes.driver.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":         aws.String("false"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.storageClass": aws.String("gp2"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.sizeLimit":    aws.String("150Gi"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.options.claimName":    aws.String("OnDemand"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.path":           aws.String("/var/lib/app/"),
-			"spark.kubernetes.executor.volumes.persistentVolumeClaim.spark-local-dir-shared-lib-volume.mount.readOnly":       aws.String("false"),
-		}
-		for key, value := range sparkExtras {
-			sparkDefaults[key] = value
-		}
-	}
+
 	hiveDefaults := map[string]*string{}
 
 	for _, k := range run.SparkExtension.ApplicationConf {
@@ -270,28 +268,38 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 }
 
 // generates volumes and volumemounts depending on cluster name.
-// TODO delete after migration
-func generateVolumesForCluster(clusterName string) ([]v1.Volume, []v1.VolumeMount) {
+// TODO cleanup after migration
+func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var volumeMounts []v1.VolumeMount
 
-	if clusterName == "flotilla-eks-infra-c" {
-		// Define the specific volume
+	if clusterName == "flotilla-eks-infra-c" || isEmptyDir {
+		// Use a emptyDir volume
 		specificVolume := v1.Volume{
 			Name: "shared-lib-volume",
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &(v1.EmptyDirVolumeSource{}),
 			},
 		}
-		volumes = append(volumes, specificVolume)
 
-		// Define the corresponding volume mount
-		specificVolumeMount := v1.VolumeMount{
-			Name:      "shared-lib-volume",
-			MountPath: "/var/lib/app",
+		volumes = append(volumes, specificVolume)
+	} else {
+		// Use the persistent volume claim
+		sharedLibVolume := v1.Volume{
+			Name: "shared-lib-volume",
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "s3-claim",
+				},
+			},
 		}
-		volumeMounts = append(volumeMounts, specificVolumeMount)
+		volumes = append(volumes, sharedLibVolume)
 	}
+	volumeMount := v1.VolumeMount{
+		Name:      "shared-lib-volume",
+		MountPath: "/var/lib/app",
+	}
+	volumeMounts = append(volumeMounts, volumeMount)
 
 	return volumes, volumeMounts
 }
@@ -306,6 +314,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 
 	labels := utils.GetLabels(run)
 
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
+
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -314,37 +324,22 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 			Labels: labels,
 		},
 		Spec: v1.PodSpec{
-			Volumes: []v1.Volume{{
-				Name: "shared-lib-volume",
-				VolumeSource: v1.VolumeSource{
-					EmptyDir: &(v1.EmptyDirVolumeSource{}),
-				},
-			}},
+			Volumes:       volumes,
 			SchedulerName: emr.schedulerName,
 			Containers: []v1.Container{
 				{
-					Name: "spark-kubernetes-driver",
-					Env:  emr.envOverrides(executable, run),
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      "shared-lib-volume",
-							MountPath: "/var/lib/app",
-						},
-					},
-					WorkingDir: workingDir,
+					Name:         "spark-kubernetes-driver",
+					Env:          emr.envOverrides(executable, run),
+					VolumeMounts: volumeMounts,
+					WorkingDir:   workingDir,
 				},
 			},
 			InitContainers: []v1.Container{{
-				Name:  fmt.Sprintf("init-driver-%s", run.RunID),
-				Image: run.Image,
-				Env:   emr.envOverrides(executable, run),
-				VolumeMounts: []v1.VolumeMount{
-					{
-						Name:      "shared-lib-volume",
-						MountPath: "/var/lib/app",
-					},
-				},
-				Command: emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
+				Name:         fmt.Sprintf("init-driver-%s", run.RunID),
+				Image:        run.Image,
+				Env:          emr.envOverrides(executable, run),
+				VolumeMounts: volumeMounts,
+				Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(executable, run, manager, true),
@@ -365,7 +360,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 	labels := utils.GetLabels(run)
 
 	// TODO Remove after migration
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName)
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
 
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
@@ -377,13 +372,13 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: aws.Int64(90),
-			Volumes:                       volumes, // TODO Remove after Migration
+			Volumes:                       volumes,
 			SchedulerName:                 emr.schedulerName,
 			Containers: []v1.Container{
 				{
 					Name:         "spark-kubernetes-executor",
 					Env:          emr.envOverrides(executable, run),
-					VolumeMounts: volumeMounts, // TODO Remove after Migration
+					VolumeMounts: volumeMounts,
 					WorkingDir:   workingDir,
 				},
 			},
@@ -391,7 +386,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 				Name:         fmt.Sprintf("init-executor-%s", run.RunID),
 				Image:        run.Image,
 				Env:          emr.envOverrides(executable, run),
-				VolumeMounts: volumeMounts, // TODO Remove after Migration
+				VolumeMounts: volumeMounts,
 				Command:      emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
@@ -671,6 +666,7 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 		_ = emr.log.Log("EMR job termination error", "error", err.Error())
 	}
 	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess)}, 1)
+
 	return err
 }
 

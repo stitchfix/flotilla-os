@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"github.com/stitchfix/flotilla-os/state"
+	"os"
 	"regexp"
 	"strings"
-
-	"github.com/stitchfix/flotilla-os/state"
 )
 
 func GetLabels(run state.Run) map[string]string {
@@ -16,10 +16,17 @@ func GetLabels(run state.Run) map[string]string {
 
 	if run.RunID != "" {
 		labels["flotilla-run-id"] = SanitizeLabel(run.RunID)
+		labels["flotilla-run-mode"] = SanitizeLabel(os.Getenv("FLOTILLA_MODE"))
 	}
 
 	if run.User != "" {
 		labels["owner"] = SanitizeLabel(run.User)
+	}
+
+	if _, workflowExists := run.Labels["kube_workflow"]; !workflowExists {
+		if _, taskNameExists := run.Labels["kube_task_name"]; taskNameExists {
+			labels["kube_workflow"] = SanitizeLabel(run.Labels["kube_task_name"])
+		}
 	}
 
 	for k, v := range run.Labels {

@@ -1,11 +1,11 @@
 package utils
 
 import (
+	"github.com/stitchfix/flotilla-os/state"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/stitchfix/flotilla-os/state"
 )
 
 func TestSanitizeLabel(t *testing.T) {
@@ -74,6 +74,7 @@ func TestGetLabels(t *testing.T) {
 		args args
 		want map[string]string
 	}
+	os.Setenv("FLOTILLA_MODE", "test")
 
 	tests = []struct {
 		name string
@@ -84,16 +85,27 @@ func TestGetLabels(t *testing.T) {
 			name: "should return labels for run with definition",
 			args: args{
 				run: state.Run{
-					DefinitionID: "A", ClusterName: "A", GroupName: "groupA", RunID: "runA", Labels: map[string]string{
-						"kube_foo": "bar", "team": "awesomeness",
+					DefinitionID: "A",
+					ClusterName:  "A",
+					GroupName:    "groupA",
+					RunID:        "runA",
+					User:         "userA",
+					Labels: map[string]string{
+						"kube_foo":       "bar",
+						"team":           "awesomeness",
+						"kube_task_name": "foo",
 					},
 				},
 			},
 			want: map[string]string{
-				"cluster-name":    "A",
-				"flotilla-run-id": "runa",
-				"kube_foo":        "bar",
-				"team":            "awesomeness",
+				"cluster-name":      "A",
+				"flotilla-run-id":   "runa",
+				"kube_workflow":     "foo",
+				"kube_foo":          "bar",
+				"kube_task_name":    "foo",
+				"team":              "awesomeness",
+				"owner":             "usera",
+				"flotilla-run-mode": "test",
 			},
 		},
 		{
