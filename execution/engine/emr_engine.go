@@ -295,11 +295,28 @@ func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume
 		}
 		volumes = append(volumes, sharedLibVolume)
 	}
+
+	pyEnvVolume := v1.Volume{
+		Name: "pyenv-volume",
+		VolumeSource: v1.VolumeSource{
+			EmptyDir: &(v1.EmptyDirVolumeSource{}),
+		},
+	}
+
+	volumes = append(volumes, pyEnvVolume)
+
 	volumeMount := v1.VolumeMount{
 		Name:      "shared-lib-volume",
 		MountPath: "/var/lib/app",
 	}
 	volumeMounts = append(volumeMounts, volumeMount)
+
+	pyEnvVolumeMount := v1.VolumeMount{
+		Name:      "pyenv-volume",
+		MountPath: "/usr/local/python",
+	}
+
+	volumeMounts = append(volumeMounts, pyEnvVolumeMount)
 
 	return volumes, volumeMounts
 }
