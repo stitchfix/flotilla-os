@@ -303,7 +303,7 @@ func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume
 			},
 		}
 
-	volumes = append(volumes, specificVolume)
+	volumes = append(volumes, pyenvVolume)
 	
 	volumeMount := v1.VolumeMount{
 		Name:      "shared-lib-volume",
