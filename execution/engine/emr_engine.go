@@ -49,6 +49,7 @@ type EMRExecutionEngine struct {
 	s3ManifestBasePath  string
 	serializer          *k8sJson.Serializer
 	clusters            []string
+	driverInstanceType  string
 	kClients            map[string]kubernetes.Clientset
 }
 
@@ -69,6 +70,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.s3ManifestBasePath = conf.GetString("emr_manifest_base_path")
 	emr.emrJobSA = conf.GetString("emr_default_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
+	emr.driverInstanceType = conf.GetString("emr_driver_instance_type")
 
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
@@ -308,46 +310,53 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	// Override driver pods to always be on ondemand nodetypes.
 	run.NodeLifecycle = &state.OndemandLifecycle
 	workingDir := "/var/lib/app"
+
+	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
+
+	podSpec := v1.PodSpec{
+		TerminationGracePeriodSeconds: aws.Int64(90),
+		Volumes:                       volumes,
+		SchedulerName:                 emr.schedulerName,
+		Containers: []v1.Container{
+			{
+				Name:         "spark-kubernetes-driver",
+				Env:          emr.envOverrides(executable, run),
+				VolumeMounts: volumeMounts,
+				WorkingDir:   workingDir,
+			},
+		},
+		InitContainers: []v1.Container{{
+			Name:         fmt.Sprintf("init-driver-%s", run.RunID),
+			Image:        run.Image,
+			Env:          emr.envOverrides(executable, run),
+			VolumeMounts: volumeMounts,
+			Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
+		}},
+		RestartPolicy: v1.RestartPolicyNever,
+		Affinity:      emr.constructAffinity(executable, run, manager, true),
+		Tolerations:   emr.constructTolerations(executable, run),
+	}
+
+	if emr.driverInstanceType != "" {
+		podSpec.NodeSelector = map[string]string{
+			"node.kubernetes.io/instance-type": emr.driverInstanceType,
+		}
+	}
+
 	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
 	labels := utils.GetLabels(run)
-
-	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
-
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"karpenter.sh/do-not-evict": "true",
-				"flotilla-run-id":           run.RunID},
+				"flotilla-run-id":           run.RunID,
+			},
 			Labels: labels,
 		},
-		Spec: v1.PodSpec{
-			Volumes:       volumes,
-			SchedulerName: emr.schedulerName,
-			Containers: []v1.Container{
-				{
-					Name:         "spark-kubernetes-driver",
-					Env:          emr.envOverrides(executable, run),
-					VolumeMounts: volumeMounts,
-					WorkingDir:   workingDir,
-				},
-			},
-			NodeSelector: map[string]string{
-				"node.kubernetes.io/instance-type": "t3a.2xlarge",
-			},
-			InitContainers: []v1.Container{{
-				Name:         fmt.Sprintf("init-driver-%s", run.RunID),
-				Image:        run.Image,
-				Env:          emr.envOverrides(executable, run),
-				VolumeMounts: volumeMounts,
-				Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
-			}},
-			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(executable, run, manager, true),
-			Tolerations:   emr.constructTolerations(executable, run),
-		},
+		Spec: podSpec,
 	}
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.yaml", emr.s3ManifestBasePath, run.RunID, "driver-template"))
