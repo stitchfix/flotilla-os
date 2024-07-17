@@ -275,7 +275,7 @@ func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume
 	var volumes []v1.Volume
 	var volumeMounts []v1.VolumeMount
 
-	if clusterName == "flotilla-eks-infra-c" || isEmptyDir {
+	if isEmptyDir {
 		// Use a emptyDir volume
 		specificVolume := v1.Volume{
 			Name: "shared-lib-volume",
@@ -484,13 +484,6 @@ func (emr *EMRExecutionEngine) constructAffinity(executable state.Executable, ru
 	nodeArchKey := "kubernetes.io/arch"
 
 	newCluster := true
-	//todo remove post migration
-	switch run.ClusterName {
-	case "flotilla-eks-infra-c":
-		newCluster = false
-		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
-		nodeArchKey = "kubernetes.io/arch"
-	}
 
 	arch := []string{"amd64"}
 	if run.Arch != nil && *run.Arch == "arm64" {
