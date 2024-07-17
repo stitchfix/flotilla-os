@@ -334,6 +334,9 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 					WorkingDir:   workingDir,
 				},
 			},
+			NodeSelector: map[string]string{
+				"node.kubernetes.io/instance-type": "t3a.2xlarge",
+			},
 			InitContainers: []v1.Container{{
 				Name:         fmt.Sprintf("init-driver-%s", run.RunID),
 				Image:        run.Image,
