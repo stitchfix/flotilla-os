@@ -324,13 +324,12 @@ func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 		}
 
 		metricsUri :=
-			fmt.Sprintf("%svar-spark_app_selector=%s&from=%d&to=%s",
+			fmt.Sprintf("%s&tpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%s&live=true",
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
 				from,
 				to,
 			)
-
 		run.MetricsUri = &metricsUri
 	}
 }
@@ -349,13 +348,12 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 		}
 
 		metricsUri :=
-			fmt.Sprintf("%svar-run_id=%s&from=%d&to=%d",
+			fmt.Sprintf("%stpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%d&live=true",
 				ew.eksMetricsServer,
 				run.RunID,
 				from,
 				to,
 			)
-
 		run.MetricsUri = &metricsUri
 	}
 }
