@@ -348,7 +348,7 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 		}
 
 		metricsUri :=
-			fmt.Sprintf("%stpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%d&live=true",
+			fmt.Sprintf("%s&tpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%d&live=true",
 				ew.eksMetricsServer,
 				run.RunID,
 				from,
