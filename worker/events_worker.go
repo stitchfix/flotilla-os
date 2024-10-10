@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -195,6 +196,7 @@ func (ew *eventsWorker) runOnce() {
 	ew.processEvent(kubernetesEvent)
 }
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
+	ctx := context.Background()
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
@@ -205,7 +207,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		kClient, ok := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
 
 		if ok {
-			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
+			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 			if err == nil {
 				for k, v := range pod.Labels {
 					if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {

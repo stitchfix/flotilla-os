@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -118,6 +119,7 @@ func (ee *EKSExecutionEngine) GetClusters() []string {
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	ctx := context.Background()
 	if run.ServiceAccount == nil {
 		run.ServiceAccount = aws.String(ee.jobSA)
 	}
@@ -131,7 +133,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 		return run, false, err
 	}
 
-	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(&job)
+	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(ctx, &job, metav1.CreateOptions{})
 
 	if err != nil {
 		// Job is already submitted, don't retry
@@ -215,13 +217,14 @@ func (ee *EKSExecutionEngine) getInstanceDetails(pod v1.Pod, run state.Run) stat
 }
 
 func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
+	ctx := context.Background()
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return &v1.PodList{}, err
 	}
 
 	if run.PodName != nil {
-		pod, err := kClient.CoreV1().Pods(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		pod, err := kClient.CoreV1().Pods(ee.jobNamespace).Get(ctx, *run.PodName, metav1.GetOptions{})
 		if pod != nil {
 			return &v1.PodList{Items: []v1.Pod{*pod}}, err
 		}
@@ -231,7 +234,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 		}
 		queuedAt := *run.QueuedAt
 		if time.Now().After(queuedAt.Add(time.Minute * time.Duration(5))) {
-			podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(metav1.ListOptions{
+			podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(ctx, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
 			})
 			return podList, err
@@ -249,6 +252,7 @@ func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, e
 }
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
+	ctx := context.Background()
 	gracePeriod := int64(300)
 	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
@@ -264,9 +268,9 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 		return err
 	}
 
-	_ = kClient.BatchV1().Jobs(ee.jobNamespace).Delete(run.RunID, deleteOptions)
+	_ = kClient.BatchV1().Jobs(ee.jobNamespace).Delete(ctx, run.RunID, *deleteOptions)
 	if run.PodName != nil {
-		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(*run.PodName, deleteOptions)
+		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(ctx, *run.PodName, *deleteOptions)
 	}
 
 	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
@@ -339,11 +343,12 @@ func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
 }
 
 func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
+	ctx := context.Background()
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
 	}
-	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(ctx, run.RunID, metav1.GetOptions{})
 
 	if err != nil {
 		return state.Run{}, errors.Errorf("error getting kubernetes job %s", err)
@@ -358,6 +363,7 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 }
 
 func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
+	ctx := context.Background()
 	if run.PodName == nil {
 		return state.PodEventList{}, nil
 	}
@@ -366,7 +372,7 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 		return state.PodEventList{}, err
 	}
 
-	eventList, err := kClient.CoreV1().Events(ee.jobNamespace).List(metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
+	eventList, err := kClient.CoreV1().Events(ee.jobNamespace).List(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name==%s", *run.PodName)})
 	if err != nil {
 		return state.PodEventList{}, errors.Errorf("error getting kubernetes event for flotilla run %s", err)
 	}
@@ -398,13 +404,14 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 }
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
+	ctx := context.Background()
 	if run.PodName != nil {
 		metricsClient, ok := ee.metricsClients[run.ClusterName]
 		if !ok {
 			return run, errors.New("Metrics client not defined.")
 		}
 		start := time.Now()
-		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(*run.PodName, metav1.GetOptions{})
+		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(ctx, *run.PodName, metav1.GetOptions{})
 		_ = metrics.Timing(metrics.StatusWorkerFetchMetrics, time.Since(start), []string{run.ClusterName}, 1)
 
 		if err != nil {
@@ -428,13 +435,14 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 }
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
+	ctx := context.Background()
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
 	}
 
 	start := time.Now()
-	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(run.RunID, metav1.GetOptions{})
+	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(ctx, run.RunID, metav1.GetOptions{})
 	_ = metrics.Timing(metrics.StatusWorkerGetJob, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err != nil {
