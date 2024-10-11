@@ -310,6 +310,9 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 	// Override driver pods to always be on ondemand nodetypes.
 	run.NodeLifecycle = &state.OndemandLifecycle
 	workingDir := "/var/lib/app"
+	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
+		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
+	}
 
 	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
 
@@ -341,10 +344,6 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		podSpec.NodeSelector = map[string]string{
 			"node.kubernetes.io/instance-type": emr.driverInstanceType,
 		}
-	}
-
-	if run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.WorkingDir != nil {
-		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
 	labels := utils.GetLabels(run)
