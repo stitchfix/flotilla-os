@@ -259,7 +259,7 @@ const Connected: React.FunctionComponent<RouteComponentProps> = ({
                 if (ctx.data) {
                   const initialValues: TemplateExecutionRequest = getInitialValuesForTemplateExecutionForm(
                     ctx.data,
-                    location.state
+                    location.state as Run
                   )
                   return (
                     <TemplateExecutionForm
