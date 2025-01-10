@@ -200,10 +200,6 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 		"spark.kubernetes.driver.annotation.prometheus.io/path":   aws.String("/metrics/executors/prometheus/"),
 		"spark.kubernetes.driver.annotation.prometheus.io/port":   aws.String("4040"),
 		"spark.ui.prometheus.enabled":                             aws.String("true"),
-
-		"spark.kubernetes.driver.label.admission.datadoghq.com/enabled":               aws.String("true"),
-		"spark.kubernetes.driver.annotation.admission.datadoghq.com/java-lib.version": aws.String("latest"),
-		"spark.driver.extraJavaOptions":                                               aws.String("\"-Ddd.integration.spark.enabled=true -Ddd.integrations.enabled=false -Ddd.service=sf_spark_functions -Ddd.env=staging -Ddd.version=1.0 -Ddd.trace.experimental.long-running.enabled=true\""),
 	}
 
 	hiveDefaults := map[string]*string{}
