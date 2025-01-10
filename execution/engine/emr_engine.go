@@ -626,6 +626,8 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 	}
 
 	buffer.WriteString(fmt.Sprintf(" --conf %s=%s", "spark.kubernetes.executor.podNamePrefix", run.RunID))
+	buffer.WriteString(fmt.Sprintf(" --conf spark.log4j.rootLogger=DEBUG))
+	buffer.WriteString(fmt.Sprintf(" --conf spark.log4j.rootCategory=DEBUG))
 
 	if run.SparkExtension.SparkSubmitJobDriver.Class != nil {
 		buffer.WriteString(fmt.Sprintf(" --class %s", *run.SparkExtension.SparkSubmitJobDriver.Class))
@@ -646,7 +648,6 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 		buffer.WriteString(fmt.Sprintf(" --jars %s", jars))
 	}
 
-	buffer.WriteString(fmt.Sprintf(" -Dlog4j.rootCategory=DEBUG,console"))
 	return aws.String(buffer.String())
 }
 
