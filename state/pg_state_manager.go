@@ -1683,3 +1683,35 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 		sm.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
 }
+
+func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
+	var clusters []ClusterMetadata
+	err := sm.db.Select(&clusters, ListClusterStatesSQL)
+	return clusters, err
+}
+
+func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error {
+	sql := `
+        UPDATE cluster_state 
+        SET status = $2, 
+            status_reason = $3,
+            status_since = NOW(),
+            updated_at = NOW()
+        WHERE name = $1`
+
+	result, err := sm.db.Exec(sql, clusterName, status, reason)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Cluster %s not found", clusterName),
+		}
+	}
+	return nil
+}

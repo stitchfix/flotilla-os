@@ -488,6 +488,7 @@ type Run struct {
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
+	Tier                    Tier                     `json:"criticality_tier"`
 }
 
 // UpdateWith updates this run with information from another
@@ -1220,4 +1221,58 @@ type RunTags struct {
 	OwnerEmail string `json:"owner_email"`
 	TeamName   string `json:"team_name"`
 	OwnerID    string `json:"owner_id"`
+}
+
+type ClusterStatus string
+type Tier []string
+
+const (
+	StatusActive      ClusterStatus = "active"
+	StatusMaintenance ClusterStatus = "maintenance"
+	StatusOffline     ClusterStatus = "offline"
+)
+
+type ClusterCapability string
+
+const (
+	CapGPUEnabled    ClusterCapability = "gpu_enabled"
+	CapPortalEnabled ClusterCapability = "portal_enabled"
+	CapEMRenabled    ClusterCapability = "emr_enabled"
+)
+
+type ClusterMetadata struct {
+	Name         string              `json:"name" db:"name"`
+	Status       ClusterStatus       `json:"status" db:"status"`
+	StatusReason string              `json:"status_reason" db:"status_reason"`
+	StatusSince  time.Time           `json:"status_since" db:"status_since"`
+	Capabilities []ClusterCapability `json:"capabilities" db:"capabilities"`
+	AllowedTiers []Tier              `json:"allowed_tiers" db:"allowed_tiers"`
+	Region       string              `json:"region" db:"region"`
+	UpdatedAt    time.Time           `json:"updated_at" db:"updated_at"`
+}
+
+func (c *ClusterCapability) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("Failed to unmarshal JSONB value for cluster capabilities")
+	}
+
+	return json.Unmarshal(bytes, &c)
+}
+
+func (t *Tier) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("Failed to unmarshal JSONB value for tiers")
+	}
+
+	return json.Unmarshal(bytes, &t)
 }
