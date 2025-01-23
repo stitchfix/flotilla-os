@@ -1241,14 +1241,15 @@ const (
 )
 
 type ClusterMetadata struct {
-	Name         string              `json:"name" db:"name"`
-	Status       ClusterStatus       `json:"status" db:"status"`
-	StatusReason string              `json:"status_reason" db:"status_reason"`
-	StatusSince  time.Time           `json:"status_since" db:"status_since"`
-	Capabilities []ClusterCapability `json:"capabilities" db:"capabilities"`
-	AllowedTiers []Tier              `json:"allowed_tiers" db:"allowed_tiers"`
-	Region       string              `json:"region" db:"region"`
-	UpdatedAt    time.Time           `json:"updated_at" db:"updated_at"`
+	Name              string              `json:"name" db:"name"`
+	Status            ClusterStatus       `json:"status" db:"status"`
+	StatusReason      string              `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time           `json:"status_since" db:"status_since"`
+	Capabilities      []ClusterCapability `json:"capabilities" db:"capabilities"`
+	AllowedTiers      []Tier              `json:"allowed_tiers" db:"allowed_tiers"`
+	UpdatedAt         time.Time           `json:"updated_at" db:"updated_at"`
+	Namespace         string              `json:"namespace" db:"namespace"`
+	EMRVirtualCluster string              `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }
 
 func (c *ClusterCapability) Scan(value interface{}) error {
