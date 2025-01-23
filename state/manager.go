@@ -56,7 +56,7 @@ type Manager interface {
 	CheckIdempotenceKey(idempotenceKey string) (string, error)
 
 	GetRunByEMRJobId(string) (Run, error)
-	ListClusterStatus() ([]ClusterMetadata, error)
+	ListClusterStates() ([]ClusterMetadata, error)
 	UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error
 }
 
