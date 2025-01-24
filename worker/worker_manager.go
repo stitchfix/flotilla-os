@@ -34,7 +34,7 @@ func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEng
 	wm.sm = sm
 	wm.qm = qm
 	wm.pollInterval = pollInterval
-
+	fmt.Println(wm.InitializeWorkers())
 	if err := wm.InitializeWorkers(); err != nil {
 		return errors.Errorf("WorkerManager unable to initialize workers: %s", err.Error())
 	}

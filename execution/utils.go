@@ -1,7 +1,12 @@
 package utils
 
 import (
+	"encoding/base64"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/stitchfix/flotilla-os/state"
+	"k8s.io/client-go/rest"
 	"os"
 	"regexp"
 	"strings"
@@ -53,4 +58,34 @@ func SanitizeLabel(key string) string {
 	}
 
 	return key
+}
+
+func GetClusterConfig(clusterName string, region string) (*rest.Config, error) {
+	sess := session.Must(session.NewSession())
+	eksSvc := eks.New(sess, aws.NewConfig().WithRegion(region))
+
+	input := &eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	}
+
+	result, err := eksSvc.DescribeCluster(input)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := result.Cluster
+	caData, err := base64.StdEncoding.DecodeString(*cluster.CertificateAuthority.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeConfig := &rest.Config{
+		Host: aws.StringValue(cluster.Endpoint),
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: caData,
+		},
+		BearerTokenFile: "",
+	}
+
+	return kubeConfig, nil
 }

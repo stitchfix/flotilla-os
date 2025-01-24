@@ -2,6 +2,7 @@ package state
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/sprig"
@@ -488,7 +489,7 @@ type Run struct {
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
-	Tier                    Tier                     `json:"criticality_tier"`
+	Tier                    Tier                     `json:"tier"`
 }
 
 // UpdateWith updates this run with information from another
@@ -1224,56 +1225,46 @@ type RunTags struct {
 }
 
 type ClusterStatus string
-type Tier []string
 
+type Tier string
+type Tiers []Tier
+
+const (
+	Tier0 Tier = "Tier0"
+	Tier1 Tier = "Tier1"
+	Tier2 Tier = "Tier2"
+	Tier3 Tier = "Tier3"
+	Tier4 Tier = "Tier4"
+)
 const (
 	StatusActive      ClusterStatus = "active"
 	StatusMaintenance ClusterStatus = "maintenance"
 	StatusOffline     ClusterStatus = "offline"
 )
 
-type ClusterCapability string
-
-const (
-	CapGPUEnabled    ClusterCapability = "gpu_enabled"
-	CapPortalEnabled ClusterCapability = "portal_enabled"
-	CapEMRenabled    ClusterCapability = "emr_enabled"
-)
-
 type ClusterMetadata struct {
-	Name              string              `json:"name" db:"name"`
-	Status            ClusterStatus       `json:"status" db:"status"`
-	StatusReason      string              `json:"status_reason" db:"status_reason"`
-	StatusSince       time.Time           `json:"status_since" db:"status_since"`
-	Capabilities      []ClusterCapability `json:"capabilities" db:"capabilities"`
-	AllowedTiers      []Tier              `json:"allowed_tiers" db:"allowed_tiers"`
-	UpdatedAt         time.Time           `json:"updated_at" db:"updated_at"`
-	Namespace         string              `json:"namespace" db:"namespace"`
-	EMRVirtualCluster string              `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+	Name              string        `json:"name" db:"name"`
+	Status            ClusterStatus `json:"status" db:"status"`
+	StatusReason      string        `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time     `json:"status_since" db:"status_since"`
+	AllowedTiers      Tiers         `json:"allowed_tiers" db:"allowed_tiers"`
+	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
+	Namespace         string        `json:"namespace" db:"namespace"`
+	Region            string        `json:"region" db:"region"`
+	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }
 
-func (c *ClusterCapability) Scan(value interface{}) error {
+func (t Tiers) Value() (driver.Value, error) {
+	return json.Marshal(t)
+}
+
+func (t *Tiers) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
-
 	bytes, ok := value.([]byte)
 	if !ok {
-		return errors.New("Failed to unmarshal JSONB value for cluster capabilities")
+		return errors.New("invalid scan source")
 	}
-
-	return json.Unmarshal(bytes, &c)
-}
-
-func (t *Tier) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("Failed to unmarshal JSONB value for tiers")
-	}
-
-	return json.Unmarshal(bytes, &t)
+	return json.Unmarshal(bytes, t)
 }

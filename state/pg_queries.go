@@ -27,17 +27,18 @@ const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
 // ListClusterStatesSQL postgres query for listing cluster status
 const (
 	ListClusterStatesSQL = `
-        SELECT 
-            name,
-            status,
-            status_reason,
-            status_since,
-            capabilities,
-            allowed_tiers,
-            region,
-            updated_at
-        FROM cluster_state
-        ORDER BY name ASC`
+SELECT 
+	name,
+	status,
+	status_reason,
+	status_since,
+	allowed_tiers,
+	region,
+	updated_at,
+	namespace,
+	emr_virtual_cluster
+FROM cluster_state
+ORDER BY name ASC`
 )
 
 // GetDefinitionSQL postgres specific query for getting a single definition
