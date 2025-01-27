@@ -171,16 +171,19 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	result, err := kClient.BatchV1().Jobs(*run.Namespace).Create(ctx, &job, metav1.CreateOptions{})
 
 	if err != nil {
+		// Job is already submitted, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "already exists") {
 			return run, false, nil
 		}
 
+		// Job spec is invalid, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "is invalid") {
 			exitReason := err.Error()
 			run.ExitReason = &exitReason
 			return run, false, err
 		}
 
+		// Legitimate submit error, retryable.
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, true, err
 	}
@@ -203,6 +206,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 
 	run, _ = ee.getPodName(run)
+	// Set status to running.
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 
 	if err != nil {
