@@ -1,5 +1,16 @@
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
+CREATE TYPE tier AS ENUM ('Tier0', 'Tier1', 'Tier2', 'Tier3', 'Tier4');
+END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cluster_status') THEN
 CREATE TYPE cluster_status AS ENUM ('active', 'maintenance', 'offline');
-CREATE TYPE tier AS ENUM ('t0', 't1', 't2', 't3', 't4');
+END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS cluster_state (
     name VARCHAR PRIMARY KEY,
@@ -12,7 +23,18 @@ CREATE TABLE IF NOT EXISTS cluster_state (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     namespace VARCHAR NOT NULL DEFAULT '',
     emr_virtual_cluster VARCHAR NOT NULL DEFAULT ''
-);
+    );
 
-CREATE INDEX ix_cluster_state_status ON cluster_state(status);
-ALTER TABLE task ADD COLUMN tier text;
+CREATE INDEX IF NOT EXISTS ix_cluster_state_status ON cluster_state(status);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1
+        FROM information_schema.columns
+        WHERE table_name='task' AND column_name='tier')
+    THEN
+ALTER TABLE task ADD COLUMN tier tier;
+END IF;
+END$$;
+
+UPDATE task SET tier = 'Tier4' WHERE tier IS NULL;
