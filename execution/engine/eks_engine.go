@@ -73,11 +73,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		ee.kClients[cluster.Name] = *kClient
 		ee.metricsClients[cluster.Name] = *metricsv.NewForConfigOrDie(k8sConfig)
 
-		// TODO Remove before Merging PR we dont want to log the bearer token
-		ee.log.Log(fmt.Sprintf("Cluster: %s, Host: %s, BearerToken: %s",
-			cluster.Name,
-			k8sConfig.Host,
-			k8sConfig.BearerToken))
 		_, err = kClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			ee.log.Log(fmt.Sprintf("Failed to list namespaces for cluster %s: %v", cluster.Name, err))
