@@ -499,6 +499,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
 		Engine: &DefaultEngine,
+		Tier:   "Tier4",
 	}
 
 	ec := int64(137)
@@ -528,6 +529,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Command: &cmd,
 		Memory:  &mem,
 		Engine:  &DefaultEngine,
+		Tier:    "Tier4",
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
