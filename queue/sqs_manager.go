@@ -12,9 +12,7 @@ import (
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 )
 
-//
 // SQSManager - queue manager implementation for sqs
-//
 type SQSManager struct {
 	namespace         string
 	retentionSeconds  string
@@ -32,16 +30,12 @@ type sqsClient interface {
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
 }
 
-//
 // Name of queue manager - matches value in configuration
-//
 func (qm *SQSManager) Name() string {
 	return "sqs"
 }
 
-//
 // Initialize new sqs queue manager
-//
 func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	if !conf.IsSet("aws_default_region") {
 		return errors.Errorf("SQSManager needs [aws_default_region] set in config")
@@ -74,10 +68,8 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	return nil
 }
 
-//
 // QurlFor returns the queue url that corresponds to the given name
 // * if the queue does not exist it is created
-//
 func (qm *SQSManager) QurlFor(name string, prefixed bool) (string, error) {
 	key := fmt.Sprintf("%s-%t", name, prefixed)
 	val, ok := qm.qurlCache[key]
@@ -158,14 +150,11 @@ func (qm *SQSManager) statusFromMessage(message *sqs.Message) (string, error) {
 	return *body, nil
 }
 
-//
 // Enqueue queues run
-//
 func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 	if len(qURL) == 0 {
 		return errors.Errorf("no queue url specified, can't enqueue")
 	}
-
 	message, err := qm.messageFromRun(run)
 	if err != nil {
 		return errors.WithStack(err)
@@ -183,9 +172,7 @@ func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
 	return nil
 }
 
-//
 // Receive receives a new run to operate on
-//
 func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 	var receipt RunReceipt
 
@@ -390,10 +377,8 @@ func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {
 	return runId, errors.Wrapf(err, "no message")
 }
 
-//
 // Ack acknowledges the receipt -AND- processing of the
 // the message referred to by handle
-//
 func (qm *SQSManager) ack(qURL string, handle *string) error {
 	if handle == nil {
 		return errors.Errorf("cannot acknowledge message with nil receipt")
@@ -412,9 +397,7 @@ func (qm *SQSManager) ack(qURL string, handle *string) error {
 	return nil
 }
 
-//
 // List lists all the queue URLS available
-//
 func (qm *SQSManager) List() ([]string, error) {
 	response, err := qm.qc.ListQueues(
 		&sqs.ListQueuesInput{QueueNamePrefix: &qm.namespace})

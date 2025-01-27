@@ -56,6 +56,8 @@ type Manager interface {
 	CheckIdempotenceKey(idempotenceKey string) (string, error)
 
 	GetRunByEMRJobId(string) (Run, error)
+	ListClusterStates() ([]ClusterMetadata, error)
+	UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error
 }
 
 // NewStateManager sets up and configures a new statemanager

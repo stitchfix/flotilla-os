@@ -1,9 +1,17 @@
 package utils
 
 import (
+	"encoding/base64"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/eks"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/stitchfix/flotilla-os/state"
+	"k8s.io/client-go/rest"
 	"os"
 	"regexp"
+	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 	"strings"
 )
 
@@ -53,4 +61,44 @@ func SanitizeLabel(key string) string {
 	}
 
 	return key
+}
+
+func GetClusterConfig(clusterName string, region string) (*rest.Config, error) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	stsAPI := sts.New(sess, aws.NewConfig().WithRegion(region))
+	eksSvc := eks.New(sess, aws.NewConfig().WithRegion(region))
+
+	cluster, err := eksSvc.DescribeCluster(&eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describing cluster: %w", err)
+	}
+
+	generator, err := token.NewGenerator(true, false)
+	if err != nil {
+		return nil, fmt.Errorf("creating token generator: %w", err)
+	}
+
+	// Use cluster name instead of ARN
+	k8sToken, err := generator.GetWithSTS(clusterName, stsAPI)
+	if err != nil {
+		return nil, fmt.Errorf("generating token: %w", err)
+	}
+
+	ca, err := base64.StdEncoding.DecodeString(*cluster.Cluster.CertificateAuthority.Data)
+	if err != nil {
+		return nil, fmt.Errorf("decoding CA data: %w", err)
+	}
+
+	return &rest.Config{
+		Host: *cluster.Cluster.Endpoint,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: ca,
+		},
+		BearerToken: k8sToken.Token,
+	}, nil
 }

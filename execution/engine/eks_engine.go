@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	utils "github.com/stitchfix/flotilla-os/execution"
 	"strings"
 	"time"
 
@@ -24,12 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-// EKSExecutionEngine submits runs to EKS.
 type EKSExecutionEngine struct {
+	stateManager    state.Manager
 	kClients        map[string]kubernetes.Clientset
 	metricsClients  map[string]metricsv.Clientset
 	adapter         adapter.EKSAdapter
@@ -46,30 +46,33 @@ type EKSExecutionEngine struct {
 	s3Bucket        string
 	s3BucketRootDir string
 	statusQueue     string
-	clusters        []string
 }
 
-// Initialize configures the EKSExecutionEngine and initializes internal clients
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	ee.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
 	ee.kClients = make(map[string]kubernetes.Clientset)
 	ee.metricsClients = make(map[string]metricsv.Clientset)
 
-	for _, clusterName := range ee.clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		if err != nil {
-			return err
-		}
-		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
-		kClient, err := kubernetes.NewForConfig(clientConf)
+	clusters, err := ee.stateManager.ListClusterStates()
+	if err != nil {
+		return errors.Wrap(err, "error listing clusters from state manager")
+	}
 
-		_ = ee.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
+	for _, cluster := range clusters {
+		k8sConfig, err := utils.GetClusterConfig(cluster.Name, cluster.Region)
+
 		if err != nil {
 			return err
 		}
-		ee.kClients[clusterName] = *kClient
-		ee.metricsClients[clusterName] = *metricsv.NewForConfigOrDie(clientConf)
+
+		k8sConfig.WrapTransport = kubernetestrace.WrapRoundTripper
+		kClient, err := kubernetes.NewForConfig(k8sConfig)
+		if err != nil {
+			return err
+		}
+
+		ee.kClients[cluster.Name] = *kClient
+		ee.metricsClients[cluster.Name] = *metricsv.NewForConfigOrDie(k8sConfig)
+
 	}
 
 	ee.jobQueue = conf.GetString("eks_job_queue")
@@ -87,7 +90,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobARAEnabled = true
 
 	adapt, err := adapter.NewEKSAdapter()
-
 	if err != nil {
 		return err
 	}
@@ -102,23 +104,46 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	)
 	awsRegion := conf.GetString("eks_manifest_storage_options_region")
 	awsConfig := &aws.Config{Region: aws.String(awsRegion)}
-	sess := awstrace.WrapSession(session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig})))
-	sess = awstrace.WrapSession(sess)
+	sess := awstrace.WrapSession(session.Must(session.NewSessionWithOptions(
+		session.Options{Config: *awsConfig})))
 	ee.s3Client = s3.New(sess, aws.NewConfig().WithRegion(awsRegion))
 	ee.s3Bucket = conf.GetString("eks_manifest_storage_options_s3_bucket_name")
 	ee.s3BucketRootDir = conf.GetString("eks_manifest_storage_options_s3_bucket_root_dir")
 
 	ee.adapter = adapt
-	fmt.Printf("EKS Engine initialized\nClusters: %s\n", ee.clusters)
 
 	return nil
 }
 
-func (ee *EKSExecutionEngine) GetClusters() []string {
-	return ee.clusters
-}
-
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	ee.log.Log("engine_received_tier", run.Tier)
+	if run.Tier == "" {
+		run.Tier = state.Tier4
+	}
+
+	clusters, err := ee.stateManager.ListClusterStates()
+	if err != nil {
+		return run, true, errors.Wrap(err, "error listing clusters")
+	}
+	selectedCluster := ee.selectCluster(clusters, run)
+	if selectedCluster == nil {
+		return run, true, errors.New("no eligible clusters found for run requirements")
+	}
+	fmt.Println("Selected cluster: ", selectedCluster.Name)
+	run.ClusterName = selectedCluster.Name
+
+	// Set namespace or EMR virtual cluster based on engine type
+	if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
+		if selectedCluster.EMRVirtualCluster == "" {
+			return run, true, errors.Errorf("cluster %s has no EMR virtual cluster configured", selectedCluster.Name)
+		}
+	} else {
+		if selectedCluster.Namespace == "" {
+			return run, true, errors.Errorf("cluster %s has no namespace configured", selectedCluster.Name)
+		}
+		run.Namespace = &selectedCluster.Namespace
+	}
+
 	ctx := context.Background()
 	if run.ServiceAccount == nil {
 		run.ServiceAccount = aws.String(ee.jobSA)
@@ -133,7 +158,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 		return run, false, err
 	}
 
-	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(ctx, &job, metav1.CreateOptions{})
+	result, err := kClient.BatchV1().Jobs(*run.Namespace).Create(ctx, &job, metav1.CreateOptions{})
 
 	if err != nil {
 		// Job is already submitted, don't retry
@@ -141,7 +166,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 			return run, false, nil
 		}
 
-		// Job spec is invalid, don't retry.
+		// Job spec is invalid, don't retry
 		if strings.Contains(strings.ToLower(err.Error()), "is invalid") {
 			exitReason := err.Error()
 			run.ExitReason = &exitReason
@@ -171,15 +196,46 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
 
 	run, _ = ee.getPodName(run)
+	// Set status to running.
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
 
 	if err != nil {
 		return adaptedRun, false, err
 	}
 
-	// Set status to running.
 	adaptedRun.Status = state.StatusRunning
 	return adaptedRun, false, nil
+}
+
+func (ee *EKSExecutionEngine) selectCluster(clusters []state.ClusterMetadata, run state.Run) *state.ClusterMetadata {
+	for _, cluster := range clusters {
+		if !ee.isClusterEligible(cluster, run) {
+			continue
+		}
+		return &cluster
+	}
+	return nil
+}
+
+func (ee *EKSExecutionEngine) isClusterEligible(cluster state.ClusterMetadata, run state.Run) bool {
+	if cluster.Status != state.StatusActive {
+		return false
+	}
+
+	if !containsTier(cluster.AllowedTiers, run.Tier) {
+		return false
+	}
+
+	return true
+}
+
+func containsTier(tiers []state.Tier, tier state.Tier) bool {
+	for _, t := range tiers {
+		if t == tier {
+			return true
+		}
+	}
+	return false
 }
 
 func (ee *EKSExecutionEngine) getPodName(run state.Run) (state.Run, error) {
@@ -224,7 +280,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 	}
 
 	if run.PodName != nil {
-		pod, err := kClient.CoreV1().Pods(ee.jobNamespace).Get(ctx, *run.PodName, metav1.GetOptions{})
+		pod, err := kClient.CoreV1().Pods(*run.Namespace).Get(ctx, *run.PodName, metav1.GetOptions{})
 		if pod != nil {
 			return &v1.PodList{Items: []v1.Pod{*pod}}, err
 		}
@@ -234,7 +290,7 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 		}
 		queuedAt := *run.QueuedAt
 		if time.Now().After(queuedAt.Add(time.Minute * time.Duration(5))) {
-			podList, err := kClient.CoreV1().Pods(ee.jobNamespace).List(ctx, metav1.ListOptions{
+			podList, err := kClient.CoreV1().Pods(*run.Namespace).List(ctx, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("job-name=%s", run.RunID),
 			})
 			return podList, err
@@ -244,6 +300,9 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 }
 
 func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	if run.ClusterName == "" {
+		return kubernetes.Clientset{}, errors.New("Cluster name is empty")
+	}
 	kClient, ok := ee.kClients[run.ClusterName]
 	if !ok {
 		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))

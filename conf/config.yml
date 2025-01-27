@@ -1,22 +1,13 @@
 aws_default_region: us-east-1
 cluster_client: eks
 create_database_schema: true
-database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable
-eks_clusters: 'clusta, cupcake'
-eks_cluster_default: 'clusta'
-eks_gpu_cluster_default: 'clusta'
 eks_log_driver_name: awslogs
-eks_log_driver_options_awslogs-group: flotilla-eks-namespace
-eks_log_driver_options_awslogs-region: us-east-1
-eks_log_namespace: flotilla-eks-namespace
 eks_log_retention_days: 90
 enabled_workers:
   - retry
   - submit
+  - status
 execution_engine: eks
-flotilla_mode: test
-http_server_cors_allowed_origins:
-  - http://localhost:3001
 http_server_listen_address: :3000
 http_server_read_timeout_seconds: 5
 http_server_write_timeout_seconds: 10
@@ -28,9 +19,6 @@ metrics_dogstatsd_tags:
   - test
 owner_id_var: FLOTILLA_RUN_OWNER_ID
 queue_manager: sqs
-queue_namespace: dev-flotilla
 queue_process_time: 45
 queue_retention_seconds: 604800
-queue_status: flotilla-status-updates-dev
 queue_status_rule: flotilla-task-status
-readonly_database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable

@@ -401,6 +401,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			CommandHash:      nil,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -468,6 +469,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
 			ServiceAccount:   lr.ServiceAccount,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -561,6 +563,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Tier:                  lr.Tier,
 			ClusterName:           *lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
@@ -609,7 +612,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, err)
 		return
 	}
-
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
@@ -641,6 +643,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Tier:                  lr.Tier,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,
@@ -661,6 +664,9 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
+	ep.logger.Log(
+		"message", "received run from service",
+		"operation", "CreateRunByAlias")
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",

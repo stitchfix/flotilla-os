@@ -24,6 +24,23 @@ from (select * from task_def) td
 // ListDefinitionsSQL postgres specific query for listing definitions
 const ListDefinitionsSQL = DefinitionSelect + "\n%s %s limit $1 offset $2"
 
+// ListClusterStatesSQL postgres query for listing cluster status
+const (
+	ListClusterStatesSQL = `
+SELECT 
+	name,
+	status,
+	status_reason,
+	status_since,
+	allowed_tiers,
+	region,
+	updated_at,
+	namespace,
+	emr_virtual_cluster
+FROM cluster_state
+ORDER BY name ASC`
+)
+
 // GetDefinitionSQL postgres specific query for getting a single definition
 const GetDefinitionSQL = DefinitionSelect + "\nwhere definition_id = $1"
 
@@ -198,7 +215,8 @@ select t.run_id                          as runid,
 	   coalesce(arch, '')                as arch,
 	   labels::TEXT                      as labels,
 	   coalesce(requires_docker,false)   as requires_docker,
-	   service_account 				 	 as service_account
+	   service_account 				 	 as service_account,
+     coalesce(tier::text, 'Tier4')   as tier
 from task t
 `
 

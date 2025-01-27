@@ -31,16 +31,24 @@ type RunReceipt struct {
 }
 
 // NewExecutionEngine initializes and returns a new Engine
-func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logger log.Logger) (Engine, error) {
+func NewExecutionEngine(conf config.Config, qm queue.Manager, name string, logger log.Logger, sm state.Manager) (Engine, error) {
 	switch name {
 	case state.EKSEngine:
-		eksEng := &EKSExecutionEngine{qm: qm, log: logger}
+		eksEng := &EKSExecutionEngine{
+			qm:           qm,
+			log:          logger,
+			stateManager: sm,
+		}
 		if err := eksEng.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing EKSExecutionEngine")
 		}
 		return eksEng, nil
 	case state.EKSSparkEngine:
-		emrEng := &EMRExecutionEngine{sqsQueueManager: qm, log: logger}
+		emrEng := &EMRExecutionEngine{
+			sqsQueueManager: qm,
+			log:             logger,
+			stateManager:    sm,
+		}
 		if err := emrEng.Initialize(conf); err != nil {
 			return nil, errors.Wrap(err, "problem initializing EMRExecutionEngine")
 		}
