@@ -619,6 +619,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,
+		Tier:       "Tier4",
 	}
 	u2 := Run{
 		Status: StatusNeedsRetry,
