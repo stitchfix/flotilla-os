@@ -73,11 +73,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		ee.kClients[cluster.Name] = *kClient
 		ee.metricsClients[cluster.Name] = *metricsv.NewForConfigOrDie(k8sConfig)
 
-		_, err = kClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
-		if err != nil {
-			ee.log.Log(fmt.Sprintf("Failed to list namespaces for cluster %s: %v", cluster.Name, err))
-			continue
-		}
 	}
 
 	ee.jobQueue = conf.GetString("eks_job_queue")
