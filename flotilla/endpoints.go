@@ -488,7 +488,6 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	var lr state.LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
-	ep.logger.Log("received_tier", lr.Tier)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
@@ -603,7 +602,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	var lr state.LaunchRequestV2
 	err := ep.decodeRequest(r, &lr)
-	ep.logger.Log("received_tier", lr.Tier)
 	if err != nil {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
@@ -614,7 +612,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, err)
 		return
 	}
-	ep.logger.Log("post_middleware_tier", lr.Tier)
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
@@ -644,7 +641,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	ep.logger.Log("creating_request_tier", lr.Tier)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			Tier:                  lr.Tier,
@@ -667,11 +663,9 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			ServiceAccount:        lr.ServiceAccount,
 		},
 	}
-	ep.logger.Log("request_tier", req.ExecutionRequestCommon.Tier)
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
 	ep.logger.Log(
 		"message", "received run from service",
-		"run_tier", run.Tier,
 		"operation", "CreateRunByAlias")
 	if err != nil {
 		ep.logger.Log(
