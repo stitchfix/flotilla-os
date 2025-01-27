@@ -215,7 +215,8 @@ select t.run_id                          as runid,
 	   coalesce(arch, '')                as arch,
 	   labels::TEXT                      as labels,
 	   coalesce(requires_docker,false)   as requires_docker,
-	   service_account 				 	 as service_account
+	   service_account 				 	 as service_account,
+     coalesce(tier::text, 'Tier4')   as tier
 from task t
 `
 

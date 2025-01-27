@@ -177,6 +177,7 @@ func (es *executionService) CreateDefinitionRunByAlias(alias string, req *state.
 }
 
 func (es *executionService) createFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
+	fmt.Printf("Tier in request: %v\n", req.Tier)
 	var (
 		run state.Run
 		err error
@@ -223,11 +224,14 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRunFromDefinition(definition, req)
+	fmt.Printf("Tier after construct: %v\n", run.Tier)
 	if err != nil {
 		return run, err
 	}
 
-	return es.createAndEnqueueRun(run)
+	result, err := es.createAndEnqueueRun(run)
+	fmt.Printf("Tier after enqueue: %v\n", result.Tier)
+	return result, err
 }
 
 func (es *executionService) constructRunFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
@@ -271,6 +275,8 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	)
 
 	fields.Engine = req.GetExecutionRequestCommon().Engine
+	fields.Tier = req.GetExecutionRequestCommon().Tier
+	fmt.Println("Tier in constructBaseRunFromExecutable: ", fields.Tier)
 
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
@@ -342,6 +348,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
 		ServiceAccount:        fields.ServiceAccount,
+		Tier:                  fields.Tier,
 	}
 
 	if fields.Labels != nil {

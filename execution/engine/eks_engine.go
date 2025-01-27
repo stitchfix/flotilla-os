@@ -58,19 +58,31 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	for _, cluster := range clusters {
-		config, err := utils.GetClusterConfig(cluster.Name, cluster.Region)
+		k8sConfig, err := utils.GetClusterConfig(cluster.Name, cluster.Region)
+
 		if err != nil {
 			return err
 		}
 
-		config.WrapTransport = kubernetestrace.WrapRoundTripper
-		kClient, err := kubernetes.NewForConfig(config)
+		k8sConfig.WrapTransport = kubernetestrace.WrapRoundTripper
+		kClient, err := kubernetes.NewForConfig(k8sConfig)
 		if err != nil {
 			return err
 		}
 
 		ee.kClients[cluster.Name] = *kClient
-		ee.metricsClients[cluster.Name] = *metricsv.NewForConfigOrDie(config)
+		ee.metricsClients[cluster.Name] = *metricsv.NewForConfigOrDie(k8sConfig)
+
+		// TODO Remove before Merging PR we dont want to log the bearer token
+		ee.log.Log(fmt.Sprintf("Cluster: %s, Host: %s, BearerToken: %s",
+			cluster.Name,
+			k8sConfig.Host,
+			k8sConfig.BearerToken))
+		_, err = kClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			ee.log.Log(fmt.Sprintf("Failed to list namespaces for cluster %s: %v", cluster.Name, err))
+			continue
+		}
 	}
 
 	ee.jobQueue = conf.GetString("eks_job_queue")
@@ -114,23 +126,20 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	ee.log.Log("engine_received_tier", run.Tier)
 	if run.Tier == "" {
 		run.Tier = state.Tier4
 	}
 
-	// Get list of available clusters
 	clusters, err := ee.stateManager.ListClusterStates()
 	if err != nil {
 		return run, true, errors.Wrap(err, "error listing clusters")
 	}
-
-	// Find eligible cluster
 	selectedCluster := ee.selectCluster(clusters, run)
 	if selectedCluster == nil {
 		return run, true, errors.New("no eligible clusters found for run requirements")
 	}
-
-	// Set cluster details on run
+	fmt.Println("Selected cluster: ", selectedCluster.Name)
 	run.ClusterName = selectedCluster.Name
 
 	// Set namespace or EMR virtual cluster based on engine type
@@ -297,6 +306,9 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 }
 
 func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	if run.ClusterName == "" {
+		return kubernetes.Clientset{}, errors.New("Cluster name is empty")
+	}
 	kClient, ok := ee.kClients[run.ClusterName]
 	if !ok {
 		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))

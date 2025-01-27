@@ -1,17 +1,5 @@
 version: '3'
 services:
-  ui:
-    build:
-      context: ./ui
-      args:
-        FLOTILLA_API: http://localhost:3000/api/v1
-        DEFAULT_CLUSTER: default
-    environment:
-      FLOTILLA_API: http://localhost:3000/api/v1
-      DEFAULT_CLUSTER: default
-    ports:
-      - 5000:5000
-      
   flotilla:
     build: .
     env_file:
@@ -19,15 +7,21 @@ services:
     environment:
       DATABASE_URL: postgresql://flotilla:flotilla@db/flotilla?sslmode=disable
       READONLY_DATABASE_URL: postgresql://flotilla:flotilla@db/flotilla?sslmode=disable
-      FLOTILLA_MODE: dev
-      HTTP_SERVER_CORS_ALLOWED_ORIGINS: http://localhost:5000
+      FLOTILLA_MODE: staging
+      HTTP_SERVER_CORS_ALLOWED_ORIGINS: "*"
       EKS_LOG_DRIVER_OPTIONS_S3_BUCKET_NAME: stitchfix.algo.eks.logs
       EKS_LOG_DRIVER_OPTIONS_S3_BUCKET_ROOT_DIR: logs
       EMR_JOB_QUEUE: flotilla-emr-staging
       EMR_JOB_STATUS_QUEUE: flotilla-eks-emr-staging-events
       EKS_JOB_QUEUE: flotilla-eks-staging
       EKS_EVENTS_QUEUE: flotilla-eks-infra-staging-events
-
+      QUEUE_STATUS: flotilla-status-updates-staging
+      QUEUE_NAMESPACE: staging
+      QUEUE_STATUS_RULE: flotilla-task-status
+      REDIS_ADDRESS: redis:6379
+      REDIS_DB: 0
+      EKS_DEFAULT_SERVICE_ACCOUNT: flotilla-eks-job-role
+      EKS_JOB_NAMESPACE: flotilla-staging
     ports:
       - 3000:3000
   db:
@@ -38,3 +32,21 @@ services:
       POSTGRES_PASSWORD: flotilla
     ports:
       - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./dataDir
+  redis-data:

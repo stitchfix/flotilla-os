@@ -757,6 +757,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.Labels,
 			&existing.RequiresDocker,
 			&existing.ServiceAccount,
+			&existing.Tier,
 		)
 	}
 	if err != nil {
@@ -811,7 +812,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		arch = $43,
 		labels = $44,
 		requires_docker = $45,
-		service_account = $46
+		service_account = $46,
+        tier = $47
     WHERE run_id = $1;
     `
 
@@ -862,7 +864,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Arch,
 		existing.Labels,
 		existing.RequiresDocker,
-		existing.ServiceAccount); err != nil {
+		existing.ServiceAccount,
+		existing.Tier); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -927,7 +930,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	    arch,
 	    labels,
 		requires_docker,
-		service_account
+		service_account,
+		tier
     ) VALUES (
         $1,
 		$2,
@@ -975,7 +979,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
         $44,
         $45,
         $46,
-    	$47
+    	$47,
+    	$48
 	);
     `
 
@@ -1031,7 +1036,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Arch,
 		r.Labels,
 		r.RequiresDocker,
-		r.ServiceAccount); err != nil {
+		r.ServiceAccount,
+		r.Tier); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -1656,7 +1662,8 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	} else {
 		err = sm.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
@@ -1676,7 +1683,8 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	}
 
 	if err != nil {

@@ -15,3 +15,4 @@ CREATE TABLE IF NOT EXISTS cluster_state (
 );
 
 CREATE INDEX ix_cluster_state_status ON cluster_state(status);
+ALTER TABLE task ADD COLUMN tier text;

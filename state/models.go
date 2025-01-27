@@ -226,6 +226,7 @@ type Labels map[string]string
 // Common fields required to execute any Executable.
 type ExecutionRequestCommon struct {
 	ClusterName           string          `json:"cluster_name"`
+	Tier                  Tier            `json:"tier"`
 	Env                   *EnvList        `json:"env"`
 	OwnerID               string          `json:"owner_id"`
 	Command               *string         `json:"command"`
@@ -489,7 +490,7 @@ type Run struct {
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
-	Tier                    Tier                     `json:"tier"`
+	Tier                    Tier                     `json:"tier,omitempty"`
 }
 
 // UpdateWith updates this run with information from another
@@ -499,6 +500,9 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
+	}
+	if other.Tier != "" {
+		d.Tier = other.Tier
 	}
 	if len(other.Alias) > 0 {
 		d.Alias = other.Alias
@@ -1194,9 +1198,11 @@ type Detail struct {
 type LaunchRequest struct {
 	ClusterName *string  `json:"cluster,omitempty"`
 	Env         *EnvList `json:"env,omitempty"`
+	Tier        Tier     `json:"tier"`
 }
 
 type LaunchRequestV2 struct {
+	Tier                  Tier            `json:"tier"`
 	RunTags               RunTags         `json:"run_tags"`
 	Command               *string         `json:"command,omitempty"`
 	Memory                *int64          `json:"memory,omitempty"`
@@ -1254,17 +1260,24 @@ type ClusterMetadata struct {
 	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }
 
-func (t Tiers) Value() (driver.Value, error) {
-	return json.Marshal(t)
-}
-
 func (t *Tiers) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("invalid scan source")
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, t)
+	case string:
+		return json.Unmarshal([]byte(v), t)
+	default:
+		return fmt.Errorf("unexpected type for Tiers: %T", value)
 	}
-	return json.Unmarshal(bytes, t)
+}
+
+func (t Tiers) Value() (driver.Value, error) {
+	if len(t) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(t)
 }
