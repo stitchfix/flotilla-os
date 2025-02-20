@@ -8,21 +8,17 @@ import (
 	"time"
 )
 
-//
 // Client accepts statsd metrics
-//
 type DatadogStatsdMetricsClient struct {
 	client *statsd.Client
 }
 
-//
 // Initialize the client. Assumes the following keys are passed in:
 // *metrics.dogstatsd.address* -- localhost:8125
 // *metrics.dogstatsd.namespace* -- fixed key you want to prefix to all the metrics
-//
 func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	addr := fmt.Sprintf("%s:8125", os.Getenv("DD_AGENT_HOST"))
-	client, err := statsd.New(addr)
+	client, err := statsd.New(addr, statsd.WithNamespace(conf.GetString("metrics_dogstatsd_namespace")))
 	if err != nil {
 		return err
 	}
@@ -32,37 +28,27 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	return nil
 }
 
-//
 // Decrement metric value, tags associated with the metric, and rate corresponds to the value
-//
 func (dd *DatadogStatsdMetricsClient) Decrement(name Metric, tags []string, rate float64) error {
 	return dd.client.Decr(string(name), tags, rate)
 }
 
-//
 // Increment metric value, tags associated with the metric, and rate corresponds to the value
-//
 func (dd *DatadogStatsdMetricsClient) Increment(name Metric, tags []string, rate float64) error {
 	return dd.client.Incr(string(name), tags, rate)
 }
 
-//
 // Histogram tracks the statistical distribution of a set of values
-//
 func (dd *DatadogStatsdMetricsClient) Histogram(name Metric, value float64, tags []string, rate float64) error {
 	return dd.client.Histogram(string(name), value, tags, rate)
 }
 
-//
 // Distribution tracks the statistical distribution of a set of values
-//
 func (dd *DatadogStatsdMetricsClient) Distribution(name Metric, value float64, tags []string, rate float64) error {
 	return dd.client.Distribution(string(name), value, tags, rate)
 }
 
-//
 // Timing sends timing information, it is an alias for TimeInMilliseconds
-//
 func (dd *DatadogStatsdMetricsClient) Timing(name Metric, value time.Duration, tags []string, rate float64) error {
 	return dd.client.Timing(string(name), value, tags, rate)
 }
