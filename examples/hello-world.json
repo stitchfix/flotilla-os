@@ -1,0 +1,13 @@
+{
+  "alias": "hello-flotilla",
+  "group_name": "examples",
+  "image": "ubuntu:latest",
+  "memory": 512,
+  "env": [
+    {
+      "name": "USERNAME",
+      "value": "_fill_me_in_"
+    }
+  ],
+  "command": "echo \"hello ${USERNAME}\""
+}
