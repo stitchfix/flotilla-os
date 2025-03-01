@@ -66,8 +66,13 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v6.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
 	v6.HandleFunc("/groups", ep.GetGroups).Methods("GET")
 	v6.HandleFunc("/tags", ep.GetTags).Methods("GET")
-	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
 	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
+
+	// Cluster endpoints for managing flotilla clusters in the DB
+	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
+	v6.HandleFunc("/clusters/{cluster_name}", ep.GetCluster).Methods("GET")
+	v6.HandleFunc("/clusters/{cluster_name}", ep.UpdateCluster).Methods("PUT")
+	v6.HandleFunc("/clusters/{cluster_name}", ep.DeleteCluster).Methods("DELETE")
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
 	v7.HandleFunc("/template/{template_id}/execute", ep.CreateTemplateRun).Methods("PUT")

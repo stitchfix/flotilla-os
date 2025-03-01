@@ -83,7 +83,6 @@ func GetClusterConfig(clusterName string, region string) (*rest.Config, error) {
 		return nil, fmt.Errorf("creating token generator: %w", err)
 	}
 
-	// Use cluster name instead of ARN
 	k8sToken, err := generator.GetWithSTS(clusterName, stsAPI)
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
