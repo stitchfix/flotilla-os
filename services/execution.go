@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"math/rand"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/config"
@@ -36,11 +37,12 @@ type ExecutionService interface {
 	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
-	ListClusters() ([]string, error)
+	ListClusters() ([]state.ClusterMetadata, error)
 	GetDefaultCluster() string
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
+	UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error
 }
 
 type executionService struct {
@@ -528,8 +530,20 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 }
 
 // ListClusters returns a list of all execution clusters available
-func (es *executionService) ListClusters() ([]string, error) {
-	return es.validEksClusters, nil
+func (es *executionService) ListClusters() ([]state.ClusterMetadata, error) {
+	clusters, err := es.stateManager.ListClusterStates()
+	if err != nil {
+		return nil, err
+	}
+
+	var validClusters []state.ClusterMetadata
+	for _, cluster := range clusters {
+		if es.isClusterValid(cluster.Name) {
+			validClusters = append(validClusters, cluster)
+		}
+	}
+
+	return validClusters, nil
 }
 
 func (es *executionService) GetDefaultCluster() string {
@@ -664,4 +678,12 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 		return true
 	}
 	return false
+}
+
+func (es *executionService) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {
+	if !es.isClusterValid(clusterName) {
+		return fmt.Errorf("cluster %s not found in the list of valid clusters", clusterName)
+	}
+
+	return es.stateManager.UpdateClusterStatus(clusterName, status, reason)
 }

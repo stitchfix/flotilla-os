@@ -4,6 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/clients/middleware"
@@ -12,10 +17,6 @@ import (
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/utils"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 )
 
 type endpoints struct {
@@ -401,6 +402,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			CommandHash:      nil,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -468,6 +470,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
 			ServiceAccount:   lr.ServiceAccount,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -520,7 +523,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, c := range clusters {
-		if c == *lr.ClusterName {
+		if c.Name == *lr.ClusterName {
 			isValidCluster = true
 			break
 		}
@@ -579,6 +582,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
 			ServiceAccount:        lr.ServiceAccount,
+			Tier:                  lr.Tier,
 		},
 	}
 
@@ -658,6 +662,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
 			ServiceAccount:        lr.ServiceAccount,
+			Tier:                  lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
@@ -818,16 +823,13 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	clusters, err := ep.executionService.ListClusters()
 	if err != nil {
-		ep.logger.Log(
-			"message", "problem listing clusters",
-			"operation", "ListClusters",
-			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
-	} else {
-		response := make(map[string]interface{})
-		response["clusters"] = clusters
-		ep.encodeResponse(w, response)
+		return
 	}
+
+	ep.encodeResponse(w, map[string]interface{}{
+		"clusters": clusters,
+	})
 }
 
 // List active workers.
@@ -1069,4 +1071,62 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ep.encodeResponse(w, created)
 	}
+}
+
+func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusters, err := ep.executionService.ListClusters()
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	for _, cluster := range clusters {
+		if cluster.Name == vars["cluster_name"] {
+			ep.encodeResponse(w, cluster)
+			return
+		}
+	}
+
+	ep.encodeError(w, fmt.Errorf("cluster %s not found", vars["cluster_name"]))
+}
+
+func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var clusterUpdate struct {
+		Status string `json:"status"`
+		Reason string `json:"reason"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&clusterUpdate); err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	err := ep.executionService.UpdateClusterStatus(
+		vars["cluster_name"],
+		state.ClusterStatus(clusterUpdate.Status),
+		clusterUpdate.Reason)
+
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	ep.encodeResponse(w, map[string]bool{"updated": true})
+}
+
+func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	err := ep.executionService.UpdateClusterStatus(
+		vars["cluster_name"],
+		state.StatusOffline,
+		"Deleted via API")
+
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	ep.encodeResponse(w, map[string]bool{"deleted": true})
 }

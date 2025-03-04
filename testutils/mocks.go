@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -34,11 +35,48 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
+func (i *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
+	i.Calls = append(i.Calls, "ListClusters")
+	return []state.ClusterMetadata{
+		{
+			Name:         "cluster1",
+			Status:       state.StatusActive,
+			StatusReason: "Active and healthy",
+			StatusSince:  time.Now(),
+			Namespace:    "default",
+		},
+		{
+			Name:         "cluster2",
+			Status:       state.StatusActive,
+			StatusReason: "Active and healthy",
+			StatusSince:  time.Now(),
+			Namespace:    "default",
+		},
+	}, nil
+}
+
 func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
-	return []state.ClusterMetadata{}, nil
+	i.Calls = append(i.Calls, "ListClusterStates")
+	return []state.ClusterMetadata{
+		{
+			Name:         "cluster1",
+			Status:       state.StatusActive,
+			StatusReason: "Active and healthy",
+			StatusSince:  time.Now(),
+			Namespace:    "default",
+		},
+		{
+			Name:         "cluster2",
+			Status:       state.StatusActive,
+			StatusReason: "Active and healthy",
+			StatusSince:  time.Now(),
+			Namespace:    "default",
+		},
+	}, nil
 }
 
 func (i *ImplementsAllTheThings) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {
+	i.Calls = append(i.Calls, "UpdateClusterStatus")
 	return nil
 }
 
@@ -360,11 +398,6 @@ func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, executableResou
 		return false, nil
 	}
 	return true, nil
-}
-
-// ListClusters - Cluster Client
-func (iatt *ImplementsAllTheThings) ListClusters() ([]string, error) {
-	return []string{"cluster0", "cluster1"}, nil
 }
 
 // IsImageValid - Registry Client

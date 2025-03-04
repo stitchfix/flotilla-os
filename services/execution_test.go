@@ -293,3 +293,26 @@ func TestExecutionService_List2(t *testing.T) {
 		}
 	}
 }
+func TestExecutionService_ListClusters(t *testing.T) {
+	es, imp := setUp(t)
+
+	clusters, err := es.ListClusters()
+	if err != nil {
+		t.Errorf("Expected no error listing clusters, got: %v", err)
+	}
+
+	expectedCalls := map[string]bool{
+		"ListClusterStates": true,
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during cluster listing: %s", call)
+		}
+	}
+
+	if len(clusters) != 2 {
+		t.Errorf("Expected 2 clusters, got %d", len(clusters))
+	}
+}
