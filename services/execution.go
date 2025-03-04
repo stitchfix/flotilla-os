@@ -38,7 +38,6 @@ type ExecutionService interface {
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
 	ListClusters() ([]state.ClusterMetadata, error)
-	ListClusterNames() ([]string, error)
 	GetDefaultCluster() string
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
@@ -549,21 +548,6 @@ func (es *executionService) ListClusters() ([]state.ClusterMetadata, error) {
 
 func (es *executionService) GetDefaultCluster() string {
 	return es.eksClusterDefault
-}
-
-// ListClusterNames returns just the names of available clusters
-func (es *executionService) ListClusterNames() ([]string, error) {
-	clusters, err := es.ListClusters()
-	if err != nil {
-		return nil, err
-	}
-
-	clusterNames := make([]string, len(clusters))
-	for i, cluster := range clusters {
-		clusterNames[i] = cluster.Name
-	}
-
-	return clusterNames, nil
 }
 
 // sanitizeExecutionRequestCommonFields does what its name implies - sanitizes

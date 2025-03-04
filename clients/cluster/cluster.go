@@ -19,7 +19,7 @@ type Client interface {
 	Name() string
 	Initialize(conf config.Config) error
 	CanBeRun(clusterName string, executableResources state.ExecutableResources) (bool, error)
-	ListClusterNames() ([]string, error)
+	ListClusters() ([]string, error)
 }
 
 // NewClusterClient returns a cluster client

@@ -55,11 +55,6 @@ func (i *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error)
 	}, nil
 }
 
-func (i *ImplementsAllTheThings) ListClusterNames() ([]string, error) {
-	i.Calls = append(i.Calls, "ListClusterNames")
-	return []string{"cluster1", "cluster2"}, nil
-}
-
 func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
 	i.Calls = append(i.Calls, "ListClusterStates")
 	return []state.ClusterMetadata{

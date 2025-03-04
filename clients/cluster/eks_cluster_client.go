@@ -23,6 +23,6 @@ func (EKSClusterClient) CanBeRun(clusterName string, executableResources state.E
 }
 
 // Since it is a single cluster environment for EKS, slice of clusters is empty.
-func (EKSClusterClient) ListClusterNames() ([]string, error) {
+func (EKSClusterClient) ListClusters() ([]string, error) {
 	return []string{}, nil
 }
