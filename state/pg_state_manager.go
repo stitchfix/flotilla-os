@@ -4,9 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/log"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -757,6 +758,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.Labels,
 			&existing.RequiresDocker,
 			&existing.ServiceAccount,
+			&existing.Tier,
 		)
 	}
 	if err != nil {
@@ -811,7 +813,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		arch = $43,
 		labels = $44,
 		requires_docker = $45,
-		service_account = $46
+		service_account = $46,
+        tier = $47
     WHERE run_id = $1;
     `
 
@@ -862,7 +865,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Arch,
 		existing.Labels,
 		existing.RequiresDocker,
-		existing.ServiceAccount); err != nil {
+		existing.ServiceAccount,
+		existing.Tier); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -927,7 +931,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	    arch,
 	    labels,
 		requires_docker,
-		service_account
+		service_account,
+		tier
     ) VALUES (
         $1,
 		$2,
@@ -975,7 +980,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
         $44,
         $45,
         $46,
-    	$47
+    	$47,
+    	$48
 	);
     `
 
@@ -1031,7 +1037,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Arch,
 		r.Labels,
 		r.RequiresDocker,
-		r.ServiceAccount); err != nil {
+		r.ServiceAccount,
+		r.Tier); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -1656,7 +1663,8 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	} else {
 		err = sm.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
@@ -1676,10 +1684,43 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	}
 
 	if err != nil {
 		sm.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
+}
+
+func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
+	var clusters []ClusterMetadata
+	err := sm.db.Select(&clusters, ListClusterStatesSQL)
+	return clusters, err
+}
+
+func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error {
+	sql := `
+        UPDATE cluster_state 
+        SET status = $2, 
+            status_reason = $3,
+            status_since = NOW(),
+            updated_at = NOW()
+        WHERE name = $1`
+
+	result, err := sm.db.Exec(sql, clusterName, status, reason)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Cluster %s not found", clusterName),
+		}
+	}
+	return nil
 }

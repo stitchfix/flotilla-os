@@ -2,12 +2,13 @@ package state
 
 import (
 	"fmt"
-	gklog "github.com/go-kit/kit/log"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	gklog "github.com/go-kit/kit/log"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -499,6 +500,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
 		Engine: &DefaultEngine,
+		Tier:   "Tier4",
 	}
 
 	ec := int64(137)
@@ -528,6 +530,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Command: &cmd,
 		Memory:  &mem,
 		Engine:  &DefaultEngine,
+		Tier:    "Tier4",
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
@@ -619,6 +622,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,
+		Tier:       "Tier4",
 	}
 	u2 := Run{
 		Status: StatusNeedsRetry,

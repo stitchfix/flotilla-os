@@ -120,6 +120,18 @@ func (ee *EKSExecutionEngine) GetClusters() []string {
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	ctx := context.Background()
+	if run.Namespace == nil || *run.Namespace == "" {
+		clusters, err := manager.ListClusterStates()
+		if err == nil {
+			for _, cluster := range clusters {
+				if cluster.Name == run.ClusterName && cluster.Namespace != "" {
+					run.Namespace = &cluster.Namespace
+					break
+				}
+			}
+		}
+	}
+
 	if run.ServiceAccount == nil {
 		run.ServiceAccount = aws.String(ee.jobSA)
 	}

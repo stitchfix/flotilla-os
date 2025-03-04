@@ -2,20 +2,22 @@ package state
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"github.com/aws/aws-sdk-go/aws"
-	uuid "github.com/nu7hatch/gouuid"
-	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/utils"
-	"github.com/xeipuuv/gojsonschema"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/Masterminds/sprig"
+	"github.com/aws/aws-sdk-go/aws"
+	uuid "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/utils"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var EKSEngine = "eks"
@@ -225,6 +227,7 @@ type Labels map[string]string
 // Common fields required to execute any Executable.
 type ExecutionRequestCommon struct {
 	ClusterName           string          `json:"cluster_name"`
+	Tier                  Tier            `json:"tier"`
 	Env                   *EnvList        `json:"env"`
 	OwnerID               string          `json:"owner_id"`
 	Command               *string         `json:"command"`
@@ -488,6 +491,7 @@ type Run struct {
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
+	Tier                    Tier                     `json:"tier,omitempty"`
 }
 
 // UpdateWith updates this run with information from another
@@ -497,6 +501,9 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
+	}
+	if other.Tier != "" {
+		d.Tier = other.Tier
 	}
 	if len(other.Alias) > 0 {
 		d.Alias = other.Alias
@@ -1192,9 +1199,11 @@ type Detail struct {
 type LaunchRequest struct {
 	ClusterName *string  `json:"cluster,omitempty"`
 	Env         *EnvList `json:"env,omitempty"`
+	Tier        Tier     `json:"tier"`
 }
 
 type LaunchRequestV2 struct {
+	Tier                  Tier            `json:"tier"`
 	RunTags               RunTags         `json:"run_tags"`
 	Command               *string         `json:"command,omitempty"`
 	Memory                *int64          `json:"memory,omitempty"`
@@ -1220,4 +1229,56 @@ type RunTags struct {
 	OwnerEmail string `json:"owner_email"`
 	TeamName   string `json:"team_name"`
 	OwnerID    string `json:"owner_id"`
+}
+
+type ClusterStatus string
+
+type Tier string
+type Tiers []Tier
+
+const (
+	Tier0 Tier = "Tier0"
+	Tier1 Tier = "Tier1"
+	Tier2 Tier = "Tier2"
+	Tier3 Tier = "Tier3"
+	Tier4 Tier = "Tier4"
+)
+const (
+	StatusActive      ClusterStatus = "active"
+	StatusMaintenance ClusterStatus = "maintenance"
+	StatusOffline     ClusterStatus = "offline"
+)
+
+type ClusterMetadata struct {
+	Name              string        `json:"name" db:"name"`
+	Status            ClusterStatus `json:"status" db:"status"`
+	StatusReason      string        `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time     `json:"status_since" db:"status_since"`
+	AllowedTiers      Tiers         `json:"allowed_tiers" db:"allowed_tiers"`
+	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
+	Namespace         string        `json:"namespace" db:"namespace"`
+	Region            string        `json:"region" db:"region"`
+	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+}
+
+func (t *Tiers) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, t)
+	case string:
+		return json.Unmarshal([]byte(v), t)
+	default:
+		return fmt.Errorf("unexpected type for Tiers: %T", value)
+	}
+}
+
+func (t Tiers) Value() (driver.Value, error) {
+	if len(t) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(t)
 }
