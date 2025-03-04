@@ -2,10 +2,11 @@ package testutils
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"math"
 	"net/http"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
@@ -31,6 +32,10 @@ type ImplementsAllTheThings struct {
 	Groups                  []string
 	Tags                    []string
 	Templates               map[string]state.Template
+}
+
+func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
+	return []state.ClusterMetadata{}, nil
 }
 
 func (iatt *ImplementsAllTheThings) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
