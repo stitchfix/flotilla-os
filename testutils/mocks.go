@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -35,24 +36,9 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
-func (i *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
-	i.Calls = append(i.Calls, "ListClusters")
-	return []state.ClusterMetadata{
-		{
-			Name:         "cluster1",
-			Status:       state.StatusActive,
-			StatusReason: "Active and healthy",
-			StatusSince:  time.Now(),
-			Namespace:    "default",
-		},
-		{
-			Name:         "cluster2",
-			Status:       state.StatusActive,
-			StatusReason: "Active and healthy",
-			StatusSince:  time.Now(),
-			Namespace:    "default",
-		},
-	}, nil
+func (iatt *ImplementsAllTheThings) ListClusters(ctx context.Context, limit int, offset int, sortBy string, order string) ([]string, error) {
+	iatt.Calls = append(iatt.Calls, "ListClusters")
+	return []string{"cluster1", "cluster2"}, nil
 }
 
 func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
