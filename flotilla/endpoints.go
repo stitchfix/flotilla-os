@@ -525,15 +525,22 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.ClusterName == nil {
+	if lr.ClusterName != nil {
+		for _, c := range clusters {
+			if c.Name == *lr.ClusterName {
+				isValidCluster = true
+				break
+			}
+		}
+	} else {
 		cl := ep.executionService.GetDefaultCluster()
 		lr.ClusterName = &cl
-	}
-
-	for _, c := range clusters {
-		if c.Name == *lr.ClusterName {
-			isValidCluster = true
-			break
+		// Check if default cluster is in the list of valid clusters
+		for _, c := range clusters {
+			if c.Name == *lr.ClusterName {
+				isValidCluster = true
+				break
+			}
 		}
 	}
 
