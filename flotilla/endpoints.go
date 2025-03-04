@@ -1130,3 +1130,30 @@ func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 
 	ep.encodeResponse(w, map[string]bool{"deleted": true})
 }
+
+func (ep *endpoints) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	healthy := true
+	var err error
+	// Try to list clusters as a simple DB check
+	_, err = ep.executionService.ListClusters()
+	if err != nil {
+		healthy = false
+		ep.logger.Log(
+			"message", "health check failed",
+			"error", err.Error())
+	}
+
+	if healthy {
+		ep.encodeResponse(w, map[string]string{
+			"status":  "healthy",
+			"message": "Service is up and running",
+		})
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		ep.encodeResponse(w, map[string]string{
+			"status":  "unhealthy",
+			"message": "Service is experiencing issues",
+			"error":   err.Error(),
+		})
+	}
+}

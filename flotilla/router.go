@@ -51,6 +51,7 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v6.HandleFunc("/clusters/{cluster_name}", ep.DeleteCluster).Methods("DELETE")
 	v6.HandleFunc("/{run_id}/events", ep.GetEvents).Methods("GET")
 	v6.HandleFunc("/groups", ep.GetGroups).Methods("GET")
+	v6.HandleFunc("/health", ep.HealthCheck).Methods("GET")
 	v6.HandleFunc("/history", ep.ListRuns).Methods("GET")
 	v6.HandleFunc("/history/{run_id}", ep.GetRun).Methods("GET")
 	v6.HandleFunc("/tags", ep.GetTags).Methods("GET")
