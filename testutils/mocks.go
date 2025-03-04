@@ -1,7 +1,6 @@
 package testutils
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -36,7 +35,7 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
-func (iatt *ImplementsAllTheThings) ListClusters(ctx context.Context, limit int, offset int, sortBy string, order string) ([]string, error) {
+func (iatt *ImplementsAllTheThings) ListClusters() ([]string, error) {
 	iatt.Calls = append(iatt.Calls, "ListClusters")
 	return []string{"cluster1", "cluster2"}, nil
 }
