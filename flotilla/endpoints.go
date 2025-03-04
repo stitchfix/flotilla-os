@@ -515,7 +515,15 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	isValidCluster := false
-	clusters, _ := ep.executionService.ListClusters()
+	clusters, err := ep.executionService.ListClusters()
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem listing clusters",
+			"operation", "CreateRunV4",
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+		return
+	}
 
 	if lr.ClusterName == nil {
 		cl := ep.executionService.GetDefaultCluster()
