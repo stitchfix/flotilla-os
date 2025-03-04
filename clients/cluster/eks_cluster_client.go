@@ -5,10 +5,8 @@ import (
 	"github.com/stitchfix/flotilla-os/state"
 )
 
-//
 // EKSClusterClient is the cluster client for EKS
 // [NOTE] This client assumes the EKS cluster is capable is running a mixed varieties of jobs.
-//
 type EKSClusterClient struct{}
 
 func (EKSClusterClient) Name() string {
@@ -25,6 +23,6 @@ func (EKSClusterClient) CanBeRun(clusterName string, executableResources state.E
 }
 
 // Since it is a single cluster environment for EKS, slice of clusters is empty.
-func (EKSClusterClient) ListClusters() ([]string, error) {
+func (EKSClusterClient) ListClusterNames() ([]string, error) {
 	return []string{}, nil
 }
