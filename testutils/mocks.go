@@ -35,9 +35,12 @@ type ImplementsAllTheThings struct {
 	Templates               map[string]state.Template
 }
 
-func (iatt *ImplementsAllTheThings) ListClusters() ([]string, error) {
+func (iatt *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
 	iatt.Calls = append(iatt.Calls, "ListClusters")
-	return []string{"cluster1", "cluster2"}, nil
+	return []state.ClusterMetadata{
+		{Name: "cluster1", Status: state.StatusActive},
+		{Name: "cluster2", Status: state.StatusActive},
+	}, nil
 }
 
 func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
