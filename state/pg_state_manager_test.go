@@ -72,9 +72,9 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, alias, image, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine, "user", service_account
+      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine, "user", service_account, tier
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks', 'foo', 'flotilla'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks', 'foo', 'flotilla', $14
     )
     `
 
@@ -681,5 +681,16 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	r, _ = sm.GetRun("run3")
 	if r.Status != u2.Status {
 		t.Errorf("Expected to update status to %s but was %s", u2.Status, r.Status)
+	}
+}
+
+func TestSQLStateManager_ListClusterStates(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// Simple test to ensure the method exists and returns without error
+	_, err := sm.ListClusterStates()
+	if err != nil {
+		t.Errorf("Error listing cluster states: %v", err)
 	}
 }
