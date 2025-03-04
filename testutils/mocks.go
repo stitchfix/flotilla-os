@@ -38,6 +38,10 @@ func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, e
 	return []state.ClusterMetadata{}, nil
 }
 
+func (i *ImplementsAllTheThings) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {
+	return nil
+}
+
 func (iatt *ImplementsAllTheThings) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
 	iatt.Calls = append(iatt.Calls, "LogsText")
 	return nil
