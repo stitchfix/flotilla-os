@@ -493,19 +493,16 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
-
 	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
 		return
 	}
-
 	if lr.Engine == nil || *lr.Engine == "ecs" {
 		if lr.SparkExtension != nil {
 			lr.Engine = &state.EKSSparkEngine
@@ -514,8 +511,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	isValidCluster := false
-	clusters, err := ep.executionService.ListClusters()
+	clusterMetadata, err := ep.executionService.ListClusters()
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing clusters",
@@ -530,36 +526,45 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		lr.ClusterName = &cl
 	}
 
-	if lr.ClusterName != nil {
-		for _, c := range clusters {
+	isValidCluster := false
+	var availableClusterNames []string
 
-			if c.Name == *lr.ClusterName {
-				isValidCluster = true
-				break
+	for _, c := range clusterMetadata {
+		availableClusterNames = append(availableClusterNames, c.Name)
+
+		if c.Name == *lr.ClusterName && c.Status == state.StatusActive {
+			isValidCluster = true
+
+			if lr.Tier != "" && len(c.AllowedTiers) > 0 {
+				tierAllowed := false
+				for _, allowedTier := range c.AllowedTiers {
+					if lr.Tier == allowedTier {
+						tierAllowed = true
+						break
+					}
+				}
+
+				if !tierAllowed {
+					ep.logger.Log(
+						"message", fmt.Sprintf("Tier %s not allowed on cluster %s", lr.Tier, c.Name),
+						"operation", "CreateRunV4")
+					isValidCluster = false
+				}
 			}
-		}
-	} else {
 
-		ep.logger.Log(
-			"message", "cluster name is nil after setting default",
-			"operation", "CreateRunV4")
+			break
+		}
 	}
 
 	if !isValidCluster {
 		defaultCluster := ep.executionService.GetDefaultCluster()
-		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, defaultCluster)
-		lrStruct, err := json.Marshal(lr)
-		if err != nil {
-			ep.logger.Log(
-				"message", msg,
-				"launch_request", fmt.Sprintf("%q", lrStruct),
-				"operation", "CreateRunV4",
-			)
-		}
+		msg := fmt.Sprintf("Cluster %s is not available or not active. Available clusters: %s. Falling back to default cluster %s",
+			*lr.ClusterName, strings.Join(availableClusterNames, ", "), defaultCluster)
+
 		ep.logger.Log(
 			"message", msg,
-			"operation", "CreateRunV4",
-		)
+			"operation", "CreateRunV4")
+
 		*lr.ClusterName = defaultCluster
 	}
 
@@ -576,8 +581,8 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	} else {
 		lr.NodeLifecycle = &state.DefaultLifecycle
 	}
-	vars := mux.Vars(r)
 
+	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:           *lr.ClusterName,
@@ -603,7 +608,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
-
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
