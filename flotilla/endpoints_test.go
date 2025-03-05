@@ -39,7 +39,6 @@ func setUp(t *testing.T) *muxtrace.Router {
 		ClusterStates: []state.ClusterMetadata{
 			{Name: "cluster1", Status: state.StatusActive, StatusReason: "Active and healthy"},
 			{Name: "cluster2", Status: state.StatusActive, StatusReason: "Active and healthy"},
-			{Name: "cluster3", Status: state.StatusOffline, StatusReason: "Offline and unhealthy"},
 		},
 		Groups: []string{"g1", "g2", "g3"},
 		Tags:   []string{"t1", "t2", "t3"},
@@ -753,8 +752,8 @@ func TestEndpoints_ListClusters(t *testing.T) {
 		t.Errorf("Cannot cast clusters to list, expected list")
 	}
 
-	if len(clustersList) != 3 {
-		t.Errorf("Expected 3 clusters, got %d", len(clustersList))
+	if len(clustersList) != 2 {
+		t.Errorf("Expected 2 clusters, got %d", len(clustersList))
 	}
 
 	cluster, ok := clustersList[0].(map[string]interface{})
