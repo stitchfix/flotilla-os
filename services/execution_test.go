@@ -27,6 +27,10 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"A": "a/",
 			"B": "b/",
 		},
+		ClusterStates: []state.ClusterMetadata{
+			{Name: "cluster1", Status: state.StatusActive, StatusReason: "Active and healthy"},
+			{Name: "cluster2", Status: state.StatusActive, StatusReason: "Active and healthy"},
+		},
 	}
 
 	es, err := NewExecutionService(c, &imp, &imp, &imp, &imp)

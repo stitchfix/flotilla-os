@@ -5,7 +5,6 @@ import (
 	"math"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -33,34 +32,18 @@ type ImplementsAllTheThings struct {
 	Groups                  []string
 	Tags                    []string
 	Templates               map[string]state.Template
+	ClusterStates           []state.ClusterMetadata
 }
 
 func (iatt *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
 	iatt.Calls = append(iatt.Calls, "ListClusters")
-	return []state.ClusterMetadata{
-		{Name: "cluster1", Status: state.StatusActive},
-		{Name: "cluster2", Status: state.StatusActive},
-	}, nil
+	return iatt.ClusterStates, nil
 }
 
 func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
 	i.Calls = append(i.Calls, "ListClusterStates")
-	return []state.ClusterMetadata{
-		{
-			Name:         "cluster1",
-			Status:       state.StatusActive,
-			StatusReason: "Active and healthy",
-			StatusSince:  time.Now(),
-			Namespace:    "default",
-		},
-		{
-			Name:         "cluster2",
-			Status:       state.StatusActive,
-			StatusReason: "Active and healthy",
-			StatusSince:  time.Now(),
-			Namespace:    "default",
-		},
-	}, nil
+	fmt.Printf("ListClusterStates called, returning %d clusters\n", len(i.ClusterStates))
+	return i.ClusterStates, nil
 }
 
 func (i *ImplementsAllTheThings) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {

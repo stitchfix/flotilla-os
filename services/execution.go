@@ -89,6 +89,10 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	for k, _ := range es.validEksClusters {
 		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
 	}
+	dbClusters, _ := es.stateManager.ListClusterStates()
+	for _, cluster := range dbClusters {
+		es.validEksClusters = append(es.validEksClusters, cluster.Name)
+	}
 
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
@@ -198,37 +202,21 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		if required, cluster overrides should be introduced and set here
 	*/
 
-	if fields.ClusterName == "" {
-		if fields.Gpu != nil && *fields.Gpu > 0 {
-			fields.ClusterName = es.eksGPUClusterDefault
-		} else {
-			fields.ClusterName = es.eksClusterDefault
-		}
-	}
-
-	if definition.TargetCluster != "" {
-		fields.ClusterName = definition.TargetCluster
-	}
-
 	if req.ClusterName != "" {
 		if es.isClusterValid(req.ClusterName) {
 			fields.ClusterName = req.ClusterName
+		} else {
+			return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 		}
-	}
-
-	if !es.isClusterValid(fields.ClusterName) {
-		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
 
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
-
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRunFromDefinition(definition, req)
 	if err != nil {
 		return run, err
 	}
-
 	return es.createAndEnqueueRun(run)
 }
 
@@ -535,15 +523,7 @@ func (es *executionService) ListClusters() ([]state.ClusterMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var validClusters []state.ClusterMetadata
-	for _, cluster := range clusters {
-		if es.isClusterValid(cluster.Name) {
-			validClusters = append(validClusters, cluster)
-		}
-	}
-
-	return validClusters, nil
+	return clusters, nil
 }
 
 func (es *executionService) GetDefaultCluster() string {
@@ -559,7 +539,6 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
-
 	if fields.ActiveDeadlineSeconds == nil {
 		if fields.NodeLifecycle == &state.OndemandLifecycle {
 			fields.ActiveDeadlineSeconds = &state.OndemandActiveDeadlineSeconds
@@ -594,7 +573,6 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	} else {
 		err = es.emrExecutionEngine.Enqueue(run)
 	}
-
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -605,7 +583,6 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
-
 	return run, nil
 }
 func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
@@ -674,10 +651,7 @@ func (es *executionService) constructRunFromTemplate(template state.Template, re
 }
 
 func (es *executionService) isClusterValid(clusterName string) bool {
-	if slices.Contains(es.validEksClusters, clusterName) {
-		return true
-	}
-	return false
+	return slices.Contains(es.validEksClusters, clusterName)
 }
 
 func (es *executionService) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {

@@ -25,16 +25,21 @@ func setUp(t *testing.T) *muxtrace.Router {
 			"C": {DefinitionID: "C", Alias: "aliasC", ExecutableResources: state.ExecutableResources{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
-			"runA": {DefinitionID: "A", ClusterName: "A",
+			"runA": {DefinitionID: "A", ClusterName: "cluster1",
 				GroupName: "A",
 				RunID:     "runA", Status: state.StatusRunning},
-			"runB": {DefinitionID: "B", ClusterName: "B",
+			"runB": {DefinitionID: "B", ClusterName: "cluster2",
 				GroupName: "B", RunID: "runB",
 				InstanceDNSName: "cupcakedns", InstanceID: "cupcakeid"},
 		},
 		Qurls: map[string]string{
 			"A": "a/",
 			"B": "b/",
+		},
+		ClusterStates: []state.ClusterMetadata{
+			{Name: "cluster1", Status: state.StatusActive, StatusReason: "Active and healthy"},
+			{Name: "cluster2", Status: state.StatusActive, StatusReason: "Active and healthy"},
+			{Name: "cluster3", Status: state.StatusOffline, StatusReason: "Offline and unhealthy"},
 		},
 		Groups: []string{"g1", "g2", "g3"},
 		Tags:   []string{"t1", "t2", "t3"},
@@ -182,7 +187,7 @@ func TestEndpoints_CreateRun2(t *testing.T) {
 func TestEndpoints_CreateRun4(t *testing.T) {
 	router := setUp(t)
 
-	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}, "labels": {"foo": "bar"}}`
+	newRun := `{"cluster":"cluster1", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}, "labels": {"foo": "bar"}}`
 	req := httptest.NewRequest("PUT", "/api/v4/task/A/execute", bytes.NewBufferString(newRun))
 	w := httptest.NewRecorder()
 

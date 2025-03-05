@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -493,65 +494,58 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
-
 	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
 		return
 	}
-
-	if lr.Engine == nil || *lr.Engine == "ecs" {
+	if lr.Engine == nil {
 		if lr.SparkExtension != nil {
 			lr.Engine = &state.EKSSparkEngine
 		} else {
 			lr.Engine = &state.EKSEngine
 		}
 	}
-	ep.logger.Log(
-		"message", "getting clusters",
-		"operation", "CreateRunV4",
-	)
-	isValidCluster := false
-	clusters, _ := ep.executionService.ListClusters()
-	clustermsg := fmt.Sprintf("clusters found: %s", clusters)
-	ep.logger.Log(
-		"message", clustermsg,
-		"operation", "CreateRunV4",
-	)
-	if lr.ClusterName == nil {
-		cl := ep.executionService.GetDefaultCluster()
-		lr.ClusterName = &cl
-	}
 
-	for _, c := range clusters {
-		if c.Name == *lr.ClusterName {
-			isValidCluster = true
-			break
-		}
-	}
-
-	if !isValidCluster {
-		defaultCluster := ep.executionService.GetDefaultCluster()
-		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, defaultCluster)
-		lrStruct, err := json.Marshal(lr)
-		if err != nil {
-			ep.logger.Log(
-				"message", msg,
-				"launch_request", fmt.Sprintf("%q", lrStruct),
-				"operation", "CreateRunV4",
-			)
-		}
+	clusterMetadata, err := ep.executionService.ListClusters()
+	fmt.Println("clusterMetadata", clusterMetadata)
+	if err != nil {
 		ep.logger.Log(
-			"message", msg,
+			"message", "problem listing clusters",
 			"operation", "CreateRunV4",
-		)
-		*lr.ClusterName = defaultCluster
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+		return
+	}
+
+	if lr.ClusterName == nil {
+		lr.ClusterName = aws.String("")
+	}
+
+	if len(clusterMetadata) == 0 {
+		fmt.Println("No clusters available, using default cluster")
+		*lr.ClusterName = ep.executionService.GetDefaultCluster()
+	} else {
+		fmt.Println("No cluster name provided, selecting random active cluster")
+		var activeClusters []string
+		for _, cluster := range clusterMetadata {
+			if cluster.Status == state.StatusActive {
+				activeClusters = append(activeClusters, cluster.Name)
+			}
+		}
+		fmt.Println("Active clusters found", activeClusters)
+		if len(activeClusters) > 0 {
+			*lr.ClusterName = activeClusters[rand.Intn(len(activeClusters))]
+			fmt.Println("Selected cluster", *lr.ClusterName)
+		} else if len(clusterMetadata) > 0 {
+			fmt.Println("No active clusters available, using first cluster", clusterMetadata[0].Name)
+			*lr.ClusterName = clusterMetadata[0].Name
+		}
 	}
 
 	if lr.CommandHash == nil && lr.Description != nil {
@@ -567,8 +561,8 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	} else {
 		lr.NodeLifecycle = &state.DefaultLifecycle
 	}
+	fmt.Println("Creating run with", *lr.ClusterName)
 	vars := mux.Vars(r)
-
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:           *lr.ClusterName,
@@ -589,11 +583,11 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
 			ServiceAccount:        lr.ServiceAccount,
+			Tier:                  lr.Tier,
 		},
 	}
 
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
-
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
