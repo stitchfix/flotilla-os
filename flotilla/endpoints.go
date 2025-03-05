@@ -533,7 +533,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	if lr.ClusterName != nil {
 		for _, c := range clusters {
 
-			if c != "" && *lr.ClusterName == c {
+			if c.Name == *lr.ClusterName {
 				isValidCluster = true
 				break
 			}
