@@ -511,55 +511,29 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	isValidCluster := false
 	clusterMetadata, err := ep.executionService.ListClusters()
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem listing clusters",
-			"operation", "CreateRunV4",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-		return
-	}
 
 	if lr.ClusterName == nil {
 		cl := ep.executionService.GetDefaultCluster()
 		lr.ClusterName = &cl
 	}
 
-	isValidCluster := false
-	var availableClusterNames []string
-
-	for _, c := range clusterMetadata {
-		availableClusterNames = append(availableClusterNames, c.Name)
-
-		if c.Name == *lr.ClusterName && c.Status == state.StatusActive {
-			isValidCluster = true
-
-			if lr.Tier != "" && len(c.AllowedTiers) > 0 {
-				tierAllowed := false
-				for _, allowedTier := range c.AllowedTiers {
-					if lr.Tier == allowedTier {
-						tierAllowed = true
-						break
-					}
-				}
-
-				if !tierAllowed {
-					ep.logger.Log(
-						"message", fmt.Sprintf("Tier %s not allowed on cluster %s", lr.Tier, c.Name),
-						"operation", "CreateRunV4")
-					isValidCluster = false
-				}
+	if err == nil && len(clusterMetadata) > 0 {
+		for _, c := range clusterMetadata {
+			if c.Name == *lr.ClusterName {
+				isValidCluster = true
+				break
 			}
-
-			break
 		}
+	} else {
+		isValidCluster = true
 	}
 
 	if !isValidCluster {
 		defaultCluster := ep.executionService.GetDefaultCluster()
-		msg := fmt.Sprintf("Cluster %s is not available or not active. Available clusters: %s. Falling back to default cluster %s",
-			*lr.ClusterName, strings.Join(availableClusterNames, ", "), defaultCluster)
+		msg := fmt.Sprintf("Cluster %s is not available. Falling back to default cluster %s",
+			*lr.ClusterName, defaultCluster)
 
 		ep.logger.Log(
 			"message", msg,

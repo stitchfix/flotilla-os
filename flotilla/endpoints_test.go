@@ -748,12 +748,10 @@ func TestEndpoints_ListClusters(t *testing.T) {
 		t.Errorf("Cannot cast clusters to list, expected list")
 	}
 
-	// Since we're using a mock, we should have 2 clusters
 	if len(clustersList) != 2 {
 		t.Errorf("Expected 2 clusters, got %d", len(clustersList))
 	}
 
-	// Check that the first cluster has the expected fields
 	cluster, ok := clustersList[0].(map[string]interface{})
 	if !ok {
 		t.Errorf("Cannot cast cluster to map, expected map")
