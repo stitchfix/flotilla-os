@@ -476,9 +476,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 					RunID:    subRun.RunID,
 					UserInfo: job.UserInfo,
 				}
-				go es.terminateWorker(es.terminateJobChannel)
 			}
-
 		}
 
 		if run.Engine == nil {
