@@ -513,7 +513,10 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			lr.Engine = &state.EKSEngine
 		}
 	}
-
+	ep.logger.Log(
+		"message", "getting clusters",
+		"operation", "CreateRunV4",
+	)
 	isValidCluster := false
 	clusters, _ := ep.executionService.ListClusters()
 	clustermsg := fmt.Sprintf("clusters found: %s", clusters)
