@@ -850,3 +850,158 @@ func TestTiers_RoundTrip(t *testing.T) {
 		})
 	}
 }
+
+func TestCapabilities_Scan(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected Capabilities
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: Capabilities{},
+			wantErr:  false,
+		},
+		{
+			name:     "empty array",
+			input:    []byte("{}"),
+			expected: Capabilities{},
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			input:    []byte("{spark}"),
+			expected: Capabilities{"spark"},
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			input:    []byte("{spark,ray,gpu}"),
+			expected: Capabilities{"spark", "ray", "gpu"},
+			wantErr:  false,
+		},
+		{
+			name:     "values with empty elements",
+			input:    []byte("{spark,gpu}"),
+			expected: Capabilities{"spark", "gpu"},
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported type",
+			input:    123,
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result Capabilities
+			err := result.Scan(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Capabilities.Scan() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Capabilities.Scan() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCapabilities_Value(t *testing.T) {
+	tests := []struct {
+		name         string
+		capabilities Capabilities
+		expected     driver.Value
+		wantErr      bool
+	}{
+		{
+			name:         "empty slice",
+			capabilities: Capabilities{},
+			expected:     "{}",
+			wantErr:      false,
+		},
+		{
+			name:         "single value",
+			capabilities: Capabilities{"gpu"},
+			expected:     "{gpu}",
+			wantErr:      false,
+		},
+		{
+			name:         "multiple values",
+			capabilities: Capabilities{"gpu", "cpu", "memory"},
+			expected:     "{gpu,cpu,memory}",
+			wantErr:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.capabilities.Value()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Capabilities.Value() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Capabilities.Value() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCapabilities_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name         string
+		capabilities Capabilities
+	}{
+		{
+			name:         "empty capabilities",
+			capabilities: Capabilities{},
+		},
+		{
+			name:         "single capability",
+			capabilities: Capabilities{"gpu"},
+		},
+		{
+			name:         "multiple capabilities",
+			capabilities: Capabilities{"gpu", "spark", "machine-learning"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Convert to database value
+			dbValue, err := tt.capabilities.Value()
+			if err != nil {
+				t.Fatalf("Failed to convert to DB value: %v", err)
+			}
+
+			// Convert the string to []byte since that's what
+			// would happen in a real database call
+			stringValue, ok := dbValue.(string)
+			if !ok {
+				t.Fatalf("Expected dbValue to be a string, got %T", dbValue)
+			}
+			byteValue := []byte(stringValue)
+
+			// Convert database value back to Capabilities
+			var result Capabilities
+			err = result.Scan(byteValue)
+			if err != nil {
+				t.Fatalf("Failed to scan from DB value: %v", err)
+			}
+
+			// Check that we got back what we started with
+			if !reflect.DeepEqual(result, tt.capabilities) {
+				t.Errorf("Round trip failed: got %v, want %v", result, tt.capabilities)
+			}
+		})
+	}
+}

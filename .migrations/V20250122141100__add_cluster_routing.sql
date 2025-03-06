@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS cluster_state (
     status cluster_status NOT NULL DEFAULT 'active',
     status_reason VARCHAR,
     status_since TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    capabilities VARCHAR[] NOT NULL DEFAULT '{}',
+    capabilities capability[] NOT NULL DEFAULT '{}',
     allowed_tiers tier[] NOT NULL DEFAULT '{}',
     region VARCHAR NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

@@ -1233,6 +1233,7 @@ type RunTags struct {
 type ClusterStatus string
 type Tier string
 type Tiers []string
+type Capability string
 type Capabilities []string
 
 const (
@@ -1248,14 +1249,14 @@ const (
 )
 
 type ClusterMetadata struct {
-	Name              string         `json:"name" db:"name"`
-	Status            ClusterStatus  `json:"status" db:"status"`
-	StatusReason      string         `json:"status_reason" db:"status_reason"`
-	StatusSince       time.Time      `json:"status_since" db:"status_since"`
-	AllowedTiers      []Tier         `json:"allowed_tiers" db:"allowed_tiers"`
-	Capabilities      []Capabilities `json:"capabilities" db:"capabilities"`
-	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
-	Namespace         string         `json:"namespace" db:"namespace"`
-	Region            string         `json:"region" db:"region"`
-	EMRVirtualCluster string         `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+	Name              string        `json:"name" db:"name"`
+	Status            ClusterStatus `json:"status" db:"status"`
+	StatusReason      string        `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time     `json:"status_since" db:"status_since"`
+	AllowedTiers      []Tier        `json:"allowed_tiers" db:"allowed_tiers"`
+	Capabilities      []Capability  `json:"capabilities" db:"capabilities"`
+	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
+	Namespace         string        `json:"namespace" db:"namespace"`
+	Region            string        `json:"region" db:"region"`
+	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }

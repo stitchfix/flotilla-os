@@ -1725,39 +1725,65 @@ func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status Cluste
 	return nil
 }
 
-// Scan from db for AllowedTiers
-func (arr *Tiers) Scan(value interface{}) error {
+// Helper function to scan string arrays from database
+func scanStringArray(value interface{}) ([]string, error) {
 	if value == nil {
-		*arr = Tiers{}
-		return nil
+		return []string{}, nil
 	}
 
 	switch v := value.(type) {
 	case []byte:
 		str := string(v)
 		if len(str) < 2 {
-			*arr = Tiers{}
-			return nil
+			return []string{}, nil
 		}
 		elements := strings.Split(str[1:len(str)-1], ",")
-		result := make(Tiers, 0, len(elements))
+		result := make([]string, 0, len(elements))
 		for _, e := range elements {
 			if e != "" {
 				result = append(result, e)
 			}
 		}
-		*arr = result
-		return nil
+		return result, nil
 	default:
-		return fmt.Errorf("unexpected type for string array: %T", value)
+		return nil, fmt.Errorf("unexpected type for string array: %T", value)
 	}
 }
 
-// Value to db for AllowedTiers
-func (arr Tiers) Value() (driver.Value, error) {
+// Helper function to convert string arrays to database value
+func stringArrayValue(arr []string) (driver.Value, error) {
 	if len(arr) == 0 {
 		return "{}", nil
 	}
-
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
+}
+
+// Scan from db for Tiers
+func (arr *Tiers) Scan(value interface{}) error {
+	result, err := scanStringArray(value)
+	if err != nil {
+		return err
+	}
+	*arr = Tiers(result)
+	return nil
+}
+
+// Value to db for Tiers
+func (arr Tiers) Value() (driver.Value, error) {
+	return stringArrayValue([]string(arr))
+}
+
+// Scan from db for Capabilities
+func (arr *Capabilities) Scan(value interface{}) error {
+	result, err := scanStringArray(value)
+	if err != nil {
+		return err
+	}
+	*arr = Capabilities(result)
+	return nil
+}
+
+// Value to db for Capabilities
+func (arr Capabilities) Value() (driver.Value, error) {
+	return stringArrayValue([]string(arr))
 }
