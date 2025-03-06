@@ -1702,28 +1702,24 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
 
 	sql := `
-        INSERT INTO cluster_state (name, status, status_reason, status_since, allowed_tiers, capabilities, updated_at, namespace, region, emr_virtual_cluster)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        INSERT INTO cluster_state (name, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (name) DO UPDATE 
         SET status = $2, 
             status_reason = $3,
-            status_since = NOW(),
-            allowed_tiers = $5,
-            capabilities = $6,
-            updated_at = NOW(),
-            namespace = $8,
-            region = $9,
-            emr_virtual_cluster = $10;
+            allowed_tiers = $4,
+            capabilities = $5,
+            namespace = $6,
+            region = $7,
+            emr_virtual_cluster = $8;
     `
 
 	result, err := sm.db.Exec(sql,
 		cluster.Name,
 		cluster.Status,
 		cluster.StatusReason,
-		cluster.StatusSince,
 		cluster.AllowedTiers,
 		cluster.Capabilities,
-		cluster.UpdatedAt,
 		cluster.Namespace,
 		cluster.Region,
 		cluster.EMRVirtualCluster)

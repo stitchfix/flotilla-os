@@ -657,9 +657,9 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 }
 
 func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
-	if !es.isClusterValid(cluster.Name) {
-		return fmt.Errorf("cluster %s not found in the list of valid clusters", cluster.Name)
-	}
-
+	// if !es.isClusterValid(cluster.Name) {
+	// 	return fmt.Errorf("cluster %s not found in the list of valid clusters", cluster.Name)
+	// }
+	fmt.Println("Updating cluster metadata", cluster)
 	return es.stateManager.UpdateClusterMetadata(cluster)
 }
