@@ -202,6 +202,10 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		if required, cluster overrides should be introduced and set here
 	*/
 
+	if definition.TargetCluster != "" {
+		fields.ClusterName = definition.TargetCluster
+	}
+
 	if req.ClusterName != "" {
 		if es.isClusterValid(req.ClusterName) {
 			fields.ClusterName = req.ClusterName
