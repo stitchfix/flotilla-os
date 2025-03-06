@@ -26,7 +26,7 @@ func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
 	} else {
 		addr = fmt.Sprintf("%s:8125", host)
 	}
-	client, err := statsd.New(addr)
+	client, err := statsd.New(addr, statsd.WithNamespace(conf.GetString("metrics_dogstatsd_namespace")))
 	if err != nil {
 		return err
 	}
