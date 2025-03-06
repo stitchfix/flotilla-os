@@ -1,7 +1,7 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
-CREATE TYPE tier AS ENUM ('Tier0', 'Tier1', 'Tier2', 'Tier3', 'Tier4');
+CREATE TYPE tier AS ENUM ('Tier1', 'Tier2', 'Tier3', 'Tier4');
 END IF;
 END$$;
 
