@@ -2,6 +2,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
 CREATE TYPE tier AS ENUM ('Tier1', 'Tier2', 'Tier3', 'Tier4');
+
 END IF;
 END$$;
 
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS cluster_state (
     status cluster_status NOT NULL DEFAULT 'active',
     status_reason VARCHAR,
     status_since TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    capabilities capability[] NOT NULL DEFAULT '{}',
+    capabilities VARCHAR[] NOT NULL DEFAULT '{}',
     allowed_tiers tier[] NOT NULL DEFAULT '{}',
     region VARCHAR NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
