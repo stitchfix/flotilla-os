@@ -10,6 +10,9 @@ import (
 	gklog "github.com/go-kit/kit/log"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 
+	"database/sql/driver"
+	"reflect"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/stitchfix/flotilla-os/config"
@@ -692,5 +695,158 @@ func TestSQLStateManager_ListClusterStates(t *testing.T) {
 	_, err := sm.ListClusterStates()
 	if err != nil {
 		t.Errorf("Error listing cluster states: %v", err)
+	}
+}
+
+func TestTiers_Scan(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected Tiers
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: Tiers{},
+			wantErr:  false,
+		},
+		{
+			name:     "empty array",
+			input:    []byte("{}"),
+			expected: Tiers{},
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			input:    []byte("{tier1}"),
+			expected: Tiers{"tier1"},
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			input:    []byte("{tier1,tier2,tier3}"),
+			expected: Tiers{"tier1", "tier2", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "values with empty elements",
+			input:    []byte("{tier1,,tier3}"),
+			expected: Tiers{"tier1", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported type",
+			input:    123,
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result Tiers
+			err := result.Scan(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Tiers.Scan() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Tiers.Scan() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTiers_Value(t *testing.T) {
+	tests := []struct {
+		name     string
+		tiers    Tiers
+		expected driver.Value
+		wantErr  bool
+	}{
+		{
+			name:     "empty slice",
+			tiers:    Tiers{},
+			expected: "{}",
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			tiers:    Tiers{"Tier1"},
+			expected: "{Tier1}",
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			tiers:    Tiers{"Tier1", "Tier2", "Tier3"},
+			expected: "{Tier1,Tier2,Tier3}",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.tiers.Value()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Tiers.Value() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Tiers.Value() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+// This test verifies that a value that's converted to a database format
+// can be correctly scanned back into the original structure
+func TestTiers_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		tiers Tiers
+	}{
+		{
+			name:  "empty tiers",
+			tiers: Tiers{},
+		},
+		{
+			name:  "single tier",
+			tiers: Tiers{"default"},
+		},
+		{
+			name:  "multiple tiers",
+			tiers: Tiers{"free", "standard", "premium"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Convert to database value
+			dbValue, err := tt.tiers.Value()
+			if err != nil {
+				t.Fatalf("Failed to convert to DB value: %v", err)
+			}
+
+			stringValue, ok := dbValue.(string)
+			if !ok {
+				t.Fatalf("Expected dbValue to be a string, got %T", dbValue)
+			}
+			byteValue := []byte(stringValue)
+
+			var result Tiers
+			err = result.Scan(byteValue)
+			if err != nil {
+				t.Fatalf("Failed to scan from DB value: %v", err)
+			}
+
+			if !reflect.DeepEqual(result, tt.tiers) {
+				t.Errorf("Round trip failed: got %v, want %v", result, tt.tiers)
+			}
+		})
 	}
 }

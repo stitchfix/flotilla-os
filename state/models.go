@@ -2,7 +2,6 @@ package state
 
 import (
 	"bytes"
-	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -1232,12 +1231,11 @@ type RunTags struct {
 }
 
 type ClusterStatus string
-
 type Tier string
-type Tiers []Tier
+type Tiers []string
+type Capabilities []string
 
 const (
-	Tier0 Tier = "Tier0"
 	Tier1 Tier = "Tier1"
 	Tier2 Tier = "Tier2"
 	Tier3 Tier = "Tier3"
@@ -1250,35 +1248,14 @@ const (
 )
 
 type ClusterMetadata struct {
-	Name              string        `json:"name" db:"name"`
-	Status            ClusterStatus `json:"status" db:"status"`
-	StatusReason      string        `json:"status_reason" db:"status_reason"`
-	StatusSince       time.Time     `json:"status_since" db:"status_since"`
-	AllowedTiers      Tiers         `json:"allowed_tiers" db:"allowed_tiers"`
-	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
-	Namespace         string        `json:"namespace" db:"namespace"`
-	Region            string        `json:"region" db:"region"`
-	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
-}
-
-func (t *Tiers) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	switch v := value.(type) {
-	case []byte:
-		return json.Unmarshal(v, t)
-	case string:
-		return json.Unmarshal([]byte(v), t)
-	default:
-		return fmt.Errorf("unexpected type for Tiers: %T", value)
-	}
-}
-
-func (t Tiers) Value() (driver.Value, error) {
-	if len(t) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(t)
+	Name              string         `json:"name" db:"name"`
+	Status            ClusterStatus  `json:"status" db:"status"`
+	StatusReason      string         `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time      `json:"status_since" db:"status_since"`
+	AllowedTiers      []Tier         `json:"allowed_tiers" db:"allowed_tiers"`
+	Capabilities      []Capabilities `json:"capabilities" db:"capabilities"`
+	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
+	Namespace         string         `json:"namespace" db:"namespace"`
+	Region            string         `json:"region" db:"region"`
+	EMRVirtualCluster string         `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }

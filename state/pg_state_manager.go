@@ -1724,3 +1724,40 @@ func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status Cluste
 	}
 	return nil
 }
+
+// Scan from db for AllowedTiers
+func (arr *Tiers) Scan(value interface{}) error {
+	if value == nil {
+		*arr = Tiers{}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		str := string(v)
+		if len(str) < 2 {
+			*arr = Tiers{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result := make(Tiers, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				result = append(result, e)
+			}
+		}
+		*arr = result
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
+}
+
+// Value to db for AllowedTiers
+func (arr Tiers) Value() (driver.Value, error) {
+	if len(arr) == 0 {
+		return "{}", nil
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
+}
