@@ -5,6 +5,7 @@ import (
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/stitchfix/flotilla-os/config"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -17,7 +18,14 @@ type DatadogStatsdMetricsClient struct {
 // *metrics.dogstatsd.address* -- localhost:8125
 // *metrics.dogstatsd.namespace* -- fixed key you want to prefix to all the metrics
 func (dd *DatadogStatsdMetricsClient) Init(conf config.Config) error {
-	addr := fmt.Sprintf("%s:8125", os.Getenv("DD_AGENT_HOST"))
+	host := os.Getenv("DD_AGENT_HOST")
+	var addr string
+	// If the host contains a colon and does not contain a square bracket, then the address is ipv6
+	if strings.Contains(host, ":") && !strings.Contains(host, "[") {
+		addr = fmt.Sprintf("[%s]:8125", host)
+	} else {
+		addr = fmt.Sprintf("%s:8125", host)
+	}
 	client, err := statsd.New(addr, statsd.WithNamespace(conf.GetString("metrics_dogstatsd_namespace")))
 	if err != nil {
 		return err
