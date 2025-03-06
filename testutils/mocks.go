@@ -46,8 +46,8 @@ func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, e
 	return i.ClusterStates, nil
 }
 
-func (i *ImplementsAllTheThings) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {
-	i.Calls = append(i.Calls, "UpdateClusterStatus")
+func (i *ImplementsAllTheThings) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
+	i.Calls = append(i.Calls, "UpdateClusterMetadata")
 	return nil
 }
 

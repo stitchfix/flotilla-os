@@ -42,7 +42,7 @@ type ExecutionService interface {
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
-	UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error
+	UpdateClusterMetadata(cluster state.ClusterMetadata) error
 }
 
 type executionService struct {
@@ -656,10 +656,10 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 	return slices.Contains(es.validEksClusters, clusterName)
 }
 
-func (es *executionService) UpdateClusterStatus(clusterName string, status state.ClusterStatus, reason string) error {
-	if !es.isClusterValid(clusterName) {
-		return fmt.Errorf("cluster %s not found in the list of valid clusters", clusterName)
+func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
+	if !es.isClusterValid(cluster.Name) {
+		return fmt.Errorf("cluster %s not found in the list of valid clusters", cluster.Name)
 	}
 
-	return es.stateManager.UpdateClusterStatus(clusterName, status, reason)
+	return es.stateManager.UpdateClusterMetadata(cluster)
 }

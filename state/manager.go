@@ -57,7 +57,7 @@ type Manager interface {
 
 	GetRunByEMRJobId(string) (Run, error)
 	ListClusterStates() ([]ClusterMetadata, error)
-	UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error
+	UpdateClusterMetadata(cluster ClusterMetadata) error
 }
 
 // NewStateManager sets up and configures a new statemanager

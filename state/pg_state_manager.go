@@ -1699,16 +1699,29 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 	return clusters, err
 }
 
-func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status ClusterStatus, reason string) error {
+func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
 	sql := `
         UPDATE cluster_state 
         SET status = $2, 
             status_reason = $3,
-            status_since = NOW(),
-            updated_at = NOW()
+            status_since = CASE WHEN status != $2 THEN NOW() ELSE status_since END,
+            allowed_tiers = $4,
+            capabilities = $5,
+            updated_at = NOW(),
+            namespace = $6,
+            region = $7,
+            emr_virtual_cluster = $8
         WHERE name = $1`
 
-	result, err := sm.db.Exec(sql, clusterName, status, reason)
+	result, err := sm.db.Exec(sql,
+		cluster.Name,
+		cluster.Status,
+		cluster.StatusReason,
+		cluster.AllowedTiers,
+		cluster.Capabilities,
+		cluster.Namespace,
+		cluster.Region,
+		cluster.EMRVirtualCluster)
 	if err != nil {
 		return err
 	}
@@ -1719,7 +1732,7 @@ func (sm *SQLStateManager) UpdateClusterStatus(clusterName string, status Cluste
 	}
 	if rows == 0 {
 		return exceptions.MissingResource{
-			ErrorString: fmt.Sprintf("Cluster %s not found", clusterName),
+			ErrorString: fmt.Sprintf("Cluster %s not found", cluster.Name),
 		}
 	}
 	return nil

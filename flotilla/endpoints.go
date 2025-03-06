@@ -1082,20 +1082,25 @@ func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var clusterUpdate struct {
-		Status string `json:"status"`
-		Reason string `json:"reason"`
-	}
 
-	if err := json.NewDecoder(r.Body).Decode(&clusterUpdate); err != nil {
+	var clusterMetadata state.ClusterMetadata
+	if err := json.NewDecoder(r.Body).Decode(&clusterMetadata); err != nil {
 		ep.encodeError(w, err)
 		return
 	}
 
-	err := ep.executionService.UpdateClusterStatus(
-		vars["cluster_name"],
-		state.ClusterStatus(clusterUpdate.Status),
-		clusterUpdate.Reason)
+	clusterMetadata.Name = vars["cluster_name"]
+
+	var err error
+	if len(clusterMetadata.AllowedTiers) > 0 || len(clusterMetadata.Capabilities) > 0 ||
+		clusterMetadata.Namespace != "" || clusterMetadata.Region != "" ||
+		clusterMetadata.EMRVirtualCluster != "" {
+		// Full update
+		err = ep.executionService.UpdateClusterMetadata(clusterMetadata)
+	} else {
+		// Just updating status (backward compatibility)
+		err = ep.executionService.UpdateClusterMetadata(clusterMetadata)
+	}
 
 	if err != nil {
 		ep.encodeError(w, err)
@@ -1107,10 +1112,12 @@ func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.executionService.UpdateClusterStatus(
-		vars["cluster_name"],
-		state.StatusOffline,
-		"Deleted via API")
+	err := ep.executionService.UpdateClusterMetadata(
+		state.ClusterMetadata{
+			Name:         vars["cluster_name"],
+			Status:       state.StatusOffline,
+			StatusReason: "Deleted via API",
+		})
 
 	if err != nil {
 		ep.encodeError(w, err)
