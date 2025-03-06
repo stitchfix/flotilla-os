@@ -513,7 +513,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clusterMetadata, err := ep.executionService.ListClusters()
-	fmt.Println("clusterMetadata", clusterMetadata)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing clusters",
@@ -524,22 +523,17 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(clusterMetadata) == 0 {
-		fmt.Println("No clusters available, using default cluster")
 		*lr.ClusterName = ep.executionService.GetDefaultCluster()
 	} else {
-		fmt.Println("No cluster name provided, selecting random active cluster")
 		var activeClusters []string
 		for _, cluster := range clusterMetadata {
 			if cluster.Status == state.StatusActive {
 				activeClusters = append(activeClusters, cluster.Name)
 			}
 		}
-		fmt.Println("Active clusters found", activeClusters)
 		if len(activeClusters) > 0 {
 			*lr.ClusterName = activeClusters[rand.Intn(len(activeClusters))]
-			fmt.Println("Selected cluster", *lr.ClusterName)
 		} else if len(clusterMetadata) > 0 {
-			fmt.Println("No active clusters available, using first cluster", clusterMetadata[0].Name)
 			*lr.ClusterName = clusterMetadata[0].Name
 		}
 	}
@@ -557,7 +551,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	} else {
 		lr.NodeLifecycle = &state.DefaultLifecycle
 	}
-	fmt.Println("Creating run with", *lr.ClusterName)
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
