@@ -1014,11 +1014,11 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusActive,
 		StatusReason:      "Initial setup",
-		AllowedTiers:      []Tier{"Tier1"},
-		Capabilities:      []Capability{"gpu"},
+		AllowedTiers:      []Tier{Tier("Tier1")},
+		Capabilities:      []Capability{Capability("gpu")},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
-		EMRVirtualCluster: "",
+		EMRVirtualCluster: "11111111",
 	}
 
 	// Insert the initial cluster
@@ -1050,8 +1050,8 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusMaintenance,
 		StatusReason:      "Under maintenance",
-		AllowedTiers:      []Tier{"Tier1", "Tier2"},
-		Capabilities:      []Capability{"gpu", "arm64"},
+		AllowedTiers:      []Tier{Tier("Tier1")},
+		Capabilities:      []Capability{Capability("gpu")},
 		Namespace:         "flotilla-test",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "test-emr-cluster",
