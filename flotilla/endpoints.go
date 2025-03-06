@@ -523,10 +523,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lr.ClusterName == nil {
-		lr.ClusterName = aws.String("")
-	}
-
 	if len(clusterMetadata) == 0 {
 		fmt.Println("No clusters available, using default cluster")
 		*lr.ClusterName = ep.executionService.GetDefaultCluster()
