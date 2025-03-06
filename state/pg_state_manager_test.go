@@ -1014,8 +1014,8 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusActive,
 		StatusReason:      "Initial setup",
-		AllowedTiers:      []Tier{Tier("Tier1")},
-		Capabilities:      []Capability{Capability("gpu")},
+		AllowedTiers:      []Tier{Tier("Tier1"), Tier("Tier2")},
+		Capabilities:      []Capability{Capability("gpu"), Capability("spark")},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "11111111",
@@ -1044,14 +1044,13 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 	if foundCluster.Name != "test-cluster" {
 		t.Fatalf("Test cluster not found after insertion")
 	}
-
 	// Create update with new values
 	updatedCluster := ClusterMetadata{
 		Name:              "test-cluster",
 		Status:            StatusMaintenance,
 		StatusReason:      "Under maintenance",
-		AllowedTiers:      []Tier{Tier("Tier1")},
-		Capabilities:      []Capability{Capability("gpu")},
+		AllowedTiers:      []Tier{Tier("Tier1"), Tier("Tier2")},
+		Capabilities:      []Capability{Capability("gpu"), Capability("spark"), Capability("ray")},
 		Namespace:         "flotilla-test",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "test-emr-cluster",

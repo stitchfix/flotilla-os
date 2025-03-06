@@ -1700,6 +1700,8 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 }
 
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
+	var allowedTiers Tiers
+	var capabilities Capabilities
 	sql := `
         INSERT INTO cluster_state (name, status, status_reason, status_since, allowed_tiers, capabilities, updated_at, namespace, region, emr_virtual_cluster)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -1720,8 +1722,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 		cluster.Status,
 		cluster.StatusReason,
 		cluster.StatusSince,
-		cluster.AllowedTiers,
-		cluster.Capabilities,
+		allowedTiers,
+		capabilities,
 		cluster.UpdatedAt,
 		cluster.Namespace,
 		cluster.Region,
