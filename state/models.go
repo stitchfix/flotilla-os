@@ -1253,8 +1253,8 @@ type ClusterMetadata struct {
 	Status            ClusterStatus `json:"status" db:"status"`
 	StatusReason      string        `json:"status_reason" db:"status_reason"`
 	StatusSince       time.Time     `json:"status_since" db:"status_since"`
-	AllowedTiers      []Tier        `json:"allowed_tiers" db:"allowed_tiers"`
-	Capabilities      []Capability  `json:"capabilities" db:"capabilities"`
+	AllowedTiers      Tiers         `json:"allowed_tiers" db:"allowed_tiers"`
+	Capabilities      Capabilities  `json:"capabilities" db:"capabilities"`
 	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
 	Namespace         string        `json:"namespace" db:"namespace"`
 	Region            string        `json:"region" db:"region"`
