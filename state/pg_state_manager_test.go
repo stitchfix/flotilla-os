@@ -1005,3 +1005,139 @@ func TestCapabilities_RoundTrip(t *testing.T) {
 		})
 	}
 }
+
+func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// Get initial state
+	clusters, err := sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters: %v", err)
+	}
+
+	var initialCluster ClusterMetadata
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			initialCluster = c
+			break
+		}
+	}
+
+	if initialCluster.Name != "test-cluster" {
+		t.Fatalf("Test cluster not found after insertion")
+	}
+
+	// Create update with new values
+	updatedCluster := ClusterMetadata{
+		Name:              "test-cluster",
+		Status:            StatusMaintenance,
+		StatusReason:      "Under maintenance",
+		AllowedTiers:      []Tier{"Tier1", "Tier2"},
+		Capabilities:      []Capability{"gpu", "arm64"},
+		Namespace:         "flotilla-test",
+		Region:            "us-east-1",
+		EMRVirtualCluster: "test-emr-cluster",
+	}
+
+	// Update the cluster
+	err = sm.UpdateClusterMetadata(updatedCluster)
+	if err != nil {
+		t.Errorf("Error updating cluster metadata: %v", err)
+	}
+
+	// Get updated state
+	clusters, err = sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters after update: %v", err)
+	}
+
+	var updatedState ClusterMetadata
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			updatedState = c
+			break
+		}
+	}
+
+	// Verify all fields were updated correctly
+	if updatedState.Status != StatusMaintenance {
+		t.Errorf("Expected Status to be %s, got %s", StatusMaintenance, updatedState.Status)
+	}
+
+	if updatedState.StatusReason != "Under maintenance" {
+		t.Errorf("Expected StatusReason to be 'Under maintenance', got '%s'", updatedState.StatusReason)
+	}
+
+	if len(updatedState.AllowedTiers) != 2 || updatedState.AllowedTiers[0] != "Tier1" || updatedState.AllowedTiers[1] != "Tier2" {
+		t.Errorf("Expected AllowedTiers to be [Tier1 Tier2], got %v", updatedState.AllowedTiers)
+	}
+
+	if len(updatedState.Capabilities) != 2 || updatedState.Capabilities[0] != "gpu" || updatedState.Capabilities[1] != "arm64" {
+		t.Errorf("Expected Capabilities to be [gpu arm64], got %v", updatedState.Capabilities)
+	}
+
+	if updatedState.Namespace != "flotilla-test" {
+		t.Errorf("Expected Namespace to be 'flotilla-test', got '%s'", updatedState.Namespace)
+	}
+
+	if updatedState.Region != "us-east-1" {
+		t.Errorf("Expected Region to be 'us-east-1', got '%s'", updatedState.Region)
+	}
+
+	if updatedState.EMRVirtualCluster != "test-emr-cluster" {
+		t.Errorf("Expected EMRVirtualCluster to be 'test-emr-cluster', got '%s'", updatedState.EMRVirtualCluster)
+	}
+
+	// Verify that StatusSince was updated (should be recent)
+	timeSinceUpdate := time.Since(updatedState.StatusSince)
+	if timeSinceUpdate > 5*time.Second {
+		t.Errorf("Expected StatusSince to be updated to recent time, but was %v ago", timeSinceUpdate)
+	}
+
+	// Test error handling - non-existent cluster
+	nonExistentCluster := ClusterMetadata{
+		Name:   "non-existent-cluster",
+		Status: StatusActive,
+	}
+
+	err = sm.UpdateClusterMetadata(nonExistentCluster)
+	if err == nil {
+		t.Errorf("Expected error when updating non-existent cluster, got nil")
+	}
+
+	// Test partial update - just status
+	partialUpdateCluster := ClusterMetadata{
+		Name:         "test-cluster",
+		Status:       StatusActive,
+		StatusReason: "Back to active",
+	}
+
+	err = sm.UpdateClusterMetadata(partialUpdateCluster)
+	if err != nil {
+		t.Errorf("Error on partial update: %v", err)
+	}
+
+	// Verify partial update
+	clusters, _ = sm.ListClusterStates()
+	var partiallyUpdatedState ClusterMetadata
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			partiallyUpdatedState = c
+			break
+		}
+	}
+
+	if partiallyUpdatedState.Status != StatusActive {
+		t.Errorf("Expected Status to be %s after partial update, got %s", StatusActive, partiallyUpdatedState.Status)
+	}
+
+	if partiallyUpdatedState.StatusReason != "Back to active" {
+		t.Errorf("Expected StatusReason to be 'Back to active' after partial update, got '%s'", partiallyUpdatedState.StatusReason)
+	}
+
+	// Previous fields should remain unchanged
+	if partiallyUpdatedState.Region != "us-east-1" {
+		t.Errorf("Expected Region to remain 'us-east-1' after partial update, got '%s'", partiallyUpdatedState.Region)
+	}
+}
