@@ -1717,7 +1717,7 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
         ON CONFLICT (name) DO UPDATE 
         SET status = $2, 
             status_reason = $3,
-            status_since = CASE WHEN status != $2 THEN NOW() ELSE cluster_state.status_since END,
+            status_since = NOW(),
             allowed_tiers = $5,
             capabilities = $6,
             updated_at = NOW(),
