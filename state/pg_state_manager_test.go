@@ -110,19 +110,19 @@ func insertDefinitions(db *sqlx.DB) {
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
 	db.MustExec(taskSQL,
-		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, "Tier4")
+		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, 4)
 	db.MustExec(
-		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, "Tier4")
+		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, 4)
 
 	db.MustExec(
-		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, "Tier4")
+		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, 4)
 
 	db.MustExec(taskSQL,
 		"run3", "C", "clusta", "aliasC", "imgC", nil, StatusQueued, nil, nil, "", "", "groupX",
-		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, "Tier4")
+		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, 4)
 
-	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, "Tier4")
-	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, "Tier4")
+	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, 4)
+	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, 4)
 }
 
 func tearDown() {
@@ -503,7 +503,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
 		Engine: &DefaultEngine,
-		Tier:   "Tier4",
+		Tier:   4,
 	}
 
 	ec := int64(137)
@@ -533,7 +533,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Command: &cmd,
 		Memory:  &mem,
 		Engine:  &DefaultEngine,
-		Tier:    "Tier4",
+		Tier:    4,
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
@@ -625,7 +625,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,
-		Tier:       "Tier4",
+		Tier:       4,
 	}
 	u2 := Run{
 		Status: StatusNeedsRetry,
@@ -719,20 +719,20 @@ func TestTiers_Scan(t *testing.T) {
 		},
 		{
 			name:     "single value",
-			input:    []byte("{tier1}"),
-			expected: Tiers{"tier1"},
+			input:    []byte("{1}"),
+			expected: Tiers{1},
 			wantErr:  false,
 		},
 		{
 			name:     "multiple values",
-			input:    []byte("{tier1,tier2,tier3}"),
-			expected: Tiers{"tier1", "tier2", "tier3"},
+			input:    []byte("{1,2,3}"),
+			expected: Tiers{1, 2, 3},
 			wantErr:  false,
 		},
 		{
 			name:     "values with empty elements",
-			input:    []byte("{tier1,,tier3}"),
-			expected: Tiers{"tier1", "tier3"},
+			input:    []byte("{1,,3}"),
+			expected: Tiers{1, 3},
 			wantErr:  false,
 		},
 		{
@@ -775,14 +775,14 @@ func TestTiers_Value(t *testing.T) {
 		},
 		{
 			name:     "single value",
-			tiers:    Tiers{"Tier1"},
-			expected: "{Tier1}",
+			tiers:    Tiers{1},
+			expected: "{1}",
 			wantErr:  false,
 		},
 		{
 			name:     "multiple values",
-			tiers:    Tiers{"Tier1", "Tier2", "Tier3"},
-			expected: "{Tier1,Tier2,Tier3}",
+			tiers:    Tiers{1, 2, 3},
+			expected: "{1,2,3}",
 			wantErr:  false,
 		},
 	}
@@ -816,11 +816,11 @@ func TestTiers_RoundTrip(t *testing.T) {
 		},
 		{
 			name:  "single tier",
-			tiers: Tiers{"default"},
+			tiers: Tiers{1},
 		},
 		{
 			name:  "multiple tiers",
-			tiers: Tiers{"free", "standard", "premium"},
+			tiers: Tiers{1, 2, 3},
 		},
 	}
 
@@ -1014,7 +1014,7 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusActive,
 		StatusReason:      "Initial setup",
-		AllowedTiers:      Tiers{"Tier1", "Tier2"},
+		AllowedTiers:      Tiers{1, 2},
 		Capabilities:      Capabilities{"gpu", "spark"},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
@@ -1049,7 +1049,7 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusMaintenance,
 		StatusReason:      "Under maintenance",
-		AllowedTiers:      Tiers{"Tier1", "Tier2"},
+		AllowedTiers:      Tiers{1, 2},
 		Capabilities:      Capabilities{"gpu", "spark", "ray"},
 		Namespace:         "flotilla-test",
 		Region:            "us-east-1",
@@ -1095,7 +1095,7 @@ func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
 		Name:              "test-cluster",
 		Status:            StatusActive,
 		StatusReason:      "Initial setup",
-		AllowedTiers:      Tiers{"Tier1", "Tier2"},
+		AllowedTiers:      Tiers{1, 2},
 		Capabilities:      Capabilities{"gpu", "spark"},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",

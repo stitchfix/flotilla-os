@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/metrics"
@@ -1747,28 +1748,40 @@ func (arr *Tiers) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-		var result []string
+
+		var result []int
 		if err := json.Unmarshal(v, &result); err == nil {
-			*arr = Tiers(result)
+			*arr = make(Tiers, len(result))
+			for i, val := range result {
+				(*arr)[i] = val
+			}
 			return nil
 		}
 
+		// Fallback to PostgreSQL array format parsing
 		str := string(v)
 		if len(str) < 2 {
 			*arr = Tiers{}
 			return nil
 		}
 		elements := strings.Split(str[1:len(str)-1], ",")
-		result = make([]string, 0, len(elements))
+		result = make([]int, 0, len(elements))
 		for _, e := range elements {
 			if e != "" {
-				result = append(result, e)
+				val, err := strconv.Atoi(e)
+				if err != nil {
+					return err
+				}
+				result = append(result, val)
 			}
 		}
-		*arr = Tiers(result)
+		*arr = make(Tiers, len(result))
+		for i, val := range result {
+			(*arr)[i] = val
+		}
 		return nil
 	default:
-		return fmt.Errorf("unexpected type for string array: %T", value)
+		return fmt.Errorf("unexpected type for int array: %T", value)
 	}
 }
 
@@ -1777,7 +1790,13 @@ func (arr Tiers) Value() (driver.Value, error) {
 	if len(arr) == 0 {
 		return "{}", nil
 	}
-	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
+
+	strValues := make([]string, len(arr))
+	for i, v := range arr {
+		strValues[i] = strconv.Itoa(int(v))
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(strValues, ",")), nil
 }
 
 // Scan from db for Capabilities

@@ -1,7 +1,7 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
-CREATE TYPE tier AS ENUM ('Tier1', 'Tier2', 'Tier3', 'Tier4');
+CREATE TYPE tier AS ENUM ('1', '2', '3', '4');
 
 END IF;
 END$$;
@@ -34,6 +34,6 @@ BEGIN
         FROM information_schema.columns
         WHERE table_name='task' AND column_name='tier')
     THEN
-        ALTER TABLE task ADD COLUMN tier tier DEFAULT 'Tier4';
+        ALTER TABLE task ADD COLUMN tier tier DEFAULT '4';
     END IF;
 END$$;
