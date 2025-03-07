@@ -43,6 +43,7 @@ type ExecutionService interface {
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
 	UpdateClusterMetadata(cluster state.ClusterMetadata) error
+	DeleteClusterMetadata(clusterName string) error
 }
 
 type executionService struct {
@@ -657,9 +658,12 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 }
 
 func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
-	// if !es.isClusterValid(cluster.Name) {
-	// 	return fmt.Errorf("cluster %s not found in the list of valid clusters", cluster.Name)
-	// }
+
 	fmt.Println("Updating cluster metadata", cluster)
 	return es.stateManager.UpdateClusterMetadata(cluster)
+}
+
+func (es *executionService) DeleteClusterMetadata(clusterName string) error {
+	fmt.Println("Deleting cluster metadata", clusterName)
+	return es.stateManager.DeleteClusterMetadata(clusterName)
 }

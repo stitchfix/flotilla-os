@@ -46,6 +46,11 @@ func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, e
 	return i.ClusterStates, nil
 }
 
+func (i *ImplementsAllTheThings) DeleteClusterMetadata(clusterName string) error {
+	i.Calls = append(i.Calls, "DeleteClusterMetadata")
+	return nil
+}
+
 func (i *ImplementsAllTheThings) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
 	i.Calls = append(i.Calls, "UpdateClusterMetadata")
 	return nil

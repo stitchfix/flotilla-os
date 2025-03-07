@@ -1821,3 +1821,25 @@ func (arr Capabilities) Value() (driver.Value, error) {
 	}
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
+
+func (sm *SQLStateManager) DeleteClusterMetadata(clusterName string) error {
+	sql := `DELETE FROM cluster_state WHERE name = $1`
+
+	result, err := sm.db.Exec(sql, clusterName)
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Cluster %s not found", clusterName),
+		}
+	}
+
+	return nil
+}

@@ -1112,12 +1112,7 @@ func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.executionService.UpdateClusterMetadata(
-		state.ClusterMetadata{
-			Name:         vars["cluster_name"],
-			Status:       state.StatusOffline,
-			StatusReason: "Deleted via API",
-		})
+	err := ep.executionService.DeleteClusterMetadata(vars["cluster_name"])
 
 	if err != nil {
 		ep.encodeError(w, err)
