@@ -13,7 +13,6 @@ import (
 
 	// Pull in postgres specific drivers
 	"database/sql"
-	"math"
 	"strings"
 
 	"github.com/lib/pq"
@@ -194,8 +193,6 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	dburl := conf.GetString("database_url")
 	readonlyDbUrl := conf.GetString("readonly_database_url")
 
-	createSchema := conf.GetBool("create_database_schema")
-	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
 
 	var err error
@@ -213,27 +210,6 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 		sm.readonlyDB.SetMaxIdleConns(conf.GetInt("database_max_idle_connections"))
 	}
 
-	if createSchema {
-		// Since this happens at initialization we
-		// could encounter racy conditions waiting for pg
-		// to become available. Wait for it a bit
-		if err = sm.db.Ping(); err != nil {
-			// Try 3 more times
-			// 5, 10, 20
-			for i := 0; i < 3 && err != nil; i++ {
-				time.Sleep(time.Duration(5*math.Pow(2, float64(i))) * time.Second)
-				err = sm.db.Ping()
-			}
-			if err != nil {
-				return errors.Wrap(err, "error trying to connect to postgres db, retries exhausted")
-			}
-		}
-
-		// Populate worker table
-		if err = sm.initWorkerTable(conf); err != nil {
-			return errors.Wrap(err, "problem populating worker table sql")
-		}
-	}
 	return nil
 }
 

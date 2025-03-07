@@ -116,3 +116,7 @@ CREATE TABLE IF NOT EXISTS worker (
   engine character varying,
   count_per_instance integer
 );
+INSERT INTO worker (worker_type, engine, count_per_instance) VALUES
+('submit', 'eks', 0),
+('status', 'eks', 0),
+('status', 'eks', 0);
