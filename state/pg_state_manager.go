@@ -1700,16 +1700,6 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 }
 
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
-	allowedTiersJSON, err := json.Marshal(cluster.AllowedTiers)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal allowed_tiers to JSON")
-	}
-
-	capabilitiesJSON, err := json.Marshal(cluster.Capabilities)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal capabilities to JSON")
-	}
-
 	sql := `
         INSERT INTO cluster_state (name, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -1727,8 +1717,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 		cluster.Name,
 		cluster.Status,
 		cluster.StatusReason,
-		string(allowedTiersJSON),
-		string(capabilitiesJSON),
+		pq.Array(cluster.AllowedTiers),
+		pq.Array(cluster.Capabilities),
 		cluster.Namespace,
 		cluster.Region,
 		cluster.EMRVirtualCluster)
@@ -1746,39 +1736,6 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 		}
 	}
 	return nil
-}
-
-// Helper function to scan string arrays from database
-func scanStringArray(value interface{}) ([]string, error) {
-	if value == nil {
-		return []string{}, nil
-	}
-
-	switch v := value.(type) {
-	case []byte:
-		str := string(v)
-		if len(str) < 2 {
-			return []string{}, nil
-		}
-		elements := strings.Split(str[1:len(str)-1], ",")
-		result := make([]string, 0, len(elements))
-		for _, e := range elements {
-			if e != "" {
-				result = append(result, e)
-			}
-		}
-		return result, nil
-	default:
-		return nil, fmt.Errorf("unexpected type for string array: %T", value)
-	}
-}
-
-// Helper function to convert string arrays to database value
-func stringArrayValue(arr []string) (driver.Value, error) {
-	if len(arr) == 0 {
-		return "{}", nil
-	}
-	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
 
 // Scan from db for Tiers
