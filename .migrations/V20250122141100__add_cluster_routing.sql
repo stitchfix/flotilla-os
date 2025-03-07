@@ -1,16 +1,15 @@
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
-CREATE TYPE tier AS ENUM ('1', '2', '3', '4');
-
-END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cluster_status') THEN
+        CREATE TYPE cluster_status AS ENUM ('active', 'maintenance', 'offline');
+    END IF;
 END$$;
-
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'cluster_status') THEN
-CREATE TYPE cluster_status AS ENUM ('active', 'maintenance', 'offline');
-END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
+        CREATE DOMAIN tier AS INTEGER
+        CHECK (VALUE IN (1, 2, 3, 4));
+    END IF;
 END$$;
 
 CREATE TABLE IF NOT EXISTS cluster_state (
@@ -24,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cluster_state (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     namespace VARCHAR NOT NULL DEFAULT '',
     emr_virtual_cluster VARCHAR NOT NULL DEFAULT ''
-    );
+);
 
 CREATE INDEX IF NOT EXISTS ix_cluster_state_status ON cluster_state(status);
 
