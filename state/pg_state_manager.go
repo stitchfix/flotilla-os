@@ -1748,7 +1748,6 @@ func (arr *Tiers) Scan(value interface{}) error {
 
 	switch v := value.(type) {
 	case []byte:
-
 		var result []int
 		if err := json.Unmarshal(v, &result); err == nil {
 			*arr = make(Tiers, len(result))
@@ -1767,13 +1766,15 @@ func (arr *Tiers) Scan(value interface{}) error {
 		elements := strings.Split(str[1:len(str)-1], ",")
 		result = make([]int, 0, len(elements))
 		for _, e := range elements {
-			if e != "" {
-				val, err := strconv.Atoi(e)
-				if err != nil {
-					return err
-				}
-				result = append(result, val)
+			if e == "" {
+				continue
 			}
+			e = strings.Trim(e, "\"")
+			val, err := strconv.Atoi(e)
+			if err != nil {
+				return err
+			}
+			result = append(result, val)
 		}
 		*arr = make(Tiers, len(result))
 		for i, val := range result {
@@ -1793,7 +1794,8 @@ func (arr Tiers) Value() (driver.Value, error) {
 
 	strValues := make([]string, len(arr))
 	for i, v := range arr {
-		strValues[i] = strconv.Itoa(int(v))
+		// Format with quotes for enum values
+		strValues[i] = fmt.Sprintf("\"%s\"", strconv.Itoa(int(v)))
 	}
 
 	return fmt.Sprintf("{%s}", strings.Join(strValues, ",")), nil

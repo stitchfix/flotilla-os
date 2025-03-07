@@ -776,13 +776,13 @@ func TestTiers_Value(t *testing.T) {
 		{
 			name:     "single value",
 			tiers:    Tiers{1},
-			expected: "{1}",
+			expected: `{"1"}`,
 			wantErr:  false,
 		},
 		{
 			name:     "multiple values",
 			tiers:    Tiers{1, 2, 3},
-			expected: "{1,2,3}",
+			expected: `{"1","2","3"}`,
 			wantErr:  false,
 		},
 	}
@@ -826,7 +826,6 @@ func TestTiers_RoundTrip(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert to database value
 			dbValue, err := tt.tiers.Value()
 			if err != nil {
 				t.Fatalf("Failed to convert to DB value: %v", err)
