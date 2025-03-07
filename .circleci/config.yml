@@ -12,7 +12,7 @@ jobs:
           PG_USER: flotilla
           PG_HOST: 127.0.0.1
           GO111MODULE: "on"
-      - image: cimg/postgres:17.4.0
+      - image: cimg/postgres:17.4
         environment:
           POSTGRES_USER: flotilla
           POSTGRES_DB: flotilla
