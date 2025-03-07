@@ -971,7 +971,7 @@ func TestCapabilities_RoundTrip(t *testing.T) {
 		},
 		{
 			name:         "multiple capabilities",
-			capabilities: Capabilities{"gpu", "spark", "machine-learning"},
+			capabilities: Capabilities{"gpu", "spark", "ray"},
 		},
 	}
 

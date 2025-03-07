@@ -1700,6 +1700,15 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 }
 
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
+	allowedTiersJSON, err := json.Marshal(cluster.AllowedTiers)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal allowed_tiers to JSON")
+	}
+
+	capabilitiesJSON, err := json.Marshal(cluster.Capabilities)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal capabilities to JSON")
+	}
 
 	sql := `
         INSERT INTO cluster_state (name, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
@@ -1718,8 +1727,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 		cluster.Name,
 		cluster.Status,
 		cluster.StatusReason,
-		cluster.AllowedTiers,
-		cluster.Capabilities,
+		string(allowedTiersJSON),
+		string(capabilitiesJSON),
 		cluster.Namespace,
 		cluster.Region,
 		cluster.EMRVirtualCluster)
@@ -1774,30 +1783,84 @@ func stringArrayValue(arr []string) (driver.Value, error) {
 
 // Scan from db for Tiers
 func (arr *Tiers) Scan(value interface{}) error {
-	result, err := scanStringArray(value)
-	if err != nil {
-		return err
+	if value == nil {
+		*arr = Tiers{}
+		return nil
 	}
-	*arr = Tiers(result)
-	return nil
+
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = Tiers(result)
+			return nil
+		}
+
+		str := string(v)
+		if len(str) < 2 {
+			*arr = Tiers{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				result = append(result, e)
+			}
+		}
+		*arr = Tiers(result)
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
 }
 
 // Value to db for Tiers
 func (arr Tiers) Value() (driver.Value, error) {
-	return stringArrayValue([]string(arr))
+	if len(arr) == 0 {
+		return "{}", nil
+	}
+	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
 
 // Scan from db for Capabilities
 func (arr *Capabilities) Scan(value interface{}) error {
-	result, err := scanStringArray(value)
-	if err != nil {
-		return err
+	if value == nil {
+		*arr = Capabilities{}
+		return nil
 	}
-	*arr = Capabilities(result)
-	return nil
+
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = Capabilities(result)
+			return nil
+		}
+
+		str := string(v)
+		if len(str) < 2 {
+			*arr = Capabilities{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				result = append(result, e)
+			}
+		}
+		*arr = Capabilities(result)
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
 }
 
 // Value to db for Capabilities
 func (arr Capabilities) Value() (driver.Value, error) {
-	return stringArrayValue([]string(arr))
+	if len(arr) == 0 {
+		return "{}", nil
+	}
+	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
