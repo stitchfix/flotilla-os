@@ -1086,3 +1086,67 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		t.Fatalf("Updated cluster not found after update")
 	}
 }
+
+func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	initialCluster := ClusterMetadata{
+		Name:              "test-cluster",
+		Status:            StatusActive,
+		StatusReason:      "Initial setup",
+		AllowedTiers:      Tiers{"Tier1", "Tier2"},
+		Capabilities:      Capabilities{"gpu", "spark"},
+		Namespace:         "flotilla",
+		Region:            "us-east-1",
+		EMRVirtualCluster: "11111111",
+	}
+
+	// Insert the initial cluster
+	err := sm.UpdateClusterMetadata(initialCluster)
+	if err != nil {
+		t.Fatalf("Error creating initial cluster: %v", err)
+	}
+
+	// Verify the cluster was created
+	clusters, err := sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters: %v", err)
+	}
+
+	var foundCluster ClusterMetadata
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			foundCluster = c
+			break
+		}
+	}
+
+	if foundCluster.Name != "test-cluster" {
+		t.Fatalf("Test cluster not found after insertion")
+	}
+
+	// Delete the cluster
+	err = sm.DeleteClusterMetadata("test-cluster")
+	if err != nil {
+		t.Fatalf("Error deleting cluster: %v", err)
+	}
+
+	// Verify the cluster was deleted
+	clusters, err = sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters: %v", err)
+	}
+
+	var deletedFound bool
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			deletedFound = true
+			break
+		}
+	}
+
+	if deletedFound {
+		t.Fatalf("Test cluster not deleted")
+	}
+}
