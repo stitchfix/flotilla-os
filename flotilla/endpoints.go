@@ -1064,61 +1064,41 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	clusters, err := ep.executionService.ListClusters()
+	cluster, err := ep.executionService.GetClusterByID(vars["cluster_id"])
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
-	for _, cluster := range clusters {
-		if cluster.Name == vars["cluster_name"] {
-			ep.encodeResponse(w, cluster)
-			return
-		}
-	}
-
-	ep.encodeError(w, fmt.Errorf("cluster %s not found", vars["cluster_name"]))
+	ep.encodeResponse(w, cluster)
 }
 
 func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	var clusterMetadata state.ClusterMetadata
 	if err := json.NewDecoder(r.Body).Decode(&clusterMetadata); err != nil {
 		ep.encodeError(w, err)
 		return
 	}
 
-	clusterMetadata.Name = vars["cluster_name"]
-
-	var err error
-	if len(clusterMetadata.AllowedTiers) > 0 || len(clusterMetadata.Capabilities) > 0 ||
-		clusterMetadata.Namespace != "" || clusterMetadata.Region != "" ||
-		clusterMetadata.EMRVirtualCluster != "" {
-		// Full update
-		err = ep.executionService.UpdateClusterMetadata(clusterMetadata)
-	} else {
-		// Just updating status (backward compatibility)
-		err = ep.executionService.UpdateClusterMetadata(clusterMetadata)
+	if vars["cluster_id"] != "" {
+		clusterMetadata.ID = vars["cluster_id"]
 	}
 
+	err := ep.executionService.UpdateClusterMetadata(clusterMetadata)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
 	ep.encodeResponse(w, map[string]bool{"updated": true})
 }
 
 func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.executionService.DeleteClusterMetadata(vars["cluster_name"])
-
+	err := ep.executionService.DeleteClusterMetadata(vars["cluster_id"])
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
 	ep.encodeResponse(w, map[string]bool{"deleted": true})
 }
 

@@ -503,7 +503,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
 		Engine: &DefaultEngine,
-		Tier:   4,
+		Tier:   Tier("4"),
 	}
 
 	ec := int64(137)
@@ -533,7 +533,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Command: &cmd,
 		Memory:  &mem,
 		Engine:  &DefaultEngine,
-		Tier:    4,
+		Tier:    Tier("4"),
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
@@ -625,7 +625,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,
-		Tier:       4,
+		Tier:       Tier("4"),
 	}
 	u2 := Run{
 		Status: StatusNeedsRetry,
@@ -698,7 +698,7 @@ func TestSQLStateManager_ListClusterStates(t *testing.T) {
 	}
 }
 
-func TestTiers_Scan(t *testing.T) {
+func TestStringArray_Scan(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -719,20 +719,26 @@ func TestTiers_Scan(t *testing.T) {
 		},
 		{
 			name:     "single value",
-			input:    []byte("{1}"),
-			expected: Tiers{1},
+			input:    []byte("{\"tier1\"}"),
+			expected: Tiers{"tier1"},
 			wantErr:  false,
 		},
 		{
 			name:     "multiple values",
-			input:    []byte("{1,2,3}"),
-			expected: Tiers{1, 2, 3},
+			input:    []byte("{\"tier1\",\"tier2\",\"tier3\"}"),
+			expected: Tiers{"tier1", "tier2", "tier3"},
 			wantErr:  false,
 		},
 		{
 			name:     "values with empty elements",
-			input:    []byte("{1,,3}"),
-			expected: Tiers{1, 3},
+			input:    []byte("{\"tier1\",,\"tier3\"}"),
+			expected: Tiers{"tier1", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "unquoted values",
+			input:    []byte("{tier1,tier2,tier3}"),
+			expected: Tiers{"tier1", "tier2", "tier3"},
 			wantErr:  false,
 		},
 		{
@@ -749,55 +755,55 @@ func TestTiers_Scan(t *testing.T) {
 			err := result.Scan(tt.input)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Tiers.Scan() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("StringArray.Scan() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("Tiers.Scan() = %v, want %v", result, tt.expected)
+				t.Errorf("StringArray.Scan() = %v, want %v", result, tt.expected)
 			}
 		})
 	}
 }
 
-func TestTiers_Value(t *testing.T) {
+func TestStringArray_Value(t *testing.T) {
 	tests := []struct {
 		name     string
-		tiers    Tiers
+		array    Tiers
 		expected driver.Value
 		wantErr  bool
 	}{
 		{
 			name:     "empty slice",
-			tiers:    Tiers{},
+			array:    Tiers{},
 			expected: "{}",
 			wantErr:  false,
 		},
 		{
 			name:     "single value",
-			tiers:    Tiers{1},
-			expected: "{1}",
+			array:    Tiers{"tier1"},
+			expected: "{\"tier1\"}",
 			wantErr:  false,
 		},
 		{
 			name:     "multiple values",
-			tiers:    Tiers{1, 2, 3},
-			expected: "{1,2,3}",
+			array:    Tiers{"tier1", "tier2", "tier3"},
+			expected: "{\"tier1\",\"tier2\",\"tier3\"}",
 			wantErr:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.tiers.Value()
+			got, err := tt.array.Value()
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Tiers.Value() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("StringArray.Value() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("Tiers.Value() = %v, want %v", got, tt.expected)
+				t.Errorf("StringArray.Value() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
@@ -805,29 +811,28 @@ func TestTiers_Value(t *testing.T) {
 
 // This test verifies that a value that's converted to a database format
 // can be correctly scanned back into the original structure
-func TestTiers_RoundTrip(t *testing.T) {
+func TestStringArray_RoundTrip(t *testing.T) {
 	tests := []struct {
 		name  string
-		tiers Tiers
+		array Tiers
 	}{
 		{
-			name:  "empty tiers",
-			tiers: Tiers{},
+			name:  "empty array",
+			array: Tiers{},
 		},
 		{
-			name:  "single tier",
-			tiers: Tiers{1},
+			name:  "single value",
+			array: Tiers{"tier1"},
 		},
 		{
-			name:  "multiple tiers",
-			tiers: Tiers{1, 2, 3},
+			name:  "multiple values",
+			array: Tiers{"tier1", "tier2", "tier3"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			dbValue, err := tt.tiers.Value()
+			dbValue, err := tt.array.Value()
 			if err != nil {
 				t.Fatalf("Failed to convert to DB value: %v", err)
 			}
@@ -844,8 +849,8 @@ func TestTiers_RoundTrip(t *testing.T) {
 				t.Fatalf("Failed to scan from DB value: %v", err)
 			}
 
-			if !reflect.DeepEqual(result, tt.tiers) {
-				t.Errorf("Round trip failed: got %v, want %v", result, tt.tiers)
+			if !reflect.DeepEqual(result, tt.array) {
+				t.Errorf("Round trip failed: got %v, want %v", result, tt.array)
 			}
 		})
 	}
@@ -1006,147 +1011,117 @@ func TestCapabilities_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
-	defer tearDown()
-	sm := setUp()
+func tearDownClusters() {
+	conf, _ := config.NewConfig(nil)
+	db := getDB(conf)
+	db.MustExec(`DELETE FROM cluster_state;`)
+}
 
+func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
+	defer tearDownClusters()
+	sm := setUp()
 	initialCluster := ClusterMetadata{
 		Name:              "test-cluster",
 		Status:            StatusActive,
 		StatusReason:      "Initial setup",
-		AllowedTiers:      Tiers{1, 2},
+		AllowedTiers:      Tiers{"1", "2"},
 		Capabilities:      Capabilities{"gpu", "spark"},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "11111111",
 	}
-
-	// Insert the initial cluster
 	err := sm.UpdateClusterMetadata(initialCluster)
 	if err != nil {
 		t.Fatalf("Error creating initial cluster: %v", err)
 	}
 
-	// Verify the cluster was created
 	clusters, err := sm.ListClusterStates()
 	if err != nil {
 		t.Fatalf("Error listing clusters: %v", err)
 	}
 
-	var foundCluster ClusterMetadata
+	var clusterID string
 	for _, c := range clusters {
 		if c.Name == "test-cluster" {
-			foundCluster = c
+			clusterID = c.ID
 			break
 		}
 	}
 
-	if foundCluster.Name != "test-cluster" {
+	if clusterID == "" {
 		t.Fatalf("Test cluster not found after insertion")
 	}
-	// Create update with new values
+
 	updatedCluster := ClusterMetadata{
+		ID:                clusterID,
 		Name:              "test-cluster",
 		Status:            StatusMaintenance,
 		StatusReason:      "Under maintenance",
-		AllowedTiers:      Tiers{1, 2},
+		AllowedTiers:      Tiers{"1", "2"},
 		Capabilities:      Capabilities{"gpu", "spark", "ray"},
 		Namespace:         "flotilla-test",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "test-emr-cluster",
 	}
 
-	// Update the cluster
 	err = sm.UpdateClusterMetadata(updatedCluster)
 	if err != nil {
 		t.Fatalf("Error updating cluster: %v", err)
 	}
 
-	// Verify the update
-	clusters, err = sm.ListClusterStates()
+	updatedFromDB, err := sm.GetClusterByID(clusterID)
 	if err != nil {
-		t.Fatalf("Error listing clusters: %v", err)
+		t.Fatalf("Error getting updated cluster: %v", err)
+	}
+	if updatedFromDB.Status != StatusMaintenance {
+		t.Errorf("Expected status %s, got %s", StatusMaintenance, updatedFromDB.Status)
 	}
 
-	var updatedFound bool
-	for _, c := range clusters {
-		if c.Name == "test-cluster" {
-			if c.Status != StatusMaintenance {
-				t.Errorf("Expected status %s, got %s", StatusMaintenance, c.Status)
-			}
-			if c.StatusReason != "Under maintenance" {
-				t.Errorf("Expected reason 'Under maintenance', got '%s'", c.StatusReason)
-			}
-			updatedFound = true
-			break
-		}
-	}
-
-	if !updatedFound {
-		t.Fatalf("Updated cluster not found after update")
+	if updatedFromDB.StatusReason != "Under maintenance" {
+		t.Errorf("Expected reason 'Under maintenance', got '%s'", updatedFromDB.StatusReason)
 	}
 }
 
 func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
-	defer tearDown()
+	tearDown()
 	sm := setUp()
-
 	initialCluster := ClusterMetadata{
-		Name:              "test-cluster",
+		Name:              "test-delete-cluster",
 		Status:            StatusActive,
-		StatusReason:      "Initial setup",
-		AllowedTiers:      Tiers{1, 2},
+		StatusReason:      "For deletion test",
+		AllowedTiers:      Tiers{"1", "2"},
 		Capabilities:      Capabilities{"gpu", "spark"},
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "11111111",
 	}
-
-	// Insert the initial cluster
 	err := sm.UpdateClusterMetadata(initialCluster)
 	if err != nil {
 		t.Fatalf("Error creating initial cluster: %v", err)
 	}
-
-	// Verify the cluster was created
 	clusters, err := sm.ListClusterStates()
 	if err != nil {
 		t.Fatalf("Error listing clusters: %v", err)
 	}
-
-	var foundCluster ClusterMetadata
+	var clusterID string
 	for _, c := range clusters {
-		if c.Name == "test-cluster" {
-			foundCluster = c
+		if c.Name == "test-delete-cluster" {
+			clusterID = c.ID
 			break
 		}
 	}
-
-	if foundCluster.Name != "test-cluster" {
+	if clusterID == "" {
 		t.Fatalf("Test cluster not found after insertion")
 	}
 
-	// Delete the cluster
-	err = sm.DeleteClusterMetadata("test-cluster")
+	err = sm.DeleteClusterMetadata(clusterID)
 	if err != nil {
 		t.Fatalf("Error deleting cluster: %v", err)
 	}
 
-	// Verify the cluster was deleted
-	clusters, err = sm.ListClusterStates()
-	if err != nil {
-		t.Fatalf("Error listing clusters: %v", err)
+	_, err = sm.GetClusterByID(clusterID)
+	if err == nil {
+		t.Errorf("Expected error when getting deleted cluster")
 	}
-
-	var deletedFound bool
-	for _, c := range clusters {
-		if c.Name == "test-cluster" {
-			deletedFound = true
-			break
-		}
-	}
-
-	if deletedFound {
-		t.Fatalf("Test cluster not deleted")
-	}
+	tearDown()
 }

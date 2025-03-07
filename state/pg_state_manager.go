@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/metrics"
@@ -1701,102 +1700,193 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 }
 
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
-	sql := `
-        INSERT INTO cluster_state (name, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (name) DO UPDATE 
-        SET status = $2, 
-            status_reason = $3,
-            allowed_tiers = $4,
-            capabilities = $5,
-            namespace = $6,
-            region = $7,
-            emr_virtual_cluster = $8;
-    `
+	if cluster.ID == "" {
+		sql := `
+			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			RETURNING id;
+		`
+		var id string
+		err := sm.db.QueryRow(sql,
+			cluster.Name,
+			cluster.ClusterVersion,
+			cluster.Status,
+			cluster.StatusReason,
+			pq.Array(cluster.AllowedTiers),
+			pq.Array(cluster.Capabilities),
+			cluster.Namespace,
+			cluster.Region,
+			cluster.EMRVirtualCluster).Scan(&id)
 
-	result, err := sm.db.Exec(sql,
-		cluster.Name,
-		cluster.Status,
-		cluster.StatusReason,
-		pq.Array(cluster.AllowedTiers),
-		pq.Array(cluster.Capabilities),
-		cluster.Namespace,
-		cluster.Region,
-		cluster.EMRVirtualCluster)
+		if err != nil {
+			return err
+		}
+		return nil
+	} else {
+		sql := `
+			UPDATE cluster_state
+			SET 
+				name = $2,
+				cluster_version = $3,
+				status = $4,
+				status_reason = $5,
+				allowed_tiers = $6,
+				capabilities = $7,
+				namespace = $8,
+				region = $9,
+				emr_virtual_cluster = $10,
+				updated_at = NOW()
+			WHERE id = $1;
+		`
+		result, err := sm.db.Exec(sql,
+			cluster.ID,
+			cluster.Name,
+			cluster.ClusterVersion,
+			cluster.Status,
+			cluster.StatusReason,
+			pq.Array(cluster.AllowedTiers),
+			pq.Array(cluster.Capabilities),
+			cluster.Namespace,
+			cluster.Region,
+			cluster.EMRVirtualCluster)
+
+		if err != nil {
+			return err
+		}
+
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rows == 0 {
+			return exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Cluster with ID %s not found", cluster.ID),
+			}
+		}
+		return nil
+	}
+}
+
+func (sm *SQLStateManager) DeleteClusterMetadata(clusterID string) error {
+	sql := `DELETE FROM cluster_state WHERE id = $1`
+	result, err := sm.db.Exec(sql, clusterID)
 	if err != nil {
 		return err
 	}
-
-	rows, err := result.RowsAffected()
+	count, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	if rows == 0 {
+	if count == 0 {
 		return exceptions.MissingResource{
-			ErrorString: fmt.Sprintf("Cluster %s not found", cluster.Name),
+			ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
 		}
 	}
 	return nil
 }
 
-// Scan from db for Tiers
+func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, error) {
+	var cluster ClusterMetadata
+	query := `
+		SELECT 
+			id, name, status, status_reason, status_since, allowed_tiers,
+			capabilities, region, updated_at, namespace, emr_virtual_cluster
+		FROM cluster_state 
+		WHERE id = $1
+	`
+	err := sm.db.Get(&cluster, query, clusterID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return cluster, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
+			}
+		}
+		return cluster, err
+	}
+	return cluster, nil
+}
+
+func ScanStringArray(arr *[]string, value interface{}) error {
+	if value == nil {
+		*arr = []string{}
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = result
+			return nil
+		}
+		str := string(v)
+		if len(str) < 2 {
+			*arr = []string{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				// Remove quotes if they exist
+				e = strings.Trim(e, "\"")
+				result = append(result, e)
+			}
+		}
+		*arr = result
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
+}
+
 func (arr *Tiers) Scan(value interface{}) error {
 	if value == nil {
 		*arr = Tiers{}
 		return nil
 	}
-
 	switch v := value.(type) {
 	case []byte:
-
-		var result []int
+		var result []string
 		if err := json.Unmarshal(v, &result); err == nil {
-			*arr = make(Tiers, len(result))
-			for i, val := range result {
-				(*arr)[i] = val
-			}
+			*arr = Tiers(result)
 			return nil
 		}
-
-		// Fallback to PostgreSQL array format parsing
 		str := string(v)
-		if len(str) < 2 {
+		if len(str) < 2 || str[0] != '{' || str[len(str)-1] != '}' {
 			*arr = Tiers{}
 			return nil
 		}
-		elements := strings.Split(str[1:len(str)-1], ",")
-		result = make([]int, 0, len(elements))
+		str = str[1 : len(str)-1]
+		if len(str) == 0 {
+			*arr = Tiers{}
+			return nil
+		}
+		elements := strings.Split(str, ",")
+		result = make([]string, 0, len(elements))
 		for _, e := range elements {
-			if e != "" {
-				val, err := strconv.Atoi(e)
-				if err != nil {
-					return err
-				}
-				result = append(result, val)
+			if e == "" {
+				continue
 			}
+			e = strings.Trim(e, "\"")
+			result = append(result, e)
 		}
-		*arr = make(Tiers, len(result))
-		for i, val := range result {
-			(*arr)[i] = val
-		}
+		*arr = Tiers(result)
 		return nil
 	default:
-		return fmt.Errorf("unexpected type for int array: %T", value)
+		return fmt.Errorf("unsupported Scan, storing driver.Value type %T into type *Tiers", value)
 	}
 }
 
-// Value to db for Tiers
 func (arr Tiers) Value() (driver.Value, error) {
 	if len(arr) == 0 {
 		return "{}", nil
 	}
-
-	strValues := make([]string, len(arr))
+	quoted := make([]string, len(arr))
 	for i, v := range arr {
-		strValues[i] = strconv.Itoa(int(v))
+		quoted[i] = fmt.Sprintf("\"%s\"", v)
 	}
-
-	return fmt.Sprintf("{%s}", strings.Join(strValues, ",")), nil
+	return fmt.Sprintf("{%s}", strings.Join(quoted, ",")), nil
 }
 
 // Scan from db for Capabilities
@@ -1839,26 +1929,4 @@ func (arr Capabilities) Value() (driver.Value, error) {
 		return "{}", nil
 	}
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
-}
-
-func (sm *SQLStateManager) DeleteClusterMetadata(clusterName string) error {
-	sql := `DELETE FROM cluster_state WHERE name = $1`
-
-	result, err := sm.db.Exec(sql, clusterName)
-	if err != nil {
-		return err
-	}
-
-	count, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if count == 0 {
-		return exceptions.MissingResource{
-			ErrorString: fmt.Sprintf("Cluster %s not found", clusterName),
-		}
-	}
-
-	return nil
 }

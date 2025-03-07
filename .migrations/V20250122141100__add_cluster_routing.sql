@@ -4,27 +4,23 @@ BEGIN
         CREATE TYPE cluster_status AS ENUM ('active', 'maintenance', 'offline');
     END IF;
 END$$;
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tier') THEN
-        CREATE DOMAIN tier AS INTEGER
-        CHECK (VALUE IN (1, 2, 3, 4));
-    END IF;
-END$$;
 
 CREATE TABLE IF NOT EXISTS cluster_state (
-    name VARCHAR PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR NOT NULL,
+    cluster_version VARCHAR NOT NULL DEFAULT '',
     status cluster_status NOT NULL DEFAULT 'active',
     status_reason VARCHAR,
     status_since TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     capabilities VARCHAR[] NOT NULL DEFAULT '{}',
-    allowed_tiers tier[] NOT NULL DEFAULT '{}',
+    allowed_tiers VARCHAR[] NOT NULL DEFAULT '{}',
     region VARCHAR NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     namespace VARCHAR NOT NULL DEFAULT '',
     emr_virtual_cluster VARCHAR NOT NULL DEFAULT ''
 );
 
+CREATE INDEX IF NOT EXISTS ix_cluster_state_name ON cluster_state(name);
 CREATE INDEX IF NOT EXISTS ix_cluster_state_status ON cluster_state(status);
 
 DO $$
@@ -33,6 +29,6 @@ BEGIN
         FROM information_schema.columns
         WHERE table_name='task' AND column_name='tier')
     THEN
-        ALTER TABLE task ADD COLUMN tier tier DEFAULT '4';
+        ALTER TABLE task ADD COLUMN tier VARCHAR DEFAULT 4;
     END IF;
 END$$;

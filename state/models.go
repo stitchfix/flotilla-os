@@ -501,7 +501,7 @@ func (d *Run) UpdateWith(other Run) {
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
 	}
-	if other.Tier != 0 {
+	if other.Tier != "" {
 		d.Tier = other.Tier
 	}
 	if len(other.Alias) > 0 {
@@ -1231,17 +1231,11 @@ type RunTags struct {
 }
 
 type ClusterStatus string
-type Tier int
-type Tiers []int
+type Tier string
+type Tiers []string
 type Capability string
 type Capabilities []string
 
-const (
-	Tier1 Tier = 1
-	Tier2 Tier = 2
-	Tier3 Tier = 3
-	Tier4 Tier = 4
-)
 const (
 	StatusActive      ClusterStatus = "active"
 	StatusMaintenance ClusterStatus = "maintenance"
@@ -1249,7 +1243,9 @@ const (
 )
 
 type ClusterMetadata struct {
+	ID                string        `json:"id" db:"id"`
 	Name              string        `json:"name" db:"name"`
+	ClusterVersion    string        `json:"cluster_version" db:"cluster_version"`
 	Status            ClusterStatus `json:"status" db:"status"`
 	StatusReason      string        `json:"status_reason" db:"status_reason"`
 	StatusSince       time.Time     `json:"status_since" db:"status_since"`
