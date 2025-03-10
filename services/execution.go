@@ -195,9 +195,9 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	/*
 		cluster is set based on the following precedence (low to high):
-			1. Default cluster from config
+			1. Cluster from cluster metadata
 			2. Cluster from task definition
-			3. Cluster from API/req
+			3. Default cluster from config
 
 		cluster is then checked for validity.
 
@@ -213,6 +213,14 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 			fields.ClusterName = req.ClusterName
 		} else {
 			return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
+		}
+	}
+
+	if fields.ClusterName == "" {
+		if fields.Gpu != nil && *fields.Gpu > 0 {
+			fields.ClusterName = es.eksGPUClusterDefault
+		} else {
+			fields.ClusterName = es.eksClusterDefault
 		}
 	}
 
