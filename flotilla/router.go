@@ -46,6 +46,7 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 
 	v6 := r.PathPrefix("/api/v6").Subrouter()
 	v6.HandleFunc("/clusters", ep.ListClusters).Methods("GET")
+	v6.HandleFunc("/clusters", ep.CreateCluster).Methods("POST")
 	v6.HandleFunc("/clusters/{cluster_id}", ep.GetCluster).Methods("GET")
 	v6.HandleFunc("/clusters/{cluster_id}", ep.UpdateCluster).Methods("PUT")
 	v6.HandleFunc("/clusters/{cluster_id}", ep.DeleteCluster).Methods("DELETE")

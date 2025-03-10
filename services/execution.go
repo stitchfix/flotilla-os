@@ -659,12 +659,10 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 }
 
 func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
-	fmt.Println("Updating cluster metadata", cluster)
 	return es.stateManager.UpdateClusterMetadata(cluster)
 }
 
 func (es *executionService) DeleteClusterMetadata(clusterID string) error {
-	fmt.Println("Deleting cluster metadata", clusterID)
 	return es.stateManager.DeleteClusterMetadata(clusterID)
 }
 

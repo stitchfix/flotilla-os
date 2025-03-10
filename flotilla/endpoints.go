@@ -1062,6 +1062,7 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get a cluster.
 func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cluster, err := ep.executionService.GetClusterByID(vars["cluster_id"])
@@ -1072,6 +1073,7 @@ func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
 	ep.encodeResponse(w, cluster)
 }
 
+// Update a cluster.
 func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	var clusterMetadata state.ClusterMetadata
@@ -1083,7 +1085,6 @@ func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 	if vars["cluster_id"] != "" {
 		clusterMetadata.ID = vars["cluster_id"]
 	}
-
 	err := ep.executionService.UpdateClusterMetadata(clusterMetadata)
 	if err != nil {
 		ep.encodeError(w, err)
@@ -1102,6 +1103,7 @@ func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 	ep.encodeResponse(w, map[string]bool{"deleted": true})
 }
 
+// Health check endpoint.
 func (ep *endpoints) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	healthy := true
 	var err error
@@ -1127,4 +1129,23 @@ func (ep *endpoints) HealthCheck(w http.ResponseWriter, r *http.Request) {
 			"error":   err.Error(),
 		})
 	}
+}
+
+// Create a new cluster.
+func (ep *endpoints) CreateCluster(w http.ResponseWriter, r *http.Request) {
+	var cluster state.ClusterMetadata
+	if err := json.NewDecoder(r.Body).Decode(&cluster); err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	cluster.ID = ""
+
+	err := ep.executionService.UpdateClusterMetadata(cluster)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	ep.encodeResponse(w, map[string]bool{"created": true})
 }

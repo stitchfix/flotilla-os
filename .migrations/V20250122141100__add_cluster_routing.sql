@@ -6,7 +6,7 @@ BEGIN
 END$$;
 
 CREATE TABLE IF NOT EXISTS cluster_state (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR NOT NULL,
     cluster_version VARCHAR NOT NULL DEFAULT '',
     status cluster_status NOT NULL DEFAULT 'active',

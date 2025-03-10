@@ -858,3 +858,21 @@ func TestEndpoints_DeleteCluster(t *testing.T) {
 		t.Errorf("Expected [deleted] acknowledgement")
 	}
 }
+
+func TestEndpoints_CreateCluster(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("POST", "/api/v6/clusters", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+}
