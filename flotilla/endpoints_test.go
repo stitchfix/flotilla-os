@@ -862,7 +862,7 @@ func TestEndpoints_DeleteCluster(t *testing.T) {
 func TestEndpoints_CreateCluster(t *testing.T) {
 	router := setUp(t)
 
-	req := httptest.NewRequest("POST", "/api/v6/clusters", nil)
+	req := httptest.NewRequest("POST", "/api/v6/clusters", bytes.NewBufferString(`{"name":"cluster1", "status":"ACTIVE", "reason":"Testing create"}`))
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -874,5 +874,15 @@ func TestEndpoints_CreateCluster(t *testing.T) {
 
 	if resp.StatusCode != 200 {
 		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var ack map[string]bool
+	err := json.NewDecoder(resp.Body).Decode(&ack)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if _, ok := ack["created"]; !ok {
+		t.Errorf("Expected [created] acknowledgement")
 	}
 }
