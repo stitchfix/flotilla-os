@@ -3,6 +3,12 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
@@ -13,11 +19,6 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type statusWorker struct {
@@ -57,7 +58,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 
 func (sw *statusWorker) setupRedisClient(conf config.Config) {
 	if *sw.engine == state.EKSEngine {
-		sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
+		sw.redisClient = redis.NewClient(&redis.Options{Addr: strings.TrimPrefix(conf.GetString("redis_address"), "redis://"), DB: conf.GetInt("redis_db")})
 	}
 }
 
