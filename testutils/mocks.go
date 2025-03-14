@@ -33,6 +33,7 @@ type ImplementsAllTheThings struct {
 	Tags                    []string
 	Templates               map[string]state.Template
 	ClusterStates           []state.ClusterMetadata
+	GetRandomClusterName    func(clusters []string) string
 }
 
 func (iatt *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {

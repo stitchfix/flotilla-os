@@ -512,7 +512,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	clusterMetadata, err := ep.executionService.ListClusters()
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing clusters",

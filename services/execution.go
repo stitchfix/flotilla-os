@@ -55,6 +55,7 @@ type executionService struct {
 	reservedEnv           map[string]func(run state.Run) string
 	eksClusterOverride    string
 	eksClusterDefault     string
+	eksTierDefault        string
 	eksGPUClusterOverride string
 	eksGPUClusterDefault  string
 	checkImageValidity    bool
@@ -64,6 +65,7 @@ type executionService struct {
 	spotThresholdMinutes  float64
 	terminateJobChannel   chan state.TerminateJob
 	validEksClusters      []string
+	//validEksClusterTiers  string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -100,6 +102,8 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	es.eksClusterDefault = conf.GetString("eks_cluster_default")
 	es.eksGPUClusterDefault = conf.GetString("eks_gpu_cluster_default")
+	es.eksTierDefault = conf.GetString("eks_tier_default")
+	//es.validEksClusterTiers = conf.GetString("eks_cluster_tiers")
 
 	if !slices.Contains(es.validEksClusters, es.eksClusterDefault) || !slices.Contains(es.validEksClusters, es.eksGPUClusterDefault) {
 		return nil, fmt.Errorf("an invalid cluster has been set as a default\nvalid_clusters:%s\neks_cluster_default:%s\neks_gpu_cluster_default:%s", es.validEksClusters, es.eksClusterDefault, es.eksGPUClusterDefault)
@@ -195,33 +199,41 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	/*
 		cluster is set based on the following precedence (low to high):
-			1. Cluster from cluster metadata
-			2. Cluster from task definition
+			1. Cluster is passed in from request
+			2. Cluster from cluster metadata and active
+			3. Cluster from task definition
 			3. Default cluster from config
 
 		cluster is then checked for validity.
 
 		if required, cluster overrides should be introduced and set here
 	*/
-
-	if definition.TargetCluster != "" {
-		fields.ClusterName = definition.TargetCluster
+	clusterMetadata, err := es.ListClusters()
+	var activeClusters []string
+	if len(clusterMetadata) > 0 {
+		for _, cluster := range clusterMetadata {
+			if cluster.Status == state.StatusActive {
+				if es.clusterSupportsTier(cluster, req.Tier) {
+					activeClusters = append(activeClusters, cluster.Name)
+				}
+			}
+		}
 	}
 
 	if req.ClusterName != "" {
-		if es.isClusterValid(req.ClusterName) {
-			fields.ClusterName = req.ClusterName
-		} else {
-			return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
-		}
+		fields.ClusterName = req.ClusterName
+	} else if len(activeClusters) > 0 {
+		fields.ClusterName = activeClusters[rand.Intn(len(activeClusters))]
+	} else if definition.TargetCluster != "" {
+		fields.ClusterName = definition.TargetCluster
+	} else if fields.Gpu != nil && *fields.Gpu > 0 {
+		fields.ClusterName = es.eksGPUClusterDefault
+	} else {
+		fields.ClusterName = es.eksClusterDefault
 	}
 
-	if fields.ClusterName == "" {
-		if fields.Gpu != nil && *fields.Gpu > 0 {
-			fields.ClusterName = es.eksGPUClusterDefault
-		} else {
-			fields.ClusterName = es.eksClusterDefault
-		}
+	if !es.isClusterValid(fields.ClusterName) {
+		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
 
 	run.User = req.OwnerID
@@ -661,6 +673,20 @@ func (es *executionService) constructRunFromTemplate(template state.Template, re
 	run.ExecutionRequestCustom = req.GetExecutionRequestCustom()
 
 	return run, nil
+}
+
+// clusterSupportsTier checks if a cluster supports the specified tier
+func (es *executionService) clusterSupportsTier(cluster state.ClusterMetadata, requestedTier state.Tier) bool {
+	if requestedTier == "" {
+		requestedTier = state.Tier(es.eksTierDefault)
+	}
+	for _, allowedTier := range cluster.AllowedTiers {
+		if allowedTier == string(requestedTier) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (es *executionService) isClusterValid(clusterName string) bool {
