@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -519,22 +518,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
 		return
-	}
-
-	if len(clusterMetadata) == 0 {
-		*lr.ClusterName = ep.executionService.GetDefaultCluster()
-	} else {
-		var activeClusters []string
-		for _, cluster := range clusterMetadata {
-			if cluster.Status == state.StatusActive {
-				activeClusters = append(activeClusters, cluster.Name)
-			}
-		}
-		if len(activeClusters) > 0 {
-			*lr.ClusterName = activeClusters[rand.Intn(len(activeClusters))]
-		} else if len(clusterMetadata) > 0 {
-			*lr.ClusterName = clusterMetadata[0].Name
-		}
 	}
 
 	if lr.CommandHash == nil && lr.Description != nil {
