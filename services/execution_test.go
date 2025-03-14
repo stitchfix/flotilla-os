@@ -56,6 +56,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
 		"ListClusterStates":        true,
+		"clusterSupportsTier":      true,
 	}
 
 	cmd := "_test_cmd_"
