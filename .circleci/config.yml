@@ -18,9 +18,6 @@ jobs:
           POSTGRES_DB: flotilla
           POSTGRES_PASSWORD: flotilla
     steps:
-      - run:
-          name: zzz
-          command: sleep 30
       - checkout
       - run:
           name: Installing Flyway
