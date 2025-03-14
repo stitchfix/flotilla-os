@@ -174,6 +174,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
 		"ListClusterStates":        true,
+		"clusterSupportsTier":      true,
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine
