@@ -29,6 +29,6 @@ BEGIN
         FROM information_schema.columns
         WHERE table_name='task' AND column_name='tier')
     THEN
-ALTER TABLE task ADD COLUMN tier VARCHAR(20);
-END IF;
+ALTER TABLE task ADD COLUMN tier TEXT;
+    END IF;
 END$$;
