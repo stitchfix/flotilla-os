@@ -275,7 +275,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	)
 
 	fields.Engine = req.GetExecutionRequestCommon().Engine
-
+	fields.Tier = req.GetExecutionRequestCommon().Tier
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
 	// `executableCmd` as the Run's Command.
@@ -346,6 +346,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
 		ServiceAccount:        fields.ServiceAccount,
+		Tier:                  fields.Tier,
 	}
 
 	if fields.Labels != nil {
