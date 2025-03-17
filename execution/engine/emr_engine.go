@@ -104,21 +104,18 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	}
 	emr.clusterManager = clusterManager
 
-	// Load from ENV variables
-	if conf.IsSet("eks_clusters") && conf.IsSet("eks_kubeconfig_basepath") {
+	// Get static clusters if configured
+	var staticClusters []string
+	if conf.IsSet("eks_clusters") {
 		clusters := strings.Split(conf.GetString("eks_clusters"), ",")
 		for i := range clusters {
-			clusters[i] = strings.TrimSpace(clusters[i])
-		}
-		basePath := conf.GetString("eks_kubeconfig_basepath")
-		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
-			emr.log.Log("message", "failed to initialize static clusters", "error", err.Error())
-			// Continue even if static clusters fail, we can fall back to dynamic loading
+			staticClusters = append(staticClusters, strings.TrimSpace(clusters[i]))
 		}
 	}
-	// Load from DB
-	if err := clusterManager.PreloadClusterClients(); err != nil {
-		emr.log.Log("message", "failed to preload cluster clients", "error", err.Error())
+
+	// Initialize all clusters (both static and dynamic)
+	if err := clusterManager.InitializeClusters(staticClusters); err != nil {
+		emr.log.Log("message", "failed to initialize clusters", "error", err.Error())
 	}
 
 	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)

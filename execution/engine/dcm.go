@@ -201,82 +201,75 @@ func (dcm *DynamicClusterManager) GetMetricsClient(clusterName string) (metricsv
 	return *metricsClient, nil
 }
 
-// PreloadClusterClients preloads configs for all active clusters
-func (dcm *DynamicClusterManager) PreloadClusterClients() error {
+// InitializeClusters handles both static and dynamic cluster configurations
+func (dcm *DynamicClusterManager) InitializeClusters(staticClusters []string) error {
+	for _, clusterName := range staticClusters {
+		if err := dcm.initializeSingleCluster(clusterName); err != nil {
+			dcm.log.Log("message", "failed to initialize static cluster", "cluster", clusterName, "error", err.Error())
+			continue
+		}
+	}
+
 	clusters, err := dcm.manager.ListClusterStates()
 	if err != nil {
-		return errors.Wrap(err, "failed to list clusters for preloading")
+		return errors.Wrap(err, "failed to list clusters for initialization")
 	}
 
 	for _, cluster := range clusters {
-		if cluster.Status == state.StatusActive {
-			config, err := dcm.buildKubeConfig(cluster)
-			if err != nil {
-				dcm.log.Log("message", "failed to preload config", "cluster", cluster.Name, "error", err.Error())
-				continue
-			}
-
-			host := config.Host
-			caData := config.TLSClientConfig.CAData
-			token := config.BearerToken
-
-			clusterConfig := ClusterConfig{
-				Host:      host,
-				CAData:    caData,
-				Token:     token,
-				Timestamp: time.Now().Unix(),
-			}
-
-			configBytes, err := json.Marshal(clusterConfig)
-			if err == nil {
-				k8sConfigKey := fmt.Sprintf("%s%s", redisK8sConfigPrefix, cluster.Name)
-				err = dcm.redisClient.Set(k8sConfigKey, string(configBytes), dcm.configTTL).Err()
-				if err != nil {
-					dcm.log.Log("message", "failed to cache k8s config in Redis", "cluster", cluster.Name, "error", err.Error())
-				}
-
-				metricsConfigKey := fmt.Sprintf("%s%s", redisMetricsConfigPrefix, cluster.Name)
-				err = dcm.redisClient.Set(metricsConfigKey, string(configBytes), dcm.configTTL).Err()
-				if err != nil {
-					dcm.log.Log("message", "failed to cache metrics config in Redis", "cluster", cluster.Name, "error", err.Error())
-				}
-			}
+		if err := dcm.initializeSingleCluster(cluster.Name); err != nil {
+			dcm.log.Log("message", "failed to initialize dynamic cluster", "cluster", cluster.Name, "error", err.Error())
+			continue
 		}
 	}
 
 	return nil
 }
 
-// InitializeWithStaticClusters initializes the manager with a set of static clusters
-func (dcm *DynamicClusterManager) InitializeWithStaticClusters(clusters []string, kubeConfigBasePath string) error {
-	for _, clusterName := range clusters {
-		filename := fmt.Sprintf("%s/%s", kubeConfigBasePath, clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		if err != nil {
-			return err
-		}
+// initializeSingleCluster handles the configuration for a single cluster
+func (dcm *DynamicClusterManager) initializeSingleCluster(clusterName string) error {
+	result, err := dcm.eksClient.DescribeCluster(&eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to describe EKS cluster %s", clusterName)
+	}
 
-		clusterConfig := ClusterConfig{
-			Host:      clientConf.Host,
-			CAData:    clientConf.TLSClientConfig.CAData,
-			Token:     clientConf.BearerToken,
-			Timestamp: time.Now().Unix(),
-		}
+	cluster := result.Cluster
+	if cluster == nil {
+		return fmt.Errorf("cluster %s not found in AWS", clusterName)
+	}
 
-		configBytes, err := json.Marshal(clusterConfig)
-		if err == nil {
-			k8sConfigKey := fmt.Sprintf("%s%s", redisK8sConfigPrefix, clusterName)
-			err = dcm.redisClient.Set(k8sConfigKey, string(configBytes), dcm.configTTL).Err()
-			if err != nil {
-				dcm.log.Log("message", "failed to cache k8s config in Redis", "cluster", clusterName, "error", err.Error())
-			}
+	token, err := dcm.getClusterToken(clusterName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get token for cluster %s", clusterName)
+	}
 
-			metricsConfigKey := fmt.Sprintf("%s%s", redisMetricsConfigPrefix, clusterName)
-			err = dcm.redisClient.Set(metricsConfigKey, string(configBytes), dcm.configTTL).Err()
-			if err != nil {
-				dcm.log.Log("message", "failed to cache metrics config in Redis", "cluster", clusterName, "error", err.Error())
-			}
-		}
+	certData, err := base64.StdEncoding.DecodeString(*cluster.CertificateAuthority.Data)
+	if err != nil {
+		certData = []byte(*cluster.CertificateAuthority.Data)
+		dcm.log.Log("message", "using raw certificate data (not base64 decoded)", "cluster", clusterName)
+	}
+
+	clusterConfig := ClusterConfig{
+		Host:      *cluster.Endpoint,
+		CAData:    certData,
+		Token:     token,
+		Timestamp: time.Now().Unix(),
+	}
+
+	configBytes, err := json.Marshal(clusterConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal cluster config")
+	}
+
+	k8sConfigKey := fmt.Sprintf("%s%s", redisK8sConfigPrefix, clusterName)
+	if err := dcm.redisClient.Set(k8sConfigKey, string(configBytes), dcm.configTTL).Err(); err != nil {
+		dcm.log.Log("message", "failed to cache k8s config in Redis", "cluster", clusterName, "error", err.Error())
+	}
+
+	metricsConfigKey := fmt.Sprintf("%s%s", redisMetricsConfigPrefix, clusterName)
+	if err := dcm.redisClient.Set(metricsConfigKey, string(configBytes), dcm.configTTL).Err(); err != nil {
+		dcm.log.Log("message", "failed to cache metrics config in Redis", "cluster", clusterName, "error", err.Error())
 	}
 
 	return nil
@@ -307,9 +300,9 @@ func (dcm *DynamicClusterManager) buildKubeConfig(clusterMetadata state.ClusterM
 	}
 
 	certData, err := base64.StdEncoding.DecodeString(*cluster.CertificateAuthority.Data)
-	dcm.log.Log("message", "certificate data", "data_length", len(certData), "data_prefix", certData[:20])
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode certificate data")
+		certData = []byte(*cluster.CertificateAuthority.Data)
+		dcm.log.Log("message", "using raw certificate data (not base64 decoded)", "cluster", clusterMetadata.Name)
 	}
 
 	config := &rest.Config{

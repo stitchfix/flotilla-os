@@ -80,20 +80,18 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		return errors.Wrap(err, "failed to create dynamic cluster manager")
 	}
 	ee.clusterManager = clusterManager
-	// Load config from ENV variables
-	if conf.IsSet("eks_clusters") && conf.IsSet("eks_kubeconfig_basepath") {
+	// Get static clusters if configured
+	var staticClusters []string
+	if conf.IsSet("eks_clusters") {
 		clusters := strings.Split(conf.GetString("eks_clusters"), ",")
 		for i := range clusters {
-			clusters[i] = strings.TrimSpace(clusters[i])
-		}
-		basePath := conf.GetString("eks_kubeconfig_basepath")
-		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
-			ee.log.Log("message", "failed to initialize static clusters", "error", err.Error())
+			staticClusters = append(staticClusters, strings.TrimSpace(clusters[i]))
 		}
 	}
-	// Load config from DB
-	if err := clusterManager.PreloadClusterClients(); err != nil {
-		ee.log.Log("message", "failed to preload cluster clients", "error", err.Error())
+
+	// Initialize all clusters (both static and dynamic)
+	if err := clusterManager.InitializeClusters(staticClusters); err != nil {
+		ee.log.Log("message", "failed to initialize clusters", "error", err.Error())
 	}
 
 	adapt, err := adapter.NewEKSAdapter()
