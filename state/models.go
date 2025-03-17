@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -1045,7 +1045,7 @@ func (t Template) compositeUserAndDefaults(userPayload interface{}) (TemplatePay
 		return final, errors.New("unable to cast request payload to TemplatePayload struct")
 	}
 
-	err := utils.MergeMaps(&final, t.Defaults)
+	err := MergeMaps(&final, t.Defaults)
 
 	if err != nil {
 		return final, err
@@ -1255,4 +1255,40 @@ type ClusterMetadata struct {
 	Namespace         string        `json:"namespace" db:"namespace"`
 	Region            string        `json:"region" db:"region"`
 	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+}
+
+// MergeMaps takes a pointer to a map (first arg) and map containing default
+// values (second arg) and recursively sets values that exist in `b` but are
+// not set in `a`. For existing values, it does not override those of `a` with
+// those of `b`.
+func MergeMaps(a *map[string]interface{}, b map[string]interface{}) error {
+	return mergeMapsRecursive(a, b)
+}
+
+func mergeMapsRecursive(a *map[string]interface{}, b map[string]interface{}) error {
+	for k, v := range b {
+		// If the value is a map, check recursively.
+		if reflect.TypeOf(v).Kind() == reflect.Map {
+			if _, ok := (*a)[k]; !ok {
+				(*a)[k] = v
+			} else {
+				aVal, ok := (*a)[k].(map[string]interface{})
+				bVal, ok := v.(map[string]interface{})
+
+				if !ok {
+					return errors.New("unable to cast interface{} to map[string]interface{}")
+				}
+
+				if err := mergeMapsRecursive(&aVal, bVal); err != nil {
+					return err
+				}
+			}
+		} else {
+			if _, ok := (*a)[k]; !ok {
+				(*a)[k] = v
+			}
+		}
+	}
+
+	return nil
 }
