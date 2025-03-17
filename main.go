@@ -17,7 +17,6 @@ import (
 	"github.com/stitchfix/flotilla-os/utils"
 	"log"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -118,22 +117,7 @@ func main() {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize dynamic cluster manager"))
 		os.Exit(1)
 	}
-	// Load from env vars
-	if c.IsSet("eks_clusters") && c.IsSet("eks_kubeconfig_basepath") {
-		clusters := strings.Split(c.GetString("eks_clusters"), ",")
-		for i := range clusters {
-			clusters[i] = strings.TrimSpace(clusters[i])
-		}
-		basePath := c.GetString("eks_kubeconfig_basepath")
-		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
-			logger.Log("message", "failed to initialize static clusters", "error", err.Error())
-		}
-	}
-	// Load from db
-	if err := clusterManager.PreloadClusterClients(); err != nil {
-		logger.Log("message", "failed to preload cluster clients from database", "error", err.Error())
-		// Continue anyway
-	}
+
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. EKS)

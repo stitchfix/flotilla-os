@@ -80,6 +80,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		return errors.Wrap(err, "failed to create dynamic cluster manager")
 	}
 	ee.clusterManager = clusterManager
+
 	// Get static clusters if configured
 	var staticClusters []string
 	if conf.IsSet("eks_clusters") {
