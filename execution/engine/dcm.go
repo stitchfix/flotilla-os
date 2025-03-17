@@ -28,7 +28,7 @@ type DynamicClusterManager struct {
 }
 
 func getKubeconfigBaseDir() string {
-	dir := os.Getenv("KUBECONFIG_BASE_DIR")
+	dir := os.Getenv("EKS_KUBECONFIG_BASEPATH")
 	if dir != "" {
 		dir, _ = os.Getwd()
 	}
@@ -55,12 +55,15 @@ func NewDynamicClusterManager(awsRegion string, log flotillaLog.Logger, manager 
 func (dcm *DynamicClusterManager) GetKubernetesClient(clusterName string) (kubernetes.Clientset, error) {
 	kubeconfigBaseDir := getKubeconfigBaseDir()
 	kubeconfigPath := filepath.Join(kubeconfigBaseDir, clusterName)
-
+	if _, err := os.Stat(kubeconfigBaseDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(kubeconfigBaseDir, 0755); err != nil {
+			return kubernetes.Clientset{}, errors.Wrap(err, "failed to create directory for kubeconfigs")
+		}
+	}
 	needsGeneration := false
-	if _, err := os.Stat(kubeconfigPath); os.IsNotExist(err) {
+	if _, err := os.Stat(kubeconfigBaseDir); os.IsNotExist(err) {
 		needsGeneration = true
 	} else {
-		// Test if the existing kubeconfig works by trying to load it
 		_, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
 			needsGeneration = true
@@ -68,10 +71,6 @@ func (dcm *DynamicClusterManager) GetKubernetesClient(clusterName string) (kuber
 	}
 
 	if needsGeneration {
-		if err := os.MkdirAll(kubeconfigBaseDir, 0755); err != nil {
-			return kubernetes.Clientset{}, errors.Wrap(err, "failed to create directory for kubeconfigs")
-		}
-
 		cmd := exec.Command("aws", "eks", "update-kubeconfig",
 			"--name", clusterName,
 			"--region", dcm.awsRegion,
