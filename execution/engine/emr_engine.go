@@ -97,7 +97,6 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		emr.awsRegion,
 		emr.log,
 		emr.stateManager,
-		emr.redisClient,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create dynamic cluster manager")

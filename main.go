@@ -14,7 +14,6 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	"github.com/stitchfix/flotilla-os/utils"
 	"log"
 	"os"
 )
@@ -43,10 +42,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize config"))
 		os.Exit(1)
-	}
-	redisClient, err := utils.SetupRedisClient(c)
-	if err != nil {
-		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize Redis client"))
 	}
 
 	//
@@ -111,7 +106,6 @@ func main() {
 		c.GetString("aws_default_region"),
 		logger,
 		stateManager,
-		redisClient,
 	)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize dynamic cluster manager"))

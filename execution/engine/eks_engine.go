@@ -74,7 +74,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		conf.GetString("aws_default_region"),
 		ee.log,
 		ee.stateManager,
-		ee.redisClient,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to create dynamic cluster manager")
