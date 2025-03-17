@@ -8,13 +8,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+
 	"github.com/stitchfix/flotilla-os/config"
-	utils "github.com/stitchfix/flotilla-os/execution"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -24,7 +26,6 @@ import (
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/clientcmd"
 	"regexp"
 	"strings"
 )
@@ -51,6 +52,9 @@ type EMRExecutionEngine struct {
 	clusters            []string
 	driverInstanceType  string
 	kClients            map[string]kubernetes.Clientset
+	clusterManager      *DynamicClusterManager
+	stateManager        state.Manager
+	redisClient         *redis.Client
 }
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
@@ -72,6 +76,8 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 	emr.driverInstanceType = conf.GetString("emr_driver_instance_type")
 
+	emr.redisClient, _ = utils.SetupRedisClient(conf)
+
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
 	sess = awstrace.WrapSession(sess)
@@ -87,47 +93,80 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		},
 	)
 
-	// Create K8s Client
-	emr.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
-	emr.kClients = make(map[string]kubernetes.Clientset)
-	for _, clusterName := range emr.clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		if err != nil {
-			return fmt.Errorf("error building kubeconfig: %v", err)
-		}
+	clusterManager, err := NewDynamicClusterManager(
+		emr.awsRegion,
+		emr.log,
+		emr.stateManager,
+		emr.redisClient,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create dynamic cluster manager")
+	}
+	emr.clusterManager = clusterManager
 
-		kClient, err := kubernetes.NewForConfig(clientConf)
-		_ = emr.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
-		if err != nil {
-			return fmt.Errorf("error creating kubernetes client: %v", err)
+	// Load from ENV variables
+	if conf.IsSet("eks_clusters") && conf.IsSet("eks_kubeconfig_basepath") {
+		clusters := strings.Split(conf.GetString("eks_clusters"), ",")
+		for i := range clusters {
+			clusters[i] = strings.TrimSpace(clusters[i])
 		}
-		emr.kClients[clusterName] = *kClient
+		basePath := conf.GetString("eks_kubeconfig_basepath")
+		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
+			emr.log.Log("message", "failed to initialize static clusters", "error", err.Error())
+			// Continue even if static clusters fail, we can fall back to dynamic loading
+		}
+	}
+	// Load from DB
+	if err := clusterManager.PreloadClusterClients(); err != nil {
+		emr.log.Log("message", "failed to preload cluster clients", "error", err.Error())
 	}
 
 	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)
 	return nil
 }
 
-func (emr *EMRExecutionEngine) GetClusters() []string {
-	var clusters []string
+// GetClusters returns a list of all available clusters for this engine
+func (emr *EMRExecutionEngine) GetClusters() ([]string, error) {
+	var allClusters []string
 	for k, v := range emr.emrVirtualClusters {
 		if v != "" {
-			clusters = append(clusters, k)
+			allClusters = append(allClusters, k)
 		}
 	}
 
-	return clusters
+	dbClusters, err := emr.stateManager.ListClusterStates()
+	if err != nil {
+		emr.log.Log("message", "failed to get clusters from database", "error", err.Error())
+		return allClusters, nil
+	}
+
+	for _, cluster := range dbClusters {
+		if cluster.Status == state.StatusActive && cluster.EMRVirtualCluster != "" {
+			// Check if this cluster is already in our list (from env vars)
+			found := false
+			for _, existingCluster := range allClusters {
+				if existingCluster == cluster.Name {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				allClusters = append(allClusters, cluster.Name)
+			}
+		}
+	}
+
+	return allClusters, nil
 }
 
 func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
-	kClient, ok := emr.kClients[run.ClusterName]
-	if !ok {
-		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
+	kClient, err := emr.clusterManager.GetKubernetesClient(run.ClusterName)
+	if err != nil {
+		return kubernetes.Clientset{}, errors.Wrapf(err, "failed to get Kubernetes client for cluster %s", run.ClusterName)
 	}
 	return kClient, nil
 }
-
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 
 	run = emr.estimateExecutorCount(run, manager)
@@ -144,7 +183,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		}
 	}
 
-	startJobRunInput := emr.generateEMRStartJobRunInput(executable, run, manager)
+	startJobRunInput, err := emr.generateEMRStartJobRunInput(executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
 	if err == nil {
@@ -227,9 +266,20 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 	}
 }
 
-func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) emrcontainers.StartJobRunInput {
+func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) (emrcontainers.StartJobRunInput, error) {
 	roleArn := emr.emrJobRoleArn[*run.ServiceAccount]
 	clusterID := emr.emrVirtualClusters[run.ClusterName]
+	if clusterID == "" {
+		clusterMetadata, err := manager.GetClusterByID(run.ClusterName)
+		if err == nil && clusterMetadata.EMRVirtualCluster != "" {
+			clusterID = clusterMetadata.EMRVirtualCluster
+		} else if err != nil {
+			return emrcontainers.StartJobRunInput{}, errors.Wrapf(err, "failed to get cluster metadata for %s", run.ClusterName)
+		}
+	}
+	if clusterID == "" {
+		return emrcontainers.StartJobRunInput{}, fmt.Errorf("EMR virtual cluster ID not found for EKS cluster: %s", run.ClusterName)
+	}
 	startJobRunInput := emrcontainers.StartJobRunInput{
 		ClientToken: &run.RunID,
 		ConfigurationOverrides: &emrcontainers.ConfigurationOverrides{
@@ -252,7 +302,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
 		VirtualClusterId: &clusterID,
 	}
-	return startJobRunInput
+	return startJobRunInput, nil
 }
 
 func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {

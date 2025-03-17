@@ -13,20 +13,22 @@ import (
 )
 
 type retryWorker struct {
-	sm           state.Manager
-	ee           engine.Engine
-	conf         config.Config
-	log          flotillaLog.Logger
-	pollInterval time.Duration
-	t            tomb.Tomb
+	sm             state.Manager
+	ee             engine.Engine
+	conf           config.Config
+	log            flotillaLog.Logger
+	pollInterval   time.Duration
+	t              tomb.Tomb
+	clusterManager *engine.DynamicClusterManager
 }
 
-func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	rw.pollInterval = pollInterval
 	rw.conf = conf
 	rw.sm = sm
 	rw.ee = eksEngine
 	rw.log = log
+	rw.clusterManager = clusterManager
 	rw.log.Log("message", "initialized a retry worker")
 	return nil
 }
@@ -35,9 +37,7 @@ func (rw *retryWorker) GetTomb() *tomb.Tomb {
 	return &rw.t
 }
 
-//
 // Run finds tasks that NEED_RETRY and requeues them
-//
 func (rw *retryWorker) Run() error {
 	for {
 		select {

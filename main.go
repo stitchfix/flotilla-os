@@ -14,8 +14,10 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -42,6 +44,10 @@ func main() {
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize config"))
 		os.Exit(1)
+	}
+	redisClient, err := utils.SetupRedisClient(c)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize Redis client"))
 	}
 
 	//
@@ -102,18 +108,43 @@ func main() {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize eks queue manager"))
 		os.Exit(1)
 	}
-
+	clusterManager, err := engine.NewDynamicClusterManager(
+		c.GetString("aws_default_region"),
+		logger,
+		stateManager,
+		redisClient,
+	)
+	if err != nil {
+		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize dynamic cluster manager"))
+		os.Exit(1)
+	}
+	// Load from env vars
+	if c.IsSet("eks_clusters") && c.IsSet("eks_kubeconfig_basepath") {
+		clusters := strings.Split(c.GetString("eks_clusters"), ",")
+		for i := range clusters {
+			clusters[i] = strings.TrimSpace(clusters[i])
+		}
+		basePath := c.GetString("eks_kubeconfig_basepath")
+		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
+			logger.Log("message", "failed to initialize static clusters", "error", err.Error())
+		}
+	}
+	// Load from db
+	if err := clusterManager.PreloadClusterClients(); err != nil {
+		logger.Log("message", "failed to preload cluster clients from database", "error", err.Error())
+		// Continue anyway
+	}
 	//
 	// Get execution engine for interacting with backend
 	// execution management framework (eg. EKS)
 	//
-	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine, logger)
+	eksExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSEngine, logger, clusterManager, stateManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EKS execution engine"))
 		os.Exit(1)
 	}
 
-	emrExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSSparkEngine, logger)
+	emrExecutionEngine, err := engine.NewExecutionEngine(c, eksQueueManager, state.EKSSparkEngine, logger, clusterManager, stateManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize EMR execution engine"))
 		os.Exit(1)
@@ -123,7 +154,7 @@ func main() {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize middleware client"))
 		os.Exit(1)
 	}
-	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager, middlewareClient)
+	app, err := flotilla.NewApp(c, logger, eksLogsClient, eksExecutionEngine, stateManager, eksClusterClient, eksQueueManager, emrExecutionEngine, emrQueueManager, middlewareClient, clusterManager)
 	if err != nil {
 		fmt.Printf("%+v\n", errors.Wrap(err, "unable to initialize app"))
 		os.Exit(1)

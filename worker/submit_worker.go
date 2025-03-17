@@ -2,7 +2,7 @@ package worker
 
 import (
 	"fmt"
-	"strings"
+	"github.com/stitchfix/flotilla-os/utils"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -15,24 +15,26 @@ import (
 )
 
 type submitWorker struct {
-	sm           state.Manager
-	eksEngine    engine.Engine
-	emrEngine    engine.Engine
-	conf         config.Config
-	log          flotillaLog.Logger
-	pollInterval time.Duration
-	t            tomb.Tomb
-	redisClient  *redis.Client
+	sm             state.Manager
+	eksEngine      engine.Engine
+	emrEngine      engine.Engine
+	conf           config.Config
+	log            flotillaLog.Logger
+	pollInterval   time.Duration
+	t              tomb.Tomb
+	redisClient    *redis.Client
+	clusterManager *engine.DynamicClusterManager
 }
 
-func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
 	sw.eksEngine = eksEngine
 	sw.emrEngine = emrEngine
 	sw.log = log
-	sw.redisClient = redis.NewClient(&redis.Options{Addr: strings.TrimPrefix(conf.GetString("redis_address"), "redis://"), DB: conf.GetInt("redis_db")})
+	sw.redisClient, _ = utils.SetupRedisClient(conf)
+	sw.clusterManager = clusterManager
 	_ = sw.log.Log("message", "initialized a submit worker")
 	return nil
 }

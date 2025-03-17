@@ -13,19 +13,15 @@ import (
 	"gopkg.in/tomb.v2"
 )
 
-//
 // Worker defines a background worker process
-//
 type Worker interface {
-	Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error
+	Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error
 	Run() error
 	GetTomb() *tomb.Tomb
 }
 
-//
 // NewWorker instantiates a new worker.
-//
-func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, eksEngine engine.Engine, emrEngine engine.Engine, sm state.Manager, qm queue.Manager) (Worker, error) {
+func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, eksEngine engine.Engine, emrEngine engine.Engine, sm state.Manager, qm queue.Manager, clusterManager *engine.DynamicClusterManager) (Worker, error) {
 	var worker Worker
 
 	switch workerType {
@@ -37,8 +33,6 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ek
 		worker = &statusWorker{}
 	case "worker_manager":
 		worker = &workerManager{}
-	case "cloudtrail":
-		worker = &cloudtrailWorker{}
 	case "events":
 		worker = &eventsWorker{}
 	default:
@@ -46,15 +40,13 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ek
 	}
 
 	pollInterval, err := GetPollInterval(workerType, conf)
-	if err = worker.Initialize(conf, sm, eksEngine, emrEngine, log, pollInterval, qm); err != nil {
+	if err = worker.Initialize(conf, sm, eksEngine, emrEngine, log, pollInterval, qm, clusterManager); err != nil {
 		return worker, errors.Wrapf(err, "problem initializing worker [%s]", workerType)
 	}
 	return worker, nil
 }
 
-//
 // GetPollInterval returns the frequency at which a worker will run.
-//
 func GetPollInterval(workerType string, conf config.Config) (time.Duration, error) {
 	var interval time.Duration
 	pollIntervalString := conf.GetString(fmt.Sprintf("worker_%s_interval", workerType))

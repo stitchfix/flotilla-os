@@ -14,19 +14,20 @@ import (
 )
 
 type workerManager struct {
-	sm           state.Manager
-	eksEngine    engine.Engine
-	emrEngine    engine.Engine
-	conf         config.Config
-	log          flotillaLog.Logger
-	pollInterval time.Duration
-	workers      map[string][]Worker
-	t            tomb.Tomb
-	engine       *string
-	qm           queue.Manager
+	sm             state.Manager
+	eksEngine      engine.Engine
+	emrEngine      engine.Engine
+	conf           config.Config
+	log            flotillaLog.Logger
+	pollInterval   time.Duration
+	workers        map[string][]Worker
+	t              tomb.Tomb
+	engine         *string
+	qm             queue.Manager
+	clusterManager *engine.DynamicClusterManager
 }
 
-func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	wm.conf = conf
 	wm.log = log
 	wm.eksEngine = eksEngine
@@ -34,6 +35,7 @@ func (wm *workerManager) Initialize(conf config.Config, sm state.Manager, eksEng
 	wm.sm = sm
 	wm.qm = qm
 	wm.pollInterval = pollInterval
+	wm.clusterManager = clusterManager
 
 	if err := wm.InitializeWorkers(); err != nil {
 		return errors.Errorf("WorkerManager unable to initialize workers: %s", err.Error())
@@ -63,7 +65,7 @@ func (wm *workerManager) InitializeWorkers() error {
 		wm.workers[w.WorkerType] = make([]Worker, w.CountPerInstance)
 		for i := 0; i < w.CountPerInstance; i++ {
 			// Instantiate a new worker.
-			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm)
+			wk, err := NewWorker(w.WorkerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm, wm.clusterManager)
 
 			if err != nil {
 				return err
@@ -155,7 +157,7 @@ func (wm *workerManager) removeWorker(workerType string) error {
 }
 
 func (wm *workerManager) addWorker(workerType string) error {
-	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm)
+	wk, err := NewWorker(workerType, wm.log, wm.conf, wm.eksEngine, wm.emrEngine, wm.sm, wm.qm, wm.clusterManager)
 
 	if err != nil {
 		return err

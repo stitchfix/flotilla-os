@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/go-redis/redis"
+	"github.com/stitchfix/flotilla-os/utils"
 	"strings"
 	"time"
 
@@ -18,13 +20,11 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
-	kubernetestrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/k8s.io/client-go/kubernetes"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sJson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
@@ -47,31 +47,13 @@ type EKSExecutionEngine struct {
 	s3BucketRootDir string
 	statusQueue     string
 	clusters        []string
+	clusterManager  *DynamicClusterManager
+	stateManager    state.Manager
+	redisClient     *redis.Client
 }
 
 // Initialize configures the EKSExecutionEngine and initializes internal clients
 func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
-	ee.clusters = strings.Split(conf.GetString("eks_clusters"), ",")
-	ee.kClients = make(map[string]kubernetes.Clientset)
-	ee.metricsClients = make(map[string]metricsv.Clientset)
-
-	for _, clusterName := range ee.clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		if err != nil {
-			return err
-		}
-		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
-		kClient, err := kubernetes.NewForConfig(clientConf)
-
-		_ = ee.log.Log("message", "initializing-eks-clusters", clusterName, "filename", filename, "client", clientConf.ServerName)
-		if err != nil {
-			return err
-		}
-		ee.kClients[clusterName] = *kClient
-		ee.metricsClients[clusterName] = *metricsv.NewForConfigOrDie(clientConf)
-	}
-
 	ee.jobQueue = conf.GetString("eks_job_queue")
 	ee.schedulerName = "default-scheduler"
 
@@ -86,8 +68,35 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobSA = conf.GetString("eks_default_service_account")
 	ee.jobARAEnabled = true
 
-	adapt, err := adapter.NewEKSAdapter()
+	ee.redisClient, _ = utils.SetupRedisClient(conf)
 
+	clusterManager, err := NewDynamicClusterManager(
+		conf.GetString("aws_default_region"),
+		ee.log,
+		ee.stateManager,
+		ee.redisClient,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create dynamic cluster manager")
+	}
+	ee.clusterManager = clusterManager
+	// Load config from ENV variables
+	if conf.IsSet("eks_clusters") && conf.IsSet("eks_kubeconfig_basepath") {
+		clusters := strings.Split(conf.GetString("eks_clusters"), ",")
+		for i := range clusters {
+			clusters[i] = strings.TrimSpace(clusters[i])
+		}
+		basePath := conf.GetString("eks_kubeconfig_basepath")
+		if err := clusterManager.InitializeWithStaticClusters(clusters, basePath); err != nil {
+			ee.log.Log("message", "failed to initialize static clusters", "error", err.Error())
+		}
+	}
+	// Load config from DB
+	if err := clusterManager.PreloadClusterClients(); err != nil {
+		ee.log.Log("message", "failed to preload cluster clients", "error", err.Error())
+	}
+
+	adapt, err := adapter.NewEKSAdapter()
 	if err != nil {
 		return err
 	}
@@ -109,13 +118,11 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.s3BucketRootDir = conf.GetString("eks_manifest_storage_options_s3_bucket_root_dir")
 
 	ee.adapter = adapt
-	fmt.Printf("EKS Engine initialized\nClusters: %s\n", ee.clusters)
-
 	return nil
 }
 
-func (ee *EKSExecutionEngine) GetClusters() []string {
-	return ee.clusters
+func (ee *EKSExecutionEngine) GetClusters() ([]string, error) {
+	return ee.clusterManager.GetClusters()
 }
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
@@ -256,9 +263,9 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 }
 
 func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
-	kClient, ok := ee.kClients[run.ClusterName]
-	if !ok {
-		return kubernetes.Clientset{}, errors.New(fmt.Sprintf("Invalid cluster name - %s", run.ClusterName))
+	kClient, err := ee.clusterManager.GetKubernetesClient(run.ClusterName)
+	if err != nil {
+		return kubernetes.Clientset{}, errors.Wrapf(err, "failed to get Kubernetes client for cluster %s", run.ClusterName)
 	}
 	return kClient, nil
 }
@@ -418,9 +425,9 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
 	ctx := context.Background()
 	if run.PodName != nil {
-		metricsClient, ok := ee.metricsClients[run.ClusterName]
-		if !ok {
-			return run, errors.New("Metrics client not defined.")
+		metricsClient, err := ee.clusterManager.GetMetricsClient(run.ClusterName)
+		if err != nil {
+			return run, errors.Wrapf(err, "failed to get metrics client for cluster %s", run.ClusterName)
 		}
 		start := time.Now()
 		podMetrics, err := metricsClient.MetricsV1beta1().PodMetricses(ee.jobNamespace).Get(ctx, *run.PodName, metav1.GetOptions{})

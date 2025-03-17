@@ -39,9 +39,10 @@ type eventsWorker struct {
 	emrMaxPodEvents   int
 	eksEngine         engine.Engine
 	emrEngine         engine.Engine
+	clusterManager    *engine.DynamicClusterManager
 }
 
-func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	ew.pollInterval = pollInterval
 	ew.conf = conf
 	ew.sm = sm
@@ -55,6 +56,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrAppServer = conf.GetStringMapString("emr_app_server_uri")
 	ew.emrMetricsServer = conf.GetString("emr_metrics_server_uri")
 	ew.eksMetricsServer = conf.GetString("eks_metrics_server_uri")
+	ew.clusterManager = clusterManager
 	if conf.IsSet("emr_max_attempt_count") {
 		ew.emrMaxPodEvents = conf.GetInt("emr_max_pod_events")
 	} else {
