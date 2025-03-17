@@ -4,6 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/clients/middleware"
@@ -12,10 +17,6 @@ import (
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/utils"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 )
 
 type endpoints struct {
@@ -401,6 +402,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			EphemeralStorage: nil,
 			NodeLifecycle:    nil,
 			CommandHash:      nil,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -468,6 +470,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Arch:             lr.Arch,
 			Labels:           lr.Labels,
 			ServiceAccount:   lr.ServiceAccount,
+			Tier:             lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
@@ -490,20 +493,17 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		ep.encodeError(w, exceptions.MalformedInput{ErrorString: err.Error()})
 		return
 	}
-
 	err = ep.middlewareClient.AnnotateLaunchRequest(&r.Header, &lr)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
 	}
-
 	if len(lr.RunTags.OwnerID) == 0 {
 		ep.encodeError(w, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("run_tags must exist in body and contain [owner_id]")})
 		return
 	}
-
-	if lr.Engine == nil || *lr.Engine == "ecs" {
+	if lr.Engine == nil {
 		if lr.SparkExtension != nil {
 			lr.Engine = &state.EKSSparkEngine
 		} else {
@@ -511,37 +511,13 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	isValidCluster := false
-	clusters, _ := ep.executionService.ListClusters()
-
-	if lr.ClusterName == nil {
-		cl := ep.executionService.GetDefaultCluster()
-		lr.ClusterName = &cl
-	}
-
-	for _, c := range clusters {
-		if c == *lr.ClusterName {
-			isValidCluster = true
-			break
-		}
-	}
-
-	if !isValidCluster {
-		defaultCluster := ep.executionService.GetDefaultCluster()
-		msg := fmt.Sprintf("flotilla is not configured to execute on cluster %s\nconfigured clusters: %s\nFalling back to default cluster %s", *lr.ClusterName, clusters, defaultCluster)
-		lrStruct, err := json.Marshal(lr)
-		if err != nil {
-			ep.logger.Log(
-				"message", msg,
-				"launch_request", fmt.Sprintf("%q", lrStruct),
-				"operation", "CreateRunV4",
-			)
-		}
+	if err != nil {
 		ep.logger.Log(
-			"message", msg,
+			"message", "problem listing clusters",
 			"operation", "CreateRunV4",
-		)
-		*lr.ClusterName = defaultCluster
+			"error", fmt.Sprintf("%+v", err))
+		ep.encodeError(w, err)
+		return
 	}
 
 	if lr.CommandHash == nil && lr.Description != nil {
@@ -558,7 +534,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		lr.NodeLifecycle = &state.DefaultLifecycle
 	}
 	vars := mux.Vars(r)
-
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			ClusterName:           *lr.ClusterName,
@@ -579,11 +554,11 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
 			ServiceAccount:        lr.ServiceAccount,
+			Tier:                  lr.Tier,
 		},
 	}
 
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
-
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -658,6 +633,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Arch:                  lr.Arch,
 			Labels:                lr.Labels,
 			ServiceAccount:        lr.ServiceAccount,
+			Tier:                  lr.Tier,
 		},
 	}
 	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
@@ -818,16 +794,13 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 	clusters, err := ep.executionService.ListClusters()
 	if err != nil {
-		ep.logger.Log(
-			"message", "problem listing clusters",
-			"operation", "ListClusters",
-			"error", fmt.Sprintf("%+v", err))
 		ep.encodeError(w, err)
-	} else {
-		response := make(map[string]interface{})
-		response["clusters"] = clusters
-		ep.encodeResponse(w, response)
+		return
 	}
+
+	ep.encodeResponse(w, map[string]interface{}{
+		"clusters": clusters,
+	})
 }
 
 // List active workers.
@@ -1069,4 +1042,92 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ep.encodeResponse(w, created)
 	}
+}
+
+// Get a cluster.
+func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cluster, err := ep.executionService.GetClusterByID(vars["cluster_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+	ep.encodeResponse(w, cluster)
+}
+
+// Update a cluster.
+func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var clusterMetadata state.ClusterMetadata
+	if err := json.NewDecoder(r.Body).Decode(&clusterMetadata); err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	if vars["cluster_id"] != "" {
+		clusterMetadata.ID = vars["cluster_id"]
+	}
+	err := ep.executionService.UpdateClusterMetadata(clusterMetadata)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+	ep.encodeResponse(w, map[string]bool{"updated": true})
+}
+
+func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	err := ep.executionService.DeleteClusterMetadata(vars["cluster_id"])
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+	ep.encodeResponse(w, map[string]bool{"deleted": true})
+}
+
+// Health check endpoint.
+func (ep *endpoints) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	healthy := true
+	var err error
+	// Try to list clusters as a simple DB check
+	_, err = ep.executionService.ListClusters()
+	if err != nil {
+		healthy = false
+		ep.logger.Log(
+			"message", "health check failed",
+			"error", err.Error())
+	}
+
+	if healthy {
+		ep.encodeResponse(w, map[string]string{
+			"status":  "healthy",
+			"message": "Service is up and running",
+		})
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		ep.encodeResponse(w, map[string]string{
+			"status":  "unhealthy",
+			"message": "Service is experiencing issues",
+			"error":   err.Error(),
+		})
+	}
+}
+
+// Create a new cluster.
+func (ep *endpoints) CreateCluster(w http.ResponseWriter, r *http.Request) {
+	var cluster state.ClusterMetadata
+	if err := json.NewDecoder(r.Body).Decode(&cluster); err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	cluster.ID = ""
+
+	err := ep.executionService.UpdateClusterMetadata(cluster)
+	if err != nil {
+		ep.encodeError(w, err)
+		return
+	}
+
+	ep.encodeResponse(w, map[string]bool{"created": true})
 }

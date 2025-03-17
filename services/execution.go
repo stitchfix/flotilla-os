@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"math/rand"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/stitchfix/flotilla-os/clients/cluster"
 	"github.com/stitchfix/flotilla-os/config"
@@ -36,11 +37,14 @@ type ExecutionService interface {
 	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error
 	Terminate(runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
-	ListClusters() ([]string, error)
+	ListClusters() ([]state.ClusterMetadata, error)
 	GetDefaultCluster() string
 	GetEvents(run state.Run) (state.PodEventList, error)
 	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
 	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
+	UpdateClusterMetadata(cluster state.ClusterMetadata) error
+	DeleteClusterMetadata(clusterID string) error
+	GetClusterByID(clusterID string) (state.ClusterMetadata, error)
 }
 
 type executionService struct {
@@ -51,6 +55,7 @@ type executionService struct {
 	reservedEnv           map[string]func(run state.Run) string
 	eksClusterOverride    string
 	eksClusterDefault     string
+	eksTierDefault        string
 	eksGPUClusterOverride string
 	eksGPUClusterDefault  string
 	checkImageValidity    bool
@@ -60,6 +65,7 @@ type executionService struct {
 	spotThresholdMinutes  float64
 	terminateJobChannel   chan state.TerminateJob
 	validEksClusters      []string
+	//validEksClusterTiers  string
 }
 
 func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
@@ -87,11 +93,17 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	for k, _ := range es.validEksClusters {
 		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
 	}
+	dbClusters, _ := es.stateManager.ListClusterStates()
+	for _, cluster := range dbClusters {
+		es.validEksClusters = append(es.validEksClusters, cluster.Name)
+	}
 
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	es.eksClusterDefault = conf.GetString("eks_cluster_default")
 	es.eksGPUClusterDefault = conf.GetString("eks_gpu_cluster_default")
+	es.eksTierDefault = conf.GetString("eks_tier_default")
+	//es.validEksClusterTiers = conf.GetString("eks_cluster_tiers")
 
 	if !slices.Contains(es.validEksClusters, es.eksClusterDefault) || !slices.Contains(es.validEksClusters, es.eksGPUClusterDefault) {
 		return nil, fmt.Errorf("an invalid cluster has been set as a default\nvalid_clusters:%s\neks_cluster_default:%s\neks_gpu_cluster_default:%s", es.validEksClusters, es.eksClusterDefault, es.eksGPUClusterDefault)
@@ -187,31 +199,37 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	/*
 		cluster is set based on the following precedence (low to high):
-			1. Default cluster from config
-			2. Cluster from task definition
-			3. Cluster from API/req
+			1. Cluster is passed in from request
+			2. Cluster from cluster metadata and active
+			3. Cluster from task definition
+			3. Default cluster from config
 
 		cluster is then checked for validity.
 
 		if required, cluster overrides should be introduced and set here
 	*/
-
-	if fields.ClusterName == "" {
-		if fields.Gpu != nil && *fields.Gpu > 0 {
-			fields.ClusterName = es.eksGPUClusterDefault
-		} else {
-			fields.ClusterName = es.eksClusterDefault
+	clusterMetadata, err := es.ListClusters()
+	var activeClusters []string
+	if len(clusterMetadata) > 0 {
+		for _, cluster := range clusterMetadata {
+			if cluster.Status == state.StatusActive {
+				if es.clusterSupportsTier(cluster, req.Tier) {
+					activeClusters = append(activeClusters, cluster.Name)
+				}
+			}
 		}
-	}
-
-	if definition.TargetCluster != "" {
-		fields.ClusterName = definition.TargetCluster
 	}
 
 	if req.ClusterName != "" {
-		if es.isClusterValid(req.ClusterName) {
-			fields.ClusterName = req.ClusterName
-		}
+		fields.ClusterName = req.ClusterName
+	} else if len(activeClusters) > 0 {
+		fields.ClusterName = activeClusters[rand.Intn(len(activeClusters))]
+	} else if definition.TargetCluster != "" {
+		fields.ClusterName = definition.TargetCluster
+	} else if fields.Gpu != nil && *fields.Gpu > 0 {
+		fields.ClusterName = es.eksGPUClusterDefault
+	} else {
+		fields.ClusterName = es.eksClusterDefault
 	}
 
 	if !es.isClusterValid(fields.ClusterName) {
@@ -220,13 +238,11 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
-
 	// Construct run object with StatusQueued and new UUID4 run id
 	run, err = es.constructRunFromDefinition(definition, req)
 	if err != nil {
 		return run, err
 	}
-
 	return es.createAndEnqueueRun(run)
 }
 
@@ -271,7 +287,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 	)
 
 	fields.Engine = req.GetExecutionRequestCommon().Engine
-
+	fields.Tier = req.GetExecutionRequestCommon().Tier
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
 	// `executableCmd` as the Run's Command.
@@ -342,6 +358,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		SparkExtension:        fields.SparkExtension,
 		CommandHash:           fields.CommandHash,
 		ServiceAccount:        fields.ServiceAccount,
+		Tier:                  fields.Tier,
 	}
 
 	if fields.Labels != nil {
@@ -486,9 +503,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 					RunID:    subRun.RunID,
 					UserInfo: job.UserInfo,
 				}
-				go es.terminateWorker(es.terminateJobChannel)
 			}
-
 		}
 
 		if run.Engine == nil {
@@ -527,9 +542,13 @@ func (es *executionService) Terminate(runID string, userInfo state.UserInfo) err
 	return nil
 }
 
-// ListClusters returns a list of all execution clusters available
-func (es *executionService) ListClusters() ([]string, error) {
-	return es.validEksClusters, nil
+// ListClusters returns a list of all execution clusters available with their metadata
+func (es *executionService) ListClusters() ([]state.ClusterMetadata, error) {
+	clusters, err := es.stateManager.ListClusterStates()
+	if err != nil {
+		return nil, err
+	}
+	return clusters, nil
 }
 
 func (es *executionService) GetDefaultCluster() string {
@@ -545,7 +564,6 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 	if es.eksSpotOverride {
 		fields.NodeLifecycle = &state.OndemandLifecycle
 	}
-
 	if fields.ActiveDeadlineSeconds == nil {
 		if fields.NodeLifecycle == &state.OndemandLifecycle {
 			fields.ActiveDeadlineSeconds = &state.OndemandActiveDeadlineSeconds
@@ -580,7 +598,6 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	} else {
 		err = es.emrExecutionEngine.Enqueue(run)
 	}
-
 	queuedAt := time.Now()
 
 	if err != nil {
@@ -591,7 +608,6 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
-
 	return run, nil
 }
 func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
@@ -659,9 +675,32 @@ func (es *executionService) constructRunFromTemplate(template state.Template, re
 	return run, nil
 }
 
-func (es *executionService) isClusterValid(clusterName string) bool {
-	if slices.Contains(es.validEksClusters, clusterName) {
-		return true
+// clusterSupportsTier checks if a cluster supports the specified tier
+func (es *executionService) clusterSupportsTier(cluster state.ClusterMetadata, requestedTier state.Tier) bool {
+	if requestedTier == "" {
+		requestedTier = state.Tier(es.eksTierDefault)
 	}
+	for _, allowedTier := range cluster.AllowedTiers {
+		if allowedTier == string(requestedTier) {
+			return true
+		}
+	}
+
 	return false
+}
+
+func (es *executionService) isClusterValid(clusterName string) bool {
+	return slices.Contains(es.validEksClusters, clusterName)
+}
+
+func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
+	return es.stateManager.UpdateClusterMetadata(cluster)
+}
+
+func (es *executionService) DeleteClusterMetadata(clusterID string) error {
+	return es.stateManager.DeleteClusterMetadata(clusterID)
+}
+
+func (es *executionService) GetClusterByID(clusterID string) (state.ClusterMetadata, error) {
+	return es.stateManager.GetClusterByID(clusterID)
 }

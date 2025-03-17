@@ -2,10 +2,11 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/config"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/config"
 )
 
 type Metric string
@@ -82,7 +83,7 @@ var instance Client
 func InstantiateClient(conf config.Config) error {
 	// Return an error if `metrics_client` isn't set in config.
 	if !conf.IsSet("metrics_client") {
-		return fmt.Errorf("`metrics_client` not set in config, unable to instantiate metrics client.")
+		return fmt.Errorf("`metrics_client` not set in config, unable to instantiate metrics client")
 	}
 
 	var err error = nil
@@ -99,7 +100,7 @@ func InstantiateClient(conf config.Config) error {
 				break
 			}
 		default:
-			err = fmt.Errorf("No Client named [%s] was found", name)
+			err = fmt.Errorf("no client named [%s] was found", name)
 		}
 	})
 
@@ -124,9 +125,7 @@ func Increment(name Metric, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Increment metric.")
 }
 
-//
 // Histogram tracks the statistical distribution of a set of values
-//
 func Histogram(name Metric, value float64, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Histogram(name, value, tags, rate)
@@ -135,9 +134,7 @@ func Histogram(name Metric, value float64, tags []string, rate float64) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Histogram metric.")
 }
 
-//
 // Distribution tracks the statistical distribution of a set of values
-//
 func Distribution(name Metric, value float64, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Distribution(name, value, tags, rate)
@@ -168,9 +165,7 @@ func Event(title string, text string, tags []string) error {
 	return errors.Errorf("MetricsClient instance is nil, unable to send Event metric.")
 }
 
-//
 // Timing sends timing information, it is an alias for TimeInMilliseconds
-//
 func Timing(name Metric, value time.Duration, tags []string, rate float64) error {
 	if instance != nil {
 		return instance.Timing(name, value, tags, rate)

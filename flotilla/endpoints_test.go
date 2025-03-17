@@ -3,14 +3,15 @@ package flotilla
 import (
 	"bytes"
 	"encoding/json"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/services"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
-	"net/http/httptest"
-	"testing"
 )
 
 func setUp(t *testing.T) *muxtrace.Router {
@@ -24,16 +25,20 @@ func setUp(t *testing.T) *muxtrace.Router {
 			"C": {DefinitionID: "C", Alias: "aliasC", ExecutableResources: state.ExecutableResources{Image: "invalidimage"}},
 		},
 		Runs: map[string]state.Run{
-			"runA": {DefinitionID: "A", ClusterName: "A",
+			"runA": {DefinitionID: "A", ClusterName: "cluster1",
 				GroupName: "A",
 				RunID:     "runA", Status: state.StatusRunning},
-			"runB": {DefinitionID: "B", ClusterName: "B",
+			"runB": {DefinitionID: "B", ClusterName: "cluster2",
 				GroupName: "B", RunID: "runB",
 				InstanceDNSName: "cupcakedns", InstanceID: "cupcakeid"},
 		},
 		Qurls: map[string]string{
 			"A": "a/",
 			"B": "b/",
+		},
+		ClusterStates: []state.ClusterMetadata{
+			{Name: "cluster1", Status: state.StatusActive, StatusReason: "Active and healthy"},
+			{Name: "cluster2", Status: state.StatusActive, StatusReason: "Active and healthy"},
 		},
 		Groups: []string{"g1", "g2", "g3"},
 		Tags:   []string{"t1", "t2", "t3"},
@@ -181,7 +186,7 @@ func TestEndpoints_CreateRun2(t *testing.T) {
 func TestEndpoints_CreateRun4(t *testing.T) {
 	router := setUp(t)
 
-	newRun := `{"cluster":"cupcake", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}, "labels": {"foo": "bar"}}`
+	newRun := `{"cluster":"cluster1", "env":[{"name":"E1","value":"V1"}], "run_tags":{"owner_id":"flotilla"}, "labels": {"foo": "bar"}}`
 	req := httptest.NewRequest("PUT", "/api/v4/task/A/execute", bytes.NewBufferString(newRun))
 	w := httptest.NewRecorder()
 
@@ -711,5 +716,173 @@ func TestEndpoints_StopRun(t *testing.T) {
 	}
 	if _, ok := ack["terminated"]; !ok {
 		t.Errorf("Expected [terminated] acknowledgement")
+	}
+}
+
+func TestEndpoints_ListClusters(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("GET", "/api/v6/clusters", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var response map[string]interface{}
+	err := json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	clusters, ok := response["clusters"]
+	if !ok {
+		t.Errorf("Expected clusters in response")
+	}
+
+	clustersList, ok := clusters.([]interface{})
+	if !ok {
+		t.Errorf("Cannot cast clusters to list, expected list")
+	}
+
+	if len(clustersList) != 2 {
+		t.Errorf("Expected 2 clusters, got %d", len(clustersList))
+	}
+
+	cluster, ok := clustersList[0].(map[string]interface{})
+	if !ok {
+		t.Errorf("Cannot cast cluster to map, expected map")
+	}
+
+	if _, ok := cluster["name"]; !ok {
+		t.Errorf("Expected cluster to have name field")
+	}
+
+	if _, ok := cluster["status"]; !ok {
+		t.Errorf("Expected cluster to have status field")
+	}
+}
+
+func TestEndpoints_GetCluster(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("GET", "/api/v6/clusters/cluster1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var cluster map[string]interface{}
+	err := json.NewDecoder(resp.Body).Decode(&cluster)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if _, ok := cluster["name"]; !ok {
+		t.Errorf("Expected cluster to have name field")
+	}
+
+	if _, ok := cluster["status"]; !ok {
+		t.Errorf("Expected cluster to have status field")
+	}
+}
+
+func TestEndpoints_UpdateCluster(t *testing.T) {
+	router := setUp(t)
+
+	updateReq := `{"status":"ACTIVE", "reason":"Testing update"}`
+	req := httptest.NewRequest("PUT", "/api/v6/clusters/cluster1", bytes.NewBufferString(updateReq))
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var ack map[string]bool
+	err := json.NewDecoder(resp.Body).Decode(&ack)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if _, ok := ack["updated"]; !ok {
+		t.Errorf("Expected [updated] acknowledgement")
+	}
+}
+
+func TestEndpoints_DeleteCluster(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("DELETE", "/api/v6/clusters/cluster1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var ack map[string]bool
+	err := json.NewDecoder(resp.Body).Decode(&ack)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if _, ok := ack["deleted"]; !ok {
+		t.Errorf("Expected [deleted] acknowledgement")
+	}
+}
+
+func TestEndpoints_CreateCluster(t *testing.T) {
+	router := setUp(t)
+
+	req := httptest.NewRequest("POST", "/api/v6/clusters", bytes.NewBufferString(`{"name":"cluster1", "status":"ACTIVE", "reason":"Testing create"}`))
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	resp := w.Result()
+
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Expected Content-Type [application/json; charset=utf-8], but was [%s]", resp.Header.Get("Content-Type"))
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("Expected status 200, was %v", resp.StatusCode)
+	}
+
+	var ack map[string]bool
+	err := json.NewDecoder(resp.Body).Decode(&ack)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if _, ok := ack["created"]; !ok {
+		t.Errorf("Expected [created] acknowledgement")
 	}
 }

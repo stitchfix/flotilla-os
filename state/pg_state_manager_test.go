@@ -2,12 +2,16 @@ package state
 
 import (
 	"fmt"
-	gklog "github.com/go-kit/kit/log"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	gklog "github.com/go-kit/kit/log"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
+
+	"database/sql/driver"
+	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -71,9 +75,9 @@ func insertDefinitions(db *sqlx.DB) {
 	taskSQL := `
     INSERT INTO task (
       run_id, definition_id, cluster_name, alias, image, exit_code, status,
-      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine, "user", service_account
+      started_at, finished_at, instance_id, instance_dns_name, group_name, env, engine, "user", service_account, tier
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks', 'foo', 'flotilla'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'eks', 'foo', 'flotilla', $14
     )
     `
 
@@ -106,19 +110,19 @@ func insertDefinitions(db *sqlx.DB) {
 	t4, _ := time.Parse(time.RFC3339, "2017-07-04T00:04:00+00:00")
 
 	db.MustExec(taskSQL,
-		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`)
+		"run0", "A", "clusta", "aliasA", "imgA", nil, StatusRunning, t1, nil, "id1", "dns1", "groupZ", `[{"name":"E0","value":"V0"}]`, 4)
 	db.MustExec(
-		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`)
+		taskSQL, "run1", "B", "clusta", "aliasB", "imgB", nil, StatusRunning, t2, nil, "id1", "dns1", "groupY", `[{"name":"E1","value":"V1"}]`, 4)
 
 	db.MustExec(
-		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`)
+		taskSQL, "run2", "B", "clusta", "aliasB", "imgB", 1, StatusStopped, t2, t3, "id1", "dns1", "groupY", `[{"name":"E2","value":"V2"}]`, 4)
 
 	db.MustExec(taskSQL,
 		"run3", "C", "clusta", "aliasC", "imgC", nil, StatusQueued, nil, nil, "", "", "groupX",
-		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`)
+		`[{"name":"E3_1","value":"V3_1"},{"name":"E3_2","value":"v3_2"},{"name":"E3_3","value":"V3_3"}]`, 4)
 
-	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil)
-	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil)
+	db.MustExec(taskSQL, "run4", "C", "clusta", "aliasC", "imgC", 0, StatusStopped, t3, t4, "id1", "dns1", "groupX", nil, 4)
+	db.MustExec(taskSQL, "run5", "D", "clustb", "aliasD", "imgD", nil, StatusPending, nil, nil, "", "", "groupW", nil, 4)
 }
 
 func tearDown() {
@@ -499,6 +503,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 			{Name: "RUN_PARAM", Value: "VAL"},
 		},
 		Engine: &DefaultEngine,
+		Tier:   Tier("4"),
 	}
 
 	ec := int64(137)
@@ -528,6 +533,7 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Command: &cmd,
 		Memory:  &mem,
 		Engine:  &DefaultEngine,
+		Tier:    Tier("4"),
 	}
 	sm.CreateRun(r1)
 	sm.CreateRun(r2)
@@ -619,6 +625,7 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		StartedAt:  &t1,
 		FinishedAt: &t2,
 		Env:        &env,
+		Tier:       Tier("4"),
 	}
 	u2 := Run{
 		Status: StatusNeedsRetry,
@@ -678,4 +685,443 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	if r.Status != u2.Status {
 		t.Errorf("Expected to update status to %s but was %s", u2.Status, r.Status)
 	}
+}
+
+func TestSQLStateManager_ListClusterStates(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// Simple test to ensure the method exists and returns without error
+	_, err := sm.ListClusterStates()
+	if err != nil {
+		t.Errorf("Error listing cluster states: %v", err)
+	}
+}
+
+func TestStringArray_Scan(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected Tiers
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: Tiers{},
+			wantErr:  false,
+		},
+		{
+			name:     "empty array",
+			input:    []byte("{}"),
+			expected: Tiers{},
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			input:    []byte("{\"tier1\"}"),
+			expected: Tiers{"tier1"},
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			input:    []byte("{\"tier1\",\"tier2\",\"tier3\"}"),
+			expected: Tiers{"tier1", "tier2", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "values with empty elements",
+			input:    []byte("{\"tier1\",,\"tier3\"}"),
+			expected: Tiers{"tier1", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "unquoted values",
+			input:    []byte("{tier1,tier2,tier3}"),
+			expected: Tiers{"tier1", "tier2", "tier3"},
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported type",
+			input:    123,
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result Tiers
+			err := result.Scan(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StringArray.Scan() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("StringArray.Scan() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestStringArray_Value(t *testing.T) {
+	tests := []struct {
+		name     string
+		array    Tiers
+		expected driver.Value
+		wantErr  bool
+	}{
+		{
+			name:     "empty slice",
+			array:    Tiers{},
+			expected: "{}",
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			array:    Tiers{"tier1"},
+			expected: "{\"tier1\"}",
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			array:    Tiers{"tier1", "tier2", "tier3"},
+			expected: "{\"tier1\",\"tier2\",\"tier3\"}",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.array.Value()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StringArray.Value() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("StringArray.Value() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+// This test verifies that a value that's converted to a database format
+// can be correctly scanned back into the original structure
+func TestStringArray_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name  string
+		array Tiers
+	}{
+		{
+			name:  "empty array",
+			array: Tiers{},
+		},
+		{
+			name:  "single value",
+			array: Tiers{"tier1"},
+		},
+		{
+			name:  "multiple values",
+			array: Tiers{"tier1", "tier2", "tier3"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dbValue, err := tt.array.Value()
+			if err != nil {
+				t.Fatalf("Failed to convert to DB value: %v", err)
+			}
+
+			stringValue, ok := dbValue.(string)
+			if !ok {
+				t.Fatalf("Expected dbValue to be a string, got %T", dbValue)
+			}
+			byteValue := []byte(stringValue)
+
+			var result Tiers
+			err = result.Scan(byteValue)
+			if err != nil {
+				t.Fatalf("Failed to scan from DB value: %v", err)
+			}
+
+			if !reflect.DeepEqual(result, tt.array) {
+				t.Errorf("Round trip failed: got %v, want %v", result, tt.array)
+			}
+		})
+	}
+}
+
+func TestCapabilities_Scan(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected Capabilities
+		wantErr  bool
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: Capabilities{},
+			wantErr:  false,
+		},
+		{
+			name:     "empty array",
+			input:    []byte("{}"),
+			expected: Capabilities{},
+			wantErr:  false,
+		},
+		{
+			name:     "single value",
+			input:    []byte("{spark}"),
+			expected: Capabilities{"spark"},
+			wantErr:  false,
+		},
+		{
+			name:     "multiple values",
+			input:    []byte("{spark,ray,gpu}"),
+			expected: Capabilities{"spark", "ray", "gpu"},
+			wantErr:  false,
+		},
+		{
+			name:     "values with empty elements",
+			input:    []byte("{spark,gpu}"),
+			expected: Capabilities{"spark", "gpu"},
+			wantErr:  false,
+		},
+		{
+			name:     "unsupported type",
+			input:    123,
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result Capabilities
+			err := result.Scan(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Capabilities.Scan() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Capabilities.Scan() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCapabilities_Value(t *testing.T) {
+	tests := []struct {
+		name         string
+		capabilities Capabilities
+		expected     driver.Value
+		wantErr      bool
+	}{
+		{
+			name:         "empty slice",
+			capabilities: Capabilities{},
+			expected:     "{}",
+			wantErr:      false,
+		},
+		{
+			name:         "single value",
+			capabilities: Capabilities{"gpu"},
+			expected:     "{gpu}",
+			wantErr:      false,
+		},
+		{
+			name:         "multiple values",
+			capabilities: Capabilities{"gpu", "cpu", "memory"},
+			expected:     "{gpu,cpu,memory}",
+			wantErr:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.capabilities.Value()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Capabilities.Value() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("Capabilities.Value() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCapabilities_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name         string
+		capabilities Capabilities
+	}{
+		{
+			name:         "empty capabilities",
+			capabilities: Capabilities{},
+		},
+		{
+			name:         "single capability",
+			capabilities: Capabilities{"gpu"},
+		},
+		{
+			name:         "multiple capabilities",
+			capabilities: Capabilities{"gpu", "spark", "ray"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Convert to database value
+			dbValue, err := tt.capabilities.Value()
+			if err != nil {
+				t.Fatalf("Failed to convert to DB value: %v", err)
+			}
+
+			// Convert the string to []byte since that's what
+			// would happen in a real database call
+			stringValue, ok := dbValue.(string)
+			if !ok {
+				t.Fatalf("Expected dbValue to be a string, got %T", dbValue)
+			}
+			byteValue := []byte(stringValue)
+
+			// Convert database value back to Capabilities
+			var result Capabilities
+			err = result.Scan(byteValue)
+			if err != nil {
+				t.Fatalf("Failed to scan from DB value: %v", err)
+			}
+
+			// Check that we got back what we started with
+			if !reflect.DeepEqual(result, tt.capabilities) {
+				t.Errorf("Round trip failed: got %v, want %v", result, tt.capabilities)
+			}
+		})
+	}
+}
+
+func tearDownClusters() {
+	conf, _ := config.NewConfig(nil)
+	db := getDB(conf)
+	db.MustExec(`DELETE FROM cluster_state;`)
+}
+
+func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
+	defer tearDownClusters()
+	sm := setUp()
+	initialCluster := ClusterMetadata{
+		Name:              "test-cluster",
+		Status:            StatusActive,
+		StatusReason:      "Initial setup",
+		AllowedTiers:      Tiers{"1", "2"},
+		Capabilities:      Capabilities{"gpu", "spark"},
+		Namespace:         "flotilla",
+		Region:            "us-east-1",
+		EMRVirtualCluster: "11111111",
+	}
+	err := sm.UpdateClusterMetadata(initialCluster)
+	if err != nil {
+		t.Fatalf("Error creating initial cluster: %v", err)
+	}
+
+	clusters, err := sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters: %v", err)
+	}
+
+	var clusterID string
+	for _, c := range clusters {
+		if c.Name == "test-cluster" {
+			clusterID = c.ID
+			break
+		}
+	}
+
+	if clusterID == "" {
+		t.Fatalf("Test cluster not found after insertion")
+	}
+
+	updatedCluster := ClusterMetadata{
+		ID:                clusterID,
+		Name:              "test-cluster",
+		Status:            StatusMaintenance,
+		StatusReason:      "Under maintenance",
+		AllowedTiers:      Tiers{"1", "2"},
+		Capabilities:      Capabilities{"gpu", "spark", "ray"},
+		Namespace:         "flotilla-test",
+		Region:            "us-east-1",
+		EMRVirtualCluster: "test-emr-cluster",
+	}
+
+	err = sm.UpdateClusterMetadata(updatedCluster)
+	if err != nil {
+		t.Fatalf("Error updating cluster: %v", err)
+	}
+
+	updatedFromDB, err := sm.GetClusterByID(clusterID)
+	if err != nil {
+		t.Fatalf("Error getting updated cluster: %v", err)
+	}
+	if updatedFromDB.Status != StatusMaintenance {
+		t.Errorf("Expected status %s, got %s", StatusMaintenance, updatedFromDB.Status)
+	}
+
+	if updatedFromDB.StatusReason != "Under maintenance" {
+		t.Errorf("Expected reason 'Under maintenance', got '%s'", updatedFromDB.StatusReason)
+	}
+}
+
+func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
+	tearDown()
+	sm := setUp()
+	initialCluster := ClusterMetadata{
+		Name:              "test-delete-cluster",
+		Status:            StatusActive,
+		StatusReason:      "For deletion test",
+		AllowedTiers:      Tiers{"1", "2"},
+		Capabilities:      Capabilities{"gpu", "spark"},
+		Namespace:         "flotilla",
+		Region:            "us-east-1",
+		EMRVirtualCluster: "11111111",
+	}
+	err := sm.UpdateClusterMetadata(initialCluster)
+	if err != nil {
+		t.Fatalf("Error creating initial cluster: %v", err)
+	}
+	clusters, err := sm.ListClusterStates()
+	if err != nil {
+		t.Fatalf("Error listing clusters: %v", err)
+	}
+	var clusterID string
+	for _, c := range clusters {
+		if c.Name == "test-delete-cluster" {
+			clusterID = c.ID
+			break
+		}
+	}
+	if clusterID == "" {
+		t.Fatalf("Test cluster not found after insertion")
+	}
+
+	err = sm.DeleteClusterMetadata(clusterID)
+	if err != nil {
+		t.Fatalf("Error deleting cluster: %v", err)
+	}
+
+	_, err = sm.GetClusterByID(clusterID)
+	if err == nil {
+		t.Errorf("Expected error when getting deleted cluster")
+	}
+	tearDown()
 }

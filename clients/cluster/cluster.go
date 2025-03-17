@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
@@ -18,12 +19,10 @@ type Client interface {
 	Name() string
 	Initialize(conf config.Config) error
 	CanBeRun(clusterName string, executableResources state.ExecutableResources) (bool, error)
-	ListClusters() ([]string, error)
+	ListClusters() ([]state.ClusterMetadata, error)
 }
 
-//
 // NewClusterClient returns a cluster client
-//
 func NewClusterClient(conf config.Config, name string) (Client, error) {
 	switch name {
 	case "eks":

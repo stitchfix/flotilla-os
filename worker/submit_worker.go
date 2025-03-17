@@ -2,6 +2,9 @@ package worker
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-redis/redis"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
@@ -9,7 +12,6 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	"gopkg.in/tomb.v2"
-	"time"
 )
 
 type submitWorker struct {
@@ -30,7 +32,7 @@ func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.eksEngine = eksEngine
 	sw.emrEngine = emrEngine
 	sw.log = log
-	sw.redisClient = redis.NewClient(&redis.Options{Addr: conf.GetString("redis_address"), DB: conf.GetInt("redis_db")})
+	sw.redisClient = redis.NewClient(&redis.Options{Addr: strings.TrimPrefix(conf.GetString("redis_address"), "redis://"), DB: conf.GetInt("redis_db")})
 	_ = sw.log.Log("message", "initialized a submit worker")
 	return nil
 }
@@ -39,9 +41,7 @@ func (sw *submitWorker) GetTomb() *tomb.Tomb {
 	return &sw.t
 }
 
-//
 // Run lists queues, consumes runs from them, and executes them using the execution engine
-//
 func (sw *submitWorker) Run() error {
 	for {
 		select {

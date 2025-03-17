@@ -27,6 +27,10 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 			"A": "a/",
 			"B": "b/",
 		},
+		ClusterStates: []state.ClusterMetadata{
+			{Name: "cluster1", Status: state.StatusActive, StatusReason: "Active and healthy"},
+			{Name: "cluster2", Status: state.StatusActive, StatusReason: "Active and healthy"},
+		},
 	}
 
 	es, err := NewExecutionService(c, &imp, &imp, &imp, &imp)
@@ -51,6 +55,8 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		"GetTaskHistoricalRuntime": true,
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
+		"ListClusterStates":        true,
+		"clusterSupportsTier":      true,
 	}
 
 	cmd := "_test_cmd_"
@@ -167,6 +173,8 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 		"GetTaskHistoricalRuntime": true,
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
+		"ListClusterStates":        true,
+		"clusterSupportsTier":      true,
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine
@@ -255,7 +263,8 @@ func TestExecutionService_List(t *testing.T) {
 	es.List(1, 0, "asc", "cluster_name", nil, nil)
 
 	expectedCalls := map[string]bool{
-		"ListRuns": true,
+		"ListRuns":          true,
+		"ListClusterStates": true,
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {
@@ -278,8 +287,9 @@ func TestExecutionService_List2(t *testing.T) {
 		map[string][]string{"definition_id": {"A"}}, nil)
 
 	expectedCalls := map[string]bool{
-		"GetDefinition": true,
-		"ListRuns":      true,
+		"GetDefinition":     true,
+		"ListRuns":          true,
+		"ListClusterStates": true,
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {
@@ -291,5 +301,155 @@ func TestExecutionService_List2(t *testing.T) {
 		if !ok {
 			t.Errorf("Unexpected call during run list with no filters: %s", call)
 		}
+	}
+}
+func TestExecutionService_ListClusters(t *testing.T) {
+	es, imp := setUp(t)
+
+	clusters, err := es.ListClusters()
+	if err != nil {
+		t.Errorf("Expected no error listing clusters, got: %v", err)
+	}
+
+	expectedCalls := map[string]bool{
+		"ListClusterStates": true,
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during cluster listing: %s", call)
+		}
+	}
+
+	if len(clusters) != 2 {
+		t.Errorf("Expected 2 clusters, got %d", len(clusters))
+	}
+}
+
+func TestExecutionService_CreateDefinitionRunWithTier(t *testing.T) {
+	// Set up test environment
+	confDir := "../conf"
+	c, _ := config.NewConfig(&confDir)
+
+	// Create mock implementation with clusters supporting different tiers
+	imp := testutils.ImplementsAllTheThings{
+		T: t,
+		Definitions: map[string]state.Definition{
+			"A": {DefinitionID: "A", Alias: "aliasA"},
+		},
+		Runs: map[string]state.Run{},
+		Qurls: map[string]string{
+			"A": "a/",
+		},
+		ClusterStates: []state.ClusterMetadata{
+			{
+				Name:         "prod-cluster",
+				Status:       state.StatusActive,
+				StatusReason: "Active and healthy",
+				AllowedTiers: []string{"1", "2"},
+			},
+			{
+				Name:         "staging-cluster",
+				Status:       state.StatusActive,
+				StatusReason: "Active and healthy",
+				AllowedTiers: []string{"3", "4"},
+			},
+			{
+				Name:         "string-cluster",
+				Status:       state.StatusActive,
+				StatusReason: "Active and healthy",
+				AllowedTiers: []string{"tier3", "tier4"},
+			},
+			{
+				Name:         "unrestricted-cluster",
+				Status:       state.StatusActive,
+				StatusReason: "Active and healthy",
+				// No tiers specified - should use default tier
+			},
+			{
+				Name:         "maintenance-cluster",
+				Status:       state.StatusMaintenance,
+				StatusReason: "In maintenance",
+				AllowedTiers: []string{"1", "2", "3", "4"},
+			},
+		},
+	}
+
+	imp.GetRandomClusterName = func(clusters []string) string {
+		if len(clusters) > 0 {
+			return clusters[0]
+		}
+		return ""
+	}
+
+	es, err := NewExecutionService(c, &imp, &imp, &imp, &imp)
+	if err != nil {
+		t.Fatalf("Error setting up execution service: %s", err.Error())
+	}
+
+	// Test cases with different tiers
+	testCases := []struct {
+		name            string
+		tier            string
+		expectedCluster string
+	}{
+		{
+			name:            "Production tier request",
+			tier:            "1",
+			expectedCluster: "prod-cluster",
+		},
+		{
+			name:            "Staging tier request",
+			tier:            "3",
+			expectedCluster: "staging-cluster",
+		},
+		{
+			name:            "No tier specified",
+			tier:            "",
+			expectedCluster: "staging-cluster",
+		},
+		{
+			name:            "String Tier",
+			tier:            "tier3",
+			expectedCluster: "string-cluster",
+		},
+		{
+			name:            "Invalid tier",
+			tier:            "nonexistent",
+			expectedCluster: es.GetDefaultCluster(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			imp.Calls = make([]string, 0)
+			cmd := "echo test"
+			engine := state.DefaultEngine
+			req := state.DefinitionExecutionRequest{
+				ExecutionRequestCommon: &state.ExecutionRequestCommon{
+					Tier:    state.Tier(tc.tier),
+					Command: &cmd,
+					OwnerID: "testuser",
+					Engine:  &engine,
+				},
+			}
+
+			run, err := es.CreateDefinitionRunByDefinitionID("A", &req)
+			if err != nil {
+				t.Errorf("Error creating run: %s", err.Error())
+				return
+			}
+			// Verify the selected cluster matches expectations
+			if run.ClusterName != tc.expectedCluster {
+				t.Errorf("Expected cluster %s for tier %s, but got %s",
+					tc.expectedCluster, tc.tier, run.ClusterName)
+			}
+
+			// Verify tier was set correctly
+			if string(run.Tier) != tc.tier && tc.tier != "" {
+				t.Errorf("Expected tier %s, but got %s", tc.tier, string(run.Tier))
+			}
+		})
 	}
 }

@@ -4,9 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/log"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -757,6 +758,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.Labels,
 			&existing.RequiresDocker,
 			&existing.ServiceAccount,
+			&existing.Tier,
 		)
 	}
 	if err != nil {
@@ -811,7 +813,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		arch = $43,
 		labels = $44,
 		requires_docker = $45,
-		service_account = $46
+		service_account = $46,
+        tier = $47
     WHERE run_id = $1;
     `
 
@@ -862,7 +865,8 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		existing.Arch,
 		existing.Labels,
 		existing.RequiresDocker,
-		existing.ServiceAccount); err != nil {
+		existing.ServiceAccount,
+		existing.Tier); err != nil {
 		tx.Rollback()
 		return existing, errors.WithStack(err)
 	}
@@ -927,7 +931,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	    arch,
 	    labels,
 		requires_docker,
-		service_account
+		service_account,
+		tier
     ) VALUES (
         $1,
 		$2,
@@ -969,13 +974,14 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		$38,
 		$39,
 		$40,
-		$41,
+        $41,
         $42,
         $43,
         $44,
         $45,
-        $46,
-    	$47
+    	$46,
+    	$47,
+    	$48
 	);
     `
 
@@ -1031,7 +1037,8 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 		r.Arch,
 		r.Labels,
 		r.RequiresDocker,
-		r.ServiceAccount); err != nil {
+		r.ServiceAccount,
+		r.Tier); err != nil {
 		tx.Rollback()
 		return errors.Wrapf(err, "issue creating new task run with id [%s]", r.RunID)
 	}
@@ -1656,7 +1663,8 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	} else {
 		err = sm.log.Event("eventClassName", "FlotillaTaskStatus",
 			"run_id", update.RunID,
@@ -1676,10 +1684,249 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 			"task_type", update.TaskType,
 			"env", env,
 			"executable_id", update.ExecutableID,
-			"executable_type", update.ExecutableType)
+			"executable_type", update.ExecutableType,
+			"Tier", update.Tier)
 	}
 
 	if err != nil {
 		sm.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
+}
+
+func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
+	var clusters []ClusterMetadata
+	err := sm.db.Select(&clusters, ListClusterStatesSQL)
+	return clusters, err
+}
+
+func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
+	if cluster.ID == "" {
+		sql := `
+			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			RETURNING id;
+		`
+		var id string
+		err := sm.db.QueryRow(sql,
+			cluster.Name,
+			cluster.ClusterVersion,
+			cluster.Status,
+			cluster.StatusReason,
+			pq.Array(cluster.AllowedTiers),
+			pq.Array(cluster.Capabilities),
+			cluster.Namespace,
+			cluster.Region,
+			cluster.EMRVirtualCluster).Scan(&id)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	} else {
+		sql := `
+			UPDATE cluster_state
+			SET 
+				name = $2,
+				cluster_version = $3,
+				status = $4,
+				status_reason = $5,
+				allowed_tiers = $6,
+				capabilities = $7,
+				namespace = $8,
+				region = $9,
+				emr_virtual_cluster = $10,
+				updated_at = NOW()
+			WHERE id = $1;
+		`
+		result, err := sm.db.Exec(sql,
+			cluster.ID,
+			cluster.Name,
+			cluster.ClusterVersion,
+			cluster.Status,
+			cluster.StatusReason,
+			pq.Array(cluster.AllowedTiers),
+			pq.Array(cluster.Capabilities),
+			cluster.Namespace,
+			cluster.Region,
+			cluster.EMRVirtualCluster)
+
+		if err != nil {
+			return err
+		}
+
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rows == 0 {
+			return exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Cluster with ID %s not found", cluster.ID),
+			}
+		}
+		return nil
+	}
+}
+
+func (sm *SQLStateManager) DeleteClusterMetadata(clusterID string) error {
+	sql := `DELETE FROM cluster_state WHERE id = $1`
+	result, err := sm.db.Exec(sql, clusterID)
+	if err != nil {
+		return err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
+		}
+	}
+	return nil
+}
+
+func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, error) {
+	var cluster ClusterMetadata
+	query := `
+		SELECT 
+			id, name, status, status_reason, status_since, allowed_tiers,
+			capabilities, region, updated_at, namespace, emr_virtual_cluster
+		FROM cluster_state 
+		WHERE id = $1
+	`
+	err := sm.db.Get(&cluster, query, clusterID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return cluster, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
+			}
+		}
+		return cluster, err
+	}
+	return cluster, nil
+}
+
+func ScanStringArray(arr *[]string, value interface{}) error {
+	if value == nil {
+		*arr = []string{}
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = result
+			return nil
+		}
+		str := string(v)
+		if len(str) < 2 {
+			*arr = []string{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				// Remove quotes if they exist
+				e = strings.Trim(e, "\"")
+				result = append(result, e)
+			}
+		}
+		*arr = result
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
+}
+
+func (arr *Tiers) Scan(value interface{}) error {
+	if value == nil {
+		*arr = Tiers{}
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = Tiers(result)
+			return nil
+		}
+		str := string(v)
+		if len(str) < 2 || str[0] != '{' || str[len(str)-1] != '}' {
+			*arr = Tiers{}
+			return nil
+		}
+		str = str[1 : len(str)-1]
+		if len(str) == 0 {
+			*arr = Tiers{}
+			return nil
+		}
+		elements := strings.Split(str, ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e == "" {
+				continue
+			}
+			e = strings.Trim(e, "\"")
+			result = append(result, e)
+		}
+		*arr = Tiers(result)
+		return nil
+	default:
+		return fmt.Errorf("unsupported Scan, storing driver.Value type %T into type *Tiers", value)
+	}
+}
+
+func (arr Tiers) Value() (driver.Value, error) {
+	if len(arr) == 0 {
+		return "{}", nil
+	}
+	quoted := make([]string, len(arr))
+	for i, v := range arr {
+		quoted[i] = fmt.Sprintf("\"%s\"", v)
+	}
+	return fmt.Sprintf("{%s}", strings.Join(quoted, ",")), nil
+}
+
+// Scan from db for Capabilities
+func (arr *Capabilities) Scan(value interface{}) error {
+	if value == nil {
+		*arr = Capabilities{}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		var result []string
+		if err := json.Unmarshal(v, &result); err == nil {
+			*arr = Capabilities(result)
+			return nil
+		}
+
+		str := string(v)
+		if len(str) < 2 {
+			*arr = Capabilities{}
+			return nil
+		}
+		elements := strings.Split(str[1:len(str)-1], ",")
+		result = make([]string, 0, len(elements))
+		for _, e := range elements {
+			if e != "" {
+				result = append(result, e)
+			}
+		}
+		*arr = Capabilities(result)
+		return nil
+	default:
+		return fmt.Errorf("unexpected type for string array: %T", value)
+	}
+}
+
+// Value to db for Capabilities
+func (arr Capabilities) Value() (driver.Value, error) {
+	if len(arr) == 0 {
+		return "{}", nil
+	}
+	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }

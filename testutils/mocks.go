@@ -2,10 +2,11 @@ package testutils
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"math"
 	"net/http"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
 
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
@@ -31,6 +32,34 @@ type ImplementsAllTheThings struct {
 	Groups                  []string
 	Tags                    []string
 	Templates               map[string]state.Template
+	ClusterStates           []state.ClusterMetadata
+	GetRandomClusterName    func(clusters []string) string
+}
+
+func (iatt *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
+	iatt.Calls = append(iatt.Calls, "ListClusters")
+	return iatt.ClusterStates, nil
+}
+
+func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
+	i.Calls = append(i.Calls, "ListClusterStates")
+	fmt.Printf("ListClusterStates called, returning %d clusters\n", len(i.ClusterStates))
+	return i.ClusterStates, nil
+}
+
+func (i *ImplementsAllTheThings) GetClusterByID(clusterID string) (state.ClusterMetadata, error) {
+	i.Calls = append(i.Calls, "GetClusterByID")
+	return i.ClusterStates[0], nil
+}
+
+func (i *ImplementsAllTheThings) DeleteClusterMetadata(clusterName string) error {
+	i.Calls = append(i.Calls, "DeleteClusterMetadata")
+	return nil
+}
+
+func (i *ImplementsAllTheThings) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
+	i.Calls = append(i.Calls, "UpdateClusterMetadata")
+	return nil
 }
 
 func (iatt *ImplementsAllTheThings) LogsText(executable state.Executable, run state.Run, w http.ResponseWriter) error {
@@ -351,11 +380,6 @@ func (iatt *ImplementsAllTheThings) CanBeRun(clusterName string, executableResou
 		return false, nil
 	}
 	return true, nil
-}
-
-// ListClusters - Cluster Client
-func (iatt *ImplementsAllTheThings) ListClusters() ([]string, error) {
-	return []string{"cluster0", "cluster1"}, nil
 }
 
 // IsImageValid - Registry Client

@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"github.com/aws/aws-sdk-go/aws"
-	uuid "github.com/nu7hatch/gouuid"
-	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/utils"
-	"github.com/xeipuuv/gojsonschema"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/Masterminds/sprig"
+	"github.com/aws/aws-sdk-go/aws"
+	uuid "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/stitchfix/flotilla-os/utils"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var EKSEngine = "eks"
@@ -225,6 +226,7 @@ type Labels map[string]string
 // Common fields required to execute any Executable.
 type ExecutionRequestCommon struct {
 	ClusterName           string          `json:"cluster_name"`
+	Tier                  Tier            `json:"tier"`
 	Env                   *EnvList        `json:"env"`
 	OwnerID               string          `json:"owner_id"`
 	Command               *string         `json:"command"`
@@ -488,6 +490,7 @@ type Run struct {
 	Labels                  Labels                   `json:"labels,omitempty"`
 	RequiresDocker          bool                     `json:"requires_docker,omitempty" db:"requires_docker"`
 	ServiceAccount          *string                  `json:"service_account,omitempty" db:"service_account"`
+	Tier                    Tier                     `json:"tier,omitempty"`
 }
 
 // UpdateWith updates this run with information from another
@@ -497,6 +500,9 @@ func (d *Run) UpdateWith(other Run) {
 	}
 	if len(other.DefinitionID) > 0 {
 		d.DefinitionID = other.DefinitionID
+	}
+	if other.Tier != "" {
+		d.Tier = other.Tier
 	}
 	if len(other.Alias) > 0 {
 		d.Alias = other.Alias
@@ -1192,9 +1198,11 @@ type Detail struct {
 type LaunchRequest struct {
 	ClusterName *string  `json:"cluster,omitempty"`
 	Env         *EnvList `json:"env,omitempty"`
+	Tier        Tier     `json:"tier"`
 }
 
 type LaunchRequestV2 struct {
+	Tier                  Tier            `json:"tier"`
 	RunTags               RunTags         `json:"run_tags"`
 	Command               *string         `json:"command,omitempty"`
 	Memory                *int64          `json:"memory,omitempty"`
@@ -1220,4 +1228,31 @@ type RunTags struct {
 	OwnerEmail string `json:"owner_email"`
 	TeamName   string `json:"team_name"`
 	OwnerID    string `json:"owner_id"`
+}
+
+type ClusterStatus string
+type Tier string
+type Tiers []string
+type Capability string
+type Capabilities []string
+
+const (
+	StatusActive      ClusterStatus = "active"
+	StatusMaintenance ClusterStatus = "maintenance"
+	StatusOffline     ClusterStatus = "offline"
+)
+
+type ClusterMetadata struct {
+	ID                string        `json:"id" db:"id"`
+	Name              string        `json:"name" db:"name"`
+	ClusterVersion    string        `json:"cluster_version" db:"cluster_version"`
+	Status            ClusterStatus `json:"status" db:"status"`
+	StatusReason      string        `json:"status_reason" db:"status_reason"`
+	StatusSince       time.Time     `json:"status_since" db:"status_since"`
+	AllowedTiers      Tiers         `json:"allowed_tiers" db:"allowed_tiers"`
+	Capabilities      Capabilities  `json:"capabilities" db:"capabilities"`
+	UpdatedAt         time.Time     `json:"updated_at" db:"updated_at"`
+	Namespace         string        `json:"namespace" db:"namespace"`
+	Region            string        `json:"region" db:"region"`
+	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
 }
