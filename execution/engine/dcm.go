@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -305,10 +306,16 @@ func (dcm *DynamicClusterManager) buildKubeConfig(clusterMetadata state.ClusterM
 		return nil, errors.Wrapf(err, "failed to get token for cluster %s", clusterMetadata.Name)
 	}
 
+	certData, err := base64.StdEncoding.DecodeString(*cluster.CertificateAuthority.Data)
+	dcm.log.Log("message", "certificate data", "data_length", len(certData), "data_prefix", certData[:20])
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode certificate data")
+	}
+
 	config := &rest.Config{
 		Host: *cluster.Endpoint,
 		TLSClientConfig: rest.TLSClientConfig{
-			CAData: []byte(*cluster.CertificateAuthority.Data),
+			CAData: certData,
 		},
 		BearerToken: token,
 	}
