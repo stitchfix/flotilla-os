@@ -96,7 +96,13 @@ func (dcm *DynamicClusterManager) GetKubernetesClient(clusterName string) (kuber
 
 	if config == nil {
 		var err error
-		config, err = dcm.buildKubeConfig(clusterName)
+		clusters, _ := dcm.manager.ListClusterStates()
+		for _, cluster := range clusters {
+			if cluster.Name == clusterName {
+				config, err = dcm.buildKubeConfig(cluster)
+				break
+			}
+		}
 		if err != nil {
 			return kubernetes.Clientset{}, err
 		}
@@ -155,7 +161,13 @@ func (dcm *DynamicClusterManager) GetMetricsClient(clusterName string) (metricsv
 
 	if config == nil {
 		var err error
-		config, err = dcm.buildKubeConfig(clusterName)
+		clusters, _ := dcm.manager.ListClusterStates()
+		for _, cluster := range clusters {
+			if cluster.Name == clusterName {
+				config, err = dcm.buildKubeConfig(cluster)
+				break
+			}
+		}
 		if err != nil {
 			return metricsv.Clientset{}, err
 		}
@@ -197,7 +209,7 @@ func (dcm *DynamicClusterManager) PreloadClusterClients() error {
 
 	for _, cluster := range clusters {
 		if cluster.Status == state.StatusActive {
-			config, err := dcm.buildKubeConfig(cluster.Name)
+			config, err := dcm.buildKubeConfig(cluster)
 			if err != nil {
 				dcm.log.Log("message", "failed to preload config", "cluster", cluster.Name, "error", err.Error())
 				continue
@@ -270,27 +282,27 @@ func (dcm *DynamicClusterManager) InitializeWithStaticClusters(clusters []string
 }
 
 // buildKubeConfig creates a rest.Config for the given cluster
-func (dcm *DynamicClusterManager) buildKubeConfig(clusterName string) (*rest.Config, error) {
-	_, err := dcm.manager.GetClusterByID(clusterName)
+func (dcm *DynamicClusterManager) buildKubeConfig(clusterMetadata state.ClusterMetadata) (*rest.Config, error) {
+	_, err := dcm.manager.GetClusterByID(clusterMetadata.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cluster %s not found in system", clusterName)
+		return nil, errors.Wrapf(err, "cluster %s not found in system", clusterMetadata.Name)
 	}
 
 	result, err := dcm.eksClient.DescribeCluster(&eks.DescribeClusterInput{
-		Name: aws.String(clusterName),
+		Name: aws.String(clusterMetadata.Name),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to describe EKS cluster %s", clusterName)
+		return nil, errors.Wrapf(err, "failed to describe EKS cluster %s", clusterMetadata.Name)
 	}
 
 	cluster := result.Cluster
 	if cluster == nil {
-		return nil, fmt.Errorf("cluster %s not found in AWS", clusterName)
+		return nil, fmt.Errorf("cluster %s not found in AWS", clusterMetadata.Name)
 	}
 
-	token, err := dcm.getClusterToken(clusterName)
+	token, err := dcm.getClusterToken(clusterMetadata.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get token for cluster %s", clusterName)
+		return nil, errors.Wrapf(err, "failed to get token for cluster %s", clusterMetadata.Name)
 	}
 
 	config := &rest.Config{
