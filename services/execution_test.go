@@ -56,7 +56,6 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
 		"ListClusterStates":        true,
-		"clusterSupportsTier":      true,
 	}
 
 	cmd := "_test_cmd_"
@@ -174,7 +173,6 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 		"GetPodReAttemptRate":      true,
 		"Enqueue":                  true,
 		"ListClusterStates":        true,
-		"clusterSupportsTier":      true,
 	}
 	mem := int64(1024)
 	engine := state.DefaultEngine
@@ -263,8 +261,7 @@ func TestExecutionService_List(t *testing.T) {
 	es.List(1, 0, "asc", "cluster_name", nil, nil)
 
 	expectedCalls := map[string]bool{
-		"ListRuns":          true,
-		"ListClusterStates": true,
+		"ListRuns": true,
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {
@@ -287,9 +284,8 @@ func TestExecutionService_List2(t *testing.T) {
 		map[string][]string{"definition_id": {"A"}}, nil)
 
 	expectedCalls := map[string]bool{
-		"GetDefinition":     true,
-		"ListRuns":          true,
-		"ListClusterStates": true,
+		"GetDefinition": true,
+		"ListRuns":      true,
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {

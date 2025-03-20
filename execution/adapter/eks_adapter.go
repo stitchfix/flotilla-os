@@ -2,17 +2,16 @@ package adapter
 
 import (
 	"fmt"
-	utils "github.com/stitchfix/flotilla-os/execution"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"regexp"
+	"strings"
+	"time"
 )
 
 type EKSAdapter interface {
