@@ -119,10 +119,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) GetClusters() ([]string, error) {
-	return ee.clusterManager.GetClusters()
-}
-
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	ctx := context.Background()
 	if run.Namespace == nil || *run.Namespace == "" {
