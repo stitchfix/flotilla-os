@@ -93,11 +93,6 @@ func NewExecutionService(conf config.Config, eksExecutionEngine engine.Engine, s
 	for k, _ := range es.validEksClusters {
 		es.validEksClusters[k] = strings.TrimSpace(es.validEksClusters[k])
 	}
-	dbClusters, _ := es.stateManager.ListClusterStates()
-	for _, cluster := range dbClusters {
-		es.validEksClusters = append(es.validEksClusters, cluster.Name)
-	}
-
 	es.eksClusterOverride = conf.GetString("eks_cluster_override")
 	es.eksGPUClusterOverride = conf.GetString("eks_gpu_cluster_override")
 	es.eksClusterDefault = conf.GetString("eks_cluster_default")
@@ -232,6 +227,9 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 		fields.ClusterName = es.eksClusterDefault
 	}
 
+	for _, c := range clusterMetadata {
+		es.validEksClusters = append(es.validEksClusters, c.Name)
+	}
 	if !es.isClusterValid(fields.ClusterName) {
 		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
