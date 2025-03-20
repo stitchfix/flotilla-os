@@ -121,41 +121,6 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-// GetClusters returns a list of all available clusters for this engine
-func (emr *EMRExecutionEngine) GetClusters() ([]string, error) {
-	var allClusters []string
-	for k, v := range emr.emrVirtualClusters {
-		if v != "" {
-			allClusters = append(allClusters, k)
-		}
-	}
-
-	dbClusters, err := emr.stateManager.ListClusterStates()
-	if err != nil {
-		emr.log.Log("message", "failed to get clusters from database", "error", err.Error())
-		return allClusters, nil
-	}
-
-	for _, cluster := range dbClusters {
-		if cluster.Status == state.StatusActive && cluster.EMRVirtualCluster != "" {
-			// Check if this cluster is already in our list (from env vars)
-			found := false
-			for _, existingCluster := range allClusters {
-				if existingCluster == cluster.Name {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				allClusters = append(allClusters, cluster.Name)
-			}
-		}
-	}
-
-	return allClusters, nil
-}
-
 func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
 	kClient, err := emr.clusterManager.GetKubernetesClient(run.ClusterName)
 	if err != nil {
@@ -264,15 +229,24 @@ func (emr *EMRExecutionEngine) generateApplicationConf(executable state.Executab
 
 func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Executable, run state.Run, manager state.Manager) (emrcontainers.StartJobRunInput, error) {
 	roleArn := emr.emrJobRoleArn[*run.ServiceAccount]
-	clusterID := emr.emrVirtualClusters[run.ClusterName]
-	if clusterID == "" {
-		clusterMetadata, err := manager.GetClusterByID(run.ClusterName)
-		if err == nil && clusterMetadata.EMRVirtualCluster != "" {
-			clusterID = clusterMetadata.EMRVirtualCluster
-		} else if err != nil {
-			return emrcontainers.StartJobRunInput{}, errors.Wrapf(err, "failed to get cluster metadata for %s", run.ClusterName)
+	dbClusters, err := emr.stateManager.ListClusterStates()
+	if err != nil {
+		emr.log.Log("message", "failed to get clusters from database", "error", err.Error())
+		return emrcontainers.StartJobRunInput{}, err
+	}
+	var clusterID string
+	clusterFound := false
+	for _, cluster := range dbClusters {
+		if cluster.Namespace == *run.Namespace && cluster.Name == run.ClusterName {
+			clusterID = cluster.EMRVirtualCluster
+			clusterFound = true
+			break
 		}
 	}
+	if !clusterFound {
+		clusterID = emr.emrVirtualClusters[run.ClusterName]
+	}
+
 	if clusterID == "" {
 		return emrcontainers.StartJobRunInput{}, fmt.Errorf("EMR virtual cluster ID not found for EKS cluster: %s", run.ClusterName)
 	}
