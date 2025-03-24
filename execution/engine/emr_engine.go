@@ -237,7 +237,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 	var clusterID string
 	clusterFound := false
 	for _, cluster := range dbClusters {
-		if cluster.Namespace == *run.Namespace && cluster.Name == run.ClusterName {
+		if cluster.Namespace == emr.emrJobNamespace && cluster.Name == run.ClusterName {
 			clusterID = cluster.EMRVirtualCluster
 			clusterFound = true
 			break
