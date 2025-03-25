@@ -171,6 +171,7 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 }
 
 func (sw *statusWorker) processEKSRun(run state.Run) {
+	fmt.Printf("Processing run %s in cluster %s, namespace %s\n", run.RunID, run.ClusterName, *run.Namespace)
 	reloadRun, err := sw.sm.GetRun(run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
@@ -181,7 +182,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	start = time.Now()
 	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
 	if err != nil {
-		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, run.ClusterName, run.Namespace, "error", fmt.Sprintf("%+v", err))
 	}
 	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 
