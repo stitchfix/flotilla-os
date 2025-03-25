@@ -197,6 +197,7 @@ type SparkExtension struct {
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`
 	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
+	SparkServerURI       *string               `json:"spark_server_uri,omitempty"`
 	AppUri               *string               `json:"app_uri,omitempty"`
 	Executors            []string              `json:"executors,omitempty"`
 	ExecutorOOM          *bool                 `json:"executor_oom,omitempty"`
@@ -1255,6 +1256,7 @@ type ClusterMetadata struct {
 	Namespace         string        `json:"namespace" db:"namespace"`
 	Region            string        `json:"region" db:"region"`
 	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+	SparkServerURI    string        `json:"spark_server_uri" db:"spark_server_uri"`
 }
 
 // MergeMaps takes a pointer to a map (first arg) and map containing default

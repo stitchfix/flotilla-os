@@ -1702,8 +1702,8 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
 	if cluster.ID == "" {
 		sql := `
-			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster, spark_server_uri)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id;
 		`
 		var id string
@@ -1716,7 +1716,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			pq.Array(cluster.Capabilities),
 			cluster.Namespace,
 			cluster.Region,
-			cluster.EMRVirtualCluster).Scan(&id)
+			cluster.EMRVirtualCluster,
+			cluster.SparkServerURI).Scan(&id)
 
 		if err != nil {
 			return err
@@ -1735,6 +1736,7 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 				namespace = $8,
 				region = $9,
 				emr_virtual_cluster = $10,
+				spark_server_uri = $11,
 				updated_at = NOW()
 			WHERE id = $1;
 		`
@@ -1748,7 +1750,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			pq.Array(cluster.Capabilities),
 			cluster.Namespace,
 			cluster.Region,
-			cluster.EMRVirtualCluster)
+			cluster.EMRVirtualCluster,
+			cluster.SparkServerURI)
 
 		if err != nil {
 			return err
@@ -1791,7 +1794,7 @@ func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, er
 	query := `
 		SELECT 
 			id, name, status, status_reason, status_since, allowed_tiers,
-			capabilities, region, updated_at, namespace, emr_virtual_cluster
+			capabilities, region, updated_at, namespace, emr_virtual_cluster, spark_server_uri
 		FROM cluster_state 
 		WHERE id = $1
 	`

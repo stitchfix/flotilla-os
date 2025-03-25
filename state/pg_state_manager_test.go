@@ -1029,6 +1029,7 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "11111111",
+		SparkServerURI:    "spark://spark-server:7077",
 	}
 	err := sm.UpdateClusterMetadata(initialCluster)
 	if err != nil {
@@ -1062,6 +1063,7 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		Namespace:         "flotilla-test",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "test-emr-cluster",
+		SparkServerURI:    "spark://spark-server:7077",
 	}
 
 	err = sm.UpdateClusterMetadata(updatedCluster)
@@ -1094,6 +1096,7 @@ func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
 		Namespace:         "flotilla",
 		Region:            "us-east-1",
 		EMRVirtualCluster: "11111111",
+		SparkServerURI:    "spark://spark-server:7077",
 	}
 	err := sm.UpdateClusterMetadata(initialCluster)
 	if err != nil {

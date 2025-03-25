@@ -39,7 +39,8 @@ SELECT
 	region,
 	updated_at,
 	namespace,
-	emr_virtual_cluster
+	emr_virtual_cluster,
+	spark_server_uri
 FROM cluster_state
 ORDER BY name ASC`
 )

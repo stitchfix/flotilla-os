@@ -75,9 +75,6 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.emrJobSA = conf.GetString("emr_default_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 	emr.driverInstanceType = conf.GetString("emr_driver_instance_type")
-
-	emr.redisClient, _ = utils.SetupRedisClient(conf)
-
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
 	sess = awstrace.WrapSession(sess)
@@ -117,7 +114,6 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 		emr.log.Log("message", "failed to initialize clusters", "error", err.Error())
 	}
 
-	fmt.Printf("EMR engine initialized\nVirtual Clusters: %v\nJobRoles: %v\n", emr.emrVirtualClusters, emr.emrJobRoleArn)
 	return nil
 }
 
@@ -159,6 +155,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.SparkExtension.EMRJobId = startJobRunOutput.Id
 		run.SparkExtension.EMRJobManifest = emrJobManifest
 		run.Status = state.StatusQueued
+		fmt.Println("sparkURI", run.SparkExtension.SparkServerURI)
 		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
 	} else {
 		run.ExitReason = aws.String(fmt.Sprintf("%v", err))
@@ -239,6 +236,9 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(executable state.Exec
 	for _, cluster := range dbClusters {
 		if cluster.Namespace == emr.emrJobNamespace && cluster.Name == run.ClusterName {
 			clusterID = cluster.EMRVirtualCluster
+			if cluster.SparkServerURI != "" {
+				run.SparkExtension.SparkServerURI = aws.String(cluster.SparkServerURI)
+			}
 			clusterFound = true
 			break
 		}

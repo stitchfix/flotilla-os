@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
-	"github.com/stitchfix/flotilla-os/utils"
 	"strings"
 	"time"
 
@@ -67,9 +66,6 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.jobTtl = conf.GetInt("eks_job_ttl")
 	ee.jobSA = conf.GetString("eks_default_service_account")
 	ee.jobARAEnabled = true
-
-	ee.redisClient, _ = utils.SetupRedisClient(conf)
-
 	clusterManager, err := NewDynamicClusterManager(
 		conf.GetString("aws_default_region"),
 		ee.log,

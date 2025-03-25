@@ -288,11 +288,16 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				}
 
 				if sparkAppId != nil {
+					var appUri string
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 					if driverServiceName != nil {
-						appUri := fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
+						if run.SparkExtension.SparkServerURI != nil {
+							appUri = fmt.Sprintf("%s/job/%s", run.SparkExtension.SparkServerURI, *driverServiceName)
+						} else {
+							appUri = fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
+						}
 						run.SparkExtension.AppUri = &appUri
 					}
 				}
@@ -316,23 +321,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 	if run != nil && run.SparkExtension != nil && run.SparkExtension.SparkAppId != nil {
-		to := "now"
-
-		if run.FinishedAt != nil {
-			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
-		}
-
-		from := time.Now().Add(-1*time.Minute*1).UnixNano() / 1000000
-		if run.StartedAt != nil {
-			from = run.StartedAt.Add(-1*time.Minute*1).UnixNano() / 1000000
-		}
-
+		// https://production-stitchfix.datadoghq.com/data-jobs?query=%40app_id%3Aspark-000000035ee16lm6uri
 		metricsUri :=
-			fmt.Sprintf("%s&tpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%s&live=true",
+			fmt.Sprintf("%s?query=%%40app_id%%3A%s",
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
-				from,
-				to,
 			)
 		run.MetricsUri = &metricsUri
 	}
