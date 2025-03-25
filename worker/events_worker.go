@@ -294,7 +294,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
 					if driverServiceName != nil {
 						if run.SparkExtension.SparkServerURI != nil {
-							appUri = fmt.Sprintf("%s/job/%s", run.SparkExtension.SparkServerURI, *driverServiceName)
+							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
 						} else {
 							appUri = fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
 						}
