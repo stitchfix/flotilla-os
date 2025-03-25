@@ -182,7 +182,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	start = time.Now()
 	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
 	if err != nil {
-		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, run.ClusterName, run.Namespace, "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
 	}
 	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 
