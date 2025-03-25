@@ -155,7 +155,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.SparkExtension.EMRJobId = startJobRunOutput.Id
 		run.SparkExtension.EMRJobManifest = emrJobManifest
 		run.Status = state.StatusQueued
-		fmt.Println("sparkURI", run.SparkExtension.SparkServerURI)
+		fmt.Println("sparkURI", *run.SparkExtension.SparkServerURI)
 		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
 	} else {
 		run.ExitReason = aws.String(fmt.Sprintf("%v", err))
