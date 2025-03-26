@@ -292,7 +292,9 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
+					fmt.Println("sparkURI", *run.SparkExtension.SparkServerURI)
 					if driverServiceName != nil {
+						fmt.Println("driver found", *driverServiceName)
 						if run.SparkExtension.SparkServerURI != nil {
 							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
 						} else {
@@ -327,6 +329,7 @@ func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
 			)
+		fmt.Println("MetricsURI", &metricsUri)
 		run.MetricsUri = &metricsUri
 	}
 }
