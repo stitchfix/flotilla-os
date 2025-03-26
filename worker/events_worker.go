@@ -197,12 +197,6 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 			return
 		}
 
-		_ = ew.log.Log("message", "Processing EMR pod event",
-			"type", kubernetesEvent.Type,
-			"reason", kubernetesEvent.Reason,
-			"pod_name", kubernetesEvent.InvolvedObject.Name,
-			"cluster", kubernetesEvent.InvolvedObject.Labels.ClusterName)
-
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
@@ -230,11 +224,9 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		for k, v := range pod.Labels {
 			if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
 				emrJobId = aws.String(v)
-				_ = ew.log.Log("message", "Found EMR job ID", "emr_job_id", v)
 			}
 			if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
 				sparkAppId = aws.String(v)
-				_ = ew.log.Log("message", "Found Spark app ID", "spark_app_id", v)
 			}
 			if sparkAppId != nil && emrJobId != nil {
 				break
@@ -249,8 +241,6 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 						matches := pat.FindAllStringSubmatch(v.Value, -1)
 						if len(matches) > 0 && len(matches[0]) == 2 {
 							driverServiceName = &matches[0][1]
-							_ = ew.log.Log("message", "Found driver service name",
-								"driver_service", *driverServiceName)
 						}
 					}
 				}
@@ -289,10 +279,6 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 			_ = kubernetesEvent.Done()
 			return
 		}
-
-		_ = ew.log.Log("message", "Found run for EMR job ID",
-			"run_id", run.RunID,
-			"emr_job_id", *emrJobId)
 
 		layout := "2006-01-02T15:04:05Z"
 		timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
@@ -338,7 +324,6 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 				if appUri != "" {
 					run.SparkExtension.AppUri = &appUri
-					_ = ew.log.Log("message", "Set application URI", "app_uri", appUri)
 				}
 			}
 		}
@@ -372,7 +357,6 @@ func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
 			)
-		fmt.Println("MetricsURI", &metricsUri)
 		run.MetricsUri = &metricsUri
 	}
 }
