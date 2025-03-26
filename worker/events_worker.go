@@ -11,11 +11,8 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	kubernetestrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/k8s.io/client-go/kubernetes"
 	"gopkg.in/tomb.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"regexp"
 	"strings"
 	"time"
@@ -31,7 +28,6 @@ type eventsWorker struct {
 	queue             string
 	emrJobStatusQueue string
 	s3Client          *s3.S3
-	kClientSet        map[string]kubernetes.Clientset
 	emrHistoryServer  string
 	emrAppServer      map[string]string
 	emrMetricsServer  string
@@ -71,23 +67,6 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrJobStatusQueue = emrJobStatusQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
-	ew.kClientSet = make(map[string]kubernetes.Clientset)
-	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
-	for _, clusterName := range clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
-		if err != nil {
-			_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
-			return err
-		}
-		kClient, err := kubernetes.NewForConfig(clientConf)
-		if err != nil {
-			_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
-			return err
-		}
-		ew.kClientSet[clusterName] = *kClient
-	}
 	return nil
 }
 
@@ -211,9 +190,10 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		var executorOOM *bool = nil
 		var driverOOM *bool = nil
 
-		kClient, ok := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
-		if !ok {
-			fmt.Printf("No kClient found for cluster: %s\n", kubernetesEvent.InvolvedObject.Labels.ClusterName)
+		kClient, err := ew.clusterManager.GetKubernetesClient(kubernetesEvent.InvolvedObject.Labels.ClusterName)
+		if err != nil {
+			fmt.Printf("Error getting Kubernetes client for cluster %s: %v\n",
+				kubernetesEvent.InvolvedObject.Labels.ClusterName, err)
 		} else {
 			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 			if err != nil {
