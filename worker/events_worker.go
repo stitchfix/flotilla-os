@@ -181,8 +181,6 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		// Skip events with empty cluster name
 		if kubernetesEvent.InvolvedObject.Labels.ClusterName == "" {
-			_ = ew.log.Log("message", "Skipping event with empty cluster name",
-				"pod_name", kubernetesEvent.InvolvedObject.Name)
 			_ = kubernetesEvent.Done()
 			return
 		}
