@@ -200,6 +200,11 @@ func (ew *eventsWorker) runOnce() {
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	ctx := context.Background()
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
+		fmt.Printf("Processing pod event: %s, reason: %s, pod name: %s\n",
+			kubernetesEvent.Type,
+			kubernetesEvent.Reason,
+			kubernetesEvent.InvolvedObject.Name)
+
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
@@ -207,11 +212,19 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		var driverOOM *bool = nil
 
 		kClient, ok := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
-
-		if ok {
+		if !ok {
+			fmt.Printf("No kClient found for cluster: %s\n", kubernetesEvent.InvolvedObject.Labels.ClusterName)
+		} else {
 			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
-			if err == nil {
+			if err != nil {
+				fmt.Printf("Error getting pod %s: %v\n", kubernetesEvent.InvolvedObject.Name, err)
+			} else {
+				fmt.Printf("Pod phase: %s, pod name: %s\n", pod.Status.Phase, pod.Name)
+
+				// Log labels
+				fmt.Println("Pod labels:")
 				for k, v := range pod.Labels {
+					fmt.Printf("  %s = %s\n", k, v)
 					if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
 						emrJobId = aws.String(v)
 					}
@@ -222,31 +235,75 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 						break
 					}
 				}
-			}
 
-			if pod != nil {
-				for _, container := range pod.Spec.Containers {
-					for _, v := range container.Env {
-						if v.Name == "SPARK_DRIVER_URL" {
-							pat := regexp.MustCompile(`.*@(.*-svc).*`)
-							matches := pat.FindAllStringSubmatch(v.Value, -1)
-							for _, match := range matches {
-								if len(match) == 2 {
-									driverServiceName = &match[1]
+				// Check if containers are initialized
+				fmt.Printf("Pod has %d containers\n", len(pod.Spec.Containers))
+				containersReady := true
+				if pod.Status.ContainerStatuses != nil {
+					fmt.Printf("Container status count: %d\n", len(pod.Status.ContainerStatuses))
+					for _, status := range pod.Status.ContainerStatuses {
+						ready := status.Ready
+						fmt.Printf("Container %s ready: %v\n", status.Name, ready)
+						containersReady = containersReady && ready
+					}
+				} else {
+					fmt.Println("No container statuses available yet")
+					containersReady = false
+				}
+
+				fmt.Printf("All containers ready: %v\n", containersReady)
+
+				// Continue with looking for driver URL
+				if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
+					for i, container := range pod.Spec.Containers {
+						fmt.Printf("Checking container %d: %s\n", i, container.Name)
+						fmt.Printf("Container has %d env vars\n", len(container.Env))
+
+						foundDriverURL := false
+						for _, v := range container.Env {
+							if v.Name == "SPARK_DRIVER_URL" {
+								foundDriverURL = true
+								fmt.Printf("Found SPARK_DRIVER_URL: %s\n", v.Value)
+
+								pat := regexp.MustCompile(`.*@(.*-svc).*`)
+								matches := pat.FindAllStringSubmatch(v.Value, -1)
+
+								fmt.Printf("Regex found %d matches\n", len(matches))
+
+								for _, match := range matches {
+									fmt.Printf("Match has %d groups\n", len(match))
+									for j, group := range match {
+										fmt.Printf("Group %d: %s\n", j, group)
+									}
+
+									if len(match) == 2 {
+										driverServiceName = &match[1]
+										fmt.Printf("Set driver service name to: %s\n", *driverServiceName)
+									}
 								}
 							}
+						}
+
+						if !foundDriverURL {
+							fmt.Println("SPARK_DRIVER_URL environment variable not found")
 						}
 					}
 				}
 
 				if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
+					fmt.Println("Checking container termination status")
 					for _, containerStatus := range pod.Status.ContainerStatuses {
+						fmt.Printf("Container %s state: %+v\n", containerStatus.Name, containerStatus.State)
 						if containerStatus.State.Terminated != nil {
+							fmt.Printf("Container %s terminated with exit code: %d\n",
+								containerStatus.Name, containerStatus.State.Terminated.ExitCode)
 							if containerStatus.State.Terminated.ExitCode == 137 {
 								if strings.Contains(containerStatus.Name, "driver") {
 									driverOOM = aws.Bool(true)
+									fmt.Println("Detected driver OOM")
 								} else {
 									executorOOM = aws.Bool(true)
+									fmt.Println("Detected executor OOM")
 								}
 							}
 						}
@@ -255,12 +312,26 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 			}
 		}
 
+		fmt.Printf("Found EMR job ID: %v\n", emrJobId != nil)
 		if emrJobId != nil {
+			fmt.Printf("EMR job ID value: %s\n", *emrJobId)
+		}
+
+		fmt.Printf("Found Spark App ID: %v\n", sparkAppId != nil)
+		fmt.Printf("Found driver service name: %v\n", driverServiceName != nil)
+
+		if emrJobId != nil {
+			fmt.Printf("Looking up run for EMR job ID: %s\n", *emrJobId)
 			run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
-			if err == nil {
+			if err != nil {
+				fmt.Printf("Error getting run for EMR job ID %s: %v\n", *emrJobId, err)
+			} else {
+				fmt.Printf("Found run %s for EMR job ID %s\n", run.RunID, *emrJobId)
+
 				layout := "2020-08-31T17:27:50Z"
 				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
 				if err != nil {
+					fmt.Printf("Error parsing timestamp: %v, using current time\n", err)
 					timestamp = time.Now()
 				}
 
@@ -275,48 +346,71 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				var events state.PodEvents
 				if run.PodEvents != nil {
 					events = append(*run.PodEvents, event)
+					fmt.Printf("Appending to existing %d pod events\n", len(*run.PodEvents))
 				} else {
 					events = state.PodEvents{event}
+					fmt.Println("Creating new pod events array")
 				}
 				run.PodEvents = &events
 
 				if executorOOM != nil && *executorOOM == true {
+					fmt.Println("Setting executor OOM flag")
 					run.SparkExtension.ExecutorOOM = executorOOM
 				}
 				if driverOOM != nil && *driverOOM == true {
+					fmt.Println("Setting driver OOM flag")
 					run.SparkExtension.DriverOOM = driverOOM
 				}
 
 				if sparkAppId != nil {
-					var appUri string
+					fmt.Printf("Setting spark app ID: %s\n", *sparkAppId)
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
-					fmt.Println("sparkURI", *run.SparkExtension.SparkServerURI)
+					fmt.Printf("Set history URI: %s\n", sparkHistoryUri)
+
 					if driverServiceName != nil {
-						fmt.Println("driver found", *driverServiceName)
+						fmt.Printf("Setting app URI for driver service: %s\n", *driverServiceName)
+						appUri := ""
 						if run.SparkExtension.SparkServerURI != nil {
+							fmt.Printf("Using SparkServerURI: %s\n", *run.SparkExtension.SparkServerURI)
 							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
-						} else {
+						} else if _, ok := ew.emrAppServer[run.ClusterName]; ok {
+							fmt.Printf("Using emrAppServer for cluster %s: %s\n",
+								run.ClusterName, ew.emrAppServer[run.ClusterName])
 							appUri = fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
+						} else {
+							fmt.Printf("No app server URL found for cluster: %s\n", run.ClusterName)
 						}
-						run.SparkExtension.AppUri = &appUri
+
+						if appUri != "" {
+							fmt.Printf("Set app URI: %s\n", appUri)
+							run.SparkExtension.AppUri = &appUri
+						}
 					}
 				}
 
 				ew.setEMRMetricsUri(&run)
+				fmt.Printf("Updating run %s\n", run.RunID)
 
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
+					fmt.Printf("Error updating run: %v\n", err)
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
+				} else {
+					fmt.Println("Successfully updated run")
 				}
 
 				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
+					fmt.Printf("Reached max pod events (%d), terminating run\n", ew.emrMaxPodEvents)
 					_ = ew.emrEngine.Terminate(run)
 				}
-
 			}
+		} else {
+			fmt.Println("No EMR job ID found, skipping run update")
 		}
+
+		fmt.Println("Completing event processing")
 		_ = kubernetesEvent.Done()
 	}
 }
