@@ -177,6 +177,12 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		return
 	}
 	start := time.Now()
+	if reloadRun.Status == state.StatusQueued {
+		queuedDuration := time.Since(*reloadRun.QueuedAt)
+		if queuedDuration < 10*time.Second {
+			return
+		}
+	}
 
 	start = time.Now()
 	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
