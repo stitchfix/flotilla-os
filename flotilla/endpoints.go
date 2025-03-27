@@ -511,15 +511,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem listing clusters",
-			"operation", "CreateRunV4",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-		return
-	}
-
 	if lr.CommandHash == nil && lr.Description != nil {
 		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}

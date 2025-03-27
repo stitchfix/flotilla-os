@@ -176,25 +176,16 @@ func (ew *eventsWorker) runOnce() {
 	}
 	ew.processEvent(kubernetesEvent)
 }
+
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	ctx := context.Background()
+
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		// Skip events with empty cluster name
 		if kubernetesEvent.InvolvedObject.Labels.ClusterName == "" {
 			_ = kubernetesEvent.Done()
 			return
 		}
-
-		// Skip pods that don't follow EMR Spark naming pattern
-		isSparkPod := strings.HasPrefix(kubernetesEvent.InvolvedObject.Name, "eks-spark") ||
-			strings.Contains(kubernetesEvent.InvolvedObject.Name, "-exec-") ||
-			strings.Contains(kubernetesEvent.InvolvedObject.Name, "-driver")
-
-		if !isSparkPod {
-			_ = kubernetesEvent.Done()
-			return
-		}
-
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
@@ -202,147 +193,122 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		var driverOOM *bool = nil
 
 		kClient, err := ew.clusterManager.GetKubernetesClient(kubernetesEvent.InvolvedObject.Labels.ClusterName)
-		if err != nil {
-			_ = ew.log.Log("message", "Error getting Kubernetes client",
-				"cluster", kubernetesEvent.InvolvedObject.Labels.ClusterName,
-				"error", err.Error())
-			_ = kubernetesEvent.Done()
-			return
-		}
 
-		pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
-		if err != nil {
-			_ = ew.log.Log("message", "Error getting pod",
-				"pod_name", kubernetesEvent.InvolvedObject.Name,
-				"error", err.Error())
-			_ = kubernetesEvent.Done()
-			return
-		}
+		if err == nil {
+			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
+			if err == nil {
+				for k, v := range pod.Labels {
+					if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
+						emrJobId = aws.String(v)
+					}
+					if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
+						sparkAppId = aws.String(v)
+					}
+					if sparkAppId != nil && emrJobId != nil {
+						break
+					}
+				}
+			}
 
-		for k, v := range pod.Labels {
-			if emrJobId == nil && strings.Compare(k, "emr-containers.amazonaws.com/job.id") == 0 {
-				emrJobId = aws.String(v)
-			}
-			if sparkAppId == nil && strings.Compare(k, "spark-app-selector") == 0 {
-				sparkAppId = aws.String(v)
-			}
-			if sparkAppId != nil && emrJobId != nil {
-				break
-			}
-		}
+			if pod != nil {
+				for _, container := range pod.Spec.Containers {
+					for _, v := range container.Env {
+						if v.Name == "SPARK_DRIVER_URL" {
+							pat := regexp.MustCompile(`.*@(.*-svc).*`)
+							matches := pat.FindAllStringSubmatch(v.Value, -1)
+							for _, match := range matches {
+								if len(match) == 2 {
+									driverServiceName = &match[1]
+								}
+							}
+						}
+					}
+				}
 
-		if pod.Spec.Containers != nil && len(pod.Spec.Containers) > 0 {
-			for _, container := range pod.Spec.Containers {
-				for _, v := range container.Env {
-					if v.Name == "SPARK_DRIVER_URL" {
-						pat := regexp.MustCompile(`.*@(.*-svc).*`)
-						matches := pat.FindAllStringSubmatch(v.Value, -1)
-						if len(matches) > 0 && len(matches[0]) == 2 {
-							driverServiceName = &matches[0][1]
+				if pod.Status.ContainerStatuses != nil && len(pod.Status.ContainerStatuses) > 0 {
+					for _, containerStatus := range pod.Status.ContainerStatuses {
+						if containerStatus.State.Terminated != nil {
+							if containerStatus.State.Terminated.ExitCode == 137 {
+								if strings.Contains(containerStatus.Name, "driver") {
+									driverOOM = aws.Bool(true)
+									_ = ew.log.Log("message", "Detected driver OOM",
+										"container", containerStatus.Name)
+								} else {
+									executorOOM = aws.Bool(true)
+									_ = ew.log.Log("message", "Detected executor OOM",
+										"container", containerStatus.Name)
+								}
+							}
 						}
 					}
 				}
 			}
 		}
 
-		if pod.Status.ContainerStatuses != nil {
-			for _, containerStatus := range pod.Status.ContainerStatuses {
-				if containerStatus.State.Terminated != nil &&
-					containerStatus.State.Terminated.ExitCode == 137 {
-					if strings.Contains(containerStatus.Name, "driver") {
-						driverOOM = aws.Bool(true)
-						_ = ew.log.Log("message", "Detected driver OOM",
-							"container", containerStatus.Name)
-					} else {
-						executorOOM = aws.Bool(true)
-						_ = ew.log.Log("message", "Detected executor OOM",
-							"container", containerStatus.Name)
+		if emrJobId != nil {
+			run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
+			if err == nil {
+				layout := "2006-01-02T15:04:05Z"
+				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
+				if err != nil {
+					timestamp = time.Now()
+				}
+
+				event := state.PodEvent{
+					Timestamp:    &timestamp,
+					EventType:    kubernetesEvent.Type,
+					Reason:       kubernetesEvent.Reason,
+					SourceObject: kubernetesEvent.InvolvedObject.Name,
+					Message:      kubernetesEvent.Message,
+				}
+
+				var events state.PodEvents
+				if run.PodEvents != nil {
+					events = append(*run.PodEvents, event)
+				} else {
+					events = state.PodEvents{event}
+				}
+				run.PodEvents = &events
+
+				if executorOOM != nil && *executorOOM == true {
+					run.SparkExtension.ExecutorOOM = executorOOM
+				}
+				if driverOOM != nil && *driverOOM == true {
+					run.SparkExtension.DriverOOM = driverOOM
+				}
+
+				if sparkAppId != nil {
+					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
+					run.SparkExtension.SparkAppId = sparkAppId
+					run.SparkExtension.HistoryUri = &sparkHistoryUri
+
+					if driverServiceName != nil {
+						appUri := ""
+						if run.SparkExtension.SparkServerURI != nil {
+							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
+						} else if serverURI, ok := ew.emrAppServer[run.ClusterName]; ok {
+							appUri = fmt.Sprintf("%s/job/%s", serverURI, *driverServiceName)
+						}
+
+						if appUri != "" {
+							run.SparkExtension.AppUri = &appUri
+						}
 					}
 				}
-			}
-		}
 
-		if emrJobId == nil {
-			_ = ew.log.Log("message", "No EMR job ID found, skipping run update",
-				"pod_name", pod.Name)
-			_ = kubernetesEvent.Done()
-			return
-		}
+				ew.setEMRMetricsUri(&run)
 
-		run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
-		if err != nil {
-			_ = ew.log.Log("message", "Error getting run for EMR job ID",
-				"emr_job_id", *emrJobId,
-				"error", err.Error())
-			_ = kubernetesEvent.Done()
-			return
-		}
-
-		layout := "2006-01-02T15:04:05Z"
-		timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
-		if err != nil {
-			timestamp = time.Now()
-		}
-
-		event := state.PodEvent{
-			Timestamp:    &timestamp,
-			EventType:    kubernetesEvent.Type,
-			Reason:       kubernetesEvent.Reason,
-			SourceObject: kubernetesEvent.InvolvedObject.Name,
-			Message:      kubernetesEvent.Message,
-		}
-
-		var events state.PodEvents
-		if run.PodEvents != nil {
-			events = append(*run.PodEvents, event)
-		} else {
-			events = state.PodEvents{event}
-		}
-		run.PodEvents = &events
-
-		if executorOOM != nil && *executorOOM {
-			run.SparkExtension.ExecutorOOM = executorOOM
-		}
-		if driverOOM != nil && *driverOOM {
-			run.SparkExtension.DriverOOM = driverOOM
-		}
-
-		if sparkAppId != nil {
-			sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
-			run.SparkExtension.SparkAppId = sparkAppId
-			run.SparkExtension.HistoryUri = &sparkHistoryUri
-
-			if driverServiceName != nil {
-				appUri := ""
-				if run.SparkExtension.SparkServerURI != nil {
-					appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
-				} else if serverURI, ok := ew.emrAppServer[run.ClusterName]; ok {
-					appUri = fmt.Sprintf("%s/job/%s", serverURI, *driverServiceName)
+				run, err = ew.sm.UpdateRun(run.RunID, run)
+				if err != nil {
+					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 				}
 
-				if appUri != "" {
-					run.SparkExtension.AppUri = &appUri
+				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
+					_ = ew.emrEngine.Terminate(run)
 				}
+
 			}
 		}
-
-		ew.setEMRMetricsUri(&run)
-
-		run, err = ew.sm.UpdateRun(run.RunID, run)
-		if err != nil {
-			_ = ew.log.Log("message", "Error updating run",
-				"run_id", run.RunID,
-				"error", err.Error())
-		}
-
-		if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
-			_ = ew.log.Log("message", "Reached max pod events, terminating run",
-				"run_id", run.RunID,
-				"count", len(*run.PodEvents),
-				"max", ew.emrMaxPodEvents)
-			_ = ew.emrEngine.Terminate(run)
-		}
-
 		_ = kubernetesEvent.Done()
 	}
 }
