@@ -1385,7 +1385,11 @@ func (t *Template) DefaultOrderField() string {
 
 // Scan from db
 func (e *EnvList) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1396,7 +1400,11 @@ func (e EnvList) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *PodEvents) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1406,7 +1414,11 @@ func (e SpawnedRuns) Value() (driver.Value, error) {
 }
 
 func (e *SpawnedRuns) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 func scanJSON(value interface{}, dest interface{}) error {
@@ -1434,7 +1446,11 @@ func (e SparkExtension) Value() (driver.Value, error) {
 }
 
 func (e *SparkExtension) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1444,7 +1460,11 @@ func (e RunExceptions) Value() (driver.Value, error) {
 }
 
 func (e *RunExceptions) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1485,7 +1505,11 @@ func (e Tags) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *CloudTrailNotifications) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1496,7 +1520,11 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *ExecutionRequestCustom) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1542,7 +1570,11 @@ func (e Labels) Value() (driver.Value, error) {
 }
 
 func (e *Labels) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // GetTemplateByID returns a single template by id.

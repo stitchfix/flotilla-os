@@ -277,12 +277,12 @@ from task t
 `
 
 // ListRunsSQL postgres specific query for listing runs
-const ListRunsSQL = RunSelectOptimized + "\n%s %s limit $1 offset $2"
+const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
 
 // GetRunSQL postgres specific query for getting a single run
-const GetRunSQL = RunSelectOptimized + "\nwhere run_id = $1"
+const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 
-const GetRunSQLByEMRJobId = RunSelectOptimized + "\nwhere spark_extension->>'emr_job_id' = $1"
+const GetRunSQLByEMRJobId = RunSelect + "\nwhere spark_extension->>'emr_job_id' = $1"
 
 // GetRunSQLForUpdate postgres specific query for getting a single run
 // for update
