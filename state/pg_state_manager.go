@@ -1385,11 +1385,7 @@ func (t *Template) DefaultOrderField() string {
 
 // Scan from db
 func (e *EnvList) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1400,11 +1396,7 @@ func (e EnvList) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *PodEvents) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1414,11 +1406,25 @@ func (e SpawnedRuns) Value() (driver.Value, error) {
 }
 
 func (e *SpawnedRuns) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
+	return scanJSON(value, e)
+}
+
+func scanJSON(value interface{}, dest interface{}) error {
+	if value == nil {
+		return nil
 	}
-	return nil
+
+	var data []byte
+	switch v := value.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return fmt.Errorf("unsupported type for JSON scanning: %T", value)
+	}
+
+	return json.Unmarshal(data, dest)
 }
 
 // Value to db
@@ -1428,11 +1434,7 @@ func (e SparkExtension) Value() (driver.Value, error) {
 }
 
 func (e *SparkExtension) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1442,11 +1444,7 @@ func (e RunExceptions) Value() (driver.Value, error) {
 }
 
 func (e *RunExceptions) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1487,11 +1485,7 @@ func (e Tags) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *CloudTrailNotifications) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1502,11 +1496,7 @@ func (e CloudTrailNotifications) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *ExecutionRequestCustom) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // Value to db
@@ -1552,11 +1542,7 @@ func (e Labels) Value() (driver.Value, error) {
 }
 
 func (e *Labels) Scan(value interface{}) error {
-	if value != nil {
-		s := []byte(value.(string))
-		json.Unmarshal(s, &e)
-	}
-	return nil
+	return scanJSON(value, e)
 }
 
 // GetTemplateByID returns a single template by id.
