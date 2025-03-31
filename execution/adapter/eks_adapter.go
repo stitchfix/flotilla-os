@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
-	"github.com/stitchfix/flotilla-os/utils"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -126,7 +125,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	annotations["prometheus.io/port"] = "9090"
 	annotations["prometheus.io/scrape"] = "true"
 
-	labels := utils.GetLabels(run)
+	labels := state.GetLabels(run)
 
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,

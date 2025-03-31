@@ -16,7 +16,6 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	"github.com/stitchfix/flotilla-os/utils"
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -365,7 +364,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(executable state.Executable, ru
 		}
 	}
 
-	labels := utils.GetLabels(run)
+	labels := state.GetLabels(run)
 	pod := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -387,7 +386,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(executable state.Executable, 
 		workingDir = *run.SparkExtension.SparkSubmitJobDriver.WorkingDir
 	}
 
-	labels := utils.GetLabels(run)
+	labels := state.GetLabels(run)
 
 	// TODO Remove after migration
 	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
