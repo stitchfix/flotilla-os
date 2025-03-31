@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
-	"github.com/stitchfix/flotilla-os/utils"
 	"sort"
 	"time"
 
@@ -202,16 +201,16 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	createSchema := conf.GetBool("create_database_schema")
 	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
-	if conf.IsSet("redis_address") {
-		var err error
-		sm.redisClient, err = utils.SetupRedisClient(conf)
-		if err != nil {
-			sm.log.Log("message", "Failed to initialize Redis client", "error", err.Error())
-			// Continue even if Redis setup fails - we'll just work without caching
-		} else {
-			sm.log.Log("message", "Successfully initialized Redis cache")
-		}
-	}
+	//if conf.IsSet("redis_address") {
+	//	var err error
+	//	sm.redisClient, err = utils.SetupRedisClient(conf)
+	//	if err != nil {
+	//		sm.log.Log("message", "Failed to initialize Redis client", "error", err.Error())
+	//		// Continue even if Redis setup fails - we'll just work without caching
+	//	} else {
+	//		sm.log.Log("message", "Successfully initialized Redis cache")
+	//	}
+	//}
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
