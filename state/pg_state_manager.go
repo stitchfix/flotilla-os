@@ -1,13 +1,9 @@
 package state
 
 import (
-	"crypto/md5"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis"
-	"github.com/stitchfix/flotilla-os/utils"
-	"sort"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/clients/metrics"
@@ -32,10 +28,9 @@ import (
 
 // SQLStateManager uses postgresql to manage state
 type SQLStateManager struct {
-	db          *sqlx.DB
-	readonlyDB  *sqlx.DB
-	log         log.Logger
-	redisClient *redis.Client
+	db         *sqlx.DB
+	readonlyDB *sqlx.DB
+	log        log.Logger
 }
 
 func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
@@ -202,16 +197,6 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	createSchema := conf.GetBool("create_database_schema")
 	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
-	if conf.IsSet("redis_address") {
-		var err error
-		sm.redisClient, err = utils.SetupRedisClient(conf)
-		if err != nil {
-			sm.log.Log("message", "Failed to initialize Redis client", "error", err.Error())
-			// Continue even if Redis setup fails - we'll just work without caching
-		} else {
-			sm.log.Log("message", "Successfully initialized Redis cache")
-		}
-	}
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
@@ -617,40 +602,6 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
 func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
-	var cacheKey string
-	if sm.redisClient != nil {
-		h := md5.New()
-		fmt.Fprintf(h, "limit=%d:offset=%d:sortBy=%s:order=%s:", limit, offset, sortBy, order)
-
-		for k, v := range filters {
-			sortedValues := make([]string, len(v))
-			copy(sortedValues, v)
-			sort.Strings(sortedValues)
-			fmt.Fprintf(h, "filter:%s=%s:", k, strings.Join(sortedValues, ","))
-		}
-
-		for k, v := range envFilters {
-			fmt.Fprintf(h, "env:%s=%s:", k, v)
-		}
-
-		if engines != nil {
-			sortedEngines := make([]string, len(engines))
-			copy(sortedEngines, engines)
-			sort.Strings(sortedEngines)
-			fmt.Fprintf(h, "engines=%s:", strings.Join(sortedEngines, ","))
-		}
-
-		cacheKey = fmt.Sprintf("runlist:%x", h.Sum(nil))
-
-		cachedData, err := sm.redisClient.Get(cacheKey).Result()
-		if err == nil && len(cachedData) > 0 {
-			var result RunList
-			if err := json.Unmarshal([]byte(cachedData), &result); err == nil {
-				return result, nil
-			}
-		}
-	}
-
 	var err error
 	var result RunList
 	var whereClause, orderQuery string
@@ -686,30 +637,11 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs count sql")
 	}
-	if sm.redisClient != nil && cacheKey != "" {
-		data, err := json.Marshal(result)
-		if err == nil {
-			sm.redisClient.Set(cacheKey, data, 1*time.Minute)
-		}
-	}
-
 	return result, nil
 }
 
 // GetRun gets run by id
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
-	if sm.redisClient != nil {
-		cacheKey := fmt.Sprintf("run:%s", runID)
-		cachedData, err := sm.redisClient.Get(cacheKey).Result()
-
-		if err == nil && len(cachedData) > 0 {
-			var run Run
-			if err := json.Unmarshal([]byte(cachedData), &run); err == nil {
-				return run, nil
-			}
-			sm.log.Log("message", "Failed to unmarshal cached run", "run_id", runID, "error", err.Error())
-		}
-	}
 	var r Run
 	err := sm.db.Get(&r, GetRunSQL, runID)
 	if err != nil {
@@ -718,12 +650,6 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 				fmt.Sprintf("Run with id %s not found", runID)}
 		} else {
 			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
-		}
-	}
-	if sm.redisClient != nil {
-		data, err := json.Marshal(r)
-		if err == nil {
-			sm.redisClient.Set(fmt.Sprintf("run:%s", runID), data, 5*time.Minute)
 		}
 	}
 	return r, nil
@@ -947,14 +873,6 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 
 	_ = metrics.Timing(metrics.EngineUpdateRun, time.Since(start), []string{existing.ClusterName}, 1)
 	go sm.logStatusUpdate(existing)
-	if sm.redisClient != nil {
-		cacheKey := fmt.Sprintf("run:%s", runID)
-		sm.redisClient.Del(cacheKey)
-		keys, _ := sm.redisClient.Keys("runlist:*").Result()
-		if len(keys) > 0 {
-			sm.redisClient.Del(keys...)
-		}
-	}
 	return existing, nil
 }
 
@@ -1322,7 +1240,7 @@ func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, er
 
 // Cleanup close any open resources
 func (sm *SQLStateManager) Cleanup() error {
-	return multierr.Combine(sm.db.Close(), sm.readonlyDB.Close(), sm.redisClient.Close())
+	return multierr.Combine(sm.db.Close(), sm.readonlyDB.Close())
 }
 
 type IOrderable interface {
