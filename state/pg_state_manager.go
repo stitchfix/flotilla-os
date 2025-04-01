@@ -1339,7 +1339,11 @@ func scanJSON(value interface{}, dest interface{}) error {
 	case string:
 		data = []byte(v)
 	default:
-		return fmt.Errorf("unsupported type for JSON scanning: %T", value)
+		var err error
+		data, err = json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("unsupported type for JSON scanning: %T", value)
+		}
 	}
 
 	return json.Unmarshal(data, dest)
