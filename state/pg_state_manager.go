@@ -1307,7 +1307,7 @@ func (e *EnvList) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *EnvList) Value() (driver.Value, error) {
+func (e EnvList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1318,7 +1318,7 @@ func (e *PodEvents) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *SpawnedRuns) Value() (driver.Value, error) {
+func (e SpawnedRuns) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1346,7 +1346,7 @@ func scanJSON(value interface{}, dest interface{}) error {
 }
 
 // Value to db
-func (e *SparkExtension) Value() (driver.Value, error) {
+func (e SparkExtension) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1356,7 +1356,7 @@ func (e *SparkExtension) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *RunExceptions) Value() (driver.Value, error) {
+func (e RunExceptions) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1366,7 +1366,7 @@ func (e *RunExceptions) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *PodEvents) Value() (driver.Value, error) {
+func (e PodEvents) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1377,7 +1377,7 @@ func (e *PortsList) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *PortsList) Value() (driver.Value, error) {
+func (e PortsList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1388,7 +1388,7 @@ func (e *Tags) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *Tags) Value() (driver.Value, error) {
+func (e Tags) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1399,7 +1399,7 @@ func (e *CloudTrailNotifications) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *CloudTrailNotifications) Value() (driver.Value, error) {
+func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1410,7 +1410,7 @@ func (e *ExecutionRequestCustom) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e *ExecutionRequestCustom) Value() (driver.Value, error) {
+func (e ExecutionRequestCustom) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1446,7 +1446,7 @@ func (tjs TemplatePayload) Value() (driver.Value, error) {
 }
 
 // Value to db
-func (e *Labels) Value() (driver.Value, error) {
+func (e Labels) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
