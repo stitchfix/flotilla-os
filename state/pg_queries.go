@@ -220,69 +220,17 @@ select t.run_id                          as runid,
 	   labels::TEXT                      as labels,
 	   coalesce(requires_docker,false)   as requires_docker,
 	   service_account 				 	 as service_account,
-     coalesce(tier::text, 'Tier4')   as tier
-from task t
-`
-const RunSelectOptimized = `
-select t.run_id                          as runid,
-       coalesce(t.definition_id, '')     as definitionid,
-       coalesce(t.alias, '')             as alias,
-       coalesce(t.image, '')             as image,
-       coalesce(t.cluster_name, '')      as clustername,
-       t.exit_code                       as exitcode,
-       t.exit_reason                     as exitreason,
-       coalesce(t.status, '')            as status,
-       queued_at                         as queuedat,
-       started_at                        as startedat,
-       finished_at                       as finishedat,
-       coalesce(t.instance_id, '')       as instanceid,
-       coalesce(t.instance_dns_name, '') as instancednsname,
-       coalesce(t.group_name, '')        as groupname,
-       coalesce(t.task_type, '')         as tasktype,
-       env                               as env,
-       command,
-       memory,
-       cpu,
-       gpu,
-       engine,
-       ephemeral_storage                 as ephemeral_storage,
-       node_lifecycle                    as nodelifecycle,
-       pod_name                          as podname,
-       namespace,
-       max_cpu_used                      as maxcpuused,
-       max_memory_used                   as maxmemoryused,
-       pod_events                        as podevents,
-       command_hash                      as commandhash,
-       cloudtrail_notifications          as cloudtrailnotifications,
-       coalesce(executable_id, '')       as executableid,
-       coalesce(executable_type, '')     as executabletype,
-       execution_request_custom          as executionrequestcustom,
-       cpu_limit                         as cpulimit,
-       memory_limit                      as memorylimit,
-       attempt_count                     as attemptcount,
-       spawned_runs                      as spawnedruns,
-       run_exceptions                    as runexceptions,
-       active_deadline_seconds           as activedeadlineseconds,
-       spark_extension                   as sparkextension,
-       metrics_uri                       as metricsuri,
-       description                       as description,
-       idempotence_key                   as idempotencekey,
-       coalesce("user", '')              as user,
-       coalesce(arch, '')                as arch,
-       labels                            as labels,
-       coalesce(requires_docker,false)   as requires_docker,
-       service_account                   as service_account,
-       coalesce(tier::text, 'Tier4')     as tier
+       coalesce(tier::text, 'Tier4')   as tier
 from task t
 `
 
 // ListRunsSQL postgres specific query for listing runs
-const ListRunsSQL = RunSelectOptimized + "\n%s %s limit $1 offset $2"
+const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
 
 // GetRunSQL postgres specific query for getting a single run
-const GetRunSQL = RunSelectOptimized + "\nwhere run_id = $1"
+const GetRunSQL = RunSelect + "\nwhere run_id = $1"
 
-const GetRunSQLByEMRJobId = RunSelectOptimized + "\nwhere spark_extension->>'emr_job_id' = $1"
+const GetRunSQLByEMRJobId = RunSelect + "\nwhere spark_extension->>'emr_job_id' = $1"
 
 // GetRunSQLForUpdate postgres specific query for getting a single run
 // for update

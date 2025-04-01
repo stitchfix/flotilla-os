@@ -827,6 +827,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 			&existing.Labels,
 			&existing.RequiresDocker,
 			&existing.ServiceAccount,
+			&existing.Tier,
 		)
 	}
 	if err != nil {
@@ -882,6 +883,7 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 		labels = $44,
 		requires_docker = $45,
 		service_account = $46,
+        tier = $47
     WHERE run_id = $1;
     `
 
@@ -1007,7 +1009,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	    labels,
 		requires_docker,
 		service_account,
-	    tier
+		tier
     ) VALUES (
         $1,
 		$2,
@@ -1056,7 +1058,7 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
         $45,
     	$46,
     	$47,
-        $48
+    	$48
 	);
     `
 
@@ -1382,28 +1384,40 @@ func (t *Template) DefaultOrderField() string {
 
 // Scan from db
 func (e *EnvList) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
-func (e *EnvList) Value() (driver.Value, error) {
+func (e EnvList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 // Scan from db
 func (e *PodEvents) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
-func (e *SpawnedRuns) Value() (driver.Value, error) {
+func (e SpawnedRuns) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 func (e *SpawnedRuns) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 func scanJSON(value interface{}, dest interface{}) error {
@@ -1425,23 +1439,31 @@ func scanJSON(value interface{}, dest interface{}) error {
 }
 
 // Value to db
-func (e *SparkExtension) Value() (driver.Value, error) {
+func (e SparkExtension) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 func (e *SparkExtension) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
-func (e *RunExceptions) Value() (driver.Value, error) {
+func (e RunExceptions) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 func (e *RunExceptions) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
@@ -1482,22 +1504,30 @@ func (e Tags) Value() (driver.Value, error) {
 
 // Scan from db
 func (e *CloudTrailNotifications) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
-func (e *CloudTrailNotifications) Value() (driver.Value, error) {
+func (e CloudTrailNotifications) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 // Scan from db
 func (e *ExecutionRequestCustom) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // Value to db
-func (e *ExecutionRequestCustom) Value() (driver.Value, error) {
+func (e ExecutionRequestCustom) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1533,13 +1563,17 @@ func (tjs TemplatePayload) Value() (driver.Value, error) {
 }
 
 // Value to db
-func (e *Labels) Value() (driver.Value, error) {
+func (e Labels) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
 
 func (e *Labels) Scan(value interface{}) error {
-	return scanJSON(value, e)
+	if value != nil {
+		s := []byte(value.(string))
+		json.Unmarshal(s, &e)
+	}
+	return nil
 }
 
 // GetTemplateByID returns a single template by id.

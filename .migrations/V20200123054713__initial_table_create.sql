@@ -83,6 +83,12 @@ CREATE INDEX IF NOT EXISTS ix_task_definition_id ON task(definition_id);
 CREATE INDEX IF NOT EXISTS ix_task_task_arn ON task(task_arn);
 CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_desc ON task(definition_id, started_at DESC NULLS LAST);
 CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_desc_engine ON task(definition_id, started_at DESC NULLS LAST, engine);
+CREATE INDEX IF NOT EXISTS ix_attempt_count ON task USING btree (attempt_count);
+CREATE INDEX IF NOT EXISTS ix_finished_at_status_cluster_name ON task USING btree (cluster_name, status, finished_at DESC);
+CREATE INDEX IF NOT EXISTS ix_task_definition_id_started_at_asc ON task USING btree (definition_id, started_at);
+CREATE INDEX IF NOT EXISTS ix_task_pod_events ON task USING gin (pod_events jsonb_path_ops);
+CREATE INDEX IF NOT EXISTS ix_task_queued_at_status_engine ON task USING btree (queued_at, status, engine);
+CREATE INDEX IF NOT EXISTS task_definition_id_engine_started_at_index ON task USING btree (definition_id, engine, started_at DESC);
 --
 -- Status
 --
