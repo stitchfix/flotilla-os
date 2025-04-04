@@ -511,15 +511,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err != nil {
-		ep.logger.Log(
-			"message", "problem listing clusters",
-			"operation", "CreateRunV4",
-			"error", fmt.Sprintf("%+v", err))
-		ep.encodeError(w, err)
-		return
-	}
-
 	if lr.CommandHash == nil && lr.Description != nil {
 		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}
@@ -536,7 +527,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
-			ClusterName:           *lr.ClusterName,
 			Env:                   lr.Env,
 			OwnerID:               lr.RunTags.OwnerID,
 			Command:               lr.Command,
@@ -1087,30 +1077,10 @@ func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 
 // Health check endpoint.
 func (ep *endpoints) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	healthy := true
-	var err error
-	// Try to list clusters as a simple DB check
-	_, err = ep.executionService.ListClusters()
-	if err != nil {
-		healthy = false
-		ep.logger.Log(
-			"message", "health check failed",
-			"error", err.Error())
-	}
-
-	if healthy {
-		ep.encodeResponse(w, map[string]string{
-			"status":  "healthy",
-			"message": "Service is up and running",
-		})
-	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		ep.encodeResponse(w, map[string]string{
-			"status":  "unhealthy",
-			"message": "Service is experiencing issues",
-			"error":   err.Error(),
-		})
-	}
+	ep.encodeResponse(w, map[string]string{
+		"status":  "healthy",
+		"message": "Service is up and running",
+	})
 }
 
 // Create a new cluster.

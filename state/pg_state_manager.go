@@ -197,7 +197,6 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	createSchema := conf.GetBool("create_database_schema")
 	fmt.Printf("create_database_schema: %t\ncreating schema...\n", createSchema)
 	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("flotilla"))
-
 	var err error
 	if sm.db, err = sqlxtrace.Open("postgres", dburl); err != nil {
 		return errors.Wrap(err, "unable to open postgres db")
@@ -603,7 +602,6 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
 func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
-
 	var err error
 	var result RunList
 	var whereClause, orderQuery string
@@ -639,15 +637,13 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list runs count sql")
 	}
-
 	return result, nil
 }
 
 // GetRun gets run by id
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
-	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQL, runID)
+	err := sm.db.Get(&r, GetRunSQL, runID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
@@ -1315,7 +1311,7 @@ func (e *EnvList) Scan(value interface{}) error {
 }
 
 // Value to db
-func (e EnvList) Value() (driver.Value, error) {
+func (e *EnvList) Value() (driver.Value, error) {
 	res, _ := json.Marshal(e)
 	return res, nil
 }
@@ -1702,8 +1698,8 @@ func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
 func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
 	if cluster.ID == "" {
 		sql := `
-			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster, spark_server_uri)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id;
 		`
 		var id string
@@ -1716,7 +1712,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			pq.Array(cluster.Capabilities),
 			cluster.Namespace,
 			cluster.Region,
-			cluster.EMRVirtualCluster).Scan(&id)
+			cluster.EMRVirtualCluster,
+			cluster.SparkServerURI).Scan(&id)
 
 		if err != nil {
 			return err
@@ -1735,6 +1732,7 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 				namespace = $8,
 				region = $9,
 				emr_virtual_cluster = $10,
+				spark_server_uri = $11,
 				updated_at = NOW()
 			WHERE id = $1;
 		`
@@ -1748,7 +1746,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			pq.Array(cluster.Capabilities),
 			cluster.Namespace,
 			cluster.Region,
-			cluster.EMRVirtualCluster)
+			cluster.EMRVirtualCluster,
+			cluster.SparkServerURI)
 
 		if err != nil {
 			return err
@@ -1791,7 +1790,7 @@ func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, er
 	query := `
 		SELECT 
 			id, name, status, status_reason, status_since, allowed_tiers,
-			capabilities, region, updated_at, namespace, emr_virtual_cluster
+			capabilities, region, updated_at, namespace, emr_virtual_cluster, spark_server_uri
 		FROM cluster_state 
 		WHERE id = $1
 	`

@@ -11,11 +11,8 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
-	kubernetestrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/k8s.io/client-go/kubernetes"
 	"gopkg.in/tomb.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"regexp"
 	"strings"
 	"time"
@@ -31,7 +28,6 @@ type eventsWorker struct {
 	queue             string
 	emrJobStatusQueue string
 	s3Client          *s3.S3
-	kClientSet        map[string]kubernetes.Clientset
 	emrHistoryServer  string
 	emrAppServer      map[string]string
 	emrMetricsServer  string
@@ -39,9 +35,10 @@ type eventsWorker struct {
 	emrMaxPodEvents   int
 	eksEngine         engine.Engine
 	emrEngine         engine.Engine
+	clusterManager    *engine.DynamicClusterManager
 }
 
-func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	ew.pollInterval = pollInterval
 	ew.conf = conf
 	ew.sm = sm
@@ -55,6 +52,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrAppServer = conf.GetStringMapString("emr_app_server_uri")
 	ew.emrMetricsServer = conf.GetString("emr_metrics_server_uri")
 	ew.eksMetricsServer = conf.GetString("eks_metrics_server_uri")
+	ew.clusterManager = clusterManager
 	if conf.IsSet("emr_max_attempt_count") {
 		ew.emrMaxPodEvents = conf.GetInt("emr_max_pod_events")
 	} else {
@@ -69,23 +67,6 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrJobStatusQueue = emrJobStatusQueue
 	_ = ew.qm.Initialize(ew.conf, "eks")
 
-	ew.kClientSet = make(map[string]kubernetes.Clientset)
-	clusters := strings.Split(conf.GetString("eks_clusters"), ",")
-	for _, clusterName := range clusters {
-		filename := fmt.Sprintf("%s/%s", conf.GetString("eks_kubeconfig_basepath"), clusterName)
-		clientConf, err := clientcmd.BuildConfigFromFlags("", filename)
-		clientConf.WrapTransport = kubernetestrace.WrapRoundTripper
-		if err != nil {
-			_ = ew.log.Log("message", "error initializing-eksEngine-clusters", "error", fmt.Sprintf("%+v", err))
-			return err
-		}
-		kClient, err := kubernetes.NewForConfig(clientConf)
-		if err != nil {
-			_ = ew.log.Log("message", fmt.Sprintf("%+v", err))
-			return err
-		}
-		ew.kClientSet[clusterName] = *kClient
-	}
 	return nil
 }
 
@@ -195,18 +176,25 @@ func (ew *eventsWorker) runOnce() {
 	}
 	ew.processEvent(kubernetesEvent)
 }
+
 func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
 	ctx := context.Background()
+
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
+		// Skip events with empty cluster name
+		if kubernetesEvent.InvolvedObject.Labels.ClusterName == "" {
+			_ = kubernetesEvent.Done()
+			return
+		}
 		var emrJobId *string = nil
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
 		var executorOOM *bool = nil
 		var driverOOM *bool = nil
 
-		kClient, ok := ew.kClientSet[kubernetesEvent.InvolvedObject.Labels.ClusterName]
+		kClient, err := ew.clusterManager.GetKubernetesClient(kubernetesEvent.InvolvedObject.Labels.ClusterName)
 
-		if ok {
+		if err == nil {
 			pod, err := kClient.CoreV1().Pods(kubernetesEvent.InvolvedObject.Namespace).Get(ctx, kubernetesEvent.InvolvedObject.Name, metav1.GetOptions{})
 			if err == nil {
 				for k, v := range pod.Labels {
@@ -243,8 +231,12 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 							if containerStatus.State.Terminated.ExitCode == 137 {
 								if strings.Contains(containerStatus.Name, "driver") {
 									driverOOM = aws.Bool(true)
+									_ = ew.log.Log("message", "Detected driver OOM",
+										"container", containerStatus.Name)
 								} else {
 									executorOOM = aws.Bool(true)
+									_ = ew.log.Log("message", "Detected executor OOM",
+										"container", containerStatus.Name)
 								}
 							}
 						}
@@ -256,7 +248,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		if emrJobId != nil {
 			run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
 			if err == nil {
-				layout := "2020-08-31T17:27:50Z"
+				layout := "2006-01-02T15:04:05Z"
 				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
 				if err != nil {
 					timestamp = time.Now()
@@ -289,9 +281,18 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
 					run.SparkExtension.SparkAppId = sparkAppId
 					run.SparkExtension.HistoryUri = &sparkHistoryUri
+
 					if driverServiceName != nil {
-						appUri := fmt.Sprintf("%s/job/%s", ew.emrAppServer[run.ClusterName], *driverServiceName)
-						run.SparkExtension.AppUri = &appUri
+						appUri := ""
+						if run.SparkExtension.SparkServerURI != nil {
+							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
+						} else if serverURI, ok := ew.emrAppServer[run.ClusterName]; ok {
+							appUri = fmt.Sprintf("%s/job/%s", serverURI, *driverServiceName)
+						}
+
+						if appUri != "" {
+							run.SparkExtension.AppUri = &appUri
+						}
 					}
 				}
 
@@ -314,23 +315,11 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 	if run != nil && run.SparkExtension != nil && run.SparkExtension.SparkAppId != nil {
-		to := "now"
-
-		if run.FinishedAt != nil {
-			to = fmt.Sprintf("%d", run.FinishedAt.Add(time.Minute*1).UnixNano()/1000000)
-		}
-
-		from := time.Now().Add(-1*time.Minute*1).UnixNano() / 1000000
-		if run.StartedAt != nil {
-			from = run.StartedAt.Add(-1*time.Minute*1).UnixNano() / 1000000
-		}
-
+		// https://production-stitchfix.datadoghq.com/data-jobs?query=%40app_id%3Aspark-000000035ee16lm6uri
 		metricsUri :=
-			fmt.Sprintf("%s&tpl_var_flotilla_run_id=%s&from_ts=%d&to_ts=%s&live=true",
+			fmt.Sprintf("%s?query=%%40app_id%%3A%s",
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
-				from,
-				to,
 			)
 		run.MetricsUri = &metricsUri
 	}

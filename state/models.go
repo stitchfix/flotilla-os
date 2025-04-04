@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -15,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
-	"github.com/stitchfix/flotilla-os/utils"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -197,6 +198,7 @@ type SparkExtension struct {
 	EMRReleaseLabel      *string               `json:"emr_release_label,omitempty"`
 	ExecutorInitCommand  *string               `json:"executor_init_command,omitempty"`
 	DriverInitCommand    *string               `json:"driver_init_command,omitempty"`
+	SparkServerURI       *string               `json:"spark_server_uri,omitempty"`
 	AppUri               *string               `json:"app_uri,omitempty"`
 	Executors            []string              `json:"executors,omitempty"`
 	ExecutorOOM          *bool                 `json:"executor_oom,omitempty"`
@@ -1045,7 +1047,7 @@ func (t Template) compositeUserAndDefaults(userPayload interface{}) (TemplatePay
 		return final, errors.New("unable to cast request payload to TemplatePayload struct")
 	}
 
-	err := utils.MergeMaps(&final, t.Defaults)
+	err := MergeMaps(&final, t.Defaults)
 
 	if err != nil {
 		return final, err
@@ -1255,4 +1257,89 @@ type ClusterMetadata struct {
 	Namespace         string        `json:"namespace" db:"namespace"`
 	Region            string        `json:"region" db:"region"`
 	EMRVirtualCluster string        `json:"emr_virtual_cluster" db:"emr_virtual_cluster"`
+	SparkServerURI    string        `json:"spark_server_uri" db:"spark_server_uri"`
+}
+
+// MergeMaps takes a pointer to a map (first arg) and map containing default
+// values (second arg) and recursively sets values that exist in `b` but are
+// not set in `a`. For existing values, it does not override those of `a` with
+// those of `b`.
+func MergeMaps(a *map[string]interface{}, b map[string]interface{}) error {
+	return mergeMapsRecursive(a, b)
+}
+
+func mergeMapsRecursive(a *map[string]interface{}, b map[string]interface{}) error {
+	for k, v := range b {
+		// If the value is a map, check recursively.
+		if reflect.TypeOf(v).Kind() == reflect.Map {
+			if _, ok := (*a)[k]; !ok {
+				(*a)[k] = v
+			} else {
+				aVal, ok := (*a)[k].(map[string]interface{})
+				bVal, ok := v.(map[string]interface{})
+
+				if !ok {
+					return errors.New("unable to cast interface{} to map[string]interface{}")
+				}
+
+				if err := mergeMapsRecursive(&aVal, bVal); err != nil {
+					return err
+				}
+			}
+		} else {
+			if _, ok := (*a)[k]; !ok {
+				(*a)[k] = v
+			}
+		}
+	}
+
+	return nil
+}
+
+func GetLabels(run Run) map[string]string {
+	var labels = make(map[string]string)
+
+	if run.ClusterName != "" {
+		labels["cluster-name"] = run.ClusterName
+	}
+
+	if run.RunID != "" {
+		labels["flotilla-run-id"] = SanitizeLabel(run.RunID)
+		labels["flotilla-run-mode"] = SanitizeLabel(os.Getenv("FLOTILLA_MODE"))
+	}
+
+	if run.User != "" {
+		labels["owner"] = SanitizeLabel(run.User)
+	}
+
+	if _, workflowExists := run.Labels["kube_workflow"]; !workflowExists {
+		if _, taskNameExists := run.Labels["kube_task_name"]; taskNameExists {
+			labels["kube_workflow"] = SanitizeLabel(run.Labels["kube_task_name"])
+		}
+	}
+
+	for k, v := range run.Labels {
+		labels[k] = SanitizeLabel(v)
+	}
+
+	return labels
+}
+
+func SanitizeLabel(key string) string {
+	key = strings.TrimSpace(key)
+	key = regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")
+	key = strings.TrimPrefix(key, "_")
+	key = strings.ToLower(key)
+	if len(key) > 63 {
+		key = key[:63]
+	}
+	for {
+		tempKey := strings.TrimSuffix(key, "_")
+		if tempKey == key {
+			break
+		}
+		key = tempKey
+	}
+
+	return key
 }

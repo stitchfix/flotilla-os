@@ -3,6 +3,7 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/utils"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -34,9 +35,10 @@ type statusWorker struct {
 	exceptionExtractorClient *http.Client
 	exceptionExtractorUrl    string
 	emrEngine                engine.Engine
+	clusterManager           *engine.DynamicClusterManager
 }
 
-func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager) error {
+func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	sw.pollInterval = pollInterval
 	sw.conf = conf
 	sw.sm = sm
@@ -45,21 +47,16 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.workerId = fmt.Sprintf("workerid:%d", rand.Int())
 	sw.engine = &state.EKSEngine
 	sw.emrEngine = emrEngine
+	sw.clusterManager = clusterManager
 	if sw.conf.IsSet("eks_exception_extractor_url") {
 		sw.exceptionExtractorClient = &http.Client{
 			Timeout: time.Second * 5,
 		}
 		sw.exceptionExtractorUrl = sw.conf.GetString("eks_exception_extractor_url")
 	}
-	sw.setupRedisClient(conf)
+	sw.redisClient, _ = utils.SetupRedisClient(conf)
 	_ = sw.log.Log("message", "initialized a status worker")
 	return nil
-}
-
-func (sw *statusWorker) setupRedisClient(conf config.Config) {
-	if *sw.engine == state.EKSEngine {
-		sw.redisClient = redis.NewClient(&redis.Options{Addr: strings.TrimPrefix(conf.GetString("redis_address"), "redis://"), DB: conf.GetInt("redis_db")})
-	}
 }
 
 func (sw *statusWorker) GetTomb() *tomb.Tomb {
@@ -180,6 +177,12 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		return
 	}
 	start := time.Now()
+	if reloadRun.Status == state.StatusQueued {
+		queuedDuration := time.Since(*reloadRun.QueuedAt)
+		if queuedDuration < 10*time.Second {
+			return
+		}
+	}
 
 	start = time.Now()
 	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)

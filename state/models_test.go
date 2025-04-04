@@ -1,12 +1,93 @@
-package utils
+package state
 
 import (
-	"github.com/stitchfix/flotilla-os/state"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestMergeMaps_Simple(t *testing.T) {
+	mapA := map[string]interface{}{
+		"A": "aaa",
+		"B": "bbb",
+		"C": "ccc",
+	}
+	mapB := map[string]interface{}{
+		"B": "xxx",
+		"D": "ddd",
+	}
+
+	expectedMapA := map[string]interface{}{
+		"A": "aaa",
+		"B": "bbb",
+		"C": "ccc",
+		"D": "ddd",
+	}
+
+	err := MergeMaps(&mapA, mapB)
+
+	if err != nil {
+		t.Error("unable to merge maps")
+	}
+
+	if reflect.DeepEqual(mapA, expectedMapA) == false {
+		t.Error("map merge unsuccessful")
+	}
+}
+
+func TestMergeMaps_Nested(t *testing.T) {
+	nestedAValue := "aaa"
+	nestedCValue := "ccc"
+	overrideNestedBVal := "zzzzzz"
+	nestedD1Value := "d1"
+	overrideNestedD1Value := "override_d1"
+	overrideNestedD2Value := "override_d2"
+
+	mapA := map[string]interface{}{
+		"Nested": map[string]interface{}{
+			"A": nestedAValue,
+			"C": nestedCValue,
+			"D": map[string]interface{}{
+				"D1": nestedD1Value,
+			},
+		},
+	}
+
+	mapB := map[string]interface{}{
+		"Nested": map[string]interface{}{
+			"B": overrideNestedBVal,
+			"D": map[string]interface{}{
+				"D1": overrideNestedD1Value,
+				"D2": overrideNestedD2Value,
+			},
+		},
+	}
+
+	// After merging, mapA should have its `B` value set. Additionally, mapA[D]
+	// should have its D2 value set BUT its D1 value should not be overriden.
+	expectedMapA := map[string]interface{}{
+		"Nested": map[string]interface{}{
+			"A": nestedAValue,
+			"B": overrideNestedBVal,
+			"C": nestedCValue,
+			"D": map[string]interface{}{
+				"D1": nestedD1Value,
+				"D2": overrideNestedD2Value,
+			},
+		},
+	}
+
+	err := MergeMaps(&mapA, mapB)
+
+	if err != nil {
+		t.Error("unable to merge maps")
+	}
+
+	if reflect.DeepEqual(mapA, expectedMapA) == false {
+		t.Error("map merge unsuccessful")
+	}
+}
 
 func TestSanitizeLabel(t *testing.T) {
 	tests := []struct {
@@ -67,7 +148,7 @@ func TestSanitizeLabel(t *testing.T) {
 
 func TestGetLabels(t *testing.T) {
 	type args struct {
-		run state.Run
+		run Run
 	}
 	var tests []struct {
 		name string
@@ -84,7 +165,7 @@ func TestGetLabels(t *testing.T) {
 		{
 			name: "should return labels for run with definition",
 			args: args{
-				run: state.Run{
+				run: Run{
 					DefinitionID: "A",
 					ClusterName:  "A",
 					GroupName:    "groupA",
@@ -111,7 +192,7 @@ func TestGetLabels(t *testing.T) {
 		{
 			name: "should return empty labels for run with no definition",
 			args: args{
-				run: state.Run{},
+				run: Run{},
 			},
 			want: map[string]string{},
 		},

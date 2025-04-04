@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS cluster_state (
     region VARCHAR NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     namespace VARCHAR NOT NULL DEFAULT '',
-    emr_virtual_cluster VARCHAR NOT NULL DEFAULT ''
+    emr_virtual_cluster VARCHAR NOT NULL DEFAULT '',
+    spark_server_uri VARCHAR NOT NULL DEFAULT ''
 );
 
 CREATE INDEX IF NOT EXISTS ix_cluster_state_name ON cluster_state(name);
