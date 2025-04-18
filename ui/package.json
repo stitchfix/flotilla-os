@@ -11,7 +11,7 @@
     "formik": "1.5.7",
     "localforage": "^1.7.3",
     "lodash": "4.17.19",
-    "moment": "2.24.0",
+    "moment": "2.29.4",
     "pretty-ms": "5.0.0",
     "qs": "6.7.0",
     "react": "^16.8.6",
