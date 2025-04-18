@@ -7,7 +7,7 @@
     "@reduxjs/toolkit": "^1.1.0",
     "ansi-to-react": "5.1.0",
     "axios": "0.30.0",
-    "cookie": "0.4.0",
+    "cookie": "0.7.0",
     "formik": "1.5.7",
     "localforage": "^1.7.3",
     "lodash": "4.17.19",
