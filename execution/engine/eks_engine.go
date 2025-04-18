@@ -134,6 +134,11 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	}
 
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
+	if err != nil {
+		exitReason := fmt.Sprintf("Error creating k8s manigest - %s", err.Error())
+		run.ExitReason = &exitReason
+		return run, false, err
+	}
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
