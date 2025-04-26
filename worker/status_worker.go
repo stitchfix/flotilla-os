@@ -179,7 +179,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	start := time.Now()
 	if reloadRun.Status == state.StatusQueued {
 		queuedDuration := time.Since(*reloadRun.QueuedAt)
-		if queuedDuration < 10*time.Second {
+		if queuedDuration < 120*time.Second {
 			return
 		}
 	}
