@@ -1932,21 +1932,15 @@ func (arr Capabilities) Value() (driver.Value, error) {
 
 func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
 	var status RunStatus
-
-	// Use a transaction with a short timeout to avoid blocking
 	tx, err := sm.db.Begin()
 	if err != nil {
 		return status, errors.Wrap(err, "failed to begin transaction")
 	}
-
-	// Set a short timeout for this query
 	_, err = tx.Exec("SET LOCAL lock_timeout = '500ms'")
 	if err != nil {
 		tx.Rollback()
 		return status, errors.Wrap(err, "failed to set lock timeout")
 	}
-
-	// Execute the query
 	err = tx.QueryRow(GetRunStatusSQL, runID).Scan(
 		&status.RunID,
 		&status.DefinitionID,
@@ -1960,7 +1954,6 @@ func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
 		&status.ExitReason,
 		&status.Engine,
 	)
-
 	if err != nil {
 		tx.Rollback()
 
@@ -1977,7 +1970,6 @@ func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
 		return status, errors.Wrapf(err, "issue getting run status with id [%s]", runID)
 	}
 
-	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
 		return status, errors.Wrap(err, "failed to commit transaction")
