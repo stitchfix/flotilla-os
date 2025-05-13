@@ -277,7 +277,7 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 
 	kClient, err := ee.getKClient(run)
 	if err != nil {
-		exitReason := fmt.Sprintf(err.Error())
+		exitReason := fmt.Sprint(err.Error())
 		run.ExitReason = &exitReason
 		return err
 	}

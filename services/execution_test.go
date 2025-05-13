@@ -81,7 +81,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 
 	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {
@@ -193,7 +193,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 	}
 	run, err := es.CreateDefinitionRunByAlias("aliasB", &req)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {

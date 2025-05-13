@@ -1,9 +1,10 @@
 package services
 
 import (
+	"testing"
+
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
-	"testing"
 )
 
 func setUpLogServiceTest(t *testing.T) (LogService, *testutils.ImplementsAllTheThings) {
@@ -34,7 +35,7 @@ func TestLogService_Logs(t *testing.T) {
 
 	_, _, err := ls.Logs("isQueued", nil, nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {
@@ -61,7 +62,7 @@ func TestLogService_Logs(t *testing.T) {
 
 	_, _, err = ls.Logs("running", nil, nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(imp.Calls) != len(expectedCalls) {

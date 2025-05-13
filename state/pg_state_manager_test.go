@@ -148,7 +148,7 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	expectedTotal := 5
 	dl, err = sm.ListDefinitions(1, 0, "alias", "asc", nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	if dl.Total != expectedTotal {
 		t.Errorf("Expected %v total definitions, got %v", expectedTotal, dl.Total)
@@ -260,7 +260,7 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 
 	err = sm.CreateDefinition(d)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	f, err := sm.GetDefinition("id:cupcake")
@@ -298,7 +298,7 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 	}
 	_, err := sm.UpdateDefinition("A", updates)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	d, _ := sm.GetDefinition("A")
@@ -334,7 +334,7 @@ func TestSQLStateManager_DeleteDefinition(t *testing.T) {
 	var err error
 	err = sm.DeleteDefinition("A")
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	_, err = sm.GetDefinition("A")
@@ -351,7 +351,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	expectedTotal := 6
 	rl, err := sm.ListRuns(1, 0, "started_at", "asc", nil, nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if rl.Total != expectedTotal {
@@ -401,7 +401,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 	// Test filtering on environment variables
 	rl, err = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"}, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if rl.Runs[0].RunID != "run2" {
@@ -427,7 +427,7 @@ func TestSQLStateManager_ListRuns2(t *testing.T) {
 		},
 	}, nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if rl.Total != expectedTotal {
@@ -454,7 +454,7 @@ func TestSQLStateManager_ListRuns3(t *testing.T) {
 		},
 	}, nil, nil)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if rl.Total != expectedTotal {

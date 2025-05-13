@@ -73,7 +73,7 @@ func TestEndpoints_CreateDefinition(t *testing.T) {
 	r := state.Definition{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(r.DefinitionID) == 0 {
@@ -103,7 +103,7 @@ func TestEndpoints_UpdateDefinition(t *testing.T) {
 	r := state.Definition{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if r.Image != "updatedImage" {
@@ -133,7 +133,7 @@ func TestEndpoints_CreateRun(t *testing.T) {
 	r := state.Run{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(r.RunID) == 0 {
@@ -167,7 +167,7 @@ func TestEndpoints_CreateRun2(t *testing.T) {
 	r := state.Run{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(r.RunID) == 0 {
@@ -205,7 +205,7 @@ func TestEndpoints_CreateRun4(t *testing.T) {
 	r := state.Run{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(r.RunID) == 0 {
@@ -218,7 +218,7 @@ func TestEndpoints_CreateRun4(t *testing.T) {
 
 	if len(r.Labels) != 1 || r.Labels["foo"] != "bar" {
 		labelRes, _ := json.Marshal(r.Labels)
-		t.Errorf(string(labelRes))
+		t.Error(string(labelRes))
 	}
 
 	if r.User != "flotilla" {
@@ -248,7 +248,7 @@ func TestEndpoints_CreateRunByAlias(t *testing.T) {
 	r := state.Run{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if len(r.RunID) == 0 {
@@ -284,7 +284,7 @@ func TestEndpoints_DeleteDefinition(t *testing.T) {
 	var ack map[string]bool
 	err := json.NewDecoder(resp.Body).Decode(&ack)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	if _, ok := ack["deleted"]; !ok {
 		t.Errorf("Expected [deleted] acknowledgement")
@@ -311,7 +311,7 @@ func TestEndpoints_GetDefinition(t *testing.T) {
 	var r state.Definition
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if r.DefinitionID != "A" {
@@ -343,7 +343,7 @@ func TestEndpoints_GetDefinitionByAlias(t *testing.T) {
 	var r state.Definition
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if r.DefinitionID != "A" {
@@ -375,7 +375,7 @@ func TestEndpoints_GetGroups(t *testing.T) {
 	var r map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := r["total"]; !ok {
@@ -412,7 +412,7 @@ func TestEndpoints_GetLogs(t *testing.T) {
 	var r map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := r["log"]; !ok {
@@ -440,7 +440,7 @@ func TestEndpoints_GetRun(t *testing.T) {
 	var r state.Run
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if r.RunID != "runA" {
@@ -468,7 +468,7 @@ func TestEndpoints_GetRun2(t *testing.T) {
 	var other map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&other)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	instance, ok := other["instance"]
@@ -501,7 +501,7 @@ func TestEndpoints_GetTags(t *testing.T) {
 	var r map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := r["total"]; !ok {
@@ -538,7 +538,7 @@ func TestEndpoints_ListDefinitions(t *testing.T) {
 	var r map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := r["total"]; !ok {
@@ -616,7 +616,7 @@ func TestEndpoints_ListRuns(t *testing.T) {
 	var r map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := r["total"]; !ok {
@@ -712,7 +712,7 @@ func TestEndpoints_StopRun(t *testing.T) {
 	var ack map[string]bool
 	err := json.NewDecoder(resp.Body).Decode(&ack)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	if _, ok := ack["terminated"]; !ok {
 		t.Errorf("Expected [terminated] acknowledgement")
@@ -739,7 +739,7 @@ func TestEndpoints_ListClusters(t *testing.T) {
 	var response map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	clusters, ok := response["clusters"]
@@ -790,7 +790,7 @@ func TestEndpoints_GetCluster(t *testing.T) {
 	var cluster map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&cluster)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := cluster["name"]; !ok {
@@ -823,7 +823,7 @@ func TestEndpoints_UpdateCluster(t *testing.T) {
 	var ack map[string]bool
 	err := json.NewDecoder(resp.Body).Decode(&ack)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := ack["updated"]; !ok {
@@ -851,7 +851,7 @@ func TestEndpoints_DeleteCluster(t *testing.T) {
 	var ack map[string]bool
 	err := json.NewDecoder(resp.Body).Decode(&ack)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := ack["deleted"]; !ok {
@@ -879,7 +879,7 @@ func TestEndpoints_CreateCluster(t *testing.T) {
 	var ack map[string]bool
 	err := json.NewDecoder(resp.Body).Decode(&ack)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if _, ok := ack["created"]; !ok {
