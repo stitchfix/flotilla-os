@@ -1119,7 +1119,11 @@ func (ep *endpoints) GetRunStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", "max-age=5") // Cache for 5 seconds
 
-	statusHash := fmt.Sprintf("%s-%v", status.Status, status.ExitCode)
+	exitCode := "unknown"
+	if status.ExitCode != nil {
+		exitCode = fmt.Sprintf("%v", *status.ExitCode)
+	}
+	statusHash := fmt.Sprintf("%s-%s", status.Status, exitCode)
 	etag := fmt.Sprintf(`"%s"`, statusHash)
 	w.Header().Set("ETag", etag)
 
