@@ -334,7 +334,7 @@ func (sm *SQLStateManager) ListDefinitions(
 func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
+	err = sm.readonlyDB.Get(&definition, GetDefinitionSQL, definitionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -350,7 +350,7 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error) {
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionByAliasSQL, alias)
+	err = sm.readonlyDB.Get(&definition, GetDefinitionByAliasSQL, alias)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -673,7 +673,7 @@ func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
 func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQL, runID)
+	err = sm.readonlyDB.Get(&r, GetRunSQL, runID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
