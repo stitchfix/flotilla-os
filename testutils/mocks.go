@@ -570,7 +570,7 @@ func (iatt *ImplementsAllTheThings) GetRunStatus(runID string) (state.RunStatus,
 
 	r, ok := iatt.Runs[runID]
 	if !ok {
-		err = fmt.Errorf("No run %s", runID)
+		err = fmt.Errorf("No run with ID: %s", runID)
 		return state.RunStatus{}, err
 	}
 
