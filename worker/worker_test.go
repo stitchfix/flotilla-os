@@ -1,10 +1,11 @@
 package worker
 
 import (
-	"github.com/stitchfix/flotilla-os/config"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stitchfix/flotilla-os/config"
 )
 
 func TestGetPollInterval(t *testing.T) {
@@ -15,7 +16,7 @@ func TestGetPollInterval(t *testing.T) {
 
 	interval, err := GetPollInterval("retry", conf)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if interval != expected {
