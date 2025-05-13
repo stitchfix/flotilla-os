@@ -60,6 +60,7 @@ type Manager interface {
 	UpdateClusterMetadata(cluster ClusterMetadata) error
 	DeleteClusterMetadata(clusterID string) error
 	GetClusterByID(clusterID string) (ClusterMetadata, error)
+	GetRunStatus(runID string) (RunStatus, error)
 }
 
 // NewStateManager sets up and configures a new statemanager

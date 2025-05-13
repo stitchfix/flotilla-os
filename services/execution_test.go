@@ -449,3 +449,54 @@ func TestExecutionService_CreateDefinitionRunWithTier(t *testing.T) {
 		})
 	}
 }
+
+func TestExecutionService_GetRunStatus(t *testing.T) {
+	es, imp := setUp(t)
+
+	expectedCalls := map[string]bool{
+		"GetRunStatus": true,
+	}
+
+	status, err := es.GetRunStatus("runA")
+
+	if err != nil {
+		t.Errorf("Expected no error when getting status of existing run, got: %s", err.Error())
+	}
+
+	if len(imp.Calls) != len(expectedCalls) {
+		t.Errorf("Expected exactly %v calls during status retrieval but was: %v", len(expectedCalls), len(imp.Calls))
+	}
+
+	for _, call := range imp.Calls {
+		_, ok := expectedCalls[call]
+		if !ok {
+			t.Errorf("Unexpected call during status retrieval: %s", call)
+		}
+	}
+
+	if status.RunID != "runA" {
+		t.Errorf("Expected run ID 'runA' but got '%s'", status.RunID)
+	}
+
+	if status.DefinitionID != "A" {
+		t.Errorf("Expected definition ID 'A' but got '%s'", status.DefinitionID)
+	}
+
+	if status.ClusterName != "A" {
+		t.Errorf("Expected cluster name 'A' but got '%s'", status.ClusterName)
+	}
+
+	imp.Calls = []string{}
+
+	_, err = es.GetRunStatus("nonexistent")
+
+	if err == nil {
+		t.Errorf("Expected error when getting status of non-existent run, got nil")
+	}
+
+	expectedErrorString := "No run nonexistent"
+	if err != nil && err.Error() != expectedErrorString {
+		t.Errorf("Expected error message '%s', got '%s'", expectedErrorString, err.Error())
+	}
+
+}

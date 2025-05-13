@@ -45,6 +45,7 @@ type ExecutionService interface {
 	UpdateClusterMetadata(cluster state.ClusterMetadata) error
 	DeleteClusterMetadata(clusterID string) error
 	GetClusterByID(clusterID string) (state.ClusterMetadata, error)
+	GetRunStatus(runID string) (state.RunStatus, error)
 }
 
 type executionService struct {
@@ -701,4 +702,9 @@ func (es *executionService) DeleteClusterMetadata(clusterID string) error {
 
 func (es *executionService) GetClusterByID(clusterID string) (state.ClusterMetadata, error) {
 	return es.stateManager.GetClusterByID(clusterID)
+}
+
+// GetRunStatus fetches only the essential status information for a run
+func (es *executionService) GetRunStatus(runID string) (state.RunStatus, error) {
+	return es.stateManager.GetRunStatus(runID)
 }

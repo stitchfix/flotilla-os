@@ -223,6 +223,22 @@ select t.run_id                          as runid,
      coalesce(tier::text, 'Tier4')   as tier
 from task t
 `
+const GetRunStatusSQL = `
+SELECT 
+    run_id, 
+    definition_id,
+    alias,
+    cluster_name,
+    status, 
+    queued_at, 
+    started_at, 
+    finished_at, 
+    exit_code, 
+    exit_reason,
+    engine
+FROM task
+WHERE run_id = $1
+`
 
 // ListRunsSQL postgres specific query for listing runs
 const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"

@@ -563,3 +563,30 @@ func (iatt *ImplementsAllTheThings) CreateTemplate(t state.Template) error {
 	iatt.Templates[t.TemplateID] = t
 	return nil
 }
+
+func (iatt *ImplementsAllTheThings) GetRunStatus(runID string) (state.RunStatus, error) {
+	iatt.Calls = append(iatt.Calls, "GetRunStatus")
+	var err error
+
+	r, ok := iatt.Runs[runID]
+	if !ok {
+		err = fmt.Errorf("No run %s", runID)
+		return state.RunStatus{}, err
+	}
+
+	status := state.RunStatus{
+		RunID:        r.RunID,
+		Status:       r.Status,
+		DefinitionID: r.DefinitionID,
+		ClusterName:  r.ClusterName,
+		QueuedAt:     r.QueuedAt,
+		StartedAt:    r.StartedAt,
+		FinishedAt:   r.FinishedAt,
+		ExitCode:     r.ExitCode,
+		ExitReason:   r.ExitReason,
+		Engine:       r.Engine,
+		Alias:        r.Alias,
+	}
+
+	return status, err
+}

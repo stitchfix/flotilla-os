@@ -703,6 +703,20 @@ func removeDuplicateStr(strSlice []string) []string {
 
 type byExecutorName []string
 
+type RunStatus struct {
+	RunID        string     `json:"run_id"`
+	Status       string     `json:"status"`
+	QueuedAt     *time.Time `json:"queued_at,omitempty"`
+	StartedAt    *time.Time `json:"started_at,omitempty"`
+	FinishedAt   *time.Time `json:"finished_at,omitempty"`
+	ExitCode     *int64     `json:"exit_code,omitempty"`
+	ExitReason   *string    `json:"exit_reason,omitempty"`
+	Engine       *string    `json:"engine,omitempty"`
+	DefinitionID string     `json:"definition_id"`
+	Alias        string     `json:"alias"`
+	ClusterName  string     `json:"cluster_name"`
+}
+
 func (s byExecutorName) Len() int {
 	return len(s)
 }
