@@ -494,7 +494,7 @@ func TestExecutionService_GetRunStatus(t *testing.T) {
 		t.Errorf("Expected error when getting status of non-existent run, got nil")
 	}
 
-	expectedErrorString := "No run nonexistent"
+	expectedErrorString := "No run with ID: nonexistent"
 	if err != nil && err.Error() != expectedErrorString {
 		t.Errorf("Expected error message '%s', got '%s'", expectedErrorString, err.Error())
 	}
