@@ -334,7 +334,7 @@ func (sm *SQLStateManager) ListDefinitions(
 func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
+	err = sm.readonlyDB.Get(&definition, GetDefinitionSQL, definitionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -350,7 +350,7 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error) {
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionByAliasSQL, alias)
+	err = sm.readonlyDB.Get(&definition, GetDefinitionByAliasSQL, alias)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -643,7 +643,7 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 // GetRun gets run by id
 func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 	var r Run
-	err := sm.db.Get(&r, GetRunSQL, runID)
+	err := sm.readonlyDB.Get(&r, GetRunSQL, runID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
@@ -658,7 +658,7 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
 	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQLByEMRJobId, emrJobId)
+	err = sm.readonlyDB.Get(&r, GetRunSQLByEMRJobId, emrJobId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
@@ -673,7 +673,7 @@ func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
 func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQL, runID)
+	err = sm.readonlyDB.Get(&r, GetRunSQL, runID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
@@ -1928,4 +1928,20 @@ func (arr Capabilities) Value() (driver.Value, error) {
 		return "{}", nil
 	}
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
+}
+
+func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
+	var status RunStatus
+	err := sm.readonlyDB.Get(&status, GetRunStatusSQL, runID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return status, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Run with id %s not found", runID)}
+		}
+
+		return status, errors.Wrapf(err, "issue getting run status with id [%s]", runID)
+	}
+
+	return status, nil
 }

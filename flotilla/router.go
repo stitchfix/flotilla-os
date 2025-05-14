@@ -69,6 +69,7 @@ func NewRouter(ep endpoints) *muxtrace.Router {
 	v6.HandleFunc("/task/{definition_id}/history/{run_id}", ep.StopRun).Methods("DELETE")
 	v6.HandleFunc("/task/history/{run_id}", ep.GetRun).Methods("GET")
 	v6.HandleFunc("/{run_id}/status", ep.UpdateRun).Methods("PUT")
+	v6.HandleFunc("/{run_id}/status", ep.GetRunStatus).Methods("GET")
 	v6.HandleFunc("/{run_id}/logs", ep.GetLogs).Methods("GET")
 
 	v7 := r.PathPrefix("/api/v7").Subrouter()
