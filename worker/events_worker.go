@@ -249,6 +249,12 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		if emrJobId != nil {
 			run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
 			if err == nil {
+				_, span := utils.TraceJob(ctx, "flotilla.job.process_emr_pod_event", run.RunID)
+				defer span.Finish()
+				utils.TagJobRun(span, run)
+				span.SetTag("k8s.event_type", kubernetesEvent.Type)
+				span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
+				span.SetTag("emr.job_id", *emrJobId)
 				layout := "2006-01-02T15:04:05Z"
 				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
 				if err != nil {
@@ -302,6 +308,8 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				run, err = ew.sm.UpdateRun(run.RunID, run)
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
+					span.SetTag("error", true)
+					span.SetTag("error.msg", err.Error())
 				}
 
 				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
@@ -352,21 +360,6 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
-	eventNamespace := kubernetesEvent.InvolvedObject.Namespace
-	currentNamespace := ew.conf.GetString("eks_job_namespace")
-	if eventNamespace != currentNamespace {
-		_ = ew.log.Log("message", "Skipping event from wrong namespace",
-			"event_namespace", eventNamespace,
-			"expected_namespace", currentNamespace,
-			"runId", runId)
-		_ = kubernetesEvent.Done()
-		return
-	}
-	if strings.HasPrefix(runId, "eks-spark") || len(runId) == 0 ||
-		regexp.MustCompile(`^[0-9]+`).MatchString(runId) {
-		ew.processEMRPodEvents(kubernetesEvent)
-		return
-	}
 	ctx := context.Background()
 	ctx, span := utils.TraceJob(ctx, "flotilla.job.process_event", runId)
 	defer span.Finish()

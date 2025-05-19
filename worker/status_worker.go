@@ -200,9 +200,21 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	}
 
 	start = time.Now()
+	_, statusSpan := utils.TraceJob(ctx, "flotilla.job.fetch_update_status", reloadRun.RunID)
+	defer statusSpan.Finish()
+	utils.TagJobRun(statusSpan, reloadRun)
+	statusSpan.SetTag("cluster_name", reloadRun.ClusterName)
+
 	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
 	if err != nil {
 		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
+
+		if strings.Contains(err.Error(), "not found") {
+			if run.Status == state.StatusPending || run.Status == state.StatusQueued {
+				statusSpan.SetTag("error.expected", true)
+				statusSpan.SetTag("error", false)
+			}
+		}
 	}
 	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 

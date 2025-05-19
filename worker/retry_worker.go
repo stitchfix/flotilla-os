@@ -74,17 +74,22 @@ func (rw *retryWorker) runOnce() {
 
 	for _, run := range runList.Runs {
 		_, childSpan := utils.TraceJob(ctx, "flotilla.job.retry", run.RunID)
-		utils.TagJobRun(childSpan, run)
-		if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
-			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
-			return
-		}
+		func() {
+			defer childSpan.Finish()
+			utils.TagJobRun(childSpan, run)
+			childSpan.SetTag("job.retry_reason", run.ExitReason)
+			childSpan.SetTag("job.original_status", run.Status)
 
-		if err = rw.ee.Enqueue(run); err != nil {
-			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
-			return
-		}
-		childSpan.Finish()
+			if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
+				rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				return
+			}
+
+			if err = rw.ee.Enqueue(run); err != nil {
+				rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				return
+			}
+		}()
 	}
 	return
 }
