@@ -1,15 +1,9 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stitchfix/flotilla-os/utils"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
@@ -19,7 +13,14 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gopkg.in/tomb.v2"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type statusWorker struct {
@@ -98,10 +99,18 @@ func (sw *statusWorker) runTimeouts() {
 }
 
 func (sw *statusWorker) processTimeouts(runs []state.Run) {
+	ctx := context.Background()
+	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.job.timeout_check")
+	defer span.Finish()
+	span.SetTag("timeout_check.run_count", len(runs))
+	timeoutCount := 0
 	for _, run := range runs {
 		if run.StartedAt != nil && run.ActiveDeadlineSeconds != nil {
 			runningDuration := time.Now().Sub(*run.StartedAt)
 			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
+				timeoutCount++
+				_, childSpan := utils.TraceJob(ctx, "flotilla.job.timeout", run.RunID)
+				utils.TagJobRun(childSpan, run)
 				if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
 					_ = sw.emrEngine.Terminate(run)
 				} else {
@@ -116,9 +125,11 @@ func (sw *statusWorker) processTimeouts(runs []state.Run) {
 					ExitCode:   &exitCode,
 					FinishedAt: &finishedAt,
 				})
+				childSpan.Finish()
 			}
 		}
 	}
+	span.SetTag("timeout_check.timeout_count", timeoutCount)
 }
 
 func (sw *statusWorker) runOnceEKS() {
@@ -171,6 +182,10 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 }
 
 func (sw *statusWorker) processEKSRun(run state.Run) {
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.status_check", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	reloadRun, err := sw.sm.GetRun(run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
@@ -248,11 +263,24 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 			}
 		}
 	}
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	} else if updatedRun.Status != run.Status {
+		span.SetTag("job.status_change", fmt.Sprintf("%s->%s", run.Status, updatedRun.Status))
+		utils.TagJobRun(span, updatedRun)
+	}
 }
 
 func (sw *statusWorker) cleanupRun(runID string) {
+	ctx := context.Background()
+	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.job.cleanup", tracer.Tag("job.run_id", runID))
+
+	defer span.Finish()
 	//Logs maybe delayed before being persisted to S3.
+	span.SetTag("cleanup.delay_start", time.Now().Unix())
 	time.Sleep(120 * time.Second)
+	span.SetTag("cleanup.delay_end", time.Now().Unix())
 	run, err := sw.sm.GetRun(runID)
 	if err == nil {
 		//Delete run from Kubernetes

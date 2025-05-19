@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/utils"
 
 	"github.com/stitchfix/flotilla-os/config"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -124,7 +126,10 @@ func (emr *EMRExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, 
 	return kClient, nil
 }
 func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.emr_execute", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	run = emr.estimateExecutorCount(run, manager)
 	run = emr.estimateMemoryResources(run, manager)
 
@@ -164,6 +169,14 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		_ = emr.log.Log("EMR job submission error", "error", err.Error())
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
 		return run, false, err
+	}
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	} else {
+		span.SetTag("emr.job_id", *run.SparkExtension.EMRJobId)
+		span.SetTag("emr.virtual_cluster_id", *run.SparkExtension.VirtualClusterId)
+		utils.TagJobRun(span, run)
 	}
 	return run, false, nil
 }
@@ -669,6 +682,10 @@ func (emr *EMRExecutionEngine) sparkSubmitParams(run state.Run) *string {
 }
 
 func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.emr_terminate", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.Status == state.StatusStopped {
 		return errors.New("Run is already in a stopped state.")
 	}
@@ -695,6 +712,10 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 }
 
 func (emr *EMRExecutionEngine) Enqueue(run state.Run) error {
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.emr_enqueue", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	qurl, err := emr.sqsQueueManager.QurlFor(emr.emrJobQueue, false)
 	if err != nil {
 		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure)}, 1)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/stitchfix/flotilla-os/utils"
 	"strings"
 	"time"
 
@@ -117,6 +118,9 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.execute", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.Namespace == nil || *run.Namespace == "" {
 		clusters, err := manager.ListClusterStates()
 		if err == nil {
@@ -193,6 +197,13 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 
 	// Set status to running.
 	adaptedRun.Status = state.StatusRunning
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	} else {
+		span.SetTag("job.submitted", true)
+		utils.TagJobRun(span, adaptedRun)
+	}
 	return adaptedRun, false, nil
 }
 
@@ -258,8 +269,16 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 }
 
 func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.get_k8s_client", run.RunID)
+	defer span.Finish()
+	startTime := time.Now()
 	kClient, err := ee.clusterManager.GetKubernetesClient(run.ClusterName)
+	span.SetTag("k8s.client_init_ms", time.Since(startTime).Milliseconds())
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "k8s_client_init")
 		return kubernetes.Clientset{}, errors.Wrapf(err, "failed to get Kubernetes client for cluster %s", run.ClusterName)
 	}
 	return kClient, nil
@@ -267,6 +286,9 @@ func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, e
 
 func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.eks_terminate", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	gracePeriod := int64(300)
 	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
@@ -419,6 +441,9 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 
 func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
 	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.eks_fetch_metrics", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.PodName != nil {
 		metricsClient, err := ee.clusterManager.GetMetricsClient(run.ClusterName)
 		if err != nil {
@@ -443,6 +468,16 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 				run.MaxCpuUsed = &cpu
 			}
 		}
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+		} else if run.MaxMemoryUsed != nil {
+			span.SetTag("job.metrics.memory_mb", *run.MaxMemoryUsed)
+		}
+
+		if run.MaxCpuUsed != nil {
+			span.SetTag("job.metrics.cpu_millicores", *run.MaxCpuUsed)
+		}
 		return run, nil
 	}
 	return run, errors.New("no pod associated with the run.")
@@ -450,6 +485,9 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 
 func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
 	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.eks_fetch_status", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
@@ -457,10 +495,23 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 
 	start := time.Now()
 	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(ctx, run.RunID, metav1.GetOptions{})
+	span.SetTag("k8s.job_get_ms", time.Since(start).Milliseconds())
 	_ = metrics.Timing(metrics.StatusWorkerGetJob, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "k8s_get_job")
 		return run, err
+	}
+	if job.Status.Active > 0 {
+		span.SetTag("job.k8s.active", job.Status.Active)
+	}
+	if job.Status.Succeeded > 0 {
+		span.SetTag("job.k8s.succeeded", job.Status.Succeeded)
+	}
+	if job.Status.Failed > 0 {
+		span.SetTag("job.k8s.failed", job.Status.Failed)
 	}
 
 	var mostRecentPod *v1.Pod

@@ -1,9 +1,11 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/utils"
 	"math/rand"
 	"regexp"
 	"slices"
@@ -576,6 +578,10 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 // updates the db's run object with a new `queued_at` field.
 func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error) {
 	var err error
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.create", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.IdempotenceKey != nil {
 		priorRunId, err := es.stateManager.CheckIdempotenceKey(*run.IdempotenceKey)
 		if err == nil && len(priorRunId) > 0 {

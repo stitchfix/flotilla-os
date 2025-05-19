@@ -11,6 +11,7 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	"gopkg.in/tomb.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
@@ -351,10 +352,16 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
+
 	if strings.HasPrefix(runId, "eks-spark") || len(runId) == 0 {
 		ew.processEMRPodEvents(kubernetesEvent)
 		return
 	}
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.process_event", runId)
+	defer span.Finish()
+	span.SetTag("k8s.event_type", kubernetesEvent.Type)
+	span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
 
 	layout := "2020-08-31T17:27:50Z"
 	timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
@@ -411,6 +418,10 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 		} else {
 			_ = kubernetesEvent.Done()
 		}
+	}
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 	}
 }
 

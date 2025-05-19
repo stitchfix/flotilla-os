@@ -1,8 +1,10 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -58,11 +60,17 @@ func (sw *submitWorker) Run() error {
 }
 
 func (sw *submitWorker) runOnce() {
+	ctx := context.Background()
+	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.submit_worker.poll")
+	defer span.Finish()
 	var receipts []engine.RunReceipt
 	var run state.Run
 	var err error
 
+	pollStart := time.Now()
 	receipts, err = sw.eksEngine.PollRuns()
+	span.SetTag("sqs.poll_duration_ms", time.Since(pollStart).Milliseconds())
+	span.SetTag("sqs.received_count", len(receipts))
 	receiptsEMR, err := sw.emrEngine.PollRuns()
 	receipts = append(receipts, receiptsEMR...)
 	if err != nil {
@@ -72,6 +80,8 @@ func (sw *submitWorker) runOnce() {
 		if runReceipt.Run == nil {
 			continue
 		}
+		_, childSpan := utils.TraceJob(ctx, "flotilla.job.submit_worker.process", runReceipt.Run.RunID)
+		utils.TagJobRun(childSpan, *runReceipt.Run)
 
 		//
 		// Fetch run from state manager to ensure its existence
@@ -186,8 +196,14 @@ func (sw *submitWorker) runOnce() {
 		}
 
 		if err = runReceipt.Done(); err != nil {
+			childSpan.SetTag("error", true)
+			childSpan.SetTag("error.msg", err.Error())
+			childSpan.SetTag("error.type", "sqs_ack")
 			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+		} else {
+			childSpan.SetTag("sqs.ack_success", true)
 		}
+		childSpan.Finish()
 	}
 }
 

@@ -1,8 +1,11 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/queue"
+	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -52,20 +55,26 @@ func (rw *retryWorker) Run() error {
 }
 
 func (rw *retryWorker) runOnce() {
+	ctx := context.Background()
+	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.retry_worker.poll")
+	defer span.Finish()
 	// List runs in the StatusNeedsRetry state and requeue them
 	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{state.EKSEngine})
-
+	span.SetTag("retry.run_count", runList.Total)
 	if runList.Total > 0 {
 		rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 	}
 
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		rw.log.Log("message", "Error listing runs for retry", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 
 	for _, run := range runList.Runs {
-
+		_, childSpan := utils.TraceJob(ctx, "flotilla.job.retry", run.RunID)
+		utils.TagJobRun(childSpan, run)
 		if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
 			rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			return
@@ -75,6 +84,7 @@ func (rw *retryWorker) runOnce() {
 			rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			return
 		}
+		childSpan.Finish()
 	}
 	return
 }
