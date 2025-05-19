@@ -1929,3 +1929,55 @@ func (arr Capabilities) Value() (driver.Value, error) {
 	}
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
+
+func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
+	var status RunStatus
+
+	tx, err := sm.db.Begin()
+	if err != nil {
+		return status, errors.Wrap(err, "failed to begin transaction")
+	}
+
+	_, err = tx.Exec("SET LOCAL lock_timeout = '500ms'")
+	if err != nil {
+		tx.Rollback()
+		return status, errors.Wrap(err, "failed to set lock timeout")
+	}
+
+	err = tx.QueryRow(GetRunStatusSQL, runID).Scan(
+		&status.RunID,
+		&status.DefinitionID,
+		&status.Alias,
+		&status.ClusterName,
+		&status.Status,
+		&status.QueuedAt,
+		&status.StartedAt,
+		&status.FinishedAt,
+		&status.ExitCode,
+		&status.ExitReason,
+		&status.Engine,
+	)
+
+	if err != nil {
+		tx.Rollback()
+
+		if err == sql.ErrNoRows {
+			return status, exceptions.MissingResource{
+				ErrorString: fmt.Sprintf("Run with id %s not found", runID)}
+		}
+
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "55P03" {
+			return status, exceptions.ConflictingResource{
+				ErrorString: fmt.Sprintf("Run with id %s is currently locked, please retry", runID)}
+		}
+
+		return status, errors.Wrapf(err, "issue getting run status with id [%s]", runID)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return status, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	return status, nil
+}

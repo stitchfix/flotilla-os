@@ -1101,3 +1101,36 @@ func (ep *endpoints) CreateCluster(w http.ResponseWriter, r *http.Request) {
 
 	ep.encodeResponse(w, map[string]bool{"created": true})
 }
+
+func (ep *endpoints) GetRunStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	runID := vars["run_id"]
+
+	status, err := ep.executionService.GetRunStatus(runID)
+	if err != nil {
+		ep.logger.Log(
+			"message", "problem getting run status",
+			"operation", "GetRunStatus",
+			"error", fmt.Sprintf("%+v", err),
+			"run_id", runID)
+		ep.encodeError(w, err)
+		return
+	}
+
+	w.Header().Set("Cache-Control", "max-age=5") // Cache for 5 seconds
+
+	exitCode := "unknown"
+	if status.ExitCode != nil {
+		exitCode = fmt.Sprintf("%v", *status.ExitCode)
+	}
+	statusHash := fmt.Sprintf("%s-%s", status.Status, exitCode)
+	etag := fmt.Sprintf(`"%s"`, statusHash)
+	w.Header().Set("ETag", etag)
+
+	if match := r.Header.Get("If-None-Match"); match != "" && match == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	ep.encodeResponse(w, status)
+}
