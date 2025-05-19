@@ -352,14 +352,16 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 
 func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
-	expectedMode := ew.conf.GetString("FLOTILLA_MODE")
-	if !strings.HasPrefix(runId, expectedMode) &&
-		(strings.HasPrefix(runId, "prod") || strings.HasPrefix(runId, "staging")) {
-		_ = ew.log.Log("message", "Skipping event for different environment", "runId", runId)
+	eventNamespace := kubernetesEvent.InvolvedObject.Namespace
+	currentNamespace := ew.conf.GetString("eks_job_namespace")
+	if eventNamespace != currentNamespace {
+		_ = ew.log.Log("message", "Skipping event from wrong namespace",
+			"event_namespace", eventNamespace,
+			"expected_namespace", currentNamespace,
+			"runId", runId)
 		_ = kubernetesEvent.Done()
 		return
 	}
-
 	if strings.HasPrefix(runId, "eks-spark") || len(runId) == 0 ||
 		regexp.MustCompile(`^[0-9]+`).MatchString(runId) {
 		ew.processEMRPodEvents(kubernetesEvent)
