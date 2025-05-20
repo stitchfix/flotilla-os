@@ -137,7 +137,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
 	definitionList, err := ep.definitionService.List(
-		lr.limit, lr.offset, lr.sortBy, lr.order, lr.filters, lr.envFilters)
+		r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order, lr.filters, lr.envFilters)
 	if definitionList.Definitions == nil {
 		definitionList.Definitions = []state.Definition{}
 	}
@@ -166,7 +166,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 // Fetches definition from DB using definition id.
 func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	definition, err := ep.definitionService.Get(vars["definition_id"])
+	definition, err := ep.definitionService.Get(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting definitions",
@@ -182,7 +182,7 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 // Fetches definition from DB using definition alias.
 func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	definition, err := ep.definitionService.GetByAlias(vars["alias"])
+	definition, err := ep.definitionService.GetByAlias(r.Context(), vars["alias"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting definition by alias",
@@ -204,7 +204,7 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := ep.definitionService.Create(&definition)
+	created, err := ep.definitionService.Create(r.Context(), &definition)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating definition",
@@ -226,7 +226,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	updated, err := ep.definitionService.Update(vars["definition_id"], definition)
+	updated, err := ep.definitionService.Update(r.Context(), vars["definition_id"], definition)
 
 	if err != nil {
 		ep.logger.Log(
@@ -243,7 +243,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 // Deletes a defiition.
 func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.definitionService.Delete(vars["definition_id"])
+	err := ep.definitionService.Delete(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem deleting definition",
