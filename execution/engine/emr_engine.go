@@ -768,7 +768,7 @@ func (emr *EMRExecutionEngine) Enqueue(ctx context.Context, run state.Run) error
 	return nil
 }
 
-func (emr *EMRExecutionEngine) PollRuns() ([]RunReceipt, error) {
+func (emr *EMRExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error) {
 	qurl, err := emr.sqsQueueManager.QurlFor(emr.emrJobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
@@ -794,23 +794,26 @@ func (emr *EMRExecutionEngine) PollRuns() ([]RunReceipt, error) {
 	return runs, nil
 }
 
-func (emr *EMRExecutionEngine) PollStatus() (RunReceipt, error) {
+func (emr *EMRExecutionEngine) PollStatus(ctx context.Context) (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
 
-func (emr *EMRExecutionEngine) PollRunStatus() (state.Run, error) {
+func (emr *EMRExecutionEngine) PollRunStatus(ctx context.Context) (state.Run, error) {
 	return state.Run{}, nil
 }
 
-func (emr *EMRExecutionEngine) Define(td state.Definition) (state.Definition, error) {
+func (emr *EMRExecutionEngine) Define(ctx context.Context, td state.Definition) (state.Definition, error) {
 	return td, nil
 }
 
-func (emr *EMRExecutionEngine) Deregister(definition state.Definition) error {
+func (emr *EMRExecutionEngine) Deregister(ctx context.Context, definition state.Definition) error {
 	return errors.Errorf("EMRExecutionEngine does not allow for deregistering of task definitions.")
 }
 
-func (emr *EMRExecutionEngine) Get(run state.Run) (state.Run, error) {
+func (emr *EMRExecutionEngine) Get(ctx context.Context, run state.Run) (state.Run, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return run, nil
 }
 

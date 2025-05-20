@@ -348,7 +348,7 @@ func (ee *EKSExecutionEngine) Enqueue(ctx context.Context, run state.Run) error 
 	return nil
 }
 
-func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
+func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error) {
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
@@ -376,27 +376,29 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 
 // PollStatus is a dummy function as EKS does not emit task status
 // change events.
-func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
+func (ee *EKSExecutionEngine) PollStatus(ctx context.Context) (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
 
 // Reads off SQS queue and generates a Run object based on the runId
-func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
+func (ee *EKSExecutionEngine) PollRunStatus(ctx context.Context) (state.Run, error) {
 	return state.Run{}, nil
 }
 
 // Define returns a blank task definition and an error for the EKS engine.
-func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
+func (ee *EKSExecutionEngine) Define(ctx context.Context, td state.Definition) (state.Definition, error) {
 	return td, errors.New("Definition of tasks are only for ECSs.")
 }
 
 // Deregister returns an error for the EKS engine.
-func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
+func (ee *EKSExecutionEngine) Deregister(ctx context.Context, definition state.Definition) error {
 	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
 }
 
-func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) Get(ctx context.Context, run state.Run) (state.Run, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
