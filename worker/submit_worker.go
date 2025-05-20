@@ -65,10 +65,10 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 	var err error
 
 	pollStart := time.Now()
-	receipts, err = sw.eksEngine.PollRuns()
+	receipts, err = sw.eksEngine.PollRuns(ctx)
 	span.SetTag("sqs.poll_duration_ms", time.Since(pollStart).Milliseconds())
 	span.SetTag("sqs.received_count", len(receipts))
-	receiptsEMR, err := sw.emrEngine.PollRuns()
+	receiptsEMR, err := sw.emrEngine.PollRuns(ctx)
 	receipts = append(receipts, receiptsEMR...)
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
