@@ -798,8 +798,8 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 
 // List active workers.
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
-	wl, err := ep.workerService.List(state.EKSEngine)
-	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
+	wl, err := ep.workerService.List(r.Context(), state.EKSEngine)
+	wlEKS, errEKS := ep.workerService.List(r.Context(), state.EKSEngine)
 
 	if wl.Workers == nil {
 		wl.Workers = []state.Worker{}
@@ -822,7 +822,7 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 // Get information about an active worker.
 func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	worker, err := ep.workerService.Get(vars["worker_type"], state.DefaultEngine)
+	worker, err := ep.workerService.Get(r.Context(), vars["worker_type"], state.DefaultEngine)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -841,7 +841,7 @@ func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	updated, err := ep.workerService.Update(vars["worker_type"], worker)
+	updated, err := ep.workerService.Update(r.Context(), vars["worker_type"], worker)
 
 	if err != nil {
 		ep.encodeError(w, err)
@@ -860,7 +860,7 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, err := ep.workerService.BatchUpdate(wks)
+	updated, err := ep.workerService.BatchUpdate(r.Context(), wks)
 
 	if err != nil {
 		ep.encodeError(w, err)
@@ -974,9 +974,9 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	latestOnly := ep.getStringBoolVal(ep.getURLParam(params, "latest_only", "true"))
 
 	if latestOnly == true {
-		tl, err = ep.templateService.ListLatestOnly(lr.limit, lr.offset, lr.sortBy, lr.order)
+		tl, err = ep.templateService.ListLatestOnly(r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order)
 	} else {
-		tl, err = ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+		tl, err = ep.templateService.List(r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order)
 	}
 
 	if tl.Templates == nil {
@@ -1003,7 +1003,7 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 // Get a template.
 func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	tpl, err := ep.templateService.GetByID(vars["template_id"])
+	tpl, err := ep.templateService.GetByID(r.Context(), vars["template_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting templates",
@@ -1025,7 +1025,7 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := ep.templateService.Create(&req)
+	created, err := ep.templateService.Create(r.Context(), &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template",
