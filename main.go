@@ -14,11 +14,13 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"log"
 	"os"
 )
 
 func main() {
+	tracer.Start()
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("Usage: flotilla-os <conf_dir>")
