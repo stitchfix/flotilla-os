@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/utils"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -41,25 +40,24 @@ func (rw *retryWorker) GetTomb() *tomb.Tomb {
 }
 
 // Run finds tasks that NEED_RETRY and requeues them
-func (rw *retryWorker) Run() error {
+func (rw *retryWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-rw.t.Dying():
 			rw.log.Log("message", "A retry worker was terminated")
 			return nil
 		default:
-			rw.runOnce()
+			rw.runOnce(ctx)
 			time.Sleep(rw.pollInterval)
 		}
 	}
 }
 
-func (rw *retryWorker) runOnce() {
-	ctx := context.Background()
-	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.retry_worker.poll")
+func (rw *retryWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.retry_worker.poll", "retry_worker")
 	defer span.Finish()
 	// List runs in the StatusNeedsRetry state and requeue them
-	runList, err := rw.sm.ListRuns(25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{state.EKSEngine})
+	runList, err := rw.sm.ListRuns(ctx, 25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{state.EKSEngine})
 	span.SetTag("retry.run_count", runList.Total)
 	if runList.Total > 0 {
 		rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
@@ -80,12 +78,12 @@ func (rw *retryWorker) runOnce() {
 			childSpan.SetTag("job.retry_reason", run.ExitReason)
 			childSpan.SetTag("job.original_status", run.Status)
 
-			if _, err = rw.sm.UpdateRun(run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
+			if _, err = rw.sm.UpdateRun(ctx, run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
 				rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}
 
-			if err = rw.ee.Enqueue(run); err != nil {
+			if err = rw.ee.Enqueue(ctx, run); err != nil {
 				rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}

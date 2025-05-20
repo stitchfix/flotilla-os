@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/utils"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -46,22 +45,20 @@ func (sw *submitWorker) GetTomb() *tomb.Tomb {
 }
 
 // Run lists queues, consumes runs from them, and executes them using the execution engine
-func (sw *submitWorker) Run() error {
+func (sw *submitWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-sw.t.Dying():
 			sw.log.Log("message", "A submit worker was terminated")
 			return nil
 		default:
-			sw.runOnce()
+			sw.runOnce(ctx)
 			time.Sleep(sw.pollInterval)
 		}
 	}
 }
-
-func (sw *submitWorker) runOnce() {
-	ctx := context.Background()
-	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.submit_worker.poll")
+func (sw *submitWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "submit_worker.poll", "submit_worker")
 	defer span.Finish()
 	var receipts []engine.RunReceipt
 	var run state.Run
@@ -80,13 +77,13 @@ func (sw *submitWorker) runOnce() {
 		if runReceipt.Run == nil {
 			continue
 		}
-		_, childSpan := utils.TraceJob(ctx, "flotilla.job.submit_worker.process", runReceipt.Run.RunID)
+		runCtx, childSpan := utils.TraceJob(ctx, "flotilla.job.submit_worker.process", runReceipt.Run.RunID)
 		utils.TagJobRun(childSpan, *runReceipt.Run)
 
 		//
 		// Fetch run from state manager to ensure its existence
 		//
-		run, err = sw.sm.GetRun(runReceipt.Run.RunID)
+		run, err = sw.sm.GetRun(ctx, runReceipt.Run.RunID)
 		if err != nil {
 			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
 			if err = runReceipt.Done(); err != nil {
@@ -122,7 +119,7 @@ func (sw *submitWorker) runOnce() {
 			switch *run.ExecutableType {
 			case state.ExecutableTypeDefinition:
 				var d state.Definition
-				d, err = sw.sm.GetDefinition(*run.ExecutableID)
+				d, err = sw.sm.GetDefinition(runCtx, *run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -134,15 +131,15 @@ func (sw *submitWorker) runOnce() {
 
 				// Execute the run using the execution engine.
 				if run.Engine == nil || *run.Engine == state.EKSEngine {
-					launched, retryable, err = sw.eksEngine.Execute(d, run, sw.sm)
+					launched, retryable, err = sw.eksEngine.Execute(runCtx, d, run, sw.sm)
 				} else {
-					launched, retryable, err = sw.emrEngine.Execute(d, run, sw.sm)
+					launched, retryable, err = sw.emrEngine.Execute(runCtx, d, run, sw.sm)
 				}
 
 				break
 			case state.ExecutableTypeTemplate:
 				var tpl state.Template
-				tpl, err = sw.sm.GetTemplateByID(*run.ExecutableID)
+				tpl, err = sw.sm.GetTemplateByID(runCtx, *run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -154,7 +151,7 @@ func (sw *submitWorker) runOnce() {
 
 				// Execute the run using the execution engine.
 				sw.log.Log("message", "Submitting", "run_id", run.RunID)
-				launched, retryable, err = sw.eksEngine.Execute(tpl, run, sw.sm)
+				launched, retryable, err = sw.eksEngine.Execute(runCtx, tpl, run, sw.sm)
 				break
 			default:
 				// If executable type is invalid; log message and continue processing
@@ -188,7 +185,7 @@ func (sw *submitWorker) runOnce() {
 			// UpdateStatus the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
-			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
+			if _, err = sw.sm.UpdateRun(runCtx, run.RunID, launched); err != nil {
 				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", fmt.Sprintf("%+v", err))
 			}
 		} else {

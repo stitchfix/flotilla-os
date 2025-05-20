@@ -75,36 +75,40 @@ func (ew *eventsWorker) GetTomb() *tomb.Tomb {
 	return &ew.t
 }
 
-func (ew *eventsWorker) Run() error {
+func (ew *eventsWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ew.t.Dying():
-			_ = ew.log.Log("message", "A CloudTrail worker was terminated")
+			_ = ew.log.Log("message", "An events worker was terminated")
 			return nil
 		default:
-			ew.runOnce()
-			ew.runOnceEMR()
+			loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
+			ew.runOnce(loopCtx)
+			ew.runOnceEMR(loopCtx)
+			span.Finish()
 			time.Sleep(ew.pollInterval)
 		}
 	}
 }
 
-func (ew *eventsWorker) runOnceEMR() {
+func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_emr", "events_worker")
+	defer span.Finish()
 	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	ew.processEventEMR(emrEvent)
+	ew.processEventEMR(ctx, emrEvent)
 }
 
-func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
+func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrEvent) {
 	if emrEvent.Detail == nil {
 		return
 	}
 
 	emrJobId := emrEvent.Detail.ID
-	run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
+	run, err := ew.sm.GetRunByEMRJobId(ctx, *emrJobId)
 	if err == nil {
 		layout := "2020-08-31T17:27:50Z"
 		timestamp, err := time.Parse(layout, *emrEvent.Time)
@@ -163,24 +167,24 @@ func (ew *eventsWorker) processEventEMR(emrEvent state.EmrEvent) {
 		}
 
 		ew.setEMRMetricsUri(&run)
-		_, err = ew.sm.UpdateRun(run.RunID, run)
+		_, err = ew.sm.UpdateRun(ctx, run.RunID, run)
 		if err == nil {
 			_ = emrEvent.Done()
 		}
 	}
 }
-func (ew *eventsWorker) runOnce() {
+func (ew *eventsWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_eks", "events_worker")
+	defer span.Finish()
 	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	ew.processEvent(kubernetesEvent)
+	ew.processEvent(ctx, kubernetesEvent)
 }
 
-func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEvent) {
-	ctx := context.Background()
-
+func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
 	if kubernetesEvent.InvolvedObject.Kind == "Pod" {
 		// Skip events with empty cluster name
 		if kubernetesEvent.InvolvedObject.Labels.ClusterName == "" {
@@ -188,6 +192,12 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 			return
 		}
 		var emrJobId *string = nil
+		run, err := ew.sm.GetRunByEMRJobId(ctx, *emrJobId)
+		if err == nil {
+			_, span := utils.TraceJob(ctx, "flotilla.job.process_event_emr", run.RunID)
+			defer span.Finish()
+			utils.TagJobRun(span, run)
+		}
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
 		var executorOOM *bool = nil
@@ -247,7 +257,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 		}
 
 		if emrJobId != nil {
-			run, err := ew.sm.GetRunByEMRJobId(*emrJobId)
+			run, err := ew.sm.GetRunByEMRJobId(ctx, *emrJobId)
 			if err == nil {
 				_, span := utils.TraceJob(ctx, "flotilla.job.process_emr_pod_event", run.RunID)
 				defer span.Finish()
@@ -305,7 +315,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 
 				ew.setEMRMetricsUri(&run)
 
-				run, err = ew.sm.UpdateRun(run.RunID, run)
+				run, err = ew.sm.UpdateRun(ctx, run.RunID, run)
 				if err != nil {
 					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 					span.SetTag("error", true)
@@ -313,7 +323,7 @@ func (ew *eventsWorker) processEMRPodEvents(kubernetesEvent state.KubernetesEven
 				}
 
 				if run.PodEvents != nil && len(*run.PodEvents) >= ew.emrMaxPodEvents {
-					_ = ew.emrEngine.Terminate(run)
+					_ = ew.emrEngine.Terminate(ctx, run)
 				}
 
 			}
@@ -358,9 +368,8 @@ func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
 	}
 }
 
-func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
+func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
-	ctx := context.Background()
 	ctx, span := utils.TraceJob(ctx, "flotilla.job.process_event", runId)
 	defer span.Finish()
 	span.SetTag("k8s.event_type", kubernetesEvent.Type)
@@ -373,7 +382,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 		timestamp = time.Now()
 	}
 
-	run, err := ew.sm.GetRun(runId)
+	run, err := ew.sm.GetRun(ctx, runId)
 	if err == nil {
 		event := state.PodEvent{
 			Timestamp:    &timestamp,
@@ -415,7 +424,7 @@ func (ew *eventsWorker) processEvent(kubernetesEvent state.KubernetesEvent) {
 			run.FinishedAt = &timestamp
 		}
 		ew.setEKSMetricsUri(&run)
-		run, err = ew.sm.UpdateRun(runId, run)
+		run, err = ew.sm.UpdateRun(ctx, runId, run)
 		if err != nil {
 			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
 		} else {
