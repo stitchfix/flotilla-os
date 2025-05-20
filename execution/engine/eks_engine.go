@@ -88,7 +88,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	// Initialize all clusters (both static and dynamic)
-	if err := clusterManager.InitializeClusters(staticClusters); err != nil {
+	if err := clusterManager.InitializeClusters(context.Background(), staticClusters); err != nil {
 		ee.log.Log("message", "failed to initialize clusters", "error", err.Error())
 	}
 

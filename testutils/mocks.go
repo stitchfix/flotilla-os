@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -36,28 +37,37 @@ type ImplementsAllTheThings struct {
 	GetRandomClusterName    func(clusters []string) string
 }
 
+func (iatt *ImplementsAllTheThings) GetResources(ctx context.Context, runID string) (state.Run, error) {
+	iatt.Calls = append(iatt.Calls, "GetResources")
+	run, exists := iatt.Runs[runID]
+	if !exists {
+		return state.Run{}, fmt.Errorf("Run with id %s not found", runID)
+	}
+	return run, nil
+}
+
 func (iatt *ImplementsAllTheThings) ListClusters() ([]state.ClusterMetadata, error) {
 	iatt.Calls = append(iatt.Calls, "ListClusters")
 	return iatt.ClusterStates, nil
 }
 
-func (i *ImplementsAllTheThings) ListClusterStates() ([]state.ClusterMetadata, error) {
+func (i *ImplementsAllTheThings) ListClusterStates(ctx context.Context) ([]state.ClusterMetadata, error) {
 	i.Calls = append(i.Calls, "ListClusterStates")
 	fmt.Printf("ListClusterStates called, returning %d clusters\n", len(i.ClusterStates))
 	return i.ClusterStates, nil
 }
 
-func (i *ImplementsAllTheThings) GetClusterByID(clusterID string) (state.ClusterMetadata, error) {
+func (i *ImplementsAllTheThings) GetClusterByID(ctx context.Context, clusterID string) (state.ClusterMetadata, error) {
 	i.Calls = append(i.Calls, "GetClusterByID")
 	return i.ClusterStates[0], nil
 }
 
-func (i *ImplementsAllTheThings) DeleteClusterMetadata(clusterName string) error {
+func (i *ImplementsAllTheThings) DeleteClusterMetadata(ctx context.Context, clusterName string) error {
 	i.Calls = append(i.Calls, "DeleteClusterMetadata")
 	return nil
 }
 
-func (i *ImplementsAllTheThings) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
+func (i *ImplementsAllTheThings) UpdateClusterMetadata(ctx context.Context, cluster state.ClusterMetadata) error {
 	i.Calls = append(i.Calls, "UpdateClusterMetadata")
 	return nil
 }
@@ -95,29 +105,30 @@ func (iatt *ImplementsAllTheThings) Cleanup() error {
 	return nil
 }
 
-func (iatt *ImplementsAllTheThings) ListFailingNodes() (state.NodeList, error) {
+func (iatt *ImplementsAllTheThings) ListFailingNodes(ctx context.Context) (state.NodeList, error) {
 	var nodeList state.NodeList
 	iatt.Calls = append(iatt.Calls, "ListFailingNodes")
 	return nodeList, nil
 }
 
-func (iatt *ImplementsAllTheThings) GetPodReAttemptRate() (float32, error) {
+func (iatt *ImplementsAllTheThings) GetPodReAttemptRate(ctx context.Context) (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetPodReAttemptRate")
 	return 1.0, nil
 }
 
-func (iatt *ImplementsAllTheThings) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+func (iatt *ImplementsAllTheThings) GetNodeLifecycle(ctx context.Context, executableID string, commandHash string) (string, error) {
 	iatt.Calls = append(iatt.Calls, "GetNodeLifecycle")
 	return "spot", nil
 }
 
-func (iatt *ImplementsAllTheThings) GetTaskHistoricalRuntime(executableID string, runId string) (float32, error) {
+func (iatt *ImplementsAllTheThings) GetTaskHistoricalRuntime(ctx context.Context, executableID string, runId string) (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetTaskHistoricalRuntime")
 	return 1.0, nil
 }
 
 // ListDefinitions - StateManager
 func (iatt *ImplementsAllTheThings) ListDefinitions(
+	ctx context.Context,
 	limit int, offset int, sortBy string,
 	order string, filters map[string][]string,
 	envFilters map[string]string) (state.DefinitionList, error) {
@@ -130,7 +141,7 @@ func (iatt *ImplementsAllTheThings) ListDefinitions(
 }
 
 // GetDefinition - StateManager
-func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.Definition, error) {
+func (iatt *ImplementsAllTheThings) GetDefinition(ctx context.Context, definitionID string) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "GetDefinition")
 	var err error
 	d, ok := iatt.Definitions[definitionID]
@@ -141,7 +152,7 @@ func (iatt *ImplementsAllTheThings) GetDefinition(definitionID string) (state.De
 }
 
 // GetDefinitionByAlias - StateManager
-func (iatt *ImplementsAllTheThings) GetDefinitionByAlias(alias string) (state.Definition, error) {
+func (iatt *ImplementsAllTheThings) GetDefinitionByAlias(ctx context.Context, alias string) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "GetDefinitionByAlias")
 	for _, d := range iatt.Definitions {
 		if d.Alias == alias {
@@ -152,7 +163,7 @@ func (iatt *ImplementsAllTheThings) GetDefinitionByAlias(alias string) (state.De
 }
 
 // UpdateDefinition - StateManager
-func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, updates state.Definition) (state.Definition, error) {
+func (iatt *ImplementsAllTheThings) UpdateDefinition(ctx context.Context, definitionID string, updates state.Definition) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateDefinition")
 	defn := iatt.Definitions[definitionID]
 	defn.UpdateWith(updates)
@@ -161,21 +172,21 @@ func (iatt *ImplementsAllTheThings) UpdateDefinition(definitionID string, update
 }
 
 // CreateDefinition - StateManager
-func (iatt *ImplementsAllTheThings) CreateDefinition(d state.Definition) error {
+func (iatt *ImplementsAllTheThings) CreateDefinition(ctx context.Context, d state.Definition) error {
 	iatt.Calls = append(iatt.Calls, "CreateDefinition")
 	iatt.Definitions[d.DefinitionID] = d
 	return nil
 }
 
 // DeleteDefinition - StateManager
-func (iatt *ImplementsAllTheThings) DeleteDefinition(definitionID string) error {
+func (iatt *ImplementsAllTheThings) DeleteDefinition(ctx context.Context, definitionID string) error {
 	iatt.Calls = append(iatt.Calls, "DeleteDefinition")
 	delete(iatt.Definitions, definitionID)
 	return nil
 }
 
 // ListRuns - StateManager
-func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (state.RunList, error) {
+func (iatt *ImplementsAllTheThings) ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (state.RunList, error) {
 	iatt.Calls = append(iatt.Calls, "ListRuns")
 	rl := state.RunList{Total: len(iatt.Runs)}
 	for _, r := range iatt.Runs {
@@ -185,7 +196,7 @@ func (iatt *ImplementsAllTheThings) ListRuns(limit int, offset int, sortBy strin
 }
 
 // GetRun - StateManager
-func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) GetRun(ctx context.Context, runID string) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "GetRun")
 	var err error
 	r, ok := iatt.Runs[runID]
@@ -195,7 +206,7 @@ func (iatt *ImplementsAllTheThings) GetRun(runID string) (state.Run, error) {
 	return r, err
 }
 
-func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(emrJobId string) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(ctx context.Context, emrJobId string) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "GetRunByEMRJobId")
 	var err error
 	r, ok := iatt.Runs[emrJobId]
@@ -206,33 +217,33 @@ func (iatt *ImplementsAllTheThings) GetRunByEMRJobId(emrJobId string) (state.Run
 }
 
 // CreateRun - StateManager
-func (iatt *ImplementsAllTheThings) CreateRun(r state.Run) error {
+func (iatt *ImplementsAllTheThings) CreateRun(ctx context.Context, r state.Run) error {
 	iatt.Calls = append(iatt.Calls, "CreateRun")
 	iatt.Runs[r.RunID] = r
 	return nil
 }
 
-func (iatt *ImplementsAllTheThings) EstimateRunResources(executableID string, command string) (state.TaskResources, error) {
+func (iatt *ImplementsAllTheThings) EstimateRunResources(ctx context.Context, executableID string, command string) (state.TaskResources, error) {
 	iatt.Calls = append(iatt.Calls, "EstimateRunResources")
 	return state.TaskResources{}, nil
 }
 
-func (iatt *ImplementsAllTheThings) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+func (iatt *ImplementsAllTheThings) EstimateExecutorCount(ctx context.Context, executableID string, commandHash string) (int64, error) {
 	iatt.Calls = append(iatt.Calls, "EstimateExecutorCount")
 	return 0, nil
 }
 
-func (iatt *ImplementsAllTheThings) ExecutorOOM(executableID string, commandHash string) (bool, error) {
+func (iatt *ImplementsAllTheThings) ExecutorOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "ExecutorOOM")
 	return false, nil
 }
-func (iatt *ImplementsAllTheThings) DriverOOM(executableID string, commandHash string) (bool, error) {
+func (iatt *ImplementsAllTheThings) DriverOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
 	iatt.Calls = append(iatt.Calls, "DriverOOM")
 	return false, nil
 }
 
 // UpdateRun - StateManager
-func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) UpdateRun(ctx context.Context, runID string, updates state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateRun")
 	run := iatt.Runs[runID]
 	run.UpdateWith(updates)
@@ -241,13 +252,13 @@ func (iatt *ImplementsAllTheThings) UpdateRun(runID string, updates state.Run) (
 }
 
 // ListGroups - StateManager
-func (iatt *ImplementsAllTheThings) ListGroups(limit int, offset int, name *string) (state.GroupsList, error) {
+func (iatt *ImplementsAllTheThings) ListGroups(ctx context.Context, limit int, offset int, name *string) (state.GroupsList, error) {
 	iatt.Calls = append(iatt.Calls, "ListGroups")
 	return state.GroupsList{Total: len(iatt.Groups), Groups: iatt.Groups}, nil
 }
 
 // ListTags - StateManager
-func (iatt *ImplementsAllTheThings) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
+func (iatt *ImplementsAllTheThings) ListTags(ctx context.Context, limit int, offset int, name *string) (state.TagsList, error) {
 	iatt.Calls = append(iatt.Calls, "ListTags")
 	return state.TagsList{Total: len(iatt.Tags), Tags: iatt.Tags}, nil
 }
@@ -259,30 +270,30 @@ func (iatt *ImplementsAllTheThings) initWorkerTable(c config.Config) error {
 }
 
 // ListWorkers - StateManager
-func (iatt *ImplementsAllTheThings) ListWorkers(engine string) (state.WorkersList, error) {
+func (iatt *ImplementsAllTheThings) ListWorkers(ctx context.Context, engine string) (state.WorkersList, error) {
 	iatt.Calls = append(iatt.Calls, "ListWorkers")
 	return state.WorkersList{Total: len(iatt.Workers), Workers: iatt.Workers}, nil
 }
 
-func (iatt *ImplementsAllTheThings) CheckIdempotenceKey(idempotenceKey string) (string, error) {
+func (iatt *ImplementsAllTheThings) CheckIdempotenceKey(ctx context.Context, idempotenceKey string) (string, error) {
 	iatt.Calls = append(iatt.Calls, "CheckIdempotenceKey")
 	return "42", nil
 }
 
 // GetWorker - StateManager
-func (iatt *ImplementsAllTheThings) GetWorker(workerType string, engine string) (state.Worker, error) {
+func (iatt *ImplementsAllTheThings) GetWorker(ctx context.Context, workerType string, engine string) (state.Worker, error) {
 	iatt.Calls = append(iatt.Calls, "GetWorker")
 	return state.Worker{WorkerType: workerType, CountPerInstance: 2}, nil
 }
 
 // UpdateWorker - StateManager
-func (iatt *ImplementsAllTheThings) UpdateWorker(workerType string, updates state.Worker) (state.Worker, error) {
+func (iatt *ImplementsAllTheThings) UpdateWorker(ctx context.Context, workerType string, updates state.Worker) (state.Worker, error) {
 	iatt.Calls = append(iatt.Calls, "UpdateWorker")
 	return state.Worker{WorkerType: workerType, CountPerInstance: updates.CountPerInstance}, nil
 }
 
 // BatchUpdateWorkers- StateManager
-func (iatt *ImplementsAllTheThings) BatchUpdateWorkers(updates []state.Worker) (state.WorkersList, error) {
+func (iatt *ImplementsAllTheThings) BatchUpdateWorkers(ctx context.Context, updates []state.Worker) (state.WorkersList, error) {
 	iatt.Calls = append(iatt.Calls, "BatchUpdateWorkers")
 	return state.WorkersList{Total: len(iatt.Workers), Workers: iatt.Workers}, nil
 }
@@ -294,8 +305,7 @@ func (iatt *ImplementsAllTheThings) QurlFor(name string, prefixed bool) (string,
 	return qurl, nil
 }
 
-// Enqueue - ExecutionEngine
-func (iatt *ImplementsAllTheThings) Enqueue(run state.Run) error {
+func (iatt *ImplementsAllTheThings) Enqueue(ctx context.Context, run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Enqueue")
 	iatt.Queued = append(iatt.Queued, run.RunID)
 	return nil
@@ -353,7 +363,7 @@ func (iatt *ImplementsAllTheThings) List() ([]string, error) {
 	return res, nil
 }
 
-func (iatt *ImplementsAllTheThings) GetEvents(run state.Run) (state.PodEventList, error) {
+func (iatt *ImplementsAllTheThings) GetEvents(ctx context.Context, run state.Run) (state.PodEventList, error) {
 	iatt.Calls = append(iatt.Calls, "GetEvents")
 
 	return state.PodEventList{
@@ -362,13 +372,13 @@ func (iatt *ImplementsAllTheThings) GetEvents(run state.Run) (state.PodEventList
 	}, nil
 }
 
-func (iatt *ImplementsAllTheThings) FetchUpdateStatus(run state.Run) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) FetchUpdateStatus(ctx context.Context, run state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "FetchUpdateStatus")
 
 	return run, nil
 }
 
-func (iatt *ImplementsAllTheThings) FetchPodMetrics(run state.Run) (state.Run, error) {
+func (iatt *ImplementsAllTheThings) FetchPodMetrics(ctx context.Context, run state.Run) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "FetchPodMetrics")
 	return run, nil
 }
@@ -391,13 +401,13 @@ func (iatt *ImplementsAllTheThings) IsImageValid(imageRef string) (bool, error) 
 	return true, nil
 }
 
-func (iatt *ImplementsAllTheThings) PollRunStatus() (state.Run, error) {
+func (iatt *ImplementsAllTheThings) PollRunStatus(ctx context.Context) (state.Run, error) {
 	iatt.Calls = append(iatt.Calls, "PollRunStatus")
 	return state.Run{}, nil
 }
 
 // PollRuns - Execution Engine
-func (iatt *ImplementsAllTheThings) PollRuns() ([]engine.RunReceipt, error) {
+func (iatt *ImplementsAllTheThings) PollRuns(ctx context.Context) ([]engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollRuns")
 
 	var r []engine.RunReceipt
@@ -419,7 +429,7 @@ func (iatt *ImplementsAllTheThings) PollRuns() ([]engine.RunReceipt, error) {
 }
 
 // PollStatus - Execution Engine
-func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
+func (iatt *ImplementsAllTheThings) PollStatus(ctx context.Context) (engine.RunReceipt, error) {
 	iatt.Calls = append(iatt.Calls, "PollStatus")
 	if len(iatt.StatusUpdatesAsRuns) == 0 {
 		return engine.RunReceipt{}, nil
@@ -440,26 +450,26 @@ func (iatt *ImplementsAllTheThings) PollStatus() (engine.RunReceipt, error) {
 }
 
 // Execute - Execution Engine
-func (iatt *ImplementsAllTheThings) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+func (iatt *ImplementsAllTheThings) Execute(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
 	iatt.Calls = append(iatt.Calls, "Execute")
 	return state.Run{}, iatt.ExecuteErrorIsRetryable, iatt.ExecuteError
 }
 
 // Terminate - Execution Engine
-func (iatt *ImplementsAllTheThings) Terminate(run state.Run) error {
+func (iatt *ImplementsAllTheThings) Terminate(ctx context.Context, run state.Run) error {
 	iatt.Calls = append(iatt.Calls, "Terminate")
 	return nil
 }
 
 // Define - Execution Engine
-func (iatt *ImplementsAllTheThings) Define(definition state.Definition) (state.Definition, error) {
+func (iatt *ImplementsAllTheThings) Define(ctx context.Context, definition state.Definition) (state.Definition, error) {
 	iatt.Calls = append(iatt.Calls, "Define")
 	iatt.Defined = append(iatt.Defined, definition.DefinitionID)
 	return definition, nil
 }
 
 // Deregister - Execution Engine
-func (iatt *ImplementsAllTheThings) Deregister(definition state.Definition) error {
+func (iatt *ImplementsAllTheThings) Deregister(ctx context.Context, definition state.Definition) error {
 	iatt.Calls = append(iatt.Calls, "Deregister")
 	return nil
 }
@@ -471,20 +481,20 @@ func (iatt *ImplementsAllTheThings) Logs(executable state.Executable, run state.
 }
 
 // GetExecutableByTypeAndID - StateManager
-func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(t state.ExecutableType, id string) (state.Executable, error) {
+func (iatt *ImplementsAllTheThings) GetExecutableByTypeAndID(ctx context.Context, t state.ExecutableType, id string) (state.Executable, error) {
 	iatt.Calls = append(iatt.Calls, "GetExecutableByTypeAndID")
 	switch t {
 	case state.ExecutableTypeDefinition:
-		return iatt.GetDefinition(id)
+		return iatt.GetDefinition(ctx, id)
 	case state.ExecutableTypeTemplate:
-		return iatt.GetTemplateByID(id)
+		return iatt.GetTemplateByID(ctx, id)
 	default:
 		return nil, fmt.Errorf("Invalid executable type %s", t)
 	}
 }
 
 // ListTemplates - StateManager
-func (iatt *ImplementsAllTheThings) ListTemplates(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+func (iatt *ImplementsAllTheThings) ListTemplates(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
 	iatt.Calls = append(iatt.Calls, "ListTemplates")
 	tl := state.TemplateList{Total: len(iatt.Templates)}
 	for _, t := range iatt.Templates {
@@ -494,7 +504,7 @@ func (iatt *ImplementsAllTheThings) ListTemplates(limit int, offset int, sortBy 
 }
 
 // ListTemplatesLatestOnly - StateManager
-func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
 	// TODO: this is not actually implemented correctly - but also we're never
 	// using it.
 	iatt.Calls = append(iatt.Calls, "ListTemplatesLatestOnly")
@@ -505,7 +515,7 @@ func (iatt *ImplementsAllTheThings) ListTemplatesLatestOnly(limit int, offset in
 	return tl, nil
 }
 
-func (iatt *ImplementsAllTheThings) GetTemplateByVersion(templateName string, templateVersion int64) (bool, state.Template, error) {
+func (iatt *ImplementsAllTheThings) GetTemplateByVersion(ctx context.Context, templateName string, templateVersion int64) (bool, state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetTemplateByVersion")
 	var err error
 	var tpl *state.Template
@@ -525,7 +535,7 @@ func (iatt *ImplementsAllTheThings) GetTemplateByVersion(templateName string, te
 }
 
 // GetTemplateByID - StateManager
-func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, error) {
+func (iatt *ImplementsAllTheThings) GetTemplateByID(ctx context.Context, id string) (state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetTemplateByID")
 	var err error
 	t, ok := iatt.Templates[id]
@@ -536,7 +546,7 @@ func (iatt *ImplementsAllTheThings) GetTemplateByID(id string) (state.Template, 
 }
 
 // GetLatestTemplateByTemplateName - StateManager
-func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName string) (bool, state.Template, error) {
+func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(ctx context.Context, templateName string) (bool, state.Template, error) {
 	iatt.Calls = append(iatt.Calls, "GetLatestTemplateByTemplateName")
 	var err error
 	var tpl *state.Template
@@ -558,13 +568,13 @@ func (iatt *ImplementsAllTheThings) GetLatestTemplateByTemplateName(templateName
 }
 
 // CreateTemplate - StateManager
-func (iatt *ImplementsAllTheThings) CreateTemplate(t state.Template) error {
+func (iatt *ImplementsAllTheThings) CreateTemplate(ctx context.Context, t state.Template) error {
 	iatt.Calls = append(iatt.Calls, "CreateTemplate")
 	iatt.Templates[t.TemplateID] = t
 	return nil
 }
 
-func (iatt *ImplementsAllTheThings) GetRunStatus(runID string) (state.RunStatus, error) {
+func (iatt *ImplementsAllTheThings) GetRunStatus(ctx context.Context, runID string) (state.RunStatus, error) {
 	iatt.Calls = append(iatt.Calls, "GetRunStatus")
 	var err error
 

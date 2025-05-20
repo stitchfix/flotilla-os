@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
@@ -156,7 +157,7 @@ func (dcm *DynamicClusterManager) GetMetricsClient(clusterName string) (metricsv
 }
 
 // InitializeClusters handles both static and dynamic cluster configurations
-func (dcm *DynamicClusterManager) InitializeClusters(staticClusters []string) error {
+func (dcm *DynamicClusterManager) InitializeClusters(ctx context.Context, staticClusters []string) error {
 	kubeconfigBaseDir := getKubeconfigBaseDir()
 	if err := os.MkdirAll(kubeconfigBaseDir, 0755); err != nil {
 		return errors.Wrap(err, "failed to create directory for kubeconfigs")
@@ -173,7 +174,7 @@ func (dcm *DynamicClusterManager) InitializeClusters(staticClusters []string) er
 	}
 
 	// Initialize dynamic clusters from state manager
-	clusters, err := dcm.manager.ListClusterStates()
+	clusters, err := dcm.manager.ListClusterStates(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to list clusters")
 	}
