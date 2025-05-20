@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -146,7 +147,7 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	var dl DefinitionList
 	// Test limiting
 	expectedTotal := 5
-	dl, err = sm.ListDefinitions(1, 0, "alias", "asc", nil, nil)
+	dl, err = sm.ListDefinitions(ctx, 1, 0, "alias", "asc", nil, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -168,29 +169,29 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 	}
 
 	// Test ordering and offset
-	dl, _ = sm.ListDefinitions(1, 1, "group_name", "asc", nil, nil)
+	dl, _ = sm.ListDefinitions(ctx, 1, 1, "group_name", "asc", nil, nil)
 	if dl.Definitions[0].GroupName != "groupW" {
 		t.Errorf("Error ordering with offset - expected groupW but got %s", dl.Definitions[0].GroupName)
 	}
 
 	// Test order validation
-	dl, err = sm.ListDefinitions(1, 0, "nonexistent_field", "asc", nil, nil)
+	dl, err = sm.ListDefinitions(ctx, 1, 0, "nonexistent_field", "asc", nil, nil)
 	if err == nil {
 		t.Errorf("Sorting by [nonexistent_field] did not produce an error")
 	}
-	dl, err = sm.ListDefinitions(1, 0, "alias", "nooop", nil, nil)
+	dl, err = sm.ListDefinitions(ctx, 1, 0, "alias", "nooop", nil, nil)
 	if err == nil {
 		t.Errorf("Sort order [nooop] is not valid but did not produce an error")
 	}
 
 	// Test filtering on fields
-	dl, _ = sm.ListDefinitions(1, 0, "alias", "asc", map[string][]string{"image": {"imageC"}}, nil)
+	dl, _ = sm.ListDefinitions(ctx, 1, 0, "alias", "asc", map[string][]string{"image": {"imageC"}}, nil)
 	if dl.Definitions[0].Image != "imageC" {
 		t.Errorf("Error filtering by field - expected imageC but got %s", dl.Definitions[0].Image)
 	}
 
 	// Test filtering on environment variables
-	dl, _ = sm.ListDefinitions(1, 0, "alias", "desc", nil, map[string]string{"E_B1": "V_B1", "E_B2": "V_B2"})
+	dl, _ = sm.ListDefinitions(ctx, 1, 0, "alias", "desc", nil, map[string]string{"E_B1": "V_B1", "E_B2": "V_B2"})
 	if dl.Definitions[0].DefinitionID != "B" {
 		t.Errorf(
 			`Expected environment variable filters (E_B1:V_B1 AND E_B2:V_B2) to yield
@@ -202,7 +203,7 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
 
-	dE, _ := sm.GetDefinition("E")
+	dE, _ := sm.GetDefinition(ctx, "E")
 	if dE.DefinitionID != "E" {
 		t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
 	}
@@ -211,7 +212,7 @@ func TestSQLStateManager_GetDefinition(t *testing.T) {
 		t.Errorf("Expected empty environment but got %s", *dE.Env)
 	}
 
-	_, err := sm.GetDefinition("Z")
+	_, err := sm.GetDefinition(ctx, "Z")
 	if err == nil {
 		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
 	}
@@ -221,7 +222,7 @@ func TestSQLStateManager_GetDefinitionByAlias(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
 
-	dE, _ := sm.GetDefinitionByAlias("aliasE")
+	dE, _ := sm.GetDefinitionByAlias(ctx, "aliasE")
 	if dE.DefinitionID != "E" {
 		t.Errorf("Expected definition E to be fetched, got %s", dE.DefinitionID)
 	}
@@ -230,7 +231,7 @@ func TestSQLStateManager_GetDefinitionByAlias(t *testing.T) {
 		t.Errorf("Expected empty environment but got %s", *dE.Env)
 	}
 
-	_, err := sm.GetDefinitionByAlias("aliasZ")
+	_, err := sm.GetDefinitionByAlias(ctx, "aliasZ")
 	if err == nil {
 		t.Errorf("Expected get for non-existent definition Z to return error, was nil")
 	}
@@ -258,12 +259,12 @@ func TestSQLStateManager_CreateDefinition(t *testing.T) {
 		},
 	}
 
-	err = sm.CreateDefinition(d)
+	err = sm.CreateDefinition(ctx, d)
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	f, err := sm.GetDefinition("id:cupcake")
+	f, err := sm.GetDefinition(ctx, "id:cupcake")
 	if err != nil {
 		t.Errorf("Expected create definition to create definition with id [id:cupcake]")
 		t.Error(err)
@@ -296,12 +297,12 @@ func TestSQLStateManager_UpdateDefinition(t *testing.T) {
 			Ports: &PortsList{}, // <---- empty, set ports to empty list
 		},
 	}
-	_, err := sm.UpdateDefinition("A", updates)
+	_, err := sm.UpdateDefinition(ctx, "A", updates)
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	d, _ := sm.GetDefinition("A")
+	d, _ := sm.GetDefinition(ctx, "A")
 	if d.Image != "updated" {
 		t.Errorf("Expected image to be updated to [updated] but is %s", d.Image)
 	}
@@ -332,12 +333,12 @@ func TestSQLStateManager_DeleteDefinition(t *testing.T) {
 	sm := setUp()
 
 	var err error
-	err = sm.DeleteDefinition("A")
+	err = sm.DeleteDefinition(ctx, "A")
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	_, err = sm.GetDefinition("A")
+	_, err = sm.GetDefinition(ctx, "A")
 	if err == nil {
 		t.Errorf("Expected querying definition after delete would return error")
 	}
@@ -349,7 +350,7 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 
 	var err error
 	expectedTotal := 6
-	rl, err := sm.ListRuns(1, 0, "started_at", "asc", nil, nil, nil)
+	rl, err := sm.ListRuns(ctx, 1, 0, "started_at", "asc", nil, nil, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -377,29 +378,29 @@ func TestSQLStateManager_ListRuns(t *testing.T) {
 
 	// Test ordering and offset
 	// - there's only two, so offset 1 should return second one
-	rl, err = sm.ListRuns(1, 1, "cluster_name", "desc", nil, nil, nil)
+	rl, err = sm.ListRuns(ctx, 1, 1, "cluster_name", "desc", nil, nil, nil)
 	if rl.Runs[0].ClusterName != "clusta" {
 		t.Errorf("Error ordering with offset - expected clusta but got %s", rl.Runs[0].ClusterName)
 	}
 
 	// Test order validation
-	rl, err = sm.ListRuns(1, 0, "nonexistent_field", "asc", nil, nil, nil)
+	rl, err = sm.ListRuns(ctx, 1, 0, "nonexistent_field", "asc", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Sorting by [nonexistent_field] did not produce an error")
 	}
-	rl, err = sm.ListRuns(1, 0, "started_at", "nooop", nil, nil, nil)
+	rl, err = sm.ListRuns(ctx, 1, 0, "started_at", "nooop", nil, nil, nil)
 	if err == nil {
 		t.Errorf("Sort order [nooop] is not valid but did not produce an error")
 	}
 
 	// Test filtering on fields
-	rl, err = sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{"cluster_name": {"clustb"}}, nil, nil)
+	rl, err = sm.ListRuns(ctx, 1, 0, "started_at", "asc", map[string][]string{"cluster_name": {"clustb"}}, nil, nil)
 	if rl.Runs[0].ClusterName != "clustb" {
 		t.Errorf("Error filtering by field - expected clustb but got %s", rl.Runs[0].ClusterName)
 	}
 
 	// Test filtering on environment variables
-	rl, err = sm.ListRuns(1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"}, nil)
+	rl, err = sm.ListRuns(ctx, 1, 0, "started_at", "desc", nil, map[string]string{"E2": "V2"}, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -418,7 +419,7 @@ func TestSQLStateManager_ListRuns2(t *testing.T) {
 	var err error
 	expectedTotal := 1
 	expectedRun := "run4"
-	rl, err := sm.ListRuns(100, 0, "started_at", "asc", map[string][]string{
+	rl, err := sm.ListRuns(ctx, 100, 0, "started_at", "asc", map[string][]string{
 		"started_at_since": {
 			"2017-07-04T00:02:59+00:00",
 		},
@@ -447,7 +448,7 @@ func TestSQLStateManager_ListRuns3(t *testing.T) {
 	var err error
 	expectedTotal := 2
 	expectedRuns := map[string]bool{"run3": true, "run5": true}
-	rl, err := sm.ListRuns(100, 0, "started_at", "asc", map[string][]string{
+	rl, err := sm.ListRuns(ctx, 100, 0, "started_at", "asc", map[string][]string{
 		"status": {
 			StatusPending,
 			StatusQueued,
@@ -472,7 +473,7 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
 
-	r2, _ := sm.GetRun("run2")
+	r2, _ := sm.GetRun(ctx, "run2")
 	if r2.RunID != "run2" {
 		t.Errorf("Expected run 2 to be fetched, got %s", r2.RunID)
 	}
@@ -481,7 +482,7 @@ func TestSQLStateManager_GetRun(t *testing.T) {
 		t.Errorf("Expected environment to have exactly one entry, but was %v", len(*r2.Env))
 	}
 
-	_, err := sm.GetRun("run100")
+	_, err := sm.GetRun(ctx, "run100")
 	if err == nil {
 		t.Errorf("Expected get for non-existent run100 to return error, was nil")
 	}
@@ -535,11 +536,11 @@ func TestSQLStateManager_CreateRun(t *testing.T) {
 		Engine:  &DefaultEngine,
 		Tier:    Tier("4"),
 	}
-	sm.CreateRun(r1)
-	sm.CreateRun(r2)
+	sm.CreateRun(ctx, r1)
+	sm.CreateRun(ctx, r2)
 
-	f1, _ := sm.GetRun("run:17")
-	f2, _ := sm.GetRun("run:18")
+	f1, _ := sm.GetRun(ctx, "run:17")
+	f2, _ := sm.GetRun(ctx, "run:18")
 
 	if f1.RunID != "run:17" {
 		t.Errorf("Expected to fetch inserted run:17, but got %s", f1.RunID)
@@ -630,12 +631,12 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	u2 := Run{
 		Status: StatusNeedsRetry,
 	}
-	_, e := sm.UpdateRun("run3", u)
+	_, e := sm.UpdateRun(ctx, "run3", u)
 	if e != nil {
 		t.Errorf("Error while updating %v", e)
 	}
 
-	r, e := sm.GetRun("run3")
+	r, e := sm.GetRun(ctx, "run3")
 
 	if e != nil {
 		t.Errorf("Error in GetRun %v", e)
@@ -680,8 +681,8 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 		t.Errorf("Not all updated env vars match")
 	}
 
-	sm.UpdateRun("run3", u2)
-	r, _ = sm.GetRun("run3")
+	sm.UpdateRun(ctx, "run3", u2)
+	r, _ = sm.GetRun(ctx, "run3")
 	if r.Status != u2.Status {
 		t.Errorf("Expected to update status to %s but was %s", u2.Status, r.Status)
 	}
@@ -692,7 +693,7 @@ func TestSQLStateManager_ListClusterStates(t *testing.T) {
 	sm := setUp()
 
 	// Simple test to ensure the method exists and returns without error
-	_, err := sm.ListClusterStates()
+	_, err := sm.ListClusterStates(ctx)
 	if err != nil {
 		t.Errorf("Error listing cluster states: %v", err)
 	}
@@ -1017,6 +1018,8 @@ func tearDownClusters() {
 	db.MustExec(`DELETE FROM cluster_state;`)
 }
 
+var ctx = context.Background()
+
 func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 	defer tearDownClusters()
 	sm := setUp()
@@ -1031,12 +1034,12 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		EMRVirtualCluster: "11111111",
 		SparkServerURI:    "spark://spark-server:7077",
 	}
-	err := sm.UpdateClusterMetadata(initialCluster)
+	err := sm.UpdateClusterMetadata(ctx, initialCluster)
 	if err != nil {
 		t.Fatalf("Error creating initial cluster: %v", err)
 	}
 
-	clusters, err := sm.ListClusterStates()
+	clusters, err := sm.ListClusterStates(ctx)
 	if err != nil {
 		t.Fatalf("Error listing clusters: %v", err)
 	}
@@ -1066,12 +1069,12 @@ func TestSQLStateManager_UpdateClusterMetadata(t *testing.T) {
 		SparkServerURI:    "spark://spark-server:7077",
 	}
 
-	err = sm.UpdateClusterMetadata(updatedCluster)
+	err = sm.UpdateClusterMetadata(ctx, updatedCluster)
 	if err != nil {
 		t.Fatalf("Error updating cluster: %v", err)
 	}
 
-	updatedFromDB, err := sm.GetClusterByID(clusterID)
+	updatedFromDB, err := sm.GetClusterByID(ctx, clusterID)
 	if err != nil {
 		t.Fatalf("Error getting updated cluster: %v", err)
 	}
@@ -1098,11 +1101,11 @@ func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
 		EMRVirtualCluster: "11111111",
 		SparkServerURI:    "spark://spark-server:7077",
 	}
-	err := sm.UpdateClusterMetadata(initialCluster)
+	err := sm.UpdateClusterMetadata(ctx, initialCluster)
 	if err != nil {
 		t.Fatalf("Error creating initial cluster: %v", err)
 	}
-	clusters, err := sm.ListClusterStates()
+	clusters, err := sm.ListClusterStates(ctx)
 	if err != nil {
 		t.Fatalf("Error listing clusters: %v", err)
 	}
@@ -1117,12 +1120,12 @@ func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
 		t.Fatalf("Test cluster not found after insertion")
 	}
 
-	err = sm.DeleteClusterMetadata(clusterID)
+	err = sm.DeleteClusterMetadata(ctx, clusterID)
 	if err != nil {
 		t.Fatalf("Error deleting cluster: %v", err)
 	}
 
-	_, err = sm.GetClusterByID(clusterID)
+	_, err = sm.GetClusterByID(ctx, clusterID)
 	if err == nil {
 		t.Errorf("Expected error when getting deleted cluster")
 	}
