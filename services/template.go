@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -53,7 +54,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 	// changed fields, then we will create a new row in the DB w/ the version
 	// incremented by 1. If there are NO changed fields, then just return the
 	// latest version.
-	doesExist, prev, err := ts.sm.GetLatestTemplateByTemplateName(curr.TemplateName)
+	doesExist, prev, err := ts.sm.GetLatestTemplateByTemplateName(context.Background(), curr.TemplateName)
 
 	if err != nil {
 		return res, err
@@ -64,7 +65,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 		curr.Version = 1
 		res.Template = curr
 		res.DidCreate = true
-		return res, ts.sm.CreateTemplate(curr)
+		return res, ts.sm.CreateTemplate(context.Background(), curr)
 	}
 
 	// Check if prev and curr are diff, if they are, write curr to DB (increment)
@@ -73,7 +74,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 		curr.Version = prev.Version + 1
 		res.Template = curr
 		res.DidCreate = true
-		return res, ts.sm.CreateTemplate(curr)
+		return res, ts.sm.CreateTemplate(context.Background(), curr)
 	}
 
 	res.Template = prev
@@ -82,22 +83,22 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 
 // Get returns the template specified by id.
 func (ts *templateService) GetByID(id string) (state.Template, error) {
-	return ts.sm.GetTemplateByID(id)
+	return ts.sm.GetTemplateByID(context.Background(), id)
 }
 
 // Get returns the template specified by id.
 func (ts *templateService) GetLatestByName(templateName string) (bool, state.Template, error) {
-	return ts.sm.GetLatestTemplateByTemplateName(templateName)
+	return ts.sm.GetLatestTemplateByTemplateName(context.Background(), templateName)
 }
 
 // List lists templates.
 func (ts *templateService) List(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
-	return ts.sm.ListTemplates(limit, offset, sortBy, order)
+	return ts.sm.ListTemplates(context.Background(), limit, offset, sortBy, order)
 }
 
 // List lists templates.
 func (ts *templateService) ListLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
-	return ts.sm.ListTemplatesLatestOnly(limit, offset, sortBy, order)
+	return ts.sm.ListTemplatesLatestOnly(context.Background(), limit, offset, sortBy, order)
 }
 
 // diff performs a diff between all fields (except for TemplateName and
