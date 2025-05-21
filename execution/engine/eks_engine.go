@@ -370,7 +370,12 @@ func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error
 		if runReceipt.Run == nil {
 			continue
 		}
-
+		if runReceipt.TraceID != 0 && runReceipt.ParentID != 0 {
+			ee.log.Log("message", "Received run with trace context",
+				"run_id", runReceipt.Run.RunID,
+				"trace_id", runReceipt.TraceID,
+				"parent_id", runReceipt.ParentID)
+		}
 		runs = append(runs, RunReceipt{
 			RunReceipt:       runReceipt,
 			TraceID:          runReceipt.TraceID,

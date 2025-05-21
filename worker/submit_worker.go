@@ -80,6 +80,12 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 		if runReceipt.Run == nil {
 			continue
 		}
+		sw.log.Log("message", "Processing run receipt",
+			"run_id", runReceipt.Run.RunID,
+			"has_trace_context", runReceipt.TraceID != 0 && runReceipt.ParentID != 0,
+			"trace_id", runReceipt.TraceID,
+			"parent_id", runReceipt.ParentID)
+
 		var runCtx context.Context
 		if runReceipt.RunReceipt.TraceID != 0 && runReceipt.RunReceipt.ParentID != 0 {
 			carrier := tracing.TextMapCarrier{
