@@ -361,7 +361,7 @@ func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error
 		//
 		// Get new queued Run
 		//
-		runReceipt, err := ee.qm.ReceiveRun(qurl)
+		runReceipt, err := ee.qm.ReceiveRun(ctx, qurl)
 
 		if err != nil {
 			return runs, errors.Wrapf(err, "problem receiving run from queue url [%s]", qurl)
