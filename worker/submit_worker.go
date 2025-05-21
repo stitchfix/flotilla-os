@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -76,6 +77,16 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 	for _, runReceipt := range receipts {
 		if runReceipt.Run == nil {
 			continue
+		}
+		var runCtx context.Context
+		if runReceipt.RunReceipt.TraceID != 0 && runReceipt.RunReceipt.ParentID != 0 {
+			bridgeSpan := tracer.StartSpan("sqs_receive",
+				tracer.WithSpanID(runReceipt.RunReceipt.ParentID),
+			)
+			runCtx = tracer.ContextWithSpan(ctx, bridgeSpan)
+			bridgeSpan.Finish()
+		} else {
+			runCtx = ctx
 		}
 		runCtx, childSpan := utils.TraceJob(ctx, "flotilla.job.submit_worker.process", runReceipt.Run.RunID)
 		utils.TagJobRun(childSpan, *runReceipt.Run)

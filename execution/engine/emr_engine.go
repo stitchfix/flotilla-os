@@ -755,7 +755,7 @@ func (emr *EMRExecutionEngine) Enqueue(ctx context.Context, run state.Run) error
 	}
 
 	// Queue run
-	if err = emr.sqsQueueManager.Enqueue(qurl, run); err != nil {
+	if err = emr.sqsQueueManager.Enqueue(ctx, qurl, run); err != nil {
 		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure)}, 1)
 		_ = emr.log.Log("EMR job enqueue error", "error", err.Error())
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
@@ -776,7 +776,7 @@ func (emr *EMRExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, erro
 		//
 		// Get new queued Run
 		//
-		runReceipt, err := emr.sqsQueueManager.ReceiveRun(qurl)
+		runReceipt, err := emr.sqsQueueManager.ReceiveRun(ctx, qurl)
 
 		if err != nil {
 			return runs, errors.Wrapf(err, "problem receiving run from queue url [%s]", qurl)

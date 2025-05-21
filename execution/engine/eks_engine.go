@@ -336,7 +336,7 @@ func (ee *EKSExecutionEngine) Enqueue(ctx context.Context, run state.Run) error 
 	}
 
 	// Queue run
-	if err = ee.qm.Enqueue(qurl, run); err != nil {
+	if err = ee.qm.Enqueue(ctx, qurl, run); err != nil {
 		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
