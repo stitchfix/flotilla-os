@@ -56,7 +56,7 @@ func (sm *SQLStateManager) ListFailingNodes(ctx context.Context) (NodeList, erro
 }
 
 func (sm *SQLStateManager) GetPodReAttemptRate(ctx context.Context) (float32, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_pod_reattempt_rate", "rate")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_pod_reattempt_rate", "")
 	defer span.Finish()
 
 	var err error
@@ -95,10 +95,10 @@ func (sm *SQLStateManager) GetNodeLifecycle(ctx context.Context, executableID st
 }
 
 func (sm *SQLStateManager) GetTaskHistoricalRuntime(ctx context.Context, executableID string, runID string) (float32, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_task_historical_runtime", runID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_task_historical_runtime", "")
 	defer span.Finish()
 
-	//span.SetTag("executable_id", executableID)
+	span.SetTag("job.run_id", runID)
 
 	var err error
 	minutes := float32(1.0)
@@ -395,8 +395,7 @@ func (sm *SQLStateManager) GetDefinition(ctx context.Context, definitionID strin
 
 // GetDefinitionByAlias returns a single definition by id
 func (sm *SQLStateManager) GetDefinitionByAlias(ctx context.Context, alias string) (Definition, error) {
-	// Using alias as runID for tracer - it's not a run but we need some identifier
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition_by_alias", alias)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition_by_alias", "")
 	defer span.Finish()
 
 	//span.SetTag("alias", alias)
@@ -790,9 +789,9 @@ func (sm *SQLStateManager) GetResources(ctx context.Context, runID string) (Run,
 // UpdateRun updates run with updates - can be partial
 func (sm *SQLStateManager) UpdateRun(ctx context.Context, runID string, updates Run) (Run, error) {
 	start := time.Now()
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_run", runID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_run", "")
 	defer span.Finish()
-	// Additional tag for status
+	span.SetTag("job.run_id", runID)
 	span.SetTag("status", updates.Status)
 	var (
 		err      error
@@ -990,8 +989,9 @@ func (sm *SQLStateManager) UpdateRun(ctx context.Context, runID string, updates 
 
 // CreateRun creates the passed in run
 func (sm *SQLStateManager) CreateRun(ctx context.Context, r Run) error {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_run", r.RunID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_run", "")
 	defer span.Finish()
+	span.SetTag("job.run_id", r.RunID)
 	// Now utils.TraceJob already sets the run_id tag
 	var err error
 	insert := `

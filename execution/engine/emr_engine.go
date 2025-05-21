@@ -743,12 +743,9 @@ func (emr *EMRExecutionEngine) Terminate(ctx context.Context, run state.Run) err
 
 func (emr *EMRExecutionEngine) Enqueue(ctx context.Context, run state.Run) error {
 	var span tracer.Span
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	ctx, span = utils.TraceJob(ctx, "flotilla.job.emr_enqueue", run.RunID)
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.emr_enqueue", "")
 	defer span.Finish()
+	span.SetTag("job.run_id", run.RunID)
 	utils.TagJobRun(span, run)
 	qurl, err := emr.sqsQueueManager.QurlFor(emr.emrJobQueue, false)
 	if err != nil {

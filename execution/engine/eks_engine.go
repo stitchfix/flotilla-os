@@ -324,12 +324,9 @@ func (ee *EKSExecutionEngine) Terminate(ctx context.Context, run state.Run) erro
 
 func (ee *EKSExecutionEngine) Enqueue(ctx context.Context, run state.Run) error {
 	var span tracer.Span
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	ctx, span = utils.TraceJob(ctx, "flotilla.job.enqueue", run.RunID)
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.eks_enqueue", "")
 	defer span.Finish()
+	span.SetTag("job.run_id", run.RunID)
 	utils.TagJobRun(span, run)
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)

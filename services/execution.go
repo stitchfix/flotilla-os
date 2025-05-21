@@ -171,7 +171,7 @@ func (es *executionService) ReservedVariables() []string {
 
 // Create constructs and queues a new Run on the cluster specified.
 func (es *executionService) CreateDefinitionRunByDefinitionID(ctx context.Context, definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error) {
-	ctx, span := utils.TraceJob(ctx, "flotilla.definition.create_run", definitionID)
+	ctx, span := utils.TraceJob(ctx, "flotilla.definition.create_run", "")
 	defer span.Finish()
 	span.SetTag("definition_id", definitionID)
 
@@ -187,7 +187,7 @@ func (es *executionService) CreateDefinitionRunByDefinitionID(ctx context.Contex
 
 // Create constructs and queues a new Run on the cluster specified, based on an alias
 func (es *executionService) CreateDefinitionRunByAlias(ctx context.Context, alias string, req *state.DefinitionExecutionRequest) (state.Run, error) {
-	ctx, span := utils.TraceJob(ctx, "flotilla.alias.create_run", alias)
+	ctx, span := utils.TraceJob(ctx, "flotilla.alias.create_run", "")
 	defer span.Finish()
 	span.SetTag("alias", alias)
 
@@ -207,6 +207,8 @@ func (es *executionService) createFromDefinition(ctx context.Context, definition
 		run state.Run
 		err error
 	)
+	ctx, span := utils.TraceJob(ctx, "flotilla.definition.create_run", run.RunID)
+	defer span.Finish()
 
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
@@ -252,7 +254,7 @@ func (es *executionService) createFromDefinition(ctx context.Context, definition
 	if !es.isClusterValid(fields.ClusterName) {
 		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
-
+	span.SetTag("clusterName", fields.ClusterName)
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
 	// Construct run object with StatusQueued and new UUID4 run id
@@ -632,8 +634,9 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 // updates the db's run object with a new `queued_at` field.
 func (es *executionService) createAndEnqueueRun(ctx context.Context, run state.Run) (state.Run, error) {
 	var err error
-	ctx, span := utils.TraceJob(ctx, "flotilla.job.create", run.RunID)
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.create_and_enqueue", "")
 	defer span.Finish()
+	span.SetTag("job.run_id", run.RunID)
 	utils.TagJobRun(span, run)
 	if run.IdempotenceKey != nil {
 		priorRunId, err := es.stateManager.CheckIdempotenceKey(ctx, *run.IdempotenceKey)
@@ -669,7 +672,7 @@ func (es *executionService) createAndEnqueueRun(ctx context.Context, run state.R
 	return run, nil
 }
 func (es *executionService) CreateTemplateRunByTemplateName(ctx context.Context, templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
-	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_name", templateName)
+	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_name", "")
 	defer span.Finish()
 	span.SetTag("template_name", templateName)
 	span.SetTag("template_version", templateVersion)
@@ -693,7 +696,7 @@ func (es *executionService) CreateTemplateRunByTemplateName(ctx context.Context,
 
 // Create constructs and queues a new Run on the cluster specified.
 func (es *executionService) CreateTemplateRunByTemplateID(ctx context.Context, templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
-	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_id", templateID)
+	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_id", "")
 	defer span.Finish()
 	span.SetTag("template_id", templateID)
 	// Ensure template exists
