@@ -424,7 +424,7 @@ func (iatt *ImplementsAllTheThings) PollRuns(ctx context.Context) ([]engine.RunR
 		iatt.Calls = append(iatt.Calls, "RunReceipt.Done")
 		return nil
 	}
-	r = append(r, engine.RunReceipt{receipt})
+	r = append(r, engine.RunReceipt{receipt, 1111, 1111111, 1})
 	return r, nil
 }
 
@@ -446,7 +446,7 @@ func (iatt *ImplementsAllTheThings) PollStatus(ctx context.Context) (engine.RunR
 		iatt.Calls = append(iatt.Calls, "StatusReceipt.Done")
 		return nil
 	}
-	return engine.RunReceipt{receipt}, nil
+	return engine.RunReceipt{receipt, 1111, 1111111, 1}, nil
 }
 
 // Execute - Execution Engine
