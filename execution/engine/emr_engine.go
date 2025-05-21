@@ -147,6 +147,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 	}
 
 	emr.log.Log("message", "Start EMR JobRun", "ExecutionRoleArn", startJobRunInput.ExecutionRoleArn)
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
 	if err == nil {
@@ -154,7 +155,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.SparkExtension.EMRJobId = startJobRunOutput.Id
 		run.SparkExtension.EMRJobManifest = emrJobManifest
 		run.Status = state.StatusQueued
-		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess)}, 1)
+		_ = metrics.Increment(metrics.EngineEMRExecute, []string{string(metrics.StatusSuccess), tierTag}, 1)
 	} else {
 		run.ExitReason = aws.String(fmt.Sprintf("%v", err))
 		run.ExitCode = aws.Int64(-1)
@@ -162,7 +163,7 @@ func (emr *EMRExecutionEngine) Execute(executable state.Executable, run state.Ru
 		run.FinishedAt = run.QueuedAt
 		run.Status = state.StatusStopped
 		_ = emr.log.Log("EMR job submission error", "error", err.Error())
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return run, false, err
 	}
 	return run, false, nil
@@ -677,6 +678,7 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 		Id:               run.SparkExtension.EMRJobId,
 		VirtualClusterId: run.SparkExtension.VirtualClusterId,
 	}
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
 	key := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "cancel-job-run-input"))
 	obj, err := json.Marshal(cancelJobRunInput)
@@ -686,30 +688,31 @@ func (emr *EMRExecutionEngine) Terminate(run state.Run) error {
 
 	_, err = emr.emrContainersClient.CancelJobRun(&cancelJobRunInput)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusFailure), tierTag}, 1)
 		_ = emr.log.Log("EMR job termination error", "error", err.Error())
 	}
-	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineEMRTerminate, []string{string(metrics.StatusSuccess), tierTag}, 1)
 
 	return err
 }
 
 func (emr *EMRExecutionEngine) Enqueue(run state.Run) error {
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 	qurl, err := emr.sqsQueueManager.QurlFor(emr.emrJobQueue, false)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure), tierTag}, 1)
 		_ = emr.log.Log("EMR job enqueue error", "error", err.Error())
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = emr.sqsQueueManager.Enqueue(qurl, run); err != nil {
-		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusFailure), tierTag}, 1)
 		_ = emr.log.Log("EMR job enqueue error", "error", err.Error())
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
 
-	_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineEMREnqueue, []string{string(metrics.StatusSuccess), tierTag}, 1)
 	return nil
 }
 
