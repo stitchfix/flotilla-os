@@ -141,6 +141,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 	if run.ServiceAccount == nil {
 		run.ServiceAccount = aws.String(ee.jobSA)
 	}
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
 	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
 	if err != nil {
@@ -172,7 +173,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 		}
 
 		// Legitimate submit error, retryable.
-		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return run, true, err
 	}
 
@@ -191,7 +192,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 			_ = ee.log.Log("s3_upload_error", "error", err.Error())
 		}
 	}
-	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess), tierTag}, 1)
 
 	run, _ = ee.getPodName(run)
 	adaptedRun, err := ee.adapter.AdaptJobToFlotillaRun(result, run, nil)
@@ -318,7 +319,8 @@ func (ee *EKSExecutionEngine) Terminate(ctx context.Context, run state.Run) erro
 		_ = kClient.CoreV1().Pods(ee.jobNamespace).Delete(ctx, *run.PodName, *deleteOptions)
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess)}, 1)
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
+	_ = metrics.Increment(metrics.EngineEKSTerminate, []string{string(metrics.StatusSuccess), tierTag}, 1)
 	return nil
 }
 
@@ -328,20 +330,23 @@ func (ee *EKSExecutionEngine) Enqueue(ctx context.Context, run state.Run) error 
 	defer span.Finish()
 	span.SetTag("job.run_id", run.RunID)
 	utils.TagJobRun(span, run)
+
+	tierTag := fmt.Sprintf("tier:%s", run.Tier)
+
 	// Get qurl
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return errors.Wrapf(err, "problem getting queue url for [%s]", run.ClusterName)
 	}
 
 	// Queue run
 	if err = ee.qm.Enqueue(ctx, qurl, run); err != nil {
-		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure)}, 1)
+		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
 
-	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusSuccess)}, 1)
+	_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusSuccess), tierTag}, 1)
 	return nil
 }
 
