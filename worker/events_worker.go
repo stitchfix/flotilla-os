@@ -262,8 +262,8 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				_, span := utils.TraceJob(ctx, "flotilla.job.process_emr_pod_event", run.RunID)
 				defer span.Finish()
 				utils.TagJobRun(span, run)
-				span.SetTag("k8s.event_type", kubernetesEvent.Type)
-				span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
+				//span.SetTag("k8s.event_type", kubernetesEvent.Type)
+				//span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
 				span.SetTag("emr.job_id", *emrJobId)
 				layout := "2006-01-02T15:04:05Z"
 				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
@@ -372,8 +372,8 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	ctx, span := utils.TraceJob(ctx, "flotilla.job.process_event", runId)
 	defer span.Finish()
-	span.SetTag("k8s.event_type", kubernetesEvent.Type)
-	span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
+	//span.SetTag("k8s.event_type", kubernetesEvent.Type)
+	//span.SetTag("k8s.event_reason", kubernetesEvent.Reason)
 
 	layout := "2020-08-31T17:27:50Z"
 	timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)

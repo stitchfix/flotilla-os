@@ -77,8 +77,7 @@ func (sm *SQLStateManager) GetPodReAttemptRate(ctx context.Context) (float32, er
 func (sm *SQLStateManager) GetNodeLifecycle(ctx context.Context, executableID string, commandHash string) (string, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_node_lifecycle", executableID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("command_hash", commandHash)
+	//span.SetTag("command_hash", commandHash)
 
 	var err error
 	nodeType := "spot"
@@ -98,8 +97,8 @@ func (sm *SQLStateManager) GetNodeLifecycle(ctx context.Context, executableID st
 func (sm *SQLStateManager) GetTaskHistoricalRuntime(ctx context.Context, executableID string, runID string) (float32, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_task_historical_runtime", runID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("executable_id", executableID)
+
+	//span.SetTag("executable_id", executableID)
 
 	var err error
 	minutes := float32(1.0)
@@ -119,8 +118,8 @@ func (sm *SQLStateManager) GetTaskHistoricalRuntime(ctx context.Context, executa
 func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableID string, commandHash string) (TaskResources, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_run_resources", executableID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("command_hash", commandHash)
+
+	//span.SetTag("command_hash", commandHash)
 
 	var err error
 	var taskResources TaskResources
@@ -141,8 +140,8 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 func (sm *SQLStateManager) EstimateExecutorCount(ctx context.Context, executableID string, commandHash string) (int64, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_executor_count", executableID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("command_hash", commandHash)
+
+	//span.SetTag("command_hash", commandHash)
 
 	var err error
 	executorCount := int64(25)
@@ -175,8 +174,8 @@ func (sm *SQLStateManager) CheckIdempotenceKey(ctx context.Context, idempotenceK
 func (sm *SQLStateManager) ExecutorOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.executor_oom", executableID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("command_hash", commandHash)
+
+	//span.SetTag("command_hash", commandHash)
 
 	var err error
 	executorOOM := false
@@ -196,8 +195,8 @@ func (sm *SQLStateManager) ExecutorOOM(ctx context.Context, executableID string,
 func (sm *SQLStateManager) DriverOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.driver_oom", executableID)
 	defer span.Finish()
-	// Add additional tag
-	span.SetTag("command_hash", commandHash)
+
+	//span.SetTag("command_hash", commandHash)
 
 	var err error
 	driverOOM := false
@@ -399,8 +398,8 @@ func (sm *SQLStateManager) GetDefinitionByAlias(ctx context.Context, alias strin
 	// Using alias as runID for tracer - it's not a run but we need some identifier
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition_by_alias", alias)
 	defer span.Finish()
-	// Add alias tag for clarity
-	span.SetTag("alias", alias)
+
+	//span.SetTag("alias", alias)
 
 	var err error
 	var definition Definition
@@ -726,9 +725,9 @@ func (sm *SQLStateManager) GetRun(ctx context.Context, runID string) (Run, error
 	}
 
 	// Tag the span with run metadata
-	tracing.TagRunInfo(span, 
-		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName, 
-		r.QueuedAt, r.StartedAt, r.FinishedAt, 
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
 
 	return r, nil
@@ -753,9 +752,9 @@ func (sm *SQLStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string
 	}
 
 	// Tag the span with run metadata
-	tracing.TagRunInfo(span, 
-		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName, 
-		r.QueuedAt, r.StartedAt, r.FinishedAt, 
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
 
 	return r, nil
@@ -780,9 +779,9 @@ func (sm *SQLStateManager) GetResources(ctx context.Context, runID string) (Run,
 	}
 
 	// Tag the span with run metadata
-	tracing.TagRunInfo(span, 
-		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName, 
-		r.QueuedAt, r.StartedAt, r.FinishedAt, 
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
 		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
 
 	return r, nil
@@ -1297,7 +1296,7 @@ func (sm *SQLStateManager) ListWorkers(ctx context.Context, engine string) (Work
 func (sm *SQLStateManager) GetWorker(ctx context.Context, workerType string, engine string) (w Worker, err error) {
 	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_worker", workerType)
 	defer span.Finish()
-	span.SetTag("engine", engine)
+	//span.SetTag("engine", engine)
 	if err := sm.readonlyDB.GetContext(ctx, &w, GetWorkerSQL, workerType, engine); err != nil {
 		span.SetTag("error", true)
 		span.SetTag("error.msg", err.Error())
@@ -2229,10 +2228,9 @@ func (sm *SQLStateManager) GetRunStatus(ctx context.Context, runID string) (RunS
 		return status, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	// Tag the span with status information
-	if status.Status != "" {
-		span.SetTag("job.status", status.Status)
-	}
+	//if status.Status != "" {
+	//	span.SetTag("job.status", status.Status)
+	//}
 
 	return status, nil
 }

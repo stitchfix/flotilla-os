@@ -58,7 +58,7 @@ func (rw *retryWorker) runOnce(ctx context.Context) {
 	defer span.Finish()
 	// List runs in the StatusNeedsRetry state and requeue them
 	runList, err := rw.sm.ListRuns(ctx, 25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{state.EKSEngine})
-	span.SetTag("retry.run_count", runList.Total)
+	//span.SetTag("retry.run_count", runList.Total)
 	if runList.Total > 0 {
 		rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 	}
@@ -75,8 +75,8 @@ func (rw *retryWorker) runOnce(ctx context.Context) {
 		func() {
 			defer childSpan.Finish()
 			utils.TagJobRun(childSpan, run)
-			childSpan.SetTag("job.retry_reason", run.ExitReason)
-			childSpan.SetTag("job.original_status", run.Status)
+			//childSpan.SetTag("job.retry_reason", run.ExitReason)
+			//childSpan.SetTag("job.original_status", run.Status)
 
 			if _, err = rw.sm.UpdateRun(ctx, run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
 				rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))

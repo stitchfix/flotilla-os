@@ -104,7 +104,7 @@ func (sw *statusWorker) processTimeouts(runs []state.Run) {
 	ctx := context.Background()
 	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.job.timeout_check")
 	defer span.Finish()
-	span.SetTag("timeout_check.run_count", len(runs))
+	//span.SetTag("timeout_check.run_count", len(runs))
 	timeoutCount := 0
 	for _, run := range runs {
 		if run.StartedAt != nil && run.ActiveDeadlineSeconds != nil {
@@ -131,7 +131,7 @@ func (sw *statusWorker) processTimeouts(runs []state.Run) {
 			}
 		}
 	}
-	span.SetTag("timeout_check.timeout_count", timeoutCount)
+	//span.SetTag("timeout_check.timeout_count", timeoutCount)
 }
 
 func (sw *statusWorker) runOnceEKS(ctx context.Context) {
@@ -166,9 +166,9 @@ func (sw *statusWorker) processEKSRuns(ctx context.Context, runs []state.Run) {
 		locked := sw.acquireLock(run, "status", duration)
 		if locked {
 			lockedRuns = append(lockedRuns, run)
-			lockSpan.SetTag("lock.status", "acquired")
+			//lockSpan.SetTag("lock.status", "acquired")
 		} else {
-			lockSpan.SetTag("lock.status", "not_acquired")
+			//lockSpan.SetTag("lock.status", "not_acquired")
 		}
 
 		lockSpan.Finish()
@@ -304,7 +304,7 @@ func (sw *statusWorker) processEKSRun(ctx context.Context, run state.Run) {
 		span.SetTag("error", true)
 		span.SetTag("error.msg", err.Error())
 	} else if updatedRun.Status != run.Status {
-		span.SetTag("job.status_change", fmt.Sprintf("%s->%s", run.Status, updatedRun.Status))
+		//span.SetTag("job.status_change", fmt.Sprintf("%s->%s", run.Status, updatedRun.Status))
 		utils.TagJobRun(span, updatedRun)
 	}
 }
@@ -315,9 +315,9 @@ func (sw *statusWorker) cleanupRun(ctx context.Context, runID string) {
 
 	defer span.Finish()
 	//Logs maybe delayed before being persisted to S3.
-	span.SetTag("cleanup.delay_start", time.Now().Unix())
+	//span.SetTag("cleanup.delay_start", time.Now().Unix())
 	time.Sleep(120 * time.Second)
-	span.SetTag("cleanup.delay_end", time.Now().Unix())
+	//span.SetTag("cleanup.delay_end", time.Now().Unix())
 	run, err := sw.sm.GetRun(ctx, runID)
 	if err == nil {
 		//Delete run from Kubernetes
@@ -465,6 +465,6 @@ func (sw *statusWorker) findRun(ctx context.Context, taskArn string) (state.Run,
 	if runs.Total > 0 && len(runs.Runs) > 0 {
 		return runs.Runs[0], nil
 	}
-	span.SetTag("not_found", true)
+	//span.SetTag("not_found", true)
 	return state.Run{}, errors.Errorf("no run found for [%s]", taskArn)
 }
