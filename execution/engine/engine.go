@@ -29,6 +29,9 @@ type Engine interface {
 
 type RunReceipt struct {
 	queue.RunReceipt
+	TraceID          uint64
+	ParentID         uint64
+	SamplingPriority int
 }
 
 // NewExecutionEngine initializes and returns a new Engine

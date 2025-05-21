@@ -72,3 +72,20 @@ func TagRunInfo(span tracer.Span,
 		span.SetTag("job.exit_reason", *exitReason)
 	}
 }
+
+type TextMapCarrier map[string]string
+
+// ForeachKey implements the TextMapReader interface for Extract
+func (c TextMapCarrier) ForeachKey(handler func(key, val string) error) error {
+	for k, v := range c {
+		if err := handler(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Set implements the TextMapWriter interface for Inject
+func (c TextMapCarrier) Set(key, val string) {
+	c[key] = val
+}

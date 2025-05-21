@@ -371,7 +371,12 @@ func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error
 			continue
 		}
 
-		runs = append(runs, RunReceipt{runReceipt})
+		runs = append(runs, RunReceipt{
+			RunReceipt:       runReceipt,
+			TraceID:          runReceipt.TraceID,
+			ParentID:         runReceipt.ParentID,
+			SamplingPriority: runReceipt.SamplingPriority,
+		})
 	}
 	return runs, nil
 }

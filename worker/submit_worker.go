@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/tracing"
+
 	"github.com/stitchfix/flotilla-os/utils"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
@@ -80,11 +82,23 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 		}
 		var runCtx context.Context
 		if runReceipt.RunReceipt.TraceID != 0 && runReceipt.RunReceipt.ParentID != 0 {
-			bridgeSpan := tracer.StartSpan("sqs_receive",
-				tracer.WithSpanID(runReceipt.RunReceipt.ParentID),
-			)
-			runCtx = tracer.ContextWithSpan(ctx, bridgeSpan)
-			bridgeSpan.Finish()
+			carrier := tracing.TextMapCarrier{
+				"x-datadog-trace-id":          fmt.Sprintf("%d", runReceipt.TraceID),
+				"x-datadog-parent-id":         fmt.Sprintf("%d", runReceipt.ParentID),
+				"x-datadog-sampling-priority": fmt.Sprintf("%d", runReceipt.SamplingPriority),
+			}
+			spanCtx, err := tracer.Extract(carrier)
+			if err != nil {
+				sw.log.Log("message", "Error extracting span context", "error", err.Error())
+				runCtx = ctx
+			} else {
+				bridgeSpan := tracer.StartSpan("flotilla.queue.sqs_receive", tracer.ChildOf(spanCtx))
+				bridgeSpan.SetTag("run_id", runReceipt.Run.RunID)
+
+				runCtx = tracer.ContextWithSpan(ctx, bridgeSpan)
+
+				bridgeSpan.Finish()
+			}
 		} else {
 			runCtx = ctx
 		}

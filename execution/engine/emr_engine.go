@@ -789,7 +789,12 @@ func (emr *EMRExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, erro
 			continue
 		}
 
-		runs = append(runs, RunReceipt{runReceipt})
+		runs = append(runs, RunReceipt{
+			RunReceipt:       runReceipt,
+			TraceID:          runReceipt.TraceID,
+			ParentID:         runReceipt.ParentID,
+			SamplingPriority: runReceipt.SamplingPriority,
+		})
 	}
 	return runs, nil
 }
