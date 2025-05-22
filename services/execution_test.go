@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"log"
 	"testing"
 
@@ -41,6 +42,7 @@ func setUp(t *testing.T) (ExecutionService, *testutils.ImplementsAllTheThings) {
 }
 
 func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
+	ctx := context.Background()
 	// Tests valid create
 	es, imp := setUp(t)
 
@@ -79,7 +81,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 		},
 	}
 
-	run, err := es.CreateDefinitionRunByDefinitionID("B", &req)
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "B", &req)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -160,6 +162,7 @@ func TestExecutionService_CreateDefinitionRunByDefinitionID(t *testing.T) {
 }
 
 func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
+	ctx := context.Background()
 	// Tests valid create
 	es, imp := setUp(t)
 	env := &state.EnvList{
@@ -191,7 +194,7 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 			Arch:             nil,
 		},
 	}
-	run, err := es.CreateDefinitionRunByAlias("aliasB", &req)
+	run, err := es.CreateDefinitionRunByAlias(ctx, "aliasB", &req)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -257,8 +260,9 @@ func TestExecutionService_CreateDefinitionRunByAlias(t *testing.T) {
 }
 
 func TestExecutionService_List(t *testing.T) {
+	ctx := context.Background()
 	es, imp := setUp(t)
-	es.List(1, 0, "asc", "cluster_name", nil, nil)
+	es.List(ctx, 1, 0, "asc", "cluster_name", nil, nil)
 
 	expectedCalls := map[string]bool{
 		"ListRuns": true,
@@ -277,9 +281,10 @@ func TestExecutionService_List(t *testing.T) {
 }
 
 func TestExecutionService_List2(t *testing.T) {
+	ctx := context.Background()
 	es, imp := setUp(t)
 	es.List(
-		1, 0,
+		ctx, 1, 0,
 		"asc", "cluster_name",
 		map[string][]string{"definition_id": {"A"}}, nil)
 
@@ -300,9 +305,10 @@ func TestExecutionService_List2(t *testing.T) {
 	}
 }
 func TestExecutionService_ListClusters(t *testing.T) {
+	ctx := context.Background()
 	es, imp := setUp(t)
 
-	clusters, err := es.ListClusters()
+	clusters, err := es.ListClusters(ctx)
 	if err != nil {
 		t.Errorf("Expected no error listing clusters, got: %v", err)
 	}
@@ -324,6 +330,7 @@ func TestExecutionService_ListClusters(t *testing.T) {
 }
 
 func TestExecutionService_CreateDefinitionRunWithTier(t *testing.T) {
+	ctx := context.Background()
 	// Set up test environment
 	confDir := "../conf"
 	c, _ := config.NewConfig(&confDir)
@@ -431,7 +438,7 @@ func TestExecutionService_CreateDefinitionRunWithTier(t *testing.T) {
 				},
 			}
 
-			run, err := es.CreateDefinitionRunByDefinitionID("A", &req)
+			run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
 			if err != nil {
 				t.Errorf("Error creating run: %s", err.Error())
 				return
@@ -451,13 +458,14 @@ func TestExecutionService_CreateDefinitionRunWithTier(t *testing.T) {
 }
 
 func TestExecutionService_GetRunStatus(t *testing.T) {
+	ctx := context.Background()
 	es, imp := setUp(t)
 
 	expectedCalls := map[string]bool{
 		"GetRunStatus": true,
 	}
 
-	status, err := es.GetRunStatus("runA")
+	status, err := es.GetRunStatus(ctx, "runA")
 
 	if err != nil {
 		t.Errorf("Expected no error when getting status of existing run, got: %s", err.Error())
@@ -488,7 +496,7 @@ func TestExecutionService_GetRunStatus(t *testing.T) {
 
 	imp.Calls = []string{}
 
-	_, err = es.GetRunStatus("nonexistent")
+	_, err = es.GetRunStatus(ctx, "nonexistent")
 
 	if err == nil {
 		t.Errorf("Expected error when getting status of non-existent run, got nil")

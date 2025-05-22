@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"reflect"
 	"strings"
 
@@ -11,11 +12,11 @@ import (
 
 // TemplateService defines an interface for operations involving templates.
 type TemplateService interface {
-	GetByID(id string) (state.Template, error)
-	GetLatestByName(templateName string) (bool, state.Template, error)
-	List(limit int, offset int, sortBy string, order string) (state.TemplateList, error)
-	ListLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error)
-	Create(tpl *state.CreateTemplateRequest) (state.CreateTemplateResponse, error)
+	GetByID(ctx context.Context, id string) (state.Template, error)
+	GetLatestByName(ctx context.Context, templateName string) (bool, state.Template, error)
+	List(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error)
+	ListLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error)
+	Create(ctx context.Context, tpl *state.CreateTemplateRequest) (state.CreateTemplateResponse, error)
 }
 
 type templateService struct {
@@ -29,7 +30,7 @@ func NewTemplateService(conf config.Config, sm state.Manager) (TemplateService, 
 }
 
 // Create fully initialize and save the new template.
-func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.CreateTemplateResponse, error) {
+func (ts *templateService) Create(ctx context.Context, req *state.CreateTemplateRequest) (state.CreateTemplateResponse, error) {
 	res := state.CreateTemplateResponse{
 		DidCreate: false,
 		Template:  state.Template{},
@@ -53,7 +54,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 	// changed fields, then we will create a new row in the DB w/ the version
 	// incremented by 1. If there are NO changed fields, then just return the
 	// latest version.
-	doesExist, prev, err := ts.sm.GetLatestTemplateByTemplateName(curr.TemplateName)
+	doesExist, prev, err := ts.sm.GetLatestTemplateByTemplateName(ctx, curr.TemplateName)
 
 	if err != nil {
 		return res, err
@@ -64,7 +65,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 		curr.Version = 1
 		res.Template = curr
 		res.DidCreate = true
-		return res, ts.sm.CreateTemplate(curr)
+		return res, ts.sm.CreateTemplate(ctx, curr)
 	}
 
 	// Check if prev and curr are diff, if they are, write curr to DB (increment)
@@ -73,7 +74,7 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 		curr.Version = prev.Version + 1
 		res.Template = curr
 		res.DidCreate = true
-		return res, ts.sm.CreateTemplate(curr)
+		return res, ts.sm.CreateTemplate(ctx, curr)
 	}
 
 	res.Template = prev
@@ -81,23 +82,23 @@ func (ts *templateService) Create(req *state.CreateTemplateRequest) (state.Creat
 }
 
 // Get returns the template specified by id.
-func (ts *templateService) GetByID(id string) (state.Template, error) {
-	return ts.sm.GetTemplateByID(id)
+func (ts *templateService) GetByID(ctx context.Context, id string) (state.Template, error) {
+	return ts.sm.GetTemplateByID(ctx, id)
 }
 
 // Get returns the template specified by id.
-func (ts *templateService) GetLatestByName(templateName string) (bool, state.Template, error) {
-	return ts.sm.GetLatestTemplateByTemplateName(templateName)
+func (ts *templateService) GetLatestByName(ctx context.Context, templateName string) (bool, state.Template, error) {
+	return ts.sm.GetLatestTemplateByTemplateName(ctx, templateName)
 }
 
 // List lists templates.
-func (ts *templateService) List(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
-	return ts.sm.ListTemplates(limit, offset, sortBy, order)
+func (ts *templateService) List(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	return ts.sm.ListTemplates(ctx, limit, offset, sortBy, order)
 }
 
 // List lists templates.
-func (ts *templateService) ListLatestOnly(limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
-	return ts.sm.ListTemplatesLatestOnly(limit, offset, sortBy, order)
+func (ts *templateService) ListLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (state.TemplateList, error) {
+	return ts.sm.ListTemplatesLatestOnly(ctx, limit, offset, sortBy, order)
 }
 
 // diff performs a diff between all fields (except for TemplateName and

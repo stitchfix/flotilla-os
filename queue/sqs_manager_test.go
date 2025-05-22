@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -179,9 +180,9 @@ func TestSQSManager_Enqueue(t *testing.T) {
 	toQ := state.Run{
 		RunID: "cupcake",
 	}
-	qm.Enqueue("A", toQ)
+	qm.Enqueue(context.Background(), "A", toQ)
 
-	err = qm.Enqueue("", toQ)
+	err = qm.Enqueue(context.Background(), "", toQ)
 	if err == nil {
 		t.Errorf("Expected empty queue url to result in error")
 	}
@@ -236,7 +237,7 @@ func TestSQSManager_QurlFor(t *testing.T) {
 
 func TestSQSManager_ReceiveRun(t *testing.T) {
 	qm := setUp(t)
-	receipt, _ := qm.ReceiveRun("A")
+	receipt, _ := qm.ReceiveRun(context.Background(), "A")
 	receipt.Done()
 }
 

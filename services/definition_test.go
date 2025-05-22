@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
 	"testing"
@@ -43,7 +44,7 @@ func TestDefinitionService_Create(t *testing.T) {
 		},
 	}
 
-	created, _ := ds.Create(&newValidDef)
+	created, _ := ds.Create(context.Background(), &newValidDef)
 	if len(created.DefinitionID) == 0 {
 		t.Errorf("Expected non-empty definition id")
 	}
@@ -77,7 +78,7 @@ func TestDefinitionService_Create2(t *testing.T) {
 		GroupName:           "group-cupcake",
 		ExecutableResources: state.ExecutableResources{Memory: &memory},
 	}
-	_, err = ds.Create(&invalid4)
+	_, err = ds.Create(context.Background(), &invalid4)
 	if err == nil {
 		t.Errorf("Expected invalid definition with no image to result in error")
 	}
@@ -89,7 +90,7 @@ func TestDefinitionService_Update(t *testing.T) {
 	d := state.Definition{
 		ExecutableResources: state.ExecutableResources{Memory: &memory},
 	}
-	ds.Update("A", d)
+	ds.Update(context.Background(), "A", d)
 
 	// order matters
 	expected := []string{"GetDefinition", "UpdateDefinition"}
@@ -106,7 +107,7 @@ func TestDefinitionService_Update(t *testing.T) {
 
 func TestDefinitionService_Delete(t *testing.T) {
 	ds, imp := setUpDefinitionServiceTest(t)
-	ds.Delete("A")
+	ds.Delete(context.Background(), "A")
 
 	// order matters
 	expected := []string{"DeleteDefinition"}

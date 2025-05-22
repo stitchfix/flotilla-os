@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
@@ -11,10 +12,10 @@ import (
 // WorkerService defines an interface for operations involving workers
 //
 type WorkerService interface {
-	List(engine string) (state.WorkersList, error)
-	Get(workerType string, engine string) (state.Worker, error)
-	Update(workerType string, updates state.Worker) (state.Worker, error)
-	BatchUpdate(updates []state.Worker) (state.WorkersList, error)
+	List(ctx context.Context, engine string) (state.WorkersList, error)
+	Get(ctx context.Context, workerType string, engine string) (state.Worker, error)
+	Update(ctx context.Context, workerType string, updates state.Worker) (state.Worker, error)
+	BatchUpdate(ctx context.Context, updates []state.Worker) (state.WorkersList, error)
 }
 
 type workerService struct {
@@ -29,35 +30,35 @@ func NewWorkerService(conf config.Config, sm state.Manager) (WorkerService, erro
 	return &ws, nil
 }
 
-func (ws *workerService) List(engine string) (state.WorkersList, error) {
-	return ws.sm.ListWorkers(engine)
+func (ws *workerService) List(ctx context.Context, engine string) (state.WorkersList, error) {
+	return ws.sm.ListWorkers(ctx, engine)
 }
 
-func (ws *workerService) Get(workerType string, engine string) (state.Worker, error) {
+func (ws *workerService) Get(ctx context.Context, workerType string, engine string) (state.Worker, error) {
 	var w state.Worker
 	if err := ws.validate(workerType); err != nil {
 		return w, err
 	}
-	return ws.sm.GetWorker(workerType, engine)
+	return ws.sm.GetWorker(ctx, workerType, engine)
 }
 
-func (ws *workerService) Update(workerType string, updates state.Worker) (state.Worker, error) {
+func (ws *workerService) Update(ctx context.Context, workerType string, updates state.Worker) (state.Worker, error) {
 	var w state.Worker
 	if err := ws.validate(workerType); err != nil {
 		return w, err
 	}
 
-	return ws.sm.UpdateWorker(workerType, updates)
+	return ws.sm.UpdateWorker(ctx, workerType, updates)
 }
 
-func (ws *workerService) BatchUpdate(updates []state.Worker) (state.WorkersList, error) {
+func (ws *workerService) BatchUpdate(ctx context.Context, updates []state.Worker) (state.WorkersList, error) {
 	var wl state.WorkersList
 	for _, update := range updates {
 		if err := ws.validate(update.WorkerType); err != nil {
 			return wl, err
 		}
 	}
-	return ws.sm.BatchUpdateWorkers(updates)
+	return ws.sm.BatchUpdateWorkers(ctx, updates)
 }
 
 func (ws *workerService) validate(workerType string) error {

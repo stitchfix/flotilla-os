@@ -1,9 +1,11 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/utils"
 	"math/rand"
 	"regexp"
 	"slices"
@@ -24,28 +26,29 @@ import (
 // CRUD operations on them
 // * Acts as an intermediary layer between state and the execution engine
 type ExecutionService interface {
-	CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error)
-	CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error)
+	CreateDefinitionRunByDefinitionID(ctx context.Context, definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error)
+	CreateDefinitionRunByAlias(ctx context.Context, alias string, req *state.DefinitionExecutionRequest) (state.Run, error)
 	List(
+		ctx context.Context,
 		limit int,
 		offset int,
 		sortOrder string,
 		sortField string,
 		filters map[string][]string,
 		envFilters map[string]string) (state.RunList, error)
-	Get(runID string) (state.Run, error)
-	UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error
-	Terminate(runID string, userInfo state.UserInfo) error
+	Get(ctx context.Context, runID string) (state.Run, error)
+	UpdateStatus(ctx context.Context, runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error
+	Terminate(ctx context.Context, runID string, userInfo state.UserInfo) error
 	ReservedVariables() []string
-	ListClusters() ([]state.ClusterMetadata, error)
+	ListClusters(ctx context.Context) ([]state.ClusterMetadata, error)
 	GetDefaultCluster() string
-	GetEvents(run state.Run) (state.PodEventList, error)
-	CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
-	CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
-	UpdateClusterMetadata(cluster state.ClusterMetadata) error
-	DeleteClusterMetadata(clusterID string) error
-	GetClusterByID(clusterID string) (state.ClusterMetadata, error)
-	GetRunStatus(runID string) (state.RunStatus, error)
+	GetEvents(ctx context.Context, run state.Run) (state.PodEventList, error)
+	CreateTemplateRunByTemplateID(ctx context.Context, templateID string, req *state.TemplateExecutionRequest) (state.Run, error)
+	CreateTemplateRunByTemplateName(ctx context.Context, templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error)
+	UpdateClusterMetadata(ctx context.Context, cluster state.ClusterMetadata) error
+	DeleteClusterMetadata(ctx context.Context, clusterID string) error
+	GetClusterByID(ctx context.Context, clusterID string) (state.ClusterMetadata, error)
+	GetRunStatus(ctx context.Context, runID string) (state.RunStatus, error)
 }
 
 type executionService struct {
@@ -69,8 +72,11 @@ type executionService struct {
 	//validEksClusterTiers  string
 }
 
-func (es *executionService) GetEvents(run state.Run) (state.PodEventList, error) {
-	return es.eksExecutionEngine.GetEvents(run)
+func (es *executionService) GetEvents(ctx context.Context, run state.Run) (state.PodEventList, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.get_events", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
+	return es.eksExecutionEngine.GetEvents(ctx, run)
 }
 
 // NewExecutionService configures and returns an ExecutionService
@@ -164,31 +170,45 @@ func (es *executionService) ReservedVariables() []string {
 }
 
 // Create constructs and queues a new Run on the cluster specified.
-func (es *executionService) CreateDefinitionRunByDefinitionID(definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateDefinitionRunByDefinitionID(ctx context.Context, definitionID string, req *state.DefinitionExecutionRequest) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.definition.create_run", "")
+	defer span.Finish()
+	span.SetTag("definition_id", definitionID)
+
 	// Ensure definition exists
-	definition, err := es.stateManager.GetDefinition(definitionID)
+	definition, err := es.stateManager.GetDefinition(ctx, definitionID)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return state.Run{}, err
 	}
-	return es.createFromDefinition(definition, req)
+	return es.createFromDefinition(ctx, definition, req)
 }
 
 // Create constructs and queues a new Run on the cluster specified, based on an alias
-func (es *executionService) CreateDefinitionRunByAlias(alias string, req *state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateDefinitionRunByAlias(ctx context.Context, alias string, req *state.DefinitionExecutionRequest) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.alias.create_run", "")
+	defer span.Finish()
+	span.SetTag("alias", alias)
+
 	// Ensure definition exists
-	definition, err := es.stateManager.GetDefinitionByAlias(alias)
+	definition, err := es.stateManager.GetDefinitionByAlias(ctx, alias)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return state.Run{}, err
 	}
 
-	return es.createFromDefinition(definition, req)
+	return es.createFromDefinition(ctx, definition, req)
 }
 
-func (es *executionService) createFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
+func (es *executionService) createFromDefinition(ctx context.Context, definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
 	var (
 		run state.Run
 		err error
 	)
+	ctx, span := utils.TraceJob(ctx, "flotilla.definition.create_run", run.RunID)
+	defer span.Finish()
 
 	fields := req.GetExecutionRequestCommon()
 	rand.Seed(time.Now().Unix())
@@ -204,7 +224,7 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 
 		if required, cluster overrides should be introduced and set here
 	*/
-	clusterMetadata, err := es.ListClusters()
+	clusterMetadata, err := es.ListClusters(ctx)
 	var activeClusters []string
 	if len(clusterMetadata) > 0 {
 		for _, cluster := range clusterMetadata {
@@ -234,19 +254,19 @@ func (es *executionService) createFromDefinition(definition state.Definition, re
 	if !es.isClusterValid(fields.ClusterName) {
 		return run, fmt.Errorf("%s was not found in the list of valid clusters: %s", fields.ClusterName, es.validEksClusters)
 	}
-
+	span.SetTag("clusterName", fields.ClusterName)
 	run.User = req.OwnerID
 	es.sanitizeExecutionRequestCommonFields(fields)
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRunFromDefinition(definition, req)
+	run, err = es.constructRunFromDefinition(ctx, definition, req)
 	if err != nil {
 		return run, err
 	}
-	return es.createAndEnqueueRun(run)
+	return es.createAndEnqueueRun(ctx, run)
 }
 
-func (es *executionService) constructRunFromDefinition(definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
-	run, err := es.constructBaseRunFromExecutable(definition, req)
+func (es *executionService) constructRunFromDefinition(ctx context.Context, definition state.Definition, req *state.DefinitionExecutionRequest) (state.Run, error) {
+	run, err := es.constructBaseRunFromExecutable(ctx, definition, req)
 
 	if err != nil {
 		return run, err
@@ -277,7 +297,7 @@ func (es *executionService) constructRunFromDefinition(definition state.Definiti
 	return run, nil
 }
 
-func (es *executionService) constructBaseRunFromExecutable(executable state.Executable, req state.ExecutionRequest) (state.Run, error) {
+func (es *executionService) constructBaseRunFromExecutable(ctx context.Context, executable state.Executable, req state.ExecutionRequest) (state.Run, error) {
 	resources := executable.GetExecutableResources()
 	fields := req.GetExecutionRequestCommon()
 	var (
@@ -307,8 +327,8 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 		}
 		executableID := executable.GetExecutableID()
 
-		taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime(*executableID, runID)
-		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
+		taskExecutionMinutes, _ := es.stateManager.GetTaskHistoricalRuntime(ctx, *executableID, runID)
+		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate(ctx)
 		if reAttemptRate >= es.spotReAttemptOverride &&
 			fields.Engine != nil &&
 			fields.NodeLifecycle != nil &&
@@ -327,7 +347,7 @@ func (es *executionService) constructBaseRunFromExecutable(executable state.Exec
 			return run, errors.New("spark_extension can't be nil, when using eks-spark engine type")
 		}
 		fields.SparkExtension = req.GetExecutionRequestCommon().SparkExtension
-		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate()
+		reAttemptRate, _ := es.stateManager.GetPodReAttemptRate(ctx)
 		if reAttemptRate >= es.spotReAttemptOverride {
 			fields.NodeLifecycle = &state.OndemandLifecycle
 		}
@@ -394,18 +414,23 @@ func (es *executionService) constructEnviron(run state.Run, env *state.EnvList) 
 // List returns a list of Runs
 // * validates definition_id and status filters
 func (es *executionService) List(
+	ctx context.Context,
 	limit int,
 	offset int,
 	sortOrder string,
 	sortField string,
 	filters map[string][]string,
 	envFilters map[string]string) (state.RunList, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.list_runs", "")
+	defer span.Finish()
+	span.SetTag("limit", limit)
+	span.SetTag("offset", offset)
 
 	// If definition_id is present in filters, validate its
 	// existence first
 	definitionID, ok := filters["definition_id"]
 	if ok {
-		_, err := es.stateManager.GetDefinition(definitionID[0])
+		_, err := es.stateManager.GetDefinition(ctx, definitionID[0])
 		if err != nil {
 			return state.RunList{}, err
 		}
@@ -421,20 +446,36 @@ func (es *executionService) List(
 			}
 		}
 	}
-	return es.stateManager.ListRuns(limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine, state.EKSSparkEngine})
+	return es.stateManager.ListRuns(ctx, limit, offset, sortField, sortOrder, filters, envFilters, []string{state.EKSEngine, state.EKSSparkEngine})
 }
 
 // Get returns the run with the given runID
-func (es *executionService) Get(runID string) (state.Run, error) {
-	return es.stateManager.GetRun(runID)
+func (es *executionService) Get(ctx context.Context, runID string) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.get_run", runID)
+	defer span.Finish()
+	span.SetTag("run_id", runID)
+	run, err := es.stateManager.GetRun(ctx, runID)
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	}
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	}
+	return run, err
 }
 
 // UpdateStatus is for supporting some legacy runs that still manually update their status
-func (es *executionService) UpdateStatus(runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error {
+func (es *executionService) UpdateStatus(ctx context.Context, runID string, status string, exitCode *int64, runExceptions *state.RunExceptions, exitReason *string) error {
+	ctx, span := utils.TraceJob(ctx, "flotilla.update_status", runID)
+	defer span.Finish()
+	span.SetTag("run_id", runID)
+	span.SetTag("status", status)
 	if !state.IsValidStatus(status) {
 		return exceptions.MalformedInput{ErrorString: fmt.Sprintf("status %s is invalid", status)}
 	}
-	run, err := es.stateManager.GetRun(runID)
+	run, err := es.stateManager.GetRun(ctx, runID)
 	if err != nil {
 		return err
 	}
@@ -451,7 +492,7 @@ func (es *executionService) UpdateStatus(runID string, status string, exitCode *
 		exitReason = &extractedExitReason
 	}
 
-	_, err = es.stateManager.UpdateRun(runID, state.Run{Status: status, ExitCode: exitCode, ExitReason: exitReason, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
+	_, err = es.stateManager.UpdateRun(ctx, runID, state.Run{Status: status, ExitCode: exitCode, ExitReason: exitReason, RunExceptions: runExceptions, FinishedAt: &finishedAt, StartedAt: startedAt})
 	return err
 }
 
@@ -487,15 +528,24 @@ func (es *executionService) extractExitReason(runExceptions *state.RunExceptions
 }
 
 func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
+	ctx := context.Background()
 	for job := range jobChan {
 		runID := job.RunID
 		userInfo := job.UserInfo
-		run, err := es.stateManager.GetRun(runID)
+		ctx, span := utils.TraceJob(ctx, "flotilla.job.terminate_worker", runID)
+		defer span.Finish()
+		run, err := es.stateManager.GetRun(ctx, runID)
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+			break
+		}
+		utils.TagJobRun(span, run)
 		if err != nil {
 			break
 		}
 
-		subRuns, err := es.stateManager.ListRuns(1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
+		subRuns, err := es.stateManager.ListRuns(ctx, 1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
 		if err == nil && subRuns.Total > 0 {
 			for _, subRun := range subRuns.Runs {
 				es.terminateJobChannel <- state.TerminateJob{
@@ -511,9 +561,9 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 
 		if run.Status != state.StatusStopped {
 			if *run.Engine == state.EKSSparkEngine {
-				err = es.emrExecutionEngine.Terminate(run)
+				err = es.emrExecutionEngine.Terminate(ctx, run)
 			} else {
-				err = es.eksExecutionEngine.Terminate(run)
+				err = es.eksExecutionEngine.Terminate(ctx, run)
 			}
 			exitReason := "Task terminated by user"
 			if len(userInfo.Email) > 0 {
@@ -522,7 +572,7 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 
 			exitCode := int64(1)
 			finishedAt := time.Now()
-			_, err = es.stateManager.UpdateRun(run.RunID, state.Run{
+			_, err = es.stateManager.UpdateRun(ctx, run.RunID, state.Run{
 				Status:     state.StatusStopped,
 				ExitReason: &exitReason,
 				ExitCode:   &exitCode,
@@ -535,15 +585,23 @@ func (es *executionService) terminateWorker(jobChan <-chan state.TerminateJob) {
 }
 
 // Terminate stops the run with the given runID
-func (es *executionService) Terminate(runID string, userInfo state.UserInfo) error {
+func (es *executionService) Terminate(ctx context.Context, runID string, userInfo state.UserInfo) error {
+	ctx, span := utils.TraceJob(ctx, "flotilla.terminate_run", runID)
+	defer span.Finish()
+	span.SetTag("run_id", runID)
+	if userInfo.Email != "" {
+		span.SetTag("user.email", userInfo.Email)
+	}
 	es.terminateJobChannel <- state.TerminateJob{RunID: runID, UserInfo: userInfo}
 	go es.terminateWorker(es.terminateJobChannel)
 	return nil
 }
 
 // ListClusters returns a list of all execution clusters available with their metadata
-func (es *executionService) ListClusters() ([]state.ClusterMetadata, error) {
-	clusters, err := es.stateManager.ListClusterStates()
+func (es *executionService) ListClusters(ctx context.Context) ([]state.ClusterMetadata, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.list_clusters", "")
+	defer span.Finish()
+	clusters, err := es.stateManager.ListClusterStates(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -574,12 +632,16 @@ func (es *executionService) sanitizeExecutionRequestCommonFields(fields *state.E
 
 // createAndEnqueueRun creates a run object in the DB, enqueues it, then
 // updates the db's run object with a new `queued_at` field.
-func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error) {
+func (es *executionService) createAndEnqueueRun(ctx context.Context, run state.Run) (state.Run, error) {
 	var err error
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.create_and_enqueue", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", run.RunID)
+	utils.TagJobRun(span, run)
 	if run.IdempotenceKey != nil {
-		priorRunId, err := es.stateManager.CheckIdempotenceKey(*run.IdempotenceKey)
+		priorRunId, err := es.stateManager.CheckIdempotenceKey(ctx, *run.IdempotenceKey)
 		if err == nil && len(priorRunId) > 0 {
-			priorRun, err := es.Get(priorRunId)
+			priorRun, err := es.Get(ctx, priorRunId)
 			if err == nil {
 				return priorRun, nil
 			}
@@ -588,14 +650,14 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 
 	// Save run to source of state - it is *CRITICAL* to do this
 	// -before- queuing to avoid processing unsaved runs
-	if err = es.stateManager.CreateRun(run); err != nil {
+	if err = es.stateManager.CreateRun(ctx, run); err != nil {
 		return run, err
 	}
 
 	if *run.Engine == state.EKSEngine {
-		err = es.eksExecutionEngine.Enqueue(run)
+		err = es.eksExecutionEngine.Enqueue(ctx, run)
 	} else {
-		err = es.emrExecutionEngine.Enqueue(run)
+		err = es.emrExecutionEngine.Enqueue(ctx, run)
 	}
 	queuedAt := time.Now()
 
@@ -604,24 +666,28 @@ func (es *executionService) createAndEnqueueRun(run state.Run) (state.Run, error
 	}
 
 	// UpdateStatus the run's QueuedAt field
-	if run, err = es.stateManager.UpdateRun(run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
+	if run, err = es.stateManager.UpdateRun(ctx, run.RunID, state.Run{QueuedAt: &queuedAt}); err != nil {
 		return run, err
 	}
 	return run, nil
 }
-func (es *executionService) CreateTemplateRunByTemplateName(templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateTemplateRunByTemplateName(ctx context.Context, templateName string, templateVersion string, req *state.TemplateExecutionRequest) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_name", "")
+	defer span.Finish()
+	span.SetTag("template_name", templateName)
+	span.SetTag("template_version", templateVersion)
 	version, err := strconv.Atoi(templateVersion)
 
 	if err != nil {
 		//use the "latest" template - version not a integer
-		fetch, template, err := es.stateManager.GetLatestTemplateByTemplateName(templateName)
+		fetch, template, err := es.stateManager.GetLatestTemplateByTemplateName(ctx, templateName)
 		if fetch && err == nil {
-			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
+			return es.CreateTemplateRunByTemplateID(ctx, template.TemplateID, req)
 		}
 	} else {
-		fetch, template, err := es.stateManager.GetTemplateByVersion(templateName, int64(version))
+		fetch, template, err := es.stateManager.GetTemplateByVersion(ctx, templateName, int64(version))
 		if fetch && err == nil {
-			return es.CreateTemplateRunByTemplateID(template.TemplateID, req)
+			return es.CreateTemplateRunByTemplateID(ctx, template.TemplateID, req)
 		}
 	}
 	return state.Run{},
@@ -629,17 +695,20 @@ func (es *executionService) CreateTemplateRunByTemplateName(templateName string,
 }
 
 // Create constructs and queues a new Run on the cluster specified.
-func (es *executionService) CreateTemplateRunByTemplateID(templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
+func (es *executionService) CreateTemplateRunByTemplateID(ctx context.Context, templateID string, req *state.TemplateExecutionRequest) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.template.create_run_by_id", "")
+	defer span.Finish()
+	span.SetTag("template_id", templateID)
 	// Ensure template exists
-	template, err := es.stateManager.GetTemplateByID(templateID)
+	template, err := es.stateManager.GetTemplateByID(ctx, templateID)
 	if err != nil {
 		return state.Run{}, err
 	}
 
-	return es.createFromTemplate(template, req)
+	return es.createFromTemplate(ctx, template, req)
 }
 
-func (es *executionService) createFromTemplate(template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
+func (es *executionService) createFromTemplate(ctx context.Context, template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
 	var (
 		run state.Run
 		err error
@@ -649,18 +718,18 @@ func (es *executionService) createFromTemplate(template state.Template, req *sta
 	es.sanitizeExecutionRequestCommonFields(fields)
 
 	// Construct run object with StatusQueued and new UUID4 run id
-	run, err = es.constructRunFromTemplate(template, req)
+	run, err = es.constructRunFromTemplate(ctx, template, req)
 	if err != nil {
 		return run, err
 	}
 	if !req.DryRun {
-		return es.createAndEnqueueRun(run)
+		return es.createAndEnqueueRun(ctx, run)
 	}
 	return run, nil
 }
 
-func (es *executionService) constructRunFromTemplate(template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
-	run, err := es.constructBaseRunFromExecutable(template, req)
+func (es *executionService) constructRunFromTemplate(ctx context.Context, template state.Template, req *state.TemplateExecutionRequest) (state.Run, error) {
+	run, err := es.constructBaseRunFromExecutable(ctx, template, req)
 
 	if err != nil {
 		return run, err
@@ -692,19 +761,31 @@ func (es *executionService) isClusterValid(clusterName string) bool {
 	return slices.Contains(es.validEksClusters, clusterName)
 }
 
-func (es *executionService) UpdateClusterMetadata(cluster state.ClusterMetadata) error {
-	return es.stateManager.UpdateClusterMetadata(cluster)
+func (es *executionService) UpdateClusterMetadata(ctx context.Context, cluster state.ClusterMetadata) error {
+	ctx, span := utils.TraceJob(ctx, "flotilla.update_cluster_metadata", cluster.Name)
+	defer span.Finish()
+	span.SetTag("cluster_name", cluster.Name)
+	return es.stateManager.UpdateClusterMetadata(ctx, cluster)
 }
 
-func (es *executionService) DeleteClusterMetadata(clusterID string) error {
-	return es.stateManager.DeleteClusterMetadata(clusterID)
+func (es *executionService) DeleteClusterMetadata(ctx context.Context, clusterID string) error {
+	ctx, span := utils.TraceJob(ctx, "flotilla.delete_cluster_metadata", clusterID)
+	defer span.Finish()
+	span.SetTag("cluster_id", clusterID)
+	return es.stateManager.DeleteClusterMetadata(ctx, clusterID)
 }
 
-func (es *executionService) GetClusterByID(clusterID string) (state.ClusterMetadata, error) {
-	return es.stateManager.GetClusterByID(clusterID)
+func (es *executionService) GetClusterByID(ctx context.Context, clusterID string) (state.ClusterMetadata, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.get_cluster_by_id", clusterID)
+	defer span.Finish()
+	span.SetTag("cluster_id", clusterID)
+	return es.stateManager.GetClusterByID(ctx, clusterID)
 }
 
 // GetRunStatus fetches only the essential status information for a run
-func (es *executionService) GetRunStatus(runID string) (state.RunStatus, error) {
-	return es.stateManager.GetRunStatus(runID)
+func (es *executionService) GetRunStatus(ctx context.Context, runID string) (state.RunStatus, error) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.get_run_status", runID)
+	defer span.Finish()
+	span.SetTag("run_id", runID)
+	return es.stateManager.GetRunStatus(ctx, runID)
 }

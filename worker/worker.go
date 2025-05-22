@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/queue"
 	"time"
@@ -16,7 +17,7 @@ import (
 // Worker defines a background worker process
 type Worker interface {
 	Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error
-	Run() error
+	Run(ctx context.Context) error
 	GetTomb() *tomb.Tomb
 }
 

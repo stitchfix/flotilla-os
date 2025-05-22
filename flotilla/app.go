@@ -1,8 +1,10 @@
 package flotilla
 
 import (
+	"context"
 	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/queue"
+	"github.com/stitchfix/flotilla-os/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -39,7 +41,11 @@ func (app *App) Run() error {
 		WriteTimeout: app.writeTimeout,
 	}
 	// Start worker manager's run goroutine.
-	app.workerManager.GetTomb().Go(app.workerManager.Run)
+	app.workerManager.GetTomb().Go(func() error {
+		ctx, span := utils.TraceJob(context.Background(), "worker_manager.run", "startup")
+		defer span.Finish()
+		return app.workerManager.Run(ctx)
+	})
 	return srv.ListenAndServe()
 }
 
