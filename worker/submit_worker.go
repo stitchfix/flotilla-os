@@ -100,15 +100,14 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 			} else {
 				bridgeSpan := tracer.StartSpan("flotilla.queue.sqs_receive", tracer.ChildOf(spanCtx))
 				bridgeSpan.SetTag("run_id", runReceipt.Run.RunID)
-
 				runCtx = tracer.ContextWithSpan(ctx, bridgeSpan)
-
-				bridgeSpan.Finish()
+				defer bridgeSpan.Finish()
 			}
 		} else {
 			runCtx = ctx
 		}
-		runCtx, childSpan := utils.TraceJob(ctx, "flotilla.job.submit_worker.process", runReceipt.Run.RunID)
+		runCtx, childSpan := utils.TraceJob(runCtx, "flotilla.job.submit_worker.process", "")
+		childSpan.SetTag("job.run_id", runReceipt.Run.RunID)
 		utils.TagJobRun(childSpan, *runReceipt.Run)
 
 		//
