@@ -36,7 +36,7 @@ type SQLStateManager struct {
 }
 
 func (sm *SQLStateManager) ListFailingNodes(ctx context.Context) (NodeList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_failing_nodes", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_failing_nodes", "")
 	defer span.Finish()
 
 	var err error
@@ -75,7 +75,7 @@ func (sm *SQLStateManager) GetPodReAttemptRate(ctx context.Context) (float32, er
 }
 
 func (sm *SQLStateManager) GetNodeLifecycle(ctx context.Context, executableID string, commandHash string) (string, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_node_lifecycle", executableID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_node_lifecycle", "")
 	defer span.Finish()
 	//span.SetTag("command_hash", commandHash)
 
@@ -116,7 +116,7 @@ func (sm *SQLStateManager) GetTaskHistoricalRuntime(ctx context.Context, executa
 }
 
 func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableID string, commandHash string) (TaskResources, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_run_resources", executableID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_run_resources", "")
 	defer span.Finish()
 
 	//span.SetTag("command_hash", commandHash)
@@ -138,7 +138,7 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 }
 
 func (sm *SQLStateManager) EstimateExecutorCount(ctx context.Context, executableID string, commandHash string) (int64, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_executor_count", executableID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_executor_count", "")
 	defer span.Finish()
 
 	//span.SetTag("command_hash", commandHash)
@@ -158,7 +158,7 @@ func (sm *SQLStateManager) EstimateExecutorCount(ctx context.Context, executable
 	return executorCount, err
 }
 func (sm *SQLStateManager) CheckIdempotenceKey(ctx context.Context, idempotenceKey string) (string, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.check_idempotence_key", idempotenceKey)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.check_idempotence_key", "")
 	defer span.Finish()
 
 	var err error
@@ -172,7 +172,7 @@ func (sm *SQLStateManager) CheckIdempotenceKey(ctx context.Context, idempotenceK
 }
 
 func (sm *SQLStateManager) ExecutorOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.executor_oom", executableID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.executor_oom", "")
 	defer span.Finish()
 
 	//span.SetTag("command_hash", commandHash)
@@ -193,7 +193,7 @@ func (sm *SQLStateManager) ExecutorOOM(ctx context.Context, executableID string,
 }
 
 func (sm *SQLStateManager) DriverOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.driver_oom", executableID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.driver_oom", "")
 	defer span.Finish()
 
 	//span.SetTag("command_hash", commandHash)
@@ -343,7 +343,7 @@ func (sm *SQLStateManager) ListDefinitions(
 	order string, filters map[string][]string,
 	envFilters map[string]string) (DefinitionList, error) {
 	// Use "list" as an identifier since there's no specific runID for a list operation
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_definitions", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_definitions", "")
 	defer span.Finish()
 
 	var err error
@@ -376,7 +376,7 @@ func (sm *SQLStateManager) ListDefinitions(
 
 // GetDefinition returns a single definition by id
 func (sm *SQLStateManager) GetDefinition(ctx context.Context, definitionID string) (Definition, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition", definitionID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition", "")
 	defer span.Finish()
 
 	var err error
@@ -417,7 +417,7 @@ func (sm *SQLStateManager) GetDefinitionByAlias(ctx context.Context, alias strin
 // UpdateDefinition updates a definition
 // - updates can be partial
 func (sm *SQLStateManager) UpdateDefinition(ctx context.Context, definitionID string, updates Definition) (Definition, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_definition", definitionID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_definition", "")
 	defer span.Finish()
 	var (
 		err      error
@@ -530,7 +530,7 @@ func (sm *SQLStateManager) UpdateDefinition(ctx context.Context, definitionID st
 // CreateDefinition creates the passed in definition object
 // - error if definition already exists
 func (sm *SQLStateManager) CreateDefinition(ctx context.Context, d Definition) error {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_definition", d.DefinitionID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_definition", "")
 	defer span.Finish()
 	var err error
 
@@ -625,7 +625,7 @@ func (sm *SQLStateManager) CreateDefinition(ctx context.Context, d Definition) e
 
 // DeleteDefinition deletes definition and associated runs and environment variables
 func (sm *SQLStateManager) DeleteDefinition(ctx context.Context, definitionID string) error {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_definition", definitionID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_definition", "")
 	defer span.Finish()
 	var err error
 
@@ -662,7 +662,7 @@ func (sm *SQLStateManager) DeleteDefinition(ctx context.Context, definitionID st
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
 func (sm *SQLStateManager) ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_runs", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_runs", "")
 	defer span.Finish()
 	var err error
 	var result RunList
@@ -705,9 +705,9 @@ func (sm *SQLStateManager) ListRuns(ctx context.Context, limit int, offset int, 
 // GetRun gets run by id
 func (sm *SQLStateManager) GetRun(ctx context.Context, runID string) (Run, error) {
 	// Create a span for this database operation using the utils.TraceJob function
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run", runID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run", "")
 	defer span.Finish()
-
+	span.SetTag("job.run_id", runID)
 	var r Run
 	err := sm.db.GetContext(ctx, &r, GetRunSQL, runID)
 	if err != nil {
@@ -733,9 +733,9 @@ func (sm *SQLStateManager) GetRun(ctx context.Context, runID string) (Run, error
 }
 
 func (sm *SQLStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string) (Run, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_by_emr_job_id", emrJobId)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_by_emr_job_id", "")
 	defer span.Finish()
-
+	span.SetTag("job.emr_job_id", emrJobId)
 	var err error
 	var r Run
 	err = sm.db.GetContext(ctx, &r, GetRunSQLByEMRJobId, emrJobId)
@@ -760,9 +760,9 @@ func (sm *SQLStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string
 }
 
 func (sm *SQLStateManager) GetResources(ctx context.Context, runID string) (Run, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_resources", runID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_resources", "")
 	defer span.Finish()
-
+	span.SetTag("job.run_id", runID)
 	var err error
 	var r Run
 	err = sm.db.GetContext(ctx, &r, GetRunSQL, runID)
@@ -1165,7 +1165,7 @@ func (sm *SQLStateManager) CreateRun(ctx context.Context, r Run) error {
 
 // ListGroups returns a list of the existing group names.
 func (sm *SQLStateManager) ListGroups(ctx context.Context, limit int, offset int, name *string) (GroupsList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_groups", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_groups", "")
 	defer span.Finish()
 	var (
 		err         error
@@ -1194,7 +1194,7 @@ func (sm *SQLStateManager) ListGroups(ctx context.Context, limit int, offset int
 
 // ListTags returns a list of the existing tags.
 func (sm *SQLStateManager) ListTags(ctx context.Context, limit int, offset int, name *string) (TagsList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_tags", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_tags", "")
 	defer span.Finish()
 	var (
 		err         error
@@ -1270,7 +1270,7 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 
 // ListWorkers returns list of workers
 func (sm *SQLStateManager) ListWorkers(ctx context.Context, engine string) (WorkersList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_workers", engine)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_workers", "")
 	defer span.Finish()
 	var err error
 	var result WorkersList
@@ -1294,7 +1294,7 @@ func (sm *SQLStateManager) ListWorkers(ctx context.Context, engine string) (Work
 
 // GetWorker returns data for a single worker.
 func (sm *SQLStateManager) GetWorker(ctx context.Context, workerType string, engine string) (w Worker, err error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_worker", workerType)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_worker", "")
 	defer span.Finish()
 	//span.SetTag("engine", engine)
 	if err := sm.readonlyDB.GetContext(ctx, &w, GetWorkerSQL, workerType, engine); err != nil {
@@ -1312,7 +1312,7 @@ func (sm *SQLStateManager) GetWorker(ctx context.Context, workerType string, eng
 
 // UpdateWorker updates a single worker.
 func (sm *SQLStateManager) UpdateWorker(ctx context.Context, workerType string, updates Worker) (Worker, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_worker", workerType)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_worker", "")
 	defer span.Finish()
 	var (
 		err      error
@@ -1367,7 +1367,7 @@ func (sm *SQLStateManager) UpdateWorker(ctx context.Context, workerType string, 
 
 // BatchUpdateWorker updates multiple workers.
 func (sm *SQLStateManager) BatchUpdateWorkers(ctx context.Context, updates []Worker) (WorkersList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.batch_update_workers", "batch")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.batch_update_workers", "")
 	defer span.Finish()
 	var existing WorkersList
 
@@ -1625,7 +1625,7 @@ func (e *Labels) Scan(value interface{}) error {
 
 // GetTemplateByID returns a single template by id.
 func (sm *SQLStateManager) GetTemplateByID(ctx context.Context, templateID string) (Template, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_id", templateID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_id", "")
 	defer span.Finish()
 	var err error
 	var tpl Template
@@ -1644,7 +1644,7 @@ func (sm *SQLStateManager) GetTemplateByID(ctx context.Context, templateID strin
 }
 
 func (sm *SQLStateManager) GetTemplateByVersion(ctx context.Context, templateName string, templateVersion int64) (bool, Template, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_version", templateName)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_version", "")
 	defer span.Finish()
 	span.SetTag("template.version", templateVersion)
 	var err error
@@ -1665,7 +1665,7 @@ func (sm *SQLStateManager) GetTemplateByVersion(ctx context.Context, templateNam
 // GetLatestTemplateByTemplateName returns the latest version of a template
 // of a specific template name.
 func (sm *SQLStateManager) GetLatestTemplateByTemplateName(ctx context.Context, templateName string) (bool, Template, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_latest_template_by_name", templateName)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_latest_template_by_name", "")
 	defer span.Finish()
 	var err error
 	var tpl Template
@@ -1684,7 +1684,7 @@ func (sm *SQLStateManager) GetLatestTemplateByTemplateName(ctx context.Context, 
 
 // ListTemplates returns list of templates from the database.
 func (sm *SQLStateManager) ListTemplates(ctx context.Context, limit int, offset int, sortBy string, order string) (TemplateList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates", "")
 	defer span.Finish()
 	var err error
 	var result TemplateList
@@ -1714,7 +1714,7 @@ func (sm *SQLStateManager) ListTemplates(ctx context.Context, limit int, offset 
 
 // ListTemplatesLatestOnly returns list of templates from the database.
 func (sm *SQLStateManager) ListTemplatesLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (TemplateList, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates_latest_only", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates_latest_only", "")
 	defer span.Finish()
 	var err error
 	var result TemplateList
@@ -1737,7 +1737,7 @@ func (sm *SQLStateManager) ListTemplatesLatestOnly(ctx context.Context, limit in
 
 // CreateTemplate creates a new template.
 func (sm *SQLStateManager) CreateTemplate(ctx context.Context, t Template) error {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_template", t.TemplateID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_template", "")
 	defer span.Finish()
 	var err error
 	insert := `
@@ -1777,7 +1777,7 @@ func (sm *SQLStateManager) CreateTemplate(ctx context.Context, t Template) error
 
 // GetExecutableByExecutableType returns a single executable by id.
 func (sm *SQLStateManager) GetExecutableByTypeAndID(ctx context.Context, t ExecutableType, id string) (Executable, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_executable_by_type_and_id", id)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_executable_by_type_and_id", "")
 	defer span.Finish()
 	span.SetTag("executable.type", string(t))
 
@@ -1871,7 +1871,7 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 }
 
 func (sm *SQLStateManager) ListClusterStates(ctx context.Context) ([]ClusterMetadata, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_cluster_states", "list")
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_cluster_states", "")
 	defer span.Finish()
 
 	var clusters []ClusterMetadata
@@ -1892,9 +1892,9 @@ func (sm *SQLStateManager) UpdateClusterMetadata(ctx context.Context, cluster Cl
 		identifier = cluster.ID
 	}
 
-	ctx, span := tracing.TraceJob(ctx, operationName, identifier)
+	ctx, span := tracing.TraceJob(ctx, operationName, "")
 	defer span.Finish()
-
+	span.SetTag("cluster.id", identifier)
 	// Add relevant tags
 	span.SetTag("cluster.name", cluster.Name)
 	span.SetTag("cluster.status", cluster.Status)
@@ -1982,9 +1982,9 @@ func (sm *SQLStateManager) UpdateClusterMetadata(ctx context.Context, cluster Cl
 }
 
 func (sm *SQLStateManager) DeleteClusterMetadata(ctx context.Context, clusterID string) error {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_cluster_metadata", clusterID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_cluster_metadata", "")
 	defer span.Finish()
-
+	span.SetTag("cluster.id", clusterID)
 	sql := `DELETE FROM cluster_state WHERE id = $1`
 	result, err := sm.db.ExecContext(ctx, sql, clusterID)
 	if err != nil {
@@ -2011,9 +2011,9 @@ func (sm *SQLStateManager) DeleteClusterMetadata(ctx context.Context, clusterID 
 }
 
 func (sm *SQLStateManager) GetClusterByID(ctx context.Context, clusterID string) (ClusterMetadata, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_cluster_by_id", clusterID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_cluster_by_id", "")
 	defer span.Finish()
-
+	span.SetTag("cluster.id", clusterID)
 	var cluster ClusterMetadata
 	query := `
 		SELECT 
@@ -2169,9 +2169,9 @@ func (arr Capabilities) Value() (driver.Value, error) {
 }
 
 func (sm *SQLStateManager) GetRunStatus(ctx context.Context, runID string) (RunStatus, error) {
-	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_status", runID)
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_status", "")
 	defer span.Finish()
-
+	span.SetTag("job.run.id", runID)
 	var status RunStatus
 
 	tx, err := sm.db.BeginTx(ctx, nil)
