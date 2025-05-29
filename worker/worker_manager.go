@@ -144,9 +144,6 @@ func (wm *workerManager) updateWorkerCount(
 	ctx, span := utils.TraceJob(ctx, "worker_manager.update_worker_count", workerType)
 	defer span.Finish()
 
-	//span.SetTag("current_count", currentWorkerCount)
-	//span.SetTag("desired_count", desiredWorkerCount)
-
 	if currentWorkerCount > desiredWorkerCount {
 		for i := desiredWorkerCount; i < currentWorkerCount; i++ {
 			wm.log.Log("message", fmt.Sprintf(
