@@ -21,6 +21,7 @@ import (
 
 func main() {
 	tracer.Start()
+	defer tracer.Stop()
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("Usage: flotilla-os <conf_dir>")
