@@ -748,6 +748,7 @@ func (emr *EMRExecutionEngine) Enqueue(ctx context.Context, run state.Run) error
 	ctx, span = utils.TraceJob(ctx, "flotilla.job.emr_enqueue", "")
 	defer span.Finish()
 	span.SetTag("job.run_id", run.RunID)
+	span.SetTag("job.tier", run.Tier)
 	utils.TagJobRun(span, run)
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 	qurl, err := emr.sqsQueueManager.QurlFor(emr.emrJobQueue, false)

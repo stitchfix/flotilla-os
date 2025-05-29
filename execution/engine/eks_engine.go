@@ -125,6 +125,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 
 	ctx, span = utils.TraceJob(ctx, "flotilla.job.execute", "")
 	span.SetTag("job.run_id", run.RunID)
+	span.SetTag("job.tier", run.Tier)
 	defer span.Finish()
 	utils.TagJobRun(span, run)
 	if run.Namespace == nil || *run.Namespace == "" {
