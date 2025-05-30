@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/log"
+	"github.com/stitchfix/flotilla-os/tracing"
 
 	"github.com/jmoiron/sqlx"
 
@@ -33,11 +35,14 @@ type SQLStateManager struct {
 	log        log.Logger
 }
 
-func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
+func (sm *SQLStateManager) ListFailingNodes(ctx context.Context) (NodeList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_failing_nodes", "")
+	defer span.Finish()
+
 	var err error
 	var nodeList NodeList
 
-	err = sm.readonlyDB.Select(&nodeList, ListFailingNodesSQL)
+	err = sm.readonlyDB.SelectContext(ctx, &nodeList, ListFailingNodesSQL)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -50,10 +55,13 @@ func (sm *SQLStateManager) ListFailingNodes() (NodeList, error) {
 	return nodeList, err
 }
 
-func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
+func (sm *SQLStateManager) GetPodReAttemptRate(ctx context.Context) (float32, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_pod_reattempt_rate", "")
+	defer span.Finish()
+
 	var err error
 	attemptRate := float32(1.0)
-	err = sm.readonlyDB.Get(&attemptRate, PodReAttemptRate)
+	err = sm.readonlyDB.GetContext(ctx, &attemptRate, PodReAttemptRate)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -66,10 +74,14 @@ func (sm *SQLStateManager) GetPodReAttemptRate() (float32, error) {
 	return attemptRate, err
 }
 
-func (sm *SQLStateManager) GetNodeLifecycle(executableID string, commandHash string) (string, error) {
+func (sm *SQLStateManager) GetNodeLifecycle(ctx context.Context, executableID string, commandHash string) (string, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_node_lifecycle", "")
+	defer span.Finish()
+	//span.SetTag("command_hash", commandHash)
+
 	var err error
 	nodeType := "spot"
-	err = sm.readonlyDB.Get(&nodeType, TaskResourcesExecutorNodeLifecycleSQL, executableID, commandHash)
+	err = sm.readonlyDB.GetContext(ctx, &nodeType, TaskResourcesExecutorNodeLifecycleSQL, executableID, commandHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -82,10 +94,15 @@ func (sm *SQLStateManager) GetNodeLifecycle(executableID string, commandHash str
 	return nodeType, err
 }
 
-func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID string) (float32, error) {
+func (sm *SQLStateManager) GetTaskHistoricalRuntime(ctx context.Context, executableID string, runID string) (float32, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_task_historical_runtime", "")
+	defer span.Finish()
+
+	span.SetTag("job.run_id", runID)
+
 	var err error
 	minutes := float32(1.0)
-	err = sm.readonlyDB.Get(&minutes, TaskExecutionRuntimeCommandSQL, executableID, runID)
+	err = sm.readonlyDB.GetContext(ctx, &minutes, TaskExecutionRuntimeCommandSQL, executableID, runID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -98,11 +115,16 @@ func (sm *SQLStateManager) GetTaskHistoricalRuntime(executableID string, runID s
 	return minutes, err
 }
 
-func (sm *SQLStateManager) EstimateRunResources(executableID string, runID string) (TaskResources, error) {
+func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableID string, commandHash string) (TaskResources, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_run_resources", "")
+	defer span.Finish()
+
+	//span.SetTag("command_hash", commandHash)
+
 	var err error
 	var taskResources TaskResources
 
-	err = sm.readonlyDB.Get(&taskResources, TaskResourcesSelectCommandSQL, executableID, runID)
+	err = sm.readonlyDB.GetContext(ctx, &taskResources, TaskResourcesSelectCommandSQL, executableID, commandHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -115,10 +137,15 @@ func (sm *SQLStateManager) EstimateRunResources(executableID string, runID strin
 	return taskResources, err
 }
 
-func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHash string) (int64, error) {
+func (sm *SQLStateManager) EstimateExecutorCount(ctx context.Context, executableID string, commandHash string) (int64, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.estimate_executor_count", "")
+	defer span.Finish()
+
+	//span.SetTag("command_hash", commandHash)
+
 	var err error
 	executorCount := int64(25)
-	err = sm.readonlyDB.Get(&executorCount, TaskResourcesExecutorCountSQL, executableID, commandHash)
+	err = sm.readonlyDB.GetContext(ctx, &executorCount, TaskResourcesExecutorCountSQL, executableID, commandHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -130,10 +157,13 @@ func (sm *SQLStateManager) EstimateExecutorCount(executableID string, commandHas
 	}
 	return executorCount, err
 }
-func (sm *SQLStateManager) CheckIdempotenceKey(idempotenceKey string) (string, error) {
+func (sm *SQLStateManager) CheckIdempotenceKey(ctx context.Context, idempotenceKey string) (string, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.check_idempotence_key", "")
+	defer span.Finish()
+
 	var err error
 	runId := ""
-	err = sm.readonlyDB.Get(&runId, TaskIdempotenceKeyCheckSQL, idempotenceKey)
+	err = sm.readonlyDB.GetContext(ctx, &runId, TaskIdempotenceKeyCheckSQL, idempotenceKey)
 
 	if err != nil || len(runId) == 0 {
 		err = errors.New("no run_id found for idempotence key")
@@ -141,10 +171,15 @@ func (sm *SQLStateManager) CheckIdempotenceKey(idempotenceKey string) (string, e
 	return runId, err
 }
 
-func (sm *SQLStateManager) ExecutorOOM(executableID string, commandHash string) (bool, error) {
+func (sm *SQLStateManager) ExecutorOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.executor_oom", "")
+	defer span.Finish()
+
+	//span.SetTag("command_hash", commandHash)
+
 	var err error
 	executorOOM := false
-	err = sm.readonlyDB.Get(&executorOOM, TaskResourcesExecutorOOMSQL, executableID, commandHash)
+	err = sm.readonlyDB.GetContext(ctx, &executorOOM, TaskResourcesExecutorOOMSQL, executableID, commandHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -157,10 +192,15 @@ func (sm *SQLStateManager) ExecutorOOM(executableID string, commandHash string) 
 	return executorOOM, err
 }
 
-func (sm *SQLStateManager) DriverOOM(executableID string, commandHash string) (bool, error) {
+func (sm *SQLStateManager) DriverOOM(ctx context.Context, executableID string, commandHash string) (bool, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.driver_oom", "")
+	defer span.Finish()
+
+	//span.SetTag("command_hash", commandHash)
+
 	var err error
 	driverOOM := false
-	err = sm.readonlyDB.Get(&driverOOM, TaskResourcesDriverOOMSQL, executableID, commandHash)
+	err = sm.readonlyDB.GetContext(ctx, &driverOOM, TaskResourcesDriverOOMSQL, executableID, commandHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -298,9 +338,13 @@ func (sm *SQLStateManager) orderBy(obj IOrderable, field string, order string) (
 // filters: map of field filters on Definition - joined with AND
 // envFilters: map of environment variable filters - joined with AND
 func (sm *SQLStateManager) ListDefinitions(
+	ctx context.Context,
 	limit int, offset int, sortBy string,
 	order string, filters map[string][]string,
 	envFilters map[string]string) (DefinitionList, error) {
+	// Use "list" as an identifier since there's no specific runID for a list operation
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_definitions", "")
+	defer span.Finish()
 
 	var err error
 	var result DefinitionList
@@ -331,10 +375,13 @@ func (sm *SQLStateManager) ListDefinitions(
 }
 
 // GetDefinition returns a single definition by id
-func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error) {
+func (sm *SQLStateManager) GetDefinition(ctx context.Context, definitionID string) (Definition, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition", "")
+	defer span.Finish()
+
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionSQL, definitionID)
+	err = sm.db.GetContext(ctx, &definition, GetDefinitionSQL, definitionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -347,10 +394,15 @@ func (sm *SQLStateManager) GetDefinition(definitionID string) (Definition, error
 }
 
 // GetDefinitionByAlias returns a single definition by id
-func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error) {
+func (sm *SQLStateManager) GetDefinitionByAlias(ctx context.Context, alias string) (Definition, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_definition_by_alias", "")
+	defer span.Finish()
+
+	//span.SetTag("alias", alias)
+
 	var err error
 	var definition Definition
-	err = sm.db.Get(&definition, GetDefinitionByAliasSQL, alias)
+	err = sm.db.GetContext(ctx, &definition, GetDefinitionByAliasSQL, alias)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definition, exceptions.MissingResource{
@@ -364,12 +416,14 @@ func (sm *SQLStateManager) GetDefinitionByAlias(alias string) (Definition, error
 
 // UpdateDefinition updates a definition
 // - updates can be partial
-func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definition) (Definition, error) {
+func (sm *SQLStateManager) UpdateDefinition(ctx context.Context, definitionID string, updates Definition) (Definition, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_definition", "")
+	defer span.Finish()
 	var (
 		err      error
 		existing Definition
 	)
-	existing, err = sm.GetDefinition(definitionID)
+	existing, err = sm.GetDefinition(ctx, definitionID)
 	if err != nil {
 		return existing, errors.WithStack(err)
 	}
@@ -475,7 +529,9 @@ func (sm *SQLStateManager) UpdateDefinition(definitionID string, updates Definit
 
 // CreateDefinition creates the passed in definition object
 // - error if definition already exists
-func (sm *SQLStateManager) CreateDefinition(d Definition) error {
+func (sm *SQLStateManager) CreateDefinition(ctx context.Context, d Definition) error {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_definition", "")
+	defer span.Finish()
 	var err error
 
 	insertPorts := `
@@ -560,13 +616,17 @@ func (sm *SQLStateManager) CreateDefinition(d Definition) error {
 	}
 	err = tx.Commit()
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
 // DeleteDefinition deletes definition and associated runs and environment variables
-func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
+func (sm *SQLStateManager) DeleteDefinition(ctx context.Context, definitionID string) error {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_definition", "")
+	defer span.Finish()
 	var err error
 
 	statements := []string{
@@ -601,7 +661,9 @@ func (sm *SQLStateManager) DeleteDefinition(definitionID string) error {
 // order: 'asc' or 'desc'
 // filters: map of field filters on Run - joined with AND
 // envFilters: map of environment variable filters - joined with AND
-func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
+func (sm *SQLStateManager) ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_runs", "")
+	defer span.Finish()
 	var err error
 	var result RunList
 	var whereClause, orderQuery string
@@ -641,10 +703,18 @@ func (sm *SQLStateManager) ListRuns(limit int, offset int, sortBy string, order 
 }
 
 // GetRun gets run by id
-func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
+func (sm *SQLStateManager) GetRun(ctx context.Context, runID string) (Run, error) {
+	// Create a span for this database operation using the utils.TraceJob function
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", runID)
 	var r Run
-	err := sm.db.Get(&r, GetRunSQL, runID)
+	err := sm.db.GetContext(ctx, &r, GetRunSQL, runID)
 	if err != nil {
+		// Tag error for easier debugging
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
 				fmt.Sprintf("Run with id %s not found", runID)}
@@ -652,14 +722,26 @@ func (sm *SQLStateManager) GetRun(runID string) (Run, error) {
 			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
 		}
 	}
+
+	// Tag the span with run metadata
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
+
 	return r, nil
 }
 
-func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
+func (sm *SQLStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string) (Run, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_by_emr_job_id", "")
+	defer span.Finish()
+	span.SetTag("job.emr_job_id", emrJobId)
 	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQLByEMRJobId, emrJobId)
+	err = sm.db.GetContext(ctx, &r, GetRunSQLByEMRJobId, emrJobId)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
 				fmt.Sprintf("Run with emrjobid %s not found", emrJobId)}
@@ -667,14 +749,26 @@ func (sm *SQLStateManager) GetRunByEMRJobId(emrJobId string) (Run, error) {
 			return r, errors.Wrapf(err, "issue getting run with emrjobid [%s]", emrJobId)
 		}
 	}
+
+	// Tag the span with run metadata
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
+
 	return r, nil
 }
 
-func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
+func (sm *SQLStateManager) GetResources(ctx context.Context, runID string) (Run, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_resources", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", runID)
 	var err error
 	var r Run
-	err = sm.db.Get(&r, GetRunSQL, runID)
+	err = sm.db.GetContext(ctx, &r, GetRunSQL, runID)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if err == sql.ErrNoRows {
 			return r, exceptions.MissingResource{
 				fmt.Sprintf("Run with id %s not found", runID)}
@@ -682,25 +776,42 @@ func (sm *SQLStateManager) GetResources(runID string) (Run, error) {
 			return r, errors.Wrapf(err, "issue getting run with id [%s]", runID)
 		}
 	}
+
+	// Tag the span with run metadata
+	tracing.TagRunInfo(span,
+		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
+		r.QueuedAt, r.StartedAt, r.FinishedAt,
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
+
 	return r, nil
 }
 
 // UpdateRun updates run with updates - can be partial
-func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
+func (sm *SQLStateManager) UpdateRun(ctx context.Context, runID string, updates Run) (Run, error) {
 	start := time.Now()
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_run", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", runID)
+	span.SetTag("status", updates.Status)
 	var (
 		err      error
 		existing Run
 	)
 
-	tx, err := sm.db.Begin()
+	tx, err := sm.db.BeginTx(ctx, nil)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "begin_transaction")
 		return existing, errors.WithStack(err)
 	}
 
-	rows, err := tx.Query(GetRunSQLForUpdate, runID)
+	rows, err := tx.QueryContext(ctx, GetRunSQLForUpdate, runID)
 	if err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "query")
 		return existing, errors.WithStack(err)
 	}
 
@@ -877,7 +988,11 @@ func (sm *SQLStateManager) UpdateRun(runID string, updates Run) (Run, error) {
 }
 
 // CreateRun creates the passed in run
-func (sm *SQLStateManager) CreateRun(r Run) error {
+func (sm *SQLStateManager) CreateRun(ctx context.Context, r Run) error {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_run", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", r.RunID)
+	// Now utils.TraceJob already sets the run_id tag
 	var err error
 	insert := `
 	INSERT INTO task (
@@ -981,12 +1096,14 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 	);
     `
 
-	tx, err := sm.db.Begin()
+	tx, err := sm.db.BeginTx(ctx, nil)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.WithStack(err)
 	}
 
-	if _, err = tx.Exec(insert,
+	if _, err = tx.ExecContext(ctx, insert,
 		r.RunID,
 		r.DefinitionID,
 		r.Alias,
@@ -1047,7 +1164,9 @@ func (sm *SQLStateManager) CreateRun(r Run) error {
 }
 
 // ListGroups returns a list of the existing group names.
-func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (GroupsList, error) {
+func (sm *SQLStateManager) ListGroups(ctx context.Context, limit int, offset int, name *string) (GroupsList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_groups", "")
+	defer span.Finish()
 	var (
 		err         error
 		result      GroupsList
@@ -1074,7 +1193,9 @@ func (sm *SQLStateManager) ListGroups(limit int, offset int, name *string) (Grou
 }
 
 // ListTags returns a list of the existing tags.
-func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsList, error) {
+func (sm *SQLStateManager) ListTags(ctx context.Context, limit int, offset int, name *string) (TagsList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_tags", "")
+	defer span.Finish()
 	var (
 		err         error
 		result      TagsList
@@ -1088,11 +1209,13 @@ func (sm *SQLStateManager) ListTags(limit int, offset int, name *string) (TagsLi
 	sql := fmt.Sprintf(ListTagsSQL, whereClause)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
-	err = sm.db.Select(&result.Tags, sql, limit, offset)
+	err = sm.db.SelectContext(ctx, &result.Tags, sql, limit, offset)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return result, errors.Wrap(err, "issue running list tags sql")
 	}
-	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	err = sm.db.GetContext(ctx, &result.Total, countSQL, nil, 0)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list tags count sql")
 	}
@@ -1146,18 +1269,22 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 }
 
 // ListWorkers returns list of workers
-func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
+func (sm *SQLStateManager) ListWorkers(ctx context.Context, engine string) (WorkersList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_workers", "")
+	defer span.Finish()
 	var err error
 	var result WorkersList
 
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListWorkersSQL)
 
-	err = sm.readonlyDB.Select(&result.Workers, GetWorkerEngine, engine)
+	err = sm.readonlyDB.SelectContext(ctx, &result.Workers, GetWorkerEngine, engine)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return result, errors.Wrap(err, "issue running list workers sql")
 	}
 
-	err = sm.readonlyDB.Get(&result.Total, countSQL)
+	err = sm.readonlyDB.GetContext(ctx, &result.Total, countSQL)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list workers count sql")
 	}
@@ -1166,8 +1293,13 @@ func (sm *SQLStateManager) ListWorkers(engine string) (WorkersList, error) {
 }
 
 // GetWorker returns data for a single worker.
-func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker, err error) {
-	if err := sm.readonlyDB.Get(&w, GetWorkerSQL, workerType, engine); err != nil {
+func (sm *SQLStateManager) GetWorker(ctx context.Context, workerType string, engine string) (w Worker, err error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_worker", "")
+	defer span.Finish()
+	//span.SetTag("engine", engine)
+	if err := sm.readonlyDB.GetContext(ctx, &w, GetWorkerSQL, workerType, engine); err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if err == sql.ErrNoRows {
 			err = exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Worker of type %s not found", workerType)}
@@ -1179,21 +1311,27 @@ func (sm *SQLStateManager) GetWorker(workerType string, engine string) (w Worker
 }
 
 // UpdateWorker updates a single worker.
-func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Worker, error) {
+func (sm *SQLStateManager) UpdateWorker(ctx context.Context, workerType string, updates Worker) (Worker, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.update_worker", "")
+	defer span.Finish()
 	var (
 		err      error
 		existing Worker
 	)
 
 	engine := DefaultEngine
-	tx, err := sm.db.Begin()
+	tx, err := sm.db.BeginTx(ctx, nil)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return existing, errors.WithStack(err)
 	}
 
-	rows, err := tx.Query(GetWorkerSQLForUpdate, workerType, engine)
+	rows, err := tx.QueryContext(ctx, GetWorkerSQLForUpdate, workerType, engine)
 	if err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return existing, errors.WithStack(err)
 	}
 
@@ -1211,12 +1349,16 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
     WHERE worker_type = $1;
     `
 
-	if _, err = tx.Exec(update, workerType, existing.CountPerInstance); err != nil {
+	if _, err = tx.ExecContext(ctx, update, workerType, existing.CountPerInstance); err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return existing, errors.WithStack(err)
 	}
 
 	if err = tx.Commit(); err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return existing, errors.WithStack(err)
 	}
 
@@ -1224,18 +1366,22 @@ func (sm *SQLStateManager) UpdateWorker(workerType string, updates Worker) (Work
 }
 
 // BatchUpdateWorker updates multiple workers.
-func (sm *SQLStateManager) BatchUpdateWorkers(updates []Worker) (WorkersList, error) {
+func (sm *SQLStateManager) BatchUpdateWorkers(ctx context.Context, updates []Worker) (WorkersList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.batch_update_workers", "")
+	defer span.Finish()
 	var existing WorkersList
 
 	for _, w := range updates {
-		_, err := sm.UpdateWorker(w.WorkerType, w)
+		_, err := sm.UpdateWorker(ctx, w.WorkerType, w)
 
 		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
 			return existing, err
 		}
 	}
 
-	return sm.ListWorkers(DefaultEngine)
+	return sm.ListWorkers(ctx, DefaultEngine)
 }
 
 // Cleanup close any open resources
@@ -1478,11 +1624,15 @@ func (e *Labels) Scan(value interface{}) error {
 }
 
 // GetTemplateByID returns a single template by id.
-func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) {
+func (sm *SQLStateManager) GetTemplateByID(ctx context.Context, templateID string) (Template, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_id", "")
+	defer span.Finish()
 	var err error
 	var tpl Template
-	err = sm.db.Get(&tpl, GetTemplateByIDSQL, templateID)
+	err = sm.db.GetContext(ctx, &tpl, GetTemplateByIDSQL, templateID)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if err == sql.ErrNoRows {
 			return tpl, exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Template with ID %s not found", templateID)}
@@ -1493,15 +1643,20 @@ func (sm *SQLStateManager) GetTemplateByID(templateID string) (Template, error) 
 	return tpl, nil
 }
 
-func (sm *SQLStateManager) GetTemplateByVersion(templateName string, templateVersion int64) (bool, Template, error) {
+func (sm *SQLStateManager) GetTemplateByVersion(ctx context.Context, templateName string, templateVersion int64) (bool, Template, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_template_by_version", "")
+	defer span.Finish()
+	span.SetTag("template.version", templateVersion)
 	var err error
 	var tpl Template
-	err = sm.db.Get(&tpl, GetTemplateByVersionSQL, templateName, templateVersion)
+	err = sm.db.GetContext(ctx, &tpl, GetTemplateByVersionSQL, templateName, templateVersion)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, tpl, nil
 		}
 
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
 	}
 	return true, tpl, nil
@@ -1509,22 +1664,28 @@ func (sm *SQLStateManager) GetTemplateByVersion(templateName string, templateVer
 
 // GetLatestTemplateByTemplateName returns the latest version of a template
 // of a specific template name.
-func (sm *SQLStateManager) GetLatestTemplateByTemplateName(templateName string) (bool, Template, error) {
+func (sm *SQLStateManager) GetLatestTemplateByTemplateName(ctx context.Context, templateName string) (bool, Template, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_latest_template_by_name", "")
+	defer span.Finish()
 	var err error
 	var tpl Template
-	err = sm.db.Get(&tpl, GetTemplateLatestOnlySQL, templateName)
+	err = sm.db.GetContext(ctx, &tpl, GetTemplateLatestOnlySQL, templateName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, tpl, nil
 		}
 
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return false, tpl, errors.Wrapf(err, "issue getting tpl with id [%s]", templateName)
 	}
 	return true, tpl, nil
 }
 
 // ListTemplates returns list of templates from the database.
-func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+func (sm *SQLStateManager) ListTemplates(ctx context.Context, limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates", "")
+	defer span.Finish()
 	var err error
 	var result TemplateList
 	var orderQuery string
@@ -1537,11 +1698,13 @@ func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, o
 	sql := fmt.Sprintf(ListTemplatesSQL, orderQuery)
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", sql)
 
-	err = sm.db.Select(&result.Templates, sql, limit, offset)
+	err = sm.db.SelectContext(ctx, &result.Templates, sql, limit, offset)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return result, errors.Wrap(err, "issue running list templates sql")
 	}
-	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	err = sm.db.GetContext(ctx, &result.Total, countSQL, nil, 0)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list templates count sql")
 	}
@@ -1549,18 +1712,22 @@ func (sm *SQLStateManager) ListTemplates(limit int, offset int, sortBy string, o
 	return result, nil
 }
 
-// ListTemplates returns list of templates from the database.
-func (sm *SQLStateManager) ListTemplatesLatestOnly(limit int, offset int, sortBy string, order string) (TemplateList, error) {
+// ListTemplatesLatestOnly returns list of templates from the database.
+func (sm *SQLStateManager) ListTemplatesLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (TemplateList, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_templates_latest_only", "")
+	defer span.Finish()
 	var err error
 	var result TemplateList
 
 	countSQL := fmt.Sprintf("select COUNT(*) from (%s) as sq", ListTemplatesLatestOnlySQL)
 
-	err = sm.db.Select(&result.Templates, ListTemplatesLatestOnlySQL, limit, offset)
+	err = sm.db.SelectContext(ctx, &result.Templates, ListTemplatesLatestOnlySQL, limit, offset)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return result, errors.Wrap(err, "issue running list templates sql")
 	}
-	err = sm.db.Get(&result.Total, countSQL, nil, 0)
+	err = sm.db.GetContext(ctx, &result.Total, countSQL, nil, 0)
 	if err != nil {
 		return result, errors.Wrap(err, "issue running list templates count sql")
 	}
@@ -1569,7 +1736,9 @@ func (sm *SQLStateManager) ListTemplatesLatestOnly(limit int, offset int, sortBy
 }
 
 // CreateTemplate creates a new template.
-func (sm *SQLStateManager) CreateTemplate(t Template) error {
+func (sm *SQLStateManager) CreateTemplate(ctx context.Context, t Template) error {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.create_template", "")
+	defer span.Finish()
 	var err error
 	insert := `
     INSERT INTO template(
@@ -1579,35 +1748,47 @@ func (sm *SQLStateManager) CreateTemplate(t Template) error {
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
     `
 
-	tx, err := sm.db.Begin()
+	tx, err := sm.db.BeginTx(ctx, nil)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.WithStack(err)
 	}
 
-	if _, err = tx.Exec(insert,
+	if _, err = tx.ExecContext(ctx, insert,
 		t.TemplateID, t.TemplateName, t.Version, t.Schema, t.CommandTemplate,
 		t.AdaptiveResourceAllocation, t.Image, t.Memory, t.Env,
 		t.Cpu, t.Gpu, t.Defaults, t.AvatarURI); err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.Wrapf(
 			err, "issue creating new template with template_name [%s] and version [%d]", t.TemplateName, t.Version)
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
 // GetExecutableByExecutableType returns a single executable by id.
-func (sm *SQLStateManager) GetExecutableByTypeAndID(t ExecutableType, id string) (Executable, error) {
+func (sm *SQLStateManager) GetExecutableByTypeAndID(ctx context.Context, t ExecutableType, id string) (Executable, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_executable_by_type_and_id", "")
+	defer span.Finish()
+	span.SetTag("executable.type", string(t))
+
 	switch t {
 	case ExecutableTypeDefinition:
-		return sm.GetDefinition(id)
+		return sm.GetDefinition(ctx, id)
 	case ExecutableTypeTemplate:
-		return sm.GetTemplateByID(id)
+		return sm.GetTemplateByID(ctx, id)
 	default:
+		span.SetTag("error", true)
+		span.SetTag("error.msg", fmt.Sprintf("executable type of [%s] not valid", t))
 		return nil, exceptions.MalformedInput{
 			ErrorString: fmt.Sprintf("executable type of [%s] not valid.", t),
 		}
@@ -1689,13 +1870,38 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 	}
 }
 
-func (sm *SQLStateManager) ListClusterStates() ([]ClusterMetadata, error) {
+func (sm *SQLStateManager) ListClusterStates(ctx context.Context) ([]ClusterMetadata, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.list_cluster_states", "")
+	defer span.Finish()
+
 	var clusters []ClusterMetadata
-	err := sm.db.Select(&clusters, ListClusterStatesSQL)
+	err := sm.db.SelectContext(ctx, &clusters, ListClusterStatesSQL)
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	}
 	return clusters, err
 }
 
-func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error {
+func (sm *SQLStateManager) UpdateClusterMetadata(ctx context.Context, cluster ClusterMetadata) error {
+	operationName := "flotilla.state.create_cluster_metadata"
+	identifier := cluster.Name
+
+	if cluster.ID != "" {
+		operationName = "flotilla.state.update_cluster_metadata"
+		identifier = cluster.ID
+	}
+
+	ctx, span := tracing.TraceJob(ctx, operationName, "")
+	defer span.Finish()
+	span.SetTag("cluster.id", identifier)
+	// Add relevant tags
+	span.SetTag("cluster.name", cluster.Name)
+	span.SetTag("cluster.status", cluster.Status)
+	if cluster.ClusterVersion != "" {
+		span.SetTag("cluster.version", cluster.ClusterVersion)
+	}
+
 	if cluster.ID == "" {
 		sql := `
 			INSERT INTO cluster_state (name, cluster_version, status, status_reason, allowed_tiers, capabilities, namespace, region, emr_virtual_cluster, spark_server_uri)
@@ -1703,7 +1909,7 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			RETURNING id;
 		`
 		var id string
-		err := sm.db.QueryRow(sql,
+		err := sm.db.QueryRowContext(ctx, sql,
 			cluster.Name,
 			cluster.ClusterVersion,
 			cluster.Status,
@@ -1716,6 +1922,8 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			cluster.SparkServerURI).Scan(&id)
 
 		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
 			return err
 		}
 		return nil
@@ -1736,7 +1944,7 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 				updated_at = NOW()
 			WHERE id = $1;
 		`
-		result, err := sm.db.Exec(sql,
+		result, err := sm.db.ExecContext(ctx, sql,
 			cluster.ID,
 			cluster.Name,
 			cluster.ClusterVersion,
@@ -1750,15 +1958,21 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 			cluster.SparkServerURI)
 
 		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
 			return err
 		}
 
 		rows, err := result.RowsAffected()
 		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
 			return err
 		}
 
 		if rows == 0 {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", "Cluster not found")
 			return exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Cluster with ID %s not found", cluster.ID),
 			}
@@ -1767,17 +1981,28 @@ func (sm *SQLStateManager) UpdateClusterMetadata(cluster ClusterMetadata) error 
 	}
 }
 
-func (sm *SQLStateManager) DeleteClusterMetadata(clusterID string) error {
+func (sm *SQLStateManager) DeleteClusterMetadata(ctx context.Context, clusterID string) error {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_cluster_metadata", "")
+	defer span.Finish()
+	span.SetTag("cluster.id", clusterID)
 	sql := `DELETE FROM cluster_state WHERE id = $1`
-	result, err := sm.db.Exec(sql, clusterID)
+	result, err := sm.db.ExecContext(ctx, sql, clusterID)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return err
 	}
+
 	count, err := result.RowsAffected()
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return err
 	}
+
 	if count == 0 {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", "Cluster not found")
 		return exceptions.MissingResource{
 			ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
 		}
@@ -1785,7 +2010,10 @@ func (sm *SQLStateManager) DeleteClusterMetadata(clusterID string) error {
 	return nil
 }
 
-func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, error) {
+func (sm *SQLStateManager) GetClusterByID(ctx context.Context, clusterID string) (ClusterMetadata, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_cluster_by_id", "")
+	defer span.Finish()
+	span.SetTag("cluster.id", clusterID)
 	var cluster ClusterMetadata
 	query := `
 		SELECT 
@@ -1794,8 +2022,10 @@ func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, er
 		FROM cluster_state 
 		WHERE id = $1
 	`
-	err := sm.db.Get(&cluster, query, clusterID)
+	err := sm.db.GetContext(ctx, &cluster, query, clusterID)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if err == sql.ErrNoRows {
 			return cluster, exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Cluster with ID %s not found", clusterID),
@@ -1803,6 +2033,14 @@ func (sm *SQLStateManager) GetClusterByID(clusterID string) (ClusterMetadata, er
 		}
 		return cluster, err
 	}
+
+	// Add tags for the cluster data
+	span.SetTag("cluster.name", cluster.Name)
+	span.SetTag("cluster.status", cluster.Status)
+	if cluster.ClusterVersion != "" {
+		span.SetTag("cluster.version", cluster.ClusterVersion)
+	}
+
 	return cluster, nil
 }
 
@@ -1930,21 +2168,28 @@ func (arr Capabilities) Value() (driver.Value, error) {
 	return fmt.Sprintf("{%s}", strings.Join(arr, ",")), nil
 }
 
-func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
+func (sm *SQLStateManager) GetRunStatus(ctx context.Context, runID string) (RunStatus, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.get_run_status", "")
+	defer span.Finish()
+	span.SetTag("job.run.id", runID)
 	var status RunStatus
 
-	tx, err := sm.db.Begin()
+	tx, err := sm.db.BeginTx(ctx, nil)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return status, errors.Wrap(err, "failed to begin transaction")
 	}
 
-	_, err = tx.Exec("SET LOCAL lock_timeout = '500ms'")
+	_, err = tx.ExecContext(ctx, "SET LOCAL lock_timeout = '500ms'")
 	if err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return status, errors.Wrap(err, "failed to set lock timeout")
 	}
 
-	err = tx.QueryRow(GetRunStatusSQL, runID).Scan(
+	err = tx.QueryRowContext(ctx, GetRunStatusSQL, runID).Scan(
 		&status.RunID,
 		&status.DefinitionID,
 		&status.Alias,
@@ -1960,6 +2205,8 @@ func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
 
 	if err != nil {
 		tx.Rollback()
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 
 		if err == sql.ErrNoRows {
 			return status, exceptions.MissingResource{
@@ -1976,8 +2223,14 @@ func (sm *SQLStateManager) GetRunStatus(runID string) (RunStatus, error) {
 
 	err = tx.Commit()
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return status, errors.Wrap(err, "failed to commit transaction")
 	}
+
+	//if status.Status != "" {
+	//	span.SetTag("job.status", status.Status)
+	//}
 
 	return status, nil
 }

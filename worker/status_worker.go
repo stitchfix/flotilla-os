@@ -1,15 +1,9 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stitchfix/flotilla-os/utils"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
@@ -19,7 +13,14 @@ import (
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gopkg.in/tomb.v2"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type statusWorker struct {
@@ -64,7 +65,7 @@ func (sw *statusWorker) GetTomb() *tomb.Tomb {
 }
 
 // Run updates status of tasks
-func (sw *statusWorker) Run() error {
+func (sw *statusWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-sw.t.Dying():
@@ -72,16 +73,18 @@ func (sw *statusWorker) Run() error {
 			return nil
 		default:
 			if *sw.engine == state.EKSEngine {
-				sw.runOnceEKS()
-				sw.runTimeouts()
-				time.Sleep(sw.pollInterval)
+				sw.runOnceEKS(ctx)
+				sw.runTimeouts(ctx)
 			}
+			time.Sleep(sw.pollInterval)
 		}
 	}
 }
 
-func (sw *statusWorker) runTimeouts() {
-	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
+func (sw *statusWorker) runTimeouts(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "status_worker.run_timeouts", sw.workerId)
+	defer span.Finish()
+	rl, err := sw.sm.ListRuns(ctx, 1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -300).Format(time.RFC3339),
 		},
@@ -98,31 +101,41 @@ func (sw *statusWorker) runTimeouts() {
 }
 
 func (sw *statusWorker) processTimeouts(runs []state.Run) {
+	ctx := context.Background()
+	span, ctx := tracer.StartSpanFromContext(ctx, "flotilla.job.timeout_check")
+	defer span.Finish()
+	timeoutCount := 0
 	for _, run := range runs {
 		if run.StartedAt != nil && run.ActiveDeadlineSeconds != nil {
 			runningDuration := time.Now().Sub(*run.StartedAt)
 			if int64(runningDuration.Seconds()) > *run.ActiveDeadlineSeconds {
+				timeoutCount++
+				timeoutCtx, childSpan := utils.TraceJob(ctx, "flotilla.job.timeout", run.RunID)
+				utils.TagJobRun(childSpan, run)
 				if run.Engine != nil && *run.Engine == state.EKSSparkEngine {
-					_ = sw.emrEngine.Terminate(run)
+					_ = sw.emrEngine.Terminate(timeoutCtx, run)
 				} else {
-					_ = sw.ee.Terminate(run)
+					_ = sw.ee.Terminate(timeoutCtx, run)
 				}
 
 				exitCode := int64(1)
 				finishedAt := time.Now()
-				_, _ = sw.sm.UpdateRun(run.RunID, state.Run{
+				_, _ = sw.sm.UpdateRun(ctx, run.RunID, state.Run{
 					Status:     state.StatusStopped,
 					ExitReason: aws.String(fmt.Sprintf("JobRun exceeded specified timeout of %v seconds", *run.ActiveDeadlineSeconds)),
 					ExitCode:   &exitCode,
 					FinishedAt: &finishedAt,
 				})
+				childSpan.Finish()
 			}
 		}
 	}
 }
 
-func (sw *statusWorker) runOnceEKS() {
-	rl, err := sw.sm.ListRuns(1000, 0, "started_at", "asc", map[string][]string{
+func (sw *statusWorker) runOnceEKS(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "status_worker.run_once_eks", sw.workerId)
+	defer span.Finish()
+	rl, err := sw.sm.ListRuns(ctx, 1000, 0, "started_at", "asc", map[string][]string{
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -300).Format(time.RFC3339),
 		},
@@ -135,25 +148,45 @@ func (sw *statusWorker) runOnceEKS() {
 		return
 	}
 	runs := rl.Runs
-	sw.processEKSRuns(runs)
+	sw.processEKSRuns(ctx, runs)
 }
 
-func (sw *statusWorker) processEKSRuns(runs []state.Run) {
+func (sw *statusWorker) processEKSRuns(ctx context.Context, runs []state.Run) {
+	ctx, span := utils.TraceJob(ctx, "status_worker.process_eks_runs", sw.workerId)
+	defer span.Finish()
+
 	var lockedRuns []state.Run
+
 	for _, run := range runs {
-		duration := time.Duration(45) * time.Second
-		lock := sw.acquireLock(run, "status", duration)
-		if lock {
+		_, lockSpan := utils.TraceJob(ctx, "status_worker.acquire_lock", run.RunID)
+
+		duration := 45 * time.Second
+		locked := sw.acquireLock(run, "status", duration)
+		if locked {
 			lockedRuns = append(lockedRuns, run)
+		} else {
 		}
+
+		lockSpan.Finish()
 	}
+
 	_ = metrics.Increment(metrics.StatusWorkerLockedRuns, []string{sw.workerId}, float64(len(lockedRuns)))
+
 	for _, run := range lockedRuns {
-		start := time.Now()
-		go sw.processEKSRun(run)
-		_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
+		runCopy := run
+		go func() {
+			runCtx, runSpan := utils.TraceJob(ctx, "flotilla.job.status_check", runCopy.RunID)
+			defer runSpan.Finish()
+
+			utils.TagJobRun(runSpan, runCopy)
+
+			start := time.Now()
+			sw.processEKSRun(runCtx, runCopy)
+			_ = metrics.Timing(metrics.StatusWorkerProcessEKSRun, time.Since(start), []string{sw.workerId}, 1)
+		}()
 	}
 }
+
 func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration time.Duration) bool {
 	start := time.Now()
 	key := fmt.Sprintf("%s-%s", run.RunID, purpose)
@@ -170,8 +203,11 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 	return set
 }
 
-func (sw *statusWorker) processEKSRun(run state.Run) {
-	reloadRun, err := sw.sm.GetRun(run.RunID)
+func (sw *statusWorker) processEKSRun(ctx context.Context, run state.Run) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.status_check", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
+	reloadRun, err := sw.sm.GetRun(ctx, run.RunID)
 	if err == nil && reloadRun.Status == state.StatusStopped {
 		// Run was updated by another worker process.
 		return
@@ -185,14 +221,26 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 	}
 
 	start = time.Now()
-	updatedRun, err := sw.ee.FetchUpdateStatus(reloadRun)
+	statusCtx, statusSpan := utils.TraceJob(ctx, "flotilla.job.fetch_update_status", reloadRun.RunID)
+	defer statusSpan.Finish()
+	utils.TagJobRun(statusSpan, reloadRun)
+	statusSpan.SetTag("cluster_name", reloadRun.ClusterName)
+
+	updatedRun, err := sw.ee.FetchUpdateStatus(statusCtx, reloadRun)
 	if err != nil {
 		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
+
+		if strings.Contains(err.Error(), "not found") {
+			if run.Status == state.StatusPending || run.Status == state.StatusQueued {
+				statusSpan.SetTag("error.expected", true)
+				statusSpan.SetTag("error", false)
+			}
+		}
 	}
 	_ = metrics.Timing(metrics.StatusWorkerFetchUpdateStatus, time.Since(start), []string{sw.workerId}, 1)
 
 	if err == nil {
-		subRuns, err := sw.sm.ListRuns(1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
+		subRuns, err := sw.sm.ListRuns(ctx, 1000, 0, "status", "desc", nil, map[string]string{"PARENT_FLOTILLA_RUN_ID": run.RunID}, state.Engines)
 		if err == nil && subRuns.Total > 0 {
 			var spawnedRuns state.SpawnedRuns
 			for _, subRun := range subRuns.Runs {
@@ -210,7 +258,7 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 			updatedRun.Status = state.StatusStopped
 			updatedRun.FinishedAt = &stoppedAt
 			updatedRun.ExitReason = &reason
-			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			_, err = sw.sm.UpdateRun(ctx, updatedRun.RunID, updatedRun)
 		}
 
 	} else {
@@ -225,9 +273,9 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 		if fullUpdate {
 			sw.logStatusUpdate(updatedRun)
 			if updatedRun.ExitCode != nil {
-				go sw.cleanupRun(run.RunID)
+				go sw.cleanupRun(ctx, run.RunID)
 			}
-			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			_, err = sw.sm.UpdateRun(ctx, updatedRun.RunID, updatedRun)
 			if err != nil {
 				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
 			}
@@ -244,50 +292,75 @@ func (sw *statusWorker) processEKSRun(run state.Run) {
 				updatedRun.Memory != run.Memory ||
 				updatedRun.PodEvents != run.PodEvents ||
 				updatedRun.SpawnedRuns != run.SpawnedRuns {
-				_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+				_, err = sw.sm.UpdateRun(ctx, updatedRun.RunID, updatedRun)
 			}
 		}
 	}
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	} else if updatedRun.Status != run.Status {
+		utils.TagJobRun(span, updatedRun)
+	}
 }
 
-func (sw *statusWorker) cleanupRun(runID string) {
+func (sw *statusWorker) cleanupRun(ctx context.Context, runID string) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.cleanup", runID)
+	defer span.Finish()
+
+	defer span.Finish()
 	//Logs maybe delayed before being persisted to S3.
 	time.Sleep(120 * time.Second)
-	run, err := sw.sm.GetRun(runID)
+	run, err := sw.sm.GetRun(ctx, runID)
 	if err == nil {
 		//Delete run from Kubernetes
-		_ = sw.ee.Terminate(run)
+		_ = sw.ee.Terminate(ctx, run)
 	}
 }
 
-func (sw *statusWorker) extractExceptions(runID string) {
-	//Logs maybe delayed before being persisted to S3.
+func (sw *statusWorker) extractExceptions(ctx context.Context, runID string) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.extract_exceptions", runID)
+	defer span.Finish()
+
 	time.Sleep(60 * time.Second)
-	run, err := sw.sm.GetRun(runID)
-	if err == nil {
-		jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
-		res, err := sw.exceptionExtractorClient.Get(jobUrl)
-		if err == nil && res != nil && res.Body != nil {
-			body, err := ioutil.ReadAll(res.Body)
-			if body != nil {
-				defer res.Body.Close()
-				runExceptions := state.RunExceptions{}
-				err = json.Unmarshal(body, &runExceptions)
-				if err == nil {
-					run.RunExceptions = &runExceptions
-				}
-			}
-			_, _ = sw.sm.UpdateRun(run.RunID, run)
-		}
+	run, err := sw.sm.GetRun(ctx, runID)
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		return
+	}
+	jobUrl := fmt.Sprintf("%s/extract/%s", sw.exceptionExtractorUrl, run.RunID)
+	res, err := sw.exceptionExtractorClient.Get(jobUrl)
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		span.SetTag("error", true)
+		return
+	}
+	var runExceptions state.RunExceptions
+	if err := json.Unmarshal(body, &runExceptions); err == nil {
+		run.RunExceptions = &runExceptions
+		_, _ = sw.sm.UpdateRun(ctx, run.RunID, run)
 	}
 }
 
-func (sw *statusWorker) processEKSRunMetrics(run state.Run) {
-	updatedRun, err := sw.ee.FetchPodMetrics(run)
+func (sw *statusWorker) processEKSRunMetrics(ctx context.Context, run state.Run) {
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.metrics_check", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
+	updatedRun, err := sw.ee.FetchPodMetrics(ctx, run)
 	if err == nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		if updatedRun.MaxMemoryUsed != run.MaxMemoryUsed ||
 			updatedRun.MaxCpuUsed != run.MaxCpuUsed {
-			_, err = sw.sm.UpdateRun(updatedRun.RunID, updatedRun)
+			_, err = sw.sm.UpdateRun(ctx, updatedRun.RunID, updatedRun)
 		}
 	}
 }
@@ -365,18 +438,21 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	}
 }
 
-func (sw *statusWorker) findRun(taskArn string) (state.Run, error) {
+func (sw *statusWorker) findRun(ctx context.Context, taskArn string) (state.Run, error) {
+	ctx, span := utils.TraceJob(ctx, "status_worker.find_run", taskArn)
+	defer span.Finish()
+
 	var engines []string
 	if sw.engine != nil {
 		engines = []string{*sw.engine}
-	} else {
-		engines = nil
 	}
 
-	runs, err := sw.sm.ListRuns(1, 0, "started_at", "asc", map[string][]string{
+	runs, err := sw.sm.ListRuns(ctx, 1, 0, "started_at", "asc", map[string][]string{
 		"task_arn": {taskArn},
 	}, nil, engines)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return state.Run{}, errors.Wrapf(err, "problem finding run by task arn [%s]", taskArn)
 	}
 	if runs.Total > 0 && len(runs.Runs) > 0 {

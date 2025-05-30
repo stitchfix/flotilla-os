@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/clients/logs"
 	"github.com/stitchfix/flotilla-os/state"
@@ -24,7 +25,7 @@ func NewLogService(sm state.Manager, lc logs.Client) (LogService, error) {
 
 // Returns logs associated with a RunId
 func (ls *logService) Logs(runID string, lastSeen *string, role *string, facility *string) (string, *string, error) {
-	run, err := ls.sm.GetRun(runID)
+	run, err := ls.sm.GetRun(context.Background(), runID)
 	if err != nil {
 		return "", nil, err
 	}
@@ -42,14 +43,14 @@ func (ls *logService) Logs(runID string, lastSeen *string, role *string, facilit
 	if run.ExecutableID == nil {
 		run.ExecutableID = &run.DefinitionID
 	}
-	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
+	executable, err := ls.sm.GetExecutableByTypeAndID(context.Background(), *run.ExecutableType, *run.ExecutableID)
 
 	return ls.lc.Logs(executable, run, lastSeen, role, facility)
 }
 
 // Returns all the logs as text associated with a runID (supported only for s3 logs).
 func (ls *logService) LogsText(runID string, w http.ResponseWriter) error {
-	run, err := ls.sm.GetRun(runID)
+	run, err := ls.sm.GetRun(context.Background(), runID)
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,7 @@ func (ls *logService) LogsText(runID string, w http.ResponseWriter) error {
 	if run.ExecutableID == nil {
 		run.ExecutableID = &run.DefinitionID
 	}
-	executable, err := ls.sm.GetExecutableByTypeAndID(*run.ExecutableType, *run.ExecutableID)
+	executable, err := ls.sm.GetExecutableByTypeAndID(context.Background(), *run.ExecutableType, *run.ExecutableID)
 
 	return ls.lc.LogsText(executable, run, w)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/stitchfix/flotilla-os/utils"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,7 +88,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	}
 
 	// Initialize all clusters (both static and dynamic)
-	if err := clusterManager.InitializeClusters(staticClusters); err != nil {
+	if err := clusterManager.InitializeClusters(context.Background(), staticClusters); err != nil {
 		ee.log.Log("message", "failed to initialize clusters", "error", err.Error())
 	}
 
@@ -115,10 +117,19 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error) {
+	var span tracer.Span
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.execute", "")
+	span.SetTag("job.run_id", run.RunID)
+	span.SetTag("job.tier", run.Tier)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.Namespace == nil || *run.Namespace == "" {
-		clusters, err := manager.ListClusterStates()
+		clusters, err := manager.ListClusterStates(ctx)
 		if err == nil {
 			for _, cluster := range clusters {
 				if cluster.Name == run.ClusterName && cluster.Namespace != "" {
@@ -134,7 +145,7 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 	}
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
 	if err != nil {
 		exitReason := fmt.Sprintf("Error creating k8s manigest - %s", err.Error())
 		run.ExitReason = &exitReason
@@ -194,6 +205,13 @@ func (ee *EKSExecutionEngine) Execute(executable state.Executable, run state.Run
 
 	// Set status to running.
 	adaptedRun.Status = state.StatusRunning
+	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+	} else {
+		span.SetTag("job.submitted", true)
+		utils.TagJobRun(span, adaptedRun)
+	}
 	return adaptedRun, false, nil
 }
 
@@ -259,15 +277,30 @@ func (ee *EKSExecutionEngine) getPodList(run state.Run) (*v1.PodList, error) {
 }
 
 func (ee *EKSExecutionEngine) getKClient(run state.Run) (kubernetes.Clientset, error) {
+	ctx := context.Background()
+	ctx, span := utils.TraceJob(ctx, "flotilla.job.get_k8s_client", run.RunID)
+	defer span.Finish()
+	startTime := time.Now()
 	kClient, err := ee.clusterManager.GetKubernetesClient(run.ClusterName)
+	span.SetTag("k8s.client_init_ms", time.Since(startTime).Milliseconds())
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "k8s_client_init")
 		return kubernetes.Clientset{}, errors.Wrapf(err, "failed to get Kubernetes client for cluster %s", run.ClusterName)
 	}
 	return kClient, nil
 }
 
-func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) Terminate(ctx context.Context, run state.Run) error {
+	var span tracer.Span
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.eks_terminate", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	gracePeriod := int64(300)
 	deletionPropagation := metav1.DeletePropagationBackground
 	_ = ee.log.Log("terminating run=", run.RunID)
@@ -293,7 +326,13 @@ func (ee *EKSExecutionEngine) Terminate(run state.Run) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
+func (ee *EKSExecutionEngine) Enqueue(ctx context.Context, run state.Run) error {
+	var span tracer.Span
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.eks_enqueue", "")
+	defer span.Finish()
+	span.SetTag("job.run_id", run.RunID)
+	utils.TagJobRun(span, run)
+
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
 	// Get qurl
@@ -304,7 +343,7 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	}
 
 	// Queue run
-	if err = ee.qm.Enqueue(qurl, run); err != nil {
+	if err = ee.qm.Enqueue(ctx, qurl, run); err != nil {
 		_ = metrics.Increment(metrics.EngineEKSEnqueue, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return errors.Wrapf(err, "problem enqueing run [%s] to queue [%s]", run.RunID, qurl)
 	}
@@ -313,7 +352,7 @@ func (ee *EKSExecutionEngine) Enqueue(run state.Run) error {
 	return nil
 }
 
-func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
+func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error) {
 	qurl, err := ee.qm.QurlFor(ee.jobQueue, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem listing queues to poll")
@@ -324,7 +363,7 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 		//
 		// Get new queued Run
 		//
-		runReceipt, err := ee.qm.ReceiveRun(qurl)
+		runReceipt, err := ee.qm.ReceiveRun(ctx, qurl)
 
 		if err != nil {
 			return runs, errors.Wrapf(err, "problem receiving run from queue url [%s]", qurl)
@@ -333,35 +372,47 @@ func (ee *EKSExecutionEngine) PollRuns() ([]RunReceipt, error) {
 		if runReceipt.Run == nil {
 			continue
 		}
-
-		runs = append(runs, RunReceipt{runReceipt})
+		if runReceipt.TraceID != 0 && runReceipt.ParentID != 0 {
+			ee.log.Log("message", "Received run with trace context",
+				"run_id", runReceipt.Run.RunID,
+				"trace_id", runReceipt.TraceID,
+				"parent_id", runReceipt.ParentID)
+		}
+		runs = append(runs, RunReceipt{
+			RunReceipt:       runReceipt,
+			TraceID:          runReceipt.TraceID,
+			ParentID:         runReceipt.ParentID,
+			SamplingPriority: runReceipt.SamplingPriority,
+		})
 	}
 	return runs, nil
 }
 
 // PollStatus is a dummy function as EKS does not emit task status
 // change events.
-func (ee *EKSExecutionEngine) PollStatus() (RunReceipt, error) {
+func (ee *EKSExecutionEngine) PollStatus(ctx context.Context) (RunReceipt, error) {
 	return RunReceipt{}, nil
 }
 
 // Reads off SQS queue and generates a Run object based on the runId
-func (ee *EKSExecutionEngine) PollRunStatus() (state.Run, error) {
+func (ee *EKSExecutionEngine) PollRunStatus(ctx context.Context) (state.Run, error) {
 	return state.Run{}, nil
 }
 
 // Define returns a blank task definition and an error for the EKS engine.
-func (ee *EKSExecutionEngine) Define(td state.Definition) (state.Definition, error) {
+func (ee *EKSExecutionEngine) Define(ctx context.Context, td state.Definition) (state.Definition, error) {
 	return td, errors.New("Definition of tasks are only for ECSs.")
 }
 
 // Deregister returns an error for the EKS engine.
-func (ee *EKSExecutionEngine) Deregister(definition state.Definition) error {
+func (ee *EKSExecutionEngine) Deregister(ctx context.Context, definition state.Definition) error {
 	return errors.Errorf("EKSExecutionEngine does not allow for deregistering of task definitions.")
 }
 
-func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) Get(ctx context.Context, run state.Run) (state.Run, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
@@ -380,8 +431,15 @@ func (ee *EKSExecutionEngine) Get(run state.Run) (state.Run, error) {
 	return updates, nil
 }
 
-func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) GetEvents(ctx context.Context, run state.Run) (state.PodEventList, error) {
+	var span tracer.Span
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.get_events", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.PodName == nil {
 		return state.PodEventList{}, nil
 	}
@@ -421,8 +479,15 @@ func (ee *EKSExecutionEngine) GetEvents(run state.Run) (state.PodEventList, erro
 	return podEventList, nil
 }
 
-func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) FetchPodMetrics(ctx context.Context, run state.Run) (state.Run, error) {
+	var span tracer.Span
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.eks_fetch_metrics", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	if run.PodName != nil {
 		metricsClient, err := ee.clusterManager.GetMetricsClient(run.ClusterName)
 		if err != nil {
@@ -447,13 +512,30 @@ func (ee *EKSExecutionEngine) FetchPodMetrics(run state.Run) (state.Run, error) 
 				run.MaxCpuUsed = &cpu
 			}
 		}
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+		} else if run.MaxMemoryUsed != nil {
+			span.SetTag("job.metrics.memory_mb", *run.MaxMemoryUsed)
+		}
+
+		if run.MaxCpuUsed != nil {
+			span.SetTag("job.metrics.cpu_millicores", *run.MaxCpuUsed)
+		}
 		return run, nil
 	}
 	return run, errors.New("no pod associated with the run.")
 }
 
-func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error) {
-	ctx := context.Background()
+func (ee *EKSExecutionEngine) FetchUpdateStatus(ctx context.Context, run state.Run) (state.Run, error) {
+	var span tracer.Span
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, span = utils.TraceJob(ctx, "flotilla.job.eks_fetch_status", run.RunID)
+	defer span.Finish()
+	utils.TagJobRun(span, run)
 	kClient, err := ee.getKClient(run)
 	if err != nil {
 		return state.Run{}, err
@@ -461,10 +543,23 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 
 	start := time.Now()
 	job, err := kClient.BatchV1().Jobs(ee.jobNamespace).Get(ctx, run.RunID, metav1.GetOptions{})
+	span.SetTag("k8s.job_get_ms", time.Since(start).Milliseconds())
 	_ = metrics.Timing(metrics.StatusWorkerGetJob, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
+		span.SetTag("error.type", "k8s_get_job")
 		return run, err
+	}
+	if job.Status.Active > 0 {
+		span.SetTag("job.k8s.active", job.Status.Active)
+	}
+	if job.Status.Succeeded > 0 {
+		span.SetTag("job.k8s.succeeded", job.Status.Succeeded)
+	}
+	if job.Status.Failed > 0 {
+		span.SetTag("job.k8s.failed", job.Status.Failed)
 	}
 
 	var mostRecentPod *v1.Pod
@@ -513,12 +608,12 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 		}
 	}
 
-	//run, _ = ee.FetchPodMetrics(run)
+	//run, _ = ee.FetchPodMetrics(ctx, run)
 	hoursBack := time.Now().Add(-24 * time.Hour)
 
 	start = time.Now()
 	var events state.PodEventList
-	//events, err = ee.GetEvents(run)
+	//events, err = ee.GetEvents(ctx, run)
 	_ = metrics.Timing(metrics.StatusWorkerGetEvents, time.Since(start), []string{run.ClusterName}, 1)
 
 	if err == nil && len(events.PodEvents) > 0 {
@@ -556,7 +651,7 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(run state.Run) (state.Run, error
 	// Handle edge case for dangling jobs.
 	// Run used to have a pod and now it is not there, job is older than 24 hours. Terminate it.
 	if err == nil && podList != nil && podList.Items != nil && len(podList.Items) == 0 && run.PodName != nil && run.QueuedAt.Before(hoursBack) {
-		err = ee.Terminate(run)
+		err = ee.Terminate(ctx, run)
 		if err == nil {
 			job.Status.Failed = 1
 			mostRecentPod = nil

@@ -1,8 +1,12 @@
 package worker
 
 import (
+	"context"
 	"fmt"
+	"github.com/stitchfix/flotilla-os/tracing"
+
 	"github.com/stitchfix/flotilla-os/utils"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -44,26 +48,30 @@ func (sw *submitWorker) GetTomb() *tomb.Tomb {
 }
 
 // Run lists queues, consumes runs from them, and executes them using the execution engine
-func (sw *submitWorker) Run() error {
+func (sw *submitWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-sw.t.Dying():
 			sw.log.Log("message", "A submit worker was terminated")
 			return nil
 		default:
-			sw.runOnce()
+			sw.runOnce(ctx)
 			time.Sleep(sw.pollInterval)
 		}
 	}
 }
-
-func (sw *submitWorker) runOnce() {
+func (sw *submitWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "submit_worker.poll", "submit_worker")
+	defer span.Finish()
 	var receipts []engine.RunReceipt
 	var run state.Run
 	var err error
 
-	receipts, err = sw.eksEngine.PollRuns()
-	receiptsEMR, err := sw.emrEngine.PollRuns()
+	pollStart := time.Now()
+	receipts, err = sw.eksEngine.PollRuns(ctx)
+	span.SetTag("sqs.poll_duration_ms", time.Since(pollStart).Milliseconds())
+	span.SetTag("sqs.received_count", len(receipts))
+	receiptsEMR, err := sw.emrEngine.PollRuns(ctx)
 	receipts = append(receipts, receiptsEMR...)
 	if err != nil {
 		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
@@ -72,11 +80,40 @@ func (sw *submitWorker) runOnce() {
 		if runReceipt.Run == nil {
 			continue
 		}
+		sw.log.Log("message", "Processing run receipt",
+			"run_id", runReceipt.Run.RunID,
+			"has_trace_context", runReceipt.TraceID != 0 && runReceipt.ParentID != 0,
+			"trace_id", runReceipt.TraceID,
+			"parent_id", runReceipt.ParentID)
+
+		var runCtx context.Context
+		if runReceipt.RunReceipt.TraceID != 0 && runReceipt.RunReceipt.ParentID != 0 {
+			carrier := tracing.TextMapCarrier{
+				"x-datadog-trace-id":          fmt.Sprintf("%d", runReceipt.TraceID),
+				"x-datadog-parent-id":         fmt.Sprintf("%d", runReceipt.ParentID),
+				"x-datadog-sampling-priority": fmt.Sprintf("%d", runReceipt.SamplingPriority),
+			}
+			spanCtx, err := tracer.Extract(carrier)
+			if err != nil {
+				sw.log.Log("message", "Error extracting span context", "error", err.Error())
+				runCtx = ctx
+			} else {
+				bridgeSpan := tracer.StartSpan("flotilla.queue.sqs_receive", tracer.ChildOf(spanCtx))
+				bridgeSpan.SetTag("run_id", runReceipt.Run.RunID)
+				runCtx = tracer.ContextWithSpan(ctx, bridgeSpan)
+				defer bridgeSpan.Finish()
+			}
+		} else {
+			runCtx = ctx
+		}
+		runCtx, childSpan := utils.TraceJob(runCtx, "flotilla.job.submit_worker.process", "")
+		childSpan.SetTag("job.run_id", runReceipt.Run.RunID)
+		utils.TagJobRun(childSpan, *runReceipt.Run)
 
 		//
 		// Fetch run from state manager to ensure its existence
 		//
-		run, err = sw.sm.GetRun(runReceipt.Run.RunID)
+		run, err = sw.sm.GetRun(ctx, runReceipt.Run.RunID)
 		if err != nil {
 			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
 			if err = runReceipt.Done(); err != nil {
@@ -112,7 +149,7 @@ func (sw *submitWorker) runOnce() {
 			switch *run.ExecutableType {
 			case state.ExecutableTypeDefinition:
 				var d state.Definition
-				d, err = sw.sm.GetDefinition(*run.ExecutableID)
+				d, err = sw.sm.GetDefinition(runCtx, *run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -124,15 +161,15 @@ func (sw *submitWorker) runOnce() {
 
 				// Execute the run using the execution engine.
 				if run.Engine == nil || *run.Engine == state.EKSEngine {
-					launched, retryable, err = sw.eksEngine.Execute(d, run, sw.sm)
+					launched, retryable, err = sw.eksEngine.Execute(runCtx, d, run, sw.sm)
 				} else {
-					launched, retryable, err = sw.emrEngine.Execute(d, run, sw.sm)
+					launched, retryable, err = sw.emrEngine.Execute(runCtx, d, run, sw.sm)
 				}
 
 				break
 			case state.ExecutableTypeTemplate:
 				var tpl state.Template
-				tpl, err = sw.sm.GetTemplateByID(*run.ExecutableID)
+				tpl, err = sw.sm.GetTemplateByID(runCtx, *run.ExecutableID)
 
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
@@ -144,7 +181,7 @@ func (sw *submitWorker) runOnce() {
 
 				// Execute the run using the execution engine.
 				sw.log.Log("message", "Submitting", "run_id", run.RunID)
-				launched, retryable, err = sw.eksEngine.Execute(tpl, run, sw.sm)
+				launched, retryable, err = sw.eksEngine.Execute(runCtx, tpl, run, sw.sm)
 				break
 			default:
 				// If executable type is invalid; log message and continue processing
@@ -178,7 +215,7 @@ func (sw *submitWorker) runOnce() {
 			// UpdateStatus the status and information of the run;
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
-			if _, err = sw.sm.UpdateRun(run.RunID, launched); err != nil {
+			if _, err = sw.sm.UpdateRun(runCtx, run.RunID, launched); err != nil {
 				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", fmt.Sprintf("%+v", err))
 			}
 		} else {
@@ -186,8 +223,14 @@ func (sw *submitWorker) runOnce() {
 		}
 
 		if err = runReceipt.Done(); err != nil {
+			childSpan.SetTag("error", true)
+			childSpan.SetTag("error.msg", err.Error())
+			childSpan.SetTag("error.type", "sqs_ack")
 			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+		} else {
+			childSpan.SetTag("sqs.ack_success", true)
 		}
+		childSpan.Finish()
 	}
 }
 

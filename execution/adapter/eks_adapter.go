@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
@@ -15,7 +16,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
 type eksAdapter struct{}
 
@@ -92,7 +93,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 4. Port mappings.
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -102,9 +103,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	cmdSlice := a.constructCmdSlice(cmd)
 	cmd = strings.Join(cmdSlice[3:], "\n")
 	run.Command = &cmd
-	resourceRequirements, run := a.constructResourceRequirements(executable, run, manager, araEnabled)
+	resourceRequirements, run := a.constructResourceRequirements(ctx, executable, run, manager, araEnabled)
 
-	volumeMounts, volumes := a.constructVolumeMounts(executable, run, manager, araEnabled)
+	volumeMounts, volumes := a.constructVolumeMounts(ctx, executable, run, manager, araEnabled)
 
 	container := corev1.Container{
 		Name:            run.RunID,
@@ -119,7 +120,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 	if volumeMounts != nil {
 		container.VolumeMounts = volumeMounts
 	}
-	affinity := a.constructAffinity(executable, run, manager)
+	affinity := a.constructAffinity(ctx, executable, run, manager)
 	tolerations := a.constructTolerations(executable, run)
 
 	annotations := map[string]string{}
@@ -162,7 +163,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(executable state.Executa
 
 	return eksJob, nil
 }
-func (a *eksAdapter) constructEviction(run state.Run, manager state.Manager) string {
+func (a *eksAdapter) constructEviction(ctx context.Context, run state.Run, manager state.Manager) string {
 	if run.Gpu != nil && *run.Gpu > 0 {
 		return "false"
 	}
@@ -171,7 +172,7 @@ func (a *eksAdapter) constructEviction(run state.Run, manager state.Manager) str
 		return "false"
 	}
 	if run.CommandHash != nil {
-		nodeType, err := manager.GetNodeLifecycle(run.DefinitionID, *run.CommandHash)
+		nodeType, err := manager.GetNodeLifecycle(ctx, run.DefinitionID, *run.CommandHash)
 		if err == nil && nodeType == state.OndemandLifecycle {
 			return "false"
 		}
@@ -208,7 +209,7 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 	return tolerations
 }
 
-func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
+func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
@@ -264,13 +265,13 @@ func (a *eksAdapter) constructAffinity(executable state.Executable, run state.Ru
 	return affinity
 }
 
-func (a *eksAdapter) constructResourceRequirements(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
+func (a *eksAdapter) constructResourceRequirements(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (corev1.ResourceRequirements, state.Run) {
 	var ephemeralStorageRequestQuantity resource.Quantity
 	maxEphemeralStorage := state.MaxEphemeralStorage
 	limits := make(corev1.ResourceList)
 	requests := make(corev1.ResourceList)
 
-	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(executable, run, manager, araEnabled)
+	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(ctx, executable, run, manager, araEnabled)
 
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
@@ -317,7 +318,7 @@ func (a *eksAdapter) constructResourceRequirements(executable state.Executable, 
 	return resourceRequirements, run
 }
 
-func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) ([]corev1.VolumeMount, []corev1.Volume) {
+func (a *eksAdapter) constructVolumeMounts(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) ([]corev1.VolumeMount, []corev1.Volume) {
 	var mounts []corev1.VolumeMount = nil
 	var volumes []corev1.Volume = nil
 	if run.Gpu != nil && *run.Gpu > 0 {
@@ -346,14 +347,14 @@ func (a *eksAdapter) constructVolumeMounts(executable state.Executable, run stat
 	return mounts, volumes
 }
 
-func (a *eksAdapter) adaptiveResources(executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
+func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
 	isGPUJob := run.Gpu != nil && *run.Gpu > 0
 
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
 	if !isGPUJob {
-		estimatedResources, err := manager.EstimateRunResources(*executable.GetExecutableID(), run.RunID)
+		estimatedResources, err := manager.EstimateRunResources(ctx, *executable.GetExecutableID(), run.RunID)
 		if err == nil {
 			cpuRequest = estimatedResources.Cpu
 			memRequest = estimatedResources.Memory
@@ -436,9 +437,9 @@ func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executa
 	return cpu, mem
 }
 
-func (a *eksAdapter) getLastRun(manager state.Manager, run state.Run) state.Run {
+func (a *eksAdapter) getLastRun(ctx context.Context, manager state.Manager, run state.Run) state.Run {
 	var lastRun state.Run
-	runList, err := manager.ListRuns(1, 0, "started_at", "desc", map[string][]string{
+	runList, err := manager.ListRuns(ctx, 1, 0, "started_at", "desc", map[string][]string{
 		"queued_at_since": {
 			time.Now().AddDate(0, 0, -7).Format(time.RFC3339),
 		},

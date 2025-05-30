@@ -137,7 +137,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
 
 	definitionList, err := ep.definitionService.List(
-		lr.limit, lr.offset, lr.sortBy, lr.order, lr.filters, lr.envFilters)
+		r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order, lr.filters, lr.envFilters)
 	if definitionList.Definitions == nil {
 		definitionList.Definitions = []state.Definition{}
 	}
@@ -166,7 +166,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 // Fetches definition from DB using definition id.
 func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	definition, err := ep.definitionService.Get(vars["definition_id"])
+	definition, err := ep.definitionService.Get(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting definitions",
@@ -182,7 +182,7 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 // Fetches definition from DB using definition alias.
 func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	definition, err := ep.definitionService.GetByAlias(vars["alias"])
+	definition, err := ep.definitionService.GetByAlias(r.Context(), vars["alias"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting definition by alias",
@@ -204,7 +204,7 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := ep.definitionService.Create(&definition)
+	created, err := ep.definitionService.Create(r.Context(), &definition)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating definition",
@@ -226,7 +226,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	updated, err := ep.definitionService.Update(vars["definition_id"], definition)
+	updated, err := ep.definitionService.Update(r.Context(), vars["definition_id"], definition)
 
 	if err != nil {
 		ep.logger.Log(
@@ -243,7 +243,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 // Deletes a defiition.
 func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.definitionService.Delete(vars["definition_id"])
+	err := ep.definitionService.Delete(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem deleting definition",
@@ -260,7 +260,7 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 // ListRequest is object used here to construct the query.
 func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	lr := ep.decodeListRequest(r)
-	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing runs",
@@ -293,7 +293,7 @@ func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) 
 		lr.filters["definition_id"] = []string{definitionID}
 	}
 
-	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing definition runs",
@@ -316,7 +316,7 @@ func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
 		lr.filters["executable_id"] = []string{tplID}
 	}
 
-	runList, err := ep.executionService.List(lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
+	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem listing runs for template",
@@ -347,7 +347,7 @@ func (ep *endpoints) createListRunsResponse(runList state.RunList, req listReque
 // Fetches a run based on Run ID.
 func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Get(vars["run_id"])
+	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting run",
@@ -363,7 +363,7 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 // Fetches a run based on Run ID.
 func (ep *endpoints) GetPayload(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Get(vars["run_id"])
+	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting run",
@@ -405,7 +405,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 			Tier:             lr.Tier,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run",
@@ -473,7 +473,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 			Tier:             lr.Tier,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V2 run",
@@ -548,7 +548,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(vars["definition_id"], &req)
+	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating V4 run",
@@ -626,7 +626,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 			Tier:                  lr.Tier,
 		},
 	}
-	run, err := ep.executionService.CreateDefinitionRunByAlias(vars["alias"], &req)
+	run, err := ep.executionService.CreateDefinitionRunByAlias(r.Context(), vars["alias"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating run alias",
@@ -643,7 +643,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userInfo := ep.ExtractUserInfo(r)
-	err := ep.executionService.Terminate(vars["run_id"], userInfo)
+	err := ep.executionService.Terminate(r.Context(), vars["run_id"], userInfo)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem stopping run",
@@ -683,7 +683,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	err = ep.executionService.UpdateStatus(vars["run_id"], run.Status, run.ExitCode, run.RunExceptions, run.ExitReason)
+	err = ep.executionService.UpdateStatus(r.Context(), vars["run_id"], run.Status, run.ExitCode, run.RunExceptions, run.ExitReason)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem updating run",
@@ -699,7 +699,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 // Get Pod Events (EKS only) for a run ID.
 func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	run, err := ep.executionService.Get(vars["run_id"])
+	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 
 	if err != nil {
 		ep.logger.Log(
@@ -714,6 +714,9 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 	if run.PodEvents != nil {
 		podEventList.Total = len(*run.PodEvents)
 		podEventList.PodEvents = *run.PodEvents
+	} else {
+		// If run doesn't have PodEvents in the cached record, fetch them
+		podEventList, _ = ep.executionService.GetEvents(r.Context(), run)
 	}
 	ep.encodeResponse(w, podEventList)
 
@@ -726,7 +729,7 @@ func (ep *endpoints) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	lastSeen := ep.getURLParam(params, "last_seen", "")
 	rawText := ep.getStringBoolVal(ep.getURLParam(params, "raw_text", ""))
-	run, err := ep.executionService.Get(vars["run_id"])
+	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 	role := ep.getURLParam(params, "role", "driver")
 	facility := ep.getURLParam(params, "facility", "stderr")
 
@@ -782,7 +785,7 @@ func (ep *endpoints) GetTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
-	clusters, err := ep.executionService.ListClusters()
+	clusters, err := ep.executionService.ListClusters(r.Context())
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -795,8 +798,8 @@ func (ep *endpoints) ListClusters(w http.ResponseWriter, r *http.Request) {
 
 // List active workers.
 func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
-	wl, err := ep.workerService.List(state.EKSEngine)
-	wlEKS, errEKS := ep.workerService.List(state.EKSEngine)
+	wl, err := ep.workerService.List(r.Context(), state.EKSEngine)
+	wlEKS, errEKS := ep.workerService.List(r.Context(), state.EKSEngine)
 
 	if wl.Workers == nil {
 		wl.Workers = []state.Worker{}
@@ -819,7 +822,7 @@ func (ep *endpoints) ListWorkers(w http.ResponseWriter, r *http.Request) {
 // Get information about an active worker.
 func (ep *endpoints) GetWorker(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	worker, err := ep.workerService.Get(vars["worker_type"], state.DefaultEngine)
+	worker, err := ep.workerService.Get(r.Context(), vars["worker_type"], state.DefaultEngine)
 	if err != nil {
 		ep.encodeError(w, err)
 	} else {
@@ -838,7 +841,7 @@ func (ep *endpoints) UpdateWorker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	updated, err := ep.workerService.Update(vars["worker_type"], worker)
+	updated, err := ep.workerService.Update(r.Context(), vars["worker_type"], worker)
 
 	if err != nil {
 		ep.encodeError(w, err)
@@ -857,7 +860,7 @@ func (ep *endpoints) BatchUpdateWorkers(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, err := ep.workerService.BatchUpdate(wks)
+	updated, err := ep.workerService.BatchUpdate(r.Context(), wks)
 
 	if err != nil {
 		ep.encodeError(w, err)
@@ -905,7 +908,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 	}
 	vars := mux.Vars(r)
 
-	run, err := ep.executionService.CreateTemplateRunByTemplateName(vars["template_name"], vars["template_version"], &req)
+	run, err := ep.executionService.CreateTemplateRunByTemplateName(r.Context(), vars["template_name"], vars["template_version"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template run",
@@ -947,7 +950,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 
-	run, err := ep.executionService.CreateTemplateRunByTemplateID(vars["template_id"], &req)
+	run, err := ep.executionService.CreateTemplateRunByTemplateID(r.Context(), vars["template_id"], &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template run",
@@ -971,9 +974,9 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	latestOnly := ep.getStringBoolVal(ep.getURLParam(params, "latest_only", "true"))
 
 	if latestOnly == true {
-		tl, err = ep.templateService.ListLatestOnly(lr.limit, lr.offset, lr.sortBy, lr.order)
+		tl, err = ep.templateService.ListLatestOnly(r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order)
 	} else {
-		tl, err = ep.templateService.List(lr.limit, lr.offset, lr.sortBy, lr.order)
+		tl, err = ep.templateService.List(r.Context(), lr.limit, lr.offset, lr.sortBy, lr.order)
 	}
 
 	if tl.Templates == nil {
@@ -1000,7 +1003,7 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 // Get a template.
 func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	tpl, err := ep.templateService.GetByID(vars["template_id"])
+	tpl, err := ep.templateService.GetByID(r.Context(), vars["template_id"])
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting templates",
@@ -1022,7 +1025,7 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := ep.templateService.Create(&req)
+	created, err := ep.templateService.Create(r.Context(), &req)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem creating template",
@@ -1037,7 +1040,7 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 // Get a cluster.
 func (ep *endpoints) GetCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	cluster, err := ep.executionService.GetClusterByID(vars["cluster_id"])
+	cluster, err := ep.executionService.GetClusterByID(r.Context(), vars["cluster_id"])
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -1057,7 +1060,7 @@ func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 	if vars["cluster_id"] != "" {
 		clusterMetadata.ID = vars["cluster_id"]
 	}
-	err := ep.executionService.UpdateClusterMetadata(clusterMetadata)
+	err := ep.executionService.UpdateClusterMetadata(r.Context(), clusterMetadata)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -1067,7 +1070,7 @@ func (ep *endpoints) UpdateCluster(w http.ResponseWriter, r *http.Request) {
 
 func (ep *endpoints) DeleteCluster(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := ep.executionService.DeleteClusterMetadata(vars["cluster_id"])
+	err := ep.executionService.DeleteClusterMetadata(r.Context(), vars["cluster_id"])
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -1093,7 +1096,7 @@ func (ep *endpoints) CreateCluster(w http.ResponseWriter, r *http.Request) {
 
 	cluster.ID = ""
 
-	err := ep.executionService.UpdateClusterMetadata(cluster)
+	err := ep.executionService.UpdateClusterMetadata(r.Context(), cluster)
 	if err != nil {
 		ep.encodeError(w, err)
 		return
@@ -1106,7 +1109,7 @@ func (ep *endpoints) GetRunStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	runID := vars["run_id"]
 
-	status, err := ep.executionService.GetRunStatus(runID)
+	status, err := ep.executionService.GetRunStatus(r.Context(), runID)
 	if err != nil {
 		ep.logger.Log(
 			"message", "problem getting run status",

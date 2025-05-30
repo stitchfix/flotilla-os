@@ -1,21 +1,20 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
-//
 // Manager wraps operations on a queue
-//
 type Manager interface {
 	Name() string
 	QurlFor(name string, prefixed bool) (string, error)
 	Initialize(config.Config, string) error
-	Enqueue(qURL string, run state.Run) error
-	ReceiveRun(qURL string) (RunReceipt, error)
+	Enqueue(ctx context.Context, qURL string, run state.Run) error
+	ReceiveRun(ctx context.Context, qURL string) (RunReceipt, error)
 	ReceiveStatus(qURL string) (StatusReceipt, error)
 	ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, error)
 	ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error)
@@ -24,27 +23,24 @@ type Manager interface {
 	List() ([]string, error)
 }
 
-//
 // RunReceipt wraps a Run and a callback to use
 // when Run is finished processing
-//
 type RunReceipt struct {
-	Run  *state.Run
-	Done func() error
+	Run              *state.Run
+	Done             func() error
+	TraceID          uint64
+	ParentID         uint64
+	SamplingPriority int
 }
 
-//
 // StatusReceipt wraps a StatusUpdate and a callback to use
 // when StatusUpdate is finished applying
-//
 type StatusReceipt struct {
 	StatusUpdate *string
 	Done         func() error
 }
 
-//
 // NewQueueManager returns the Manager configured via `queue_manager`
-//
 func NewQueueManager(conf config.Config, name string) (Manager, error) {
 	switch name {
 	case state.EKSEngine:

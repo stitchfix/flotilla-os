@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	gklog "github.com/go-kit/kit/log"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -112,7 +113,7 @@ func TestSubmitWorker_Run(t *testing.T) {
 
 	// Test valid run; it's status is queued, it exists in state, its definition exists in state
 	worker, imp := setUpSubmitWorkerTest1(t)
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
 	if len(imp.Calls) != len(expected) {
@@ -129,7 +130,7 @@ func TestSubmitWorker_Run(t *testing.T) {
 func TestSubmitWorker_Run2(t *testing.T) {
 	// Test invalid run; it's status is running (this can happen with duplication in queues, which sqs allows)
 	worker, imp := setUpSubmitWorkerTest2(t)
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	// Importantly, execute is NOT called and it -is- acked
 	expected := []string{"PollRuns", "PollRuns", "GetRun", "RunReceipt.Done"}
@@ -148,7 +149,7 @@ func TestSubmitWorker_Run3(t *testing.T) {
 	// Test invalid run; it's queued but does not exist; this should not happen
 	// (run is queued but does not exist in state)
 	worker, imp := setUpSubmitWorkerTest3(t)
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	// Importantly, execute is NOT called and it -is- acked
 	expected := []string{"PollRuns", "PollRuns", "GetRun", "RunReceipt.Done"}
@@ -170,7 +171,7 @@ func TestSubmitWorker_Run4(t *testing.T) {
 	imp.ExecuteError = errors.New("nope")
 	imp.ExecuteErrorIsRetryable = false
 
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	// Importantly, execute is called and it -is- acked
 	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute", "UpdateRun", "RunReceipt.Done"}
@@ -185,7 +186,7 @@ func TestSubmitWorker_Run4(t *testing.T) {
 	}
 
 	// Ensure the run gets updated to StatusQueued
-	run, _ := imp.GetRun("run:cupcake")
+	run, _ := imp.GetRun(context.Background(), "run:cupcake")
 	if run.Status != state.StatusStopped {
 		t.Errorf("Expected submit worker to update run status to Stopped for non-retryable error")
 	}
@@ -198,7 +199,7 @@ func TestSubmitWorker_Run5(t *testing.T) {
 	imp.ExecuteError = errors.New("nope")
 	imp.ExecuteErrorIsRetryable = true
 
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	// Importantly, execute it called but it is not updated nor is it acked
 	expected := []string{"PollRuns", "PollRuns", "GetRun", "GetDefinition", "Execute"}

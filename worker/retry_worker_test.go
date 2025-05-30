@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	gklog "github.com/go-kit/kit/log"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
@@ -39,7 +40,7 @@ func setUpRetryWorkerTest(t *testing.T) (*retryWorker, *testutils.ImplementsAllT
 
 func TestRetryWorker_Run(t *testing.T) {
 	worker, imp := setUpRetryWorkerTest(t)
-	worker.runOnce()
+	worker.runOnce(context.Background())
 
 	//
 	// Make sure that the worker resets the status to StatusQueued, and calls the appropriate methods
@@ -57,7 +58,7 @@ func TestRetryWorker_Run(t *testing.T) {
 	}
 
 	// Ensure the run gets updated to StatusQueued
-	run, _ := imp.GetRun("runA")
+	run, _ := imp.GetRun(context.Background(), "runA")
 	if run.Status != state.StatusQueued {
 		t.Errorf("Expected retry worker to update run status to Queued")
 	}

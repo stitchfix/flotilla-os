@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -9,12 +10,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
+	"github.com/stitchfix/flotilla-os/utils"
 	awstrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/aws/aws-sdk-go/aws"
+	"strconv"
 )
 
-//
 // SQSManager - queue manager implementation for sqs
-//
 type SQSManager struct {
 	namespace         string
 	retentionSeconds  string
@@ -32,16 +33,12 @@ type sqsClient interface {
 	DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error)
 }
 
-//
 // Name of queue manager - matches value in configuration
-//
 func (qm *SQSManager) Name() string {
 	return "sqs"
 }
 
-//
 // Initialize new sqs queue manager
-//
 func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	if !conf.IsSet("aws_default_region") {
 		return errors.Errorf("SQSManager needs [aws_default_region] set in config")
@@ -74,10 +71,8 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	return nil
 }
 
-//
 // QurlFor returns the queue url that corresponds to the given name
 // * if the queue does not exist it is created
-//
 func (qm *SQSManager) QurlFor(name string, prefixed bool) (string, error) {
 	key := fmt.Sprintf("%s-%t", name, prefixed)
 	val, ok := qm.qurlCache[key]
@@ -158,36 +153,59 @@ func (qm *SQSManager) statusFromMessage(message *sqs.Message) (string, error) {
 	return *body, nil
 }
 
-//
 // Enqueue queues run
-//
-func (qm *SQSManager) Enqueue(qURL string, run state.Run) error {
+func (qm *SQSManager) Enqueue(ctx context.Context, qURL string, run state.Run) error {
 	if len(qURL) == 0 {
 		return errors.Errorf("no queue url specified, can't enqueue")
 	}
+	ctx, span := utils.TraceJob(ctx, "flotilla.queue.sqs_enqueue", "")
+	defer span.Finish()
+
+	span.SetTag("job.run_id", run.RunID)
+	span.SetTag("queue.url", qURL)
 
 	message, err := qm.messageFromRun(run)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.WithStack(err)
 	}
 
 	sme := sqs.SendMessageInput{
 		QueueUrl:    &qURL,
 		MessageBody: message,
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"dd-trace-id": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String(fmt.Sprintf("%d", span.Context().TraceID())),
+			},
+			"dd-parent-id": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String(fmt.Sprintf("%d", span.Context().SpanID())),
+			},
+			"dd-sampling-priority": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("1"),
+			},
+		},
 	}
 
 	_, err = qm.qc.SendMessage(&sme)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return errors.Wrap(err, "problem sending sqs message")
 	}
 	return nil
 }
 
-//
 // Receive receives a new run to operate on
-//
-func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
+func (qm *SQSManager) ReceiveRun(ctx context.Context, qURL string) (RunReceipt, error) {
 	var receipt RunReceipt
+
+	ctx, span := utils.TraceJob(ctx, "flotilla.queue.sqs_receive", "")
+	defer span.Finish()
+	span.SetTag("queue.url", qURL)
 
 	if len(qURL) == 0 {
 		return receipt, errors.Errorf("no queue url specified, can't dequeue")
@@ -199,12 +217,20 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		MessageAttributeNames: []*string{
+			aws.String("dd-trace-id"),
+			aws.String("dd-parent-id"),
+			aws.String("dd-sampling-priority"),
+			aws.String("All"),
+		},
 	}
 
 	var err error
 
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return receipt, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
@@ -214,13 +240,29 @@ func (qm *SQSManager) ReceiveRun(qURL string) (RunReceipt, error) {
 
 	run, err := qm.runFromMessage(response.Messages[0])
 	if err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		return receipt, errors.WithStack(err)
 	}
-
+	var traceID, parentID uint64
+	var samplingPriority int
+	if attr, exists := response.Messages[0].MessageAttributes["dd-trace-id"]; exists && attr.StringValue != nil {
+		traceID, _ = strconv.ParseUint(*attr.StringValue, 10, 64)
+	}
+	if attr, exists := response.Messages[0].MessageAttributes["dd-parent-id"]; exists && attr.StringValue != nil {
+		parentID, _ = strconv.ParseUint(*attr.StringValue, 10, 64)
+	}
+	if attr, exists := response.Messages[0].MessageAttributes["dd-sampling-priority"]; exists && attr.StringValue != nil {
+		sp, _ := strconv.Atoi(*attr.StringValue)
+		samplingPriority = sp
+	}
 	receipt.Run = &run
 	receipt.Done = func() error {
 		return qm.ack(qURL, response.Messages[0].ReceiptHandle)
 	}
+	receipt.TraceID = traceID
+	receipt.ParentID = parentID
+	receipt.SamplingPriority = samplingPriority
 	return receipt, nil
 }
 
@@ -390,10 +432,8 @@ func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {
 	return runId, errors.Wrapf(err, "no message")
 }
 
-//
 // Ack acknowledges the receipt -AND- processing of the
 // the message referred to by handle
-//
 func (qm *SQSManager) ack(qURL string, handle *string) error {
 	if handle == nil {
 		return errors.Errorf("cannot acknowledge message with nil receipt")
@@ -412,9 +452,7 @@ func (qm *SQSManager) ack(qURL string, handle *string) error {
 	return nil
 }
 
-//
 // List lists all the queue URLS available
-//
 func (qm *SQSManager) List() ([]string, error) {
 	response, err := qm.qc.ListQueues(
 		&sqs.ListQueuesInput{QueueNamePrefix: &qm.namespace})

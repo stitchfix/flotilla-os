@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/state"
@@ -13,18 +14,18 @@ import (
 // * Like the ExecutionService, is an intermediary layer between state and the execution engine
 //
 type DefinitionService interface {
-	Create(definition *state.Definition) (state.Definition, error)
-	Get(definitionID string) (state.Definition, error)
-	GetByAlias(alias string) (state.Definition, error)
-	List(limit int, offset int, sortBy string,
+	Create(ctx context.Context, definition *state.Definition) (state.Definition, error)
+	Get(ctx context.Context, definitionID string) (state.Definition, error)
+	GetByAlias(ctx context.Context, alias string) (state.Definition, error)
+	List(ctx context.Context, limit int, offset int, sortBy string,
 		order string, filters map[string][]string,
 		envFilters map[string]string) (state.DefinitionList, error)
-	Update(definitionID string, updates state.Definition) (state.Definition, error)
-	Delete(definitionID string) error
+	Update(ctx context.Context, definitionID string, updates state.Definition) (state.Definition, error)
+	Delete(ctx context.Context, definitionID string) error
 
 	// Metadata oriented
-	ListGroups(limit int, offset int, name *string) (state.GroupsList, error)
-	ListTags(limit int, offset int, name *string) (state.TagsList, error)
+	ListGroups(ctx context.Context, limit int, offset int, name *string) (state.GroupsList, error)
+	ListTags(ctx context.Context, limit int, offset int, name *string) (state.TagsList, error)
 }
 
 type definitionService struct {
@@ -45,12 +46,12 @@ func NewDefinitionService(stateManager state.Manager) (DefinitionService, error)
 // * Defines definition with execution engine
 // * Stores definition using state manager
 //
-func (ds *definitionService) Create(definition *state.Definition) (state.Definition, error) {
+func (ds *definitionService) Create(ctx context.Context, definition *state.Definition) (state.Definition, error) {
 	if valid, reasons := definition.IsValid(); !valid {
 		return state.Definition{}, exceptions.MalformedInput{strings.Join(reasons, "\n")}
 	}
 
-	exists, err := ds.aliasExists(definition.Alias)
+	exists, err := ds.aliasExists(ctx, definition.Alias)
 	if err != nil {
 		return state.Definition{}, err
 	}
@@ -65,13 +66,13 @@ func (ds *definitionService) Create(definition *state.Definition) (state.Definit
 		return state.Definition{}, err
 	}
 	definition.DefinitionID = definitionID
-	return *definition, ds.sm.CreateDefinition(*definition)
+	return *definition, ds.sm.CreateDefinition(ctx, *definition)
 }
 
-func (ds *definitionService) aliasExists(alias string) (bool, error) {
+func (ds *definitionService) aliasExists(ctx context.Context, alias string) (bool, error) {
 	// Short circuit, to check if alias already exists
 	dl, err := ds.sm.ListDefinitions(
-		1024, 0, "alias", "asc", map[string][]string{"alias": {alias}}, nil)
+		ctx, 1024, 0, "alias", "asc", map[string][]string{"alias": {alias}}, nil)
 
 	if err != nil {
 		return false, err
@@ -88,41 +89,41 @@ func (ds *definitionService) aliasExists(alias string) (bool, error) {
 //
 // Get returns the definition specified by definitionID
 //
-func (ds *definitionService) Get(definitionID string) (state.Definition, error) {
-	return ds.sm.GetDefinition(definitionID)
+func (ds *definitionService) Get(ctx context.Context, definitionID string) (state.Definition, error) {
+	return ds.sm.GetDefinition(ctx, definitionID)
 }
 
-func (ds *definitionService) GetByAlias(alias string) (state.Definition, error) {
-	return ds.sm.GetDefinitionByAlias(alias)
+func (ds *definitionService) GetByAlias(ctx context.Context, alias string) (state.Definition, error) {
+	return ds.sm.GetDefinitionByAlias(ctx, alias)
 }
 
 // List lists definitions
-func (ds *definitionService) List(limit int, offset int, sortBy string,
+func (ds *definitionService) List(ctx context.Context, limit int, offset int, sortBy string,
 	order string, filters map[string][]string,
 	envFilters map[string]string) (state.DefinitionList, error) {
-	return ds.sm.ListDefinitions(limit, offset, sortBy, order, filters, envFilters)
+	return ds.sm.ListDefinitions(ctx, limit, offset, sortBy, order, filters, envFilters)
 }
 
 // UpdateStatus updates the definition specified by definitionID with the given updates
-func (ds *definitionService) Update(definitionID string, updates state.Definition) (state.Definition, error) {
-	definition, err := ds.sm.GetDefinition(definitionID)
+func (ds *definitionService) Update(ctx context.Context, definitionID string, updates state.Definition) (state.Definition, error) {
+	definition, err := ds.sm.GetDefinition(ctx, definitionID)
 	if err != nil {
 		return definition, err
 	}
 
 	definition.UpdateWith(updates)
-	return ds.sm.UpdateDefinition(definitionID, definition)
+	return ds.sm.UpdateDefinition(ctx, definitionID, definition)
 }
 
 // Delete deletes and deregisters the definition specified by definitionID
-func (ds *definitionService) Delete(definitionID string) error {
-	return ds.sm.DeleteDefinition(definitionID)
+func (ds *definitionService) Delete(ctx context.Context, definitionID string) error {
+	return ds.sm.DeleteDefinition(ctx, definitionID)
 }
 
-func (ds *definitionService) ListGroups(limit int, offset int, name *string) (state.GroupsList, error) {
-	return ds.sm.ListGroups(limit, offset, name)
+func (ds *definitionService) ListGroups(ctx context.Context, limit int, offset int, name *string) (state.GroupsList, error) {
+	return ds.sm.ListGroups(ctx, limit, offset, name)
 }
 
-func (ds *definitionService) ListTags(limit int, offset int, name *string) (state.TagsList, error) {
-	return ds.sm.ListTags(limit, offset, name)
+func (ds *definitionService) ListTags(ctx context.Context, limit int, offset int, name *string) (state.TagsList, error) {
+	return ds.sm.ListTags(ctx, limit, offset, name)
 }

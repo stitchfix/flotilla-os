@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
@@ -12,22 +13,25 @@ import (
 // Engine defines the execution engine interface.
 type Engine interface {
 	Initialize(conf config.Config) error
-	Execute(executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error)
-	Terminate(run state.Run) error
-	Enqueue(run state.Run) error
-	PollRuns() ([]RunReceipt, error)
-	PollRunStatus() (state.Run, error)
-	PollStatus() (RunReceipt, error)
-	GetEvents(run state.Run) (state.PodEventList, error)
-	FetchUpdateStatus(run state.Run) (state.Run, error)
-	FetchPodMetrics(run state.Run) (state.Run, error)
+	Execute(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) (state.Run, bool, error)
+	Terminate(ctx context.Context, run state.Run) error
+	Enqueue(ctx context.Context, run state.Run) error
+	PollRuns(ctx context.Context) ([]RunReceipt, error)
+	PollRunStatus(ctx context.Context) (state.Run, error)
+	PollStatus(ctx context.Context) (RunReceipt, error)
+	GetEvents(ctx context.Context, run state.Run) (state.PodEventList, error)
+	FetchUpdateStatus(ctx context.Context, run state.Run) (state.Run, error)
+	FetchPodMetrics(ctx context.Context, run state.Run) (state.Run, error)
 	// Legacy methods from the ECS era. Here for backwards compatibility.
-	Define(definition state.Definition) (state.Definition, error)
-	Deregister(definition state.Definition) error
+	Define(ctx context.Context, definition state.Definition) (state.Definition, error)
+	Deregister(ctx context.Context, definition state.Definition) error
 }
 
 type RunReceipt struct {
 	queue.RunReceipt
+	TraceID          uint64
+	ParentID         uint64
+	SamplingPriority int
 }
 
 // NewExecutionEngine initializes and returns a new Engine
