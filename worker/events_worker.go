@@ -192,12 +192,6 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 			return
 		}
 		var emrJobId *string = nil
-		run, err := ew.sm.GetRunByEMRJobId(ctx, *emrJobId)
-		if err == nil {
-			_, span := utils.TraceJob(ctx, "flotilla.job.process_event_emr", run.RunID)
-			defer span.Finish()
-			utils.TagJobRun(span, run)
-		}
 		var sparkAppId *string = nil
 		var driverServiceName *string = nil
 		var executorOOM *bool = nil
