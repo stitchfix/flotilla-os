@@ -370,6 +370,10 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 	runId := kubernetesEvent.InvolvedObject.Labels.JobName
 	ctx, span := utils.TraceJob(ctx, "flotilla.job.process_event", runId)
 	defer span.Finish()
+	if strings.HasPrefix(runId, "eks-spark") || len(runId) == 0 {
+		ew.processEMRPodEvents(ctx, kubernetesEvent)
+		return
+	}
 
 	layout := "2020-08-31T17:27:50Z"
 	timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
