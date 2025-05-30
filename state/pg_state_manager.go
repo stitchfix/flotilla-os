@@ -727,7 +727,7 @@ func (sm *SQLStateManager) GetRun(ctx context.Context, runID string) (Run, error
 	tracing.TagRunInfo(span,
 		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
-		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
 
 	return r, nil
 }
@@ -754,7 +754,7 @@ func (sm *SQLStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string
 	tracing.TagRunInfo(span,
 		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
-		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
 
 	return r, nil
 }
@@ -781,7 +781,7 @@ func (sm *SQLStateManager) GetResources(ctx context.Context, runID string) (Run,
 	tracing.TagRunInfo(span,
 		r.RunID, r.DefinitionID, r.Alias, r.Status, r.ClusterName,
 		r.QueuedAt, r.StartedAt, r.FinishedAt,
-		r.PodName, r.Namespace, r.ExitReason, r.ExitCode)
+		r.PodName, r.Namespace, r.ExitReason, r.ExitCode, string(r.Tier))
 
 	return r, nil
 }
