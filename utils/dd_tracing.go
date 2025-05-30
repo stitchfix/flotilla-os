@@ -18,5 +18,5 @@ func TagJobRun(span tracer.Span, run state.Run) {
 	tracing.TagRunInfo(span,
 		run.RunID, run.DefinitionID, run.Alias, run.Status, run.ClusterName,
 		run.QueuedAt, run.StartedAt, run.FinishedAt,
-		run.PodName, run.Namespace, run.ExitReason, run.ExitCode)
+		run.PodName, run.Namespace, run.ExitReason, run.ExitCode, string(run.Tier))
 }

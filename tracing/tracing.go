@@ -24,7 +24,7 @@ func TagRunInfo(span tracer.Span,
 	runID, definitionID, alias, status, clusterName string,
 	queuedAt, startedAt, finishedAt *time.Time,
 	podName, namespace, exitReason *string,
-	exitCode *int64) {
+	exitCode *int64, tier string) {
 
 	if span == nil {
 		return
