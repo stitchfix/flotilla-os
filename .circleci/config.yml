@@ -21,7 +21,7 @@ jobs:
       - checkout
       - run:
           name: Installing Flyway
-          command: curl -sL https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.0.7/flyway-commandline-6.0.7-linux-x64.tar.gz | tar xz && sudo ln -s "$(pwd)/flyway-6.0.7/flyway" /usr/local/bin/flyway
+          command: curl -sL https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.5.7/flyway-commandline-6.5.7-linux-x64.tar.gz | tar xz && sudo ln -s "$(pwd)/flyway-6.5.7/flyway" /usr/local/bin/flyway
       - run:
           name: Waiting for Postgres to be ready
           command: dockerize -wait tcp://localhost:5432 -timeout 5m
