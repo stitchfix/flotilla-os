@@ -1327,7 +1327,7 @@ func GetLabels(run Run) map[string]string {
 	}
 
 	if run.Tier != "" {
-		labels["tier"] = SanitizeLabel(run.User)
+		labels["tier"] = SanitizeLabel(string(run.Tier))
 	}
 
 	if _, workflowExists := run.Labels["kube_workflow"]; !workflowExists {
