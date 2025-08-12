@@ -171,6 +171,7 @@ func TestGetLabels(t *testing.T) {
 					GroupName:    "groupA",
 					RunID:        "runA",
 					User:         "userA",
+					Tier:         "tierA",
 					Labels: map[string]string{
 						"kube_foo":       "bar",
 						"team":           "awesomeness",
@@ -185,6 +186,7 @@ func TestGetLabels(t *testing.T) {
 				"kube_foo":          "bar",
 				"kube_task_name":    "foo",
 				"team":              "awesomeness",
+				"tier":              "tiera",
 				"owner":             "usera",
 				"flotilla-run-mode": "test",
 			},
