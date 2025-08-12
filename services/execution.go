@@ -306,7 +306,7 @@ func (es *executionService) constructBaseRunFromExecutable(ctx context.Context, 
 	)
 
 	fields.Engine = req.GetExecutionRequestCommon().Engine
-	fields.Tier = req.GetExecutionRequestCommon().Tier
+	fields.Tier = es.resolveRequestTier(req.GetExecutionRequestCommon().Tier)
 	// Compute the executable command based on the execution request. If the
 	// execution request did not specify an overriding command, use the computed
 	// `executableCmd` as the Run's Command.
@@ -743,13 +743,19 @@ func (es *executionService) constructRunFromTemplate(ctx context.Context, templa
 	return run, nil
 }
 
+// resolveRequestTier returns the requested tier or default tier if empty
+func (es *executionService) resolveRequestTier(requestedTier state.Tier) state.Tier {
+	if requestedTier == "" {
+		return state.Tier(es.eksTierDefault)
+	}
+	return requestedTier
+}
+
 // clusterSupportsTier checks if a cluster supports the specified tier
 func (es *executionService) clusterSupportsTier(cluster state.ClusterMetadata, requestedTier state.Tier) bool {
-	if requestedTier == "" {
-		requestedTier = state.Tier(es.eksTierDefault)
-	}
+	resolvedTier := es.resolveRequestTier(requestedTier)
 	for _, allowedTier := range cluster.AllowedTiers {
-		if allowedTier == string(requestedTier) {
+		if allowedTier == string(resolvedTier) {
 			return true
 		}
 	}
