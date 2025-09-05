@@ -3,6 +3,10 @@ package worker
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
@@ -14,9 +18,6 @@ import (
 	"github.com/stitchfix/flotilla-os/utils"
 	"gopkg.in/tomb.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type eventsWorker struct {
@@ -34,6 +35,7 @@ type eventsWorker struct {
 	emrMetricsServer  string
 	eksMetricsServer  string
 	emrMaxPodEvents   int
+	eksMaxPodEvents   int
 	eksEngine         engine.Engine
 	emrEngine         engine.Engine
 	clusterManager    *engine.DynamicClusterManager
@@ -54,10 +56,16 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	ew.emrMetricsServer = conf.GetString("emr_metrics_server_uri")
 	ew.eksMetricsServer = conf.GetString("eks_metrics_server_uri")
 	ew.clusterManager = clusterManager
-	if conf.IsSet("emr_max_attempt_count") {
+	if conf.IsSet("emr_max_pod_events") {
 		ew.emrMaxPodEvents = conf.GetInt("emr_max_pod_events")
 	} else {
 		ew.emrMaxPodEvents = 20000
+	}
+
+	if conf.IsSet("eks_max_pod_events") {
+		ew.eksMaxPodEvents = conf.GetInt("eks_max_pod_events")
+	} else {
+		ew.eksMaxPodEvents = 20
 	}
 
 	if err != nil {
@@ -388,10 +396,9 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 
 		var events state.PodEvents
 		if run.PodEvents != nil {
-			events = append(*run.PodEvents, event)
-		} else {
-			events = state.PodEvents{event}
+			events = *run.PodEvents
 		}
+		events = ew.applySlidingWindow(events, event, ew.eksMaxPodEvents)
 		run.PodEvents = &events
 		if kubernetesEvent.Reason == "Scheduled" {
 			podName, err := ew.parsePodName(kubernetesEvent)
@@ -438,4 +445,32 @@ func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (str
 		return matches[0], nil
 	}
 	return "", errors.Errorf("no pod name found for [%s]", kubernetesEvent.Message)
+}
+
+// applySlidingWindow maintains a sliding window of the most recent events
+// keeping only the last maxEvents entries, ordered by timestamp (newest first)
+func (ew *eventsWorker) applySlidingWindow(events state.PodEvents, newEvent state.PodEvent, maxEvents int) state.PodEvents {
+	// Add the new event
+	updatedEvents := append(events, newEvent)
+
+	// If we're under the limit, return as-is
+	if len(updatedEvents) <= maxEvents {
+		return updatedEvents
+	}
+
+	// Sort by timestamp (newest first) to ensure we keep the most recent events
+	// Note: We assume events are generally added in chronological order, but this
+	// ensures correctness if events arrive out of order
+	for i := 0; i < len(updatedEvents)-1; i++ {
+		for j := i + 1; j < len(updatedEvents); j++ {
+			if updatedEvents[i].Timestamp != nil && updatedEvents[j].Timestamp != nil {
+				if updatedEvents[i].Timestamp.Before(*updatedEvents[j].Timestamp) {
+					updatedEvents[i], updatedEvents[j] = updatedEvents[j], updatedEvents[i]
+				}
+			}
+		}
+	}
+
+	// Keep only the most recent maxEvents
+	return updatedEvents[:maxEvents]
 }
