@@ -100,12 +100,14 @@ func (ew *eventsWorker) Run(ctx context.Context) error {
 }
 
 func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_emr", "events_worker")
+	defer span.Finish()
 	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	_ = emrEvent.Done()
+	ew.processEventEMR(ctx, emrEvent)
 }
 
 func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrEvent) {
@@ -180,12 +182,14 @@ func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrE
 	}
 }
 func (ew *eventsWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_eks", "events_worker")
+	defer span.Finish()
 	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	_ = kubernetesEvent.Done()
+	ew.processEvent(ctx, kubernetesEvent)
 }
 
 func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
