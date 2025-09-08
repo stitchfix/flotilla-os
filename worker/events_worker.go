@@ -100,12 +100,14 @@ func (ew *eventsWorker) Run(ctx context.Context) error {
 }
 
 func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_emr", "events_worker")
+	defer span.Finish()
 	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	_ = emrEvent.Done()
+	ew.processEventEMR(ctx, emrEvent)
 }
 
 func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrEvent) {
@@ -180,12 +182,14 @@ func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrE
 	}
 }
 func (ew *eventsWorker) runOnce(ctx context.Context) {
+	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_eks", "events_worker")
+	defer span.Finish()
 	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
-	_ = kubernetesEvent.Done()
+	ew.processEvent(ctx, kubernetesEvent)
 }
 
 func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
@@ -261,27 +265,6 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				defer span.Finish()
 				utils.TagJobRun(span, run)
 				span.SetTag("emr.job_id", *emrJobId)
-				layout := "2006-01-02T15:04:05Z"
-				timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
-				if err != nil {
-					timestamp = time.Now()
-				}
-
-				event := state.PodEvent{
-					Timestamp:    &timestamp,
-					EventType:    kubernetesEvent.Type,
-					Reason:       kubernetesEvent.Reason,
-					SourceObject: kubernetesEvent.InvolvedObject.Name,
-					Message:      kubernetesEvent.Message,
-				}
-
-				var events state.PodEvents
-				if run.PodEvents != nil {
-					events = append(*run.PodEvents, event)
-				} else {
-					events = state.PodEvents{event}
-				}
-				run.PodEvents = &events
 
 				if executorOOM != nil && *executorOOM == true {
 					run.SparkExtension.ExecutorOOM = executorOOM
@@ -382,20 +365,6 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 
 	run, err := ew.sm.GetRun(ctx, runId)
 	if err == nil {
-		event := state.PodEvent{
-			Timestamp:    &timestamp,
-			EventType:    kubernetesEvent.Type,
-			Reason:       kubernetesEvent.Reason,
-			SourceObject: kubernetesEvent.InvolvedObject.Name,
-			Message:      kubernetesEvent.Message,
-		}
-
-		var events state.PodEvents
-		if run.PodEvents != nil {
-			events = *run.PodEvents
-		}
-		events = ew.applySlidingWindow(events, event, ew.eksMaxPodEvents)
-		run.PodEvents = &events
 		if kubernetesEvent.Reason == "Scheduled" {
 			podName, err := ew.parsePodName(kubernetesEvent)
 			if err == nil {
