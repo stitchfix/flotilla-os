@@ -296,7 +296,10 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 						}
 						if !found {
 							events = append(*run.PodEvents, event)
+						} else {
+							events = *run.PodEvents
 						}
+
 					} else {
 						events = state.PodEvents{event}
 					}
