@@ -266,6 +266,43 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				utils.TagJobRun(span, run)
 				span.SetTag("emr.job_id", *emrJobId)
 
+				// Only store events that are used to determine the list of executors in models.go Run.MarshalJSON.
+				// We don't care about other events as they are no longer shown in the UI.
+				if strings.Contains(kubernetesEvent.InvolvedObject.Name, "-exec-") {
+					layout := "2006-01-02T15:04:05Z"
+					timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
+					if err != nil {
+						timestamp = time.Now()
+					}
+
+					event := state.PodEvent{
+						Timestamp:    &timestamp,
+						EventType:    kubernetesEvent.Type,
+						Reason:       kubernetesEvent.Reason,
+						SourceObject: kubernetesEvent.InvolvedObject.Name,
+						Message:      kubernetesEvent.Message,
+					}
+
+					var events state.PodEvents
+					if run.PodEvents != nil {
+						// de-dupe: only record this event if it's a unique SourceObject (executor name), which
+						// is used in the UI to show the list of executors.
+						found := false
+						for _, e := range *run.PodEvents {
+							if e.SourceObject == event.SourceObject {
+								found = true
+								break
+							}
+						}
+						if !found {
+							events = append(*run.PodEvents, event)
+						}
+					} else {
+						events = state.PodEvents{event}
+					}
+					run.PodEvents = &events
+				}
+
 				if executorOOM != nil && *executorOOM == true {
 					run.SparkExtension.ExecutorOOM = executorOOM
 				}
