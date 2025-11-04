@@ -48,6 +48,15 @@ const (
 	StatusWorkerGetJob Metric = "status_worker.get_job"
 	// Engine update run
 	EngineUpdateRun Metric = "engine.update_run"
+	// ARA metrics
+	ARAResourceAdjustment     Metric = "ara.resource_adjustment"
+	ARAMemoryIncreaseRatio    Metric = "ara.memory_increase_ratio"
+	ARACPUIncreaseRatio       Metric = "ara.cpu_increase_ratio"
+	ARANoHistoricalData       Metric = "ara.no_historical_data"
+	ARAHitMaxMemory           Metric = "ara.hit_max_memory"
+	ARAHitMaxCPU              Metric = "ara.hit_max_cpu"
+	ARAFinalMemoryMB          Metric = "ara.final_memory_mb"
+	ARAFinalCPUMillicores     Metric = "ara.final_cpu_millicores"
 )
 
 type MetricTag string

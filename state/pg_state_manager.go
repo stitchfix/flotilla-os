@@ -128,12 +128,36 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 
 	if err != nil {
 		if err == sql.ErrNoRows {
+			// No historical data found - this is expected for new jobs or jobs that haven't OOM'd
+			_ = sm.log.Log(
+				"message", "ARA: No historical resource data found",
+				"definition_id", executableID,
+				"command_hash", commandHash,
+			)
 			return taskResources, exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
 		} else {
+			// Unexpected error querying historical data
+			_ = sm.log.Log(
+				"level", "error",
+				"message", "ARA: Error querying historical resource data",
+				"definition_id", executableID,
+				"command_hash", commandHash,
+				"error", err.Error(),
+			)
 			return taskResources, errors.Wrapf(err, "issue getting resources with executable [%s]", executableID)
 		}
 	}
+
+	// Successfully found historical data - log the values being returned
+	_ = sm.log.Log(
+		"message", "ARA: Historical resource data found",
+		"definition_id", executableID,
+		"command_hash", commandHash,
+		"estimated_memory_mb", taskResources.Memory,
+		"estimated_cpu_millicores", taskResources.Cpu,
+	)
+
 	return taskResources, err
 }
 
