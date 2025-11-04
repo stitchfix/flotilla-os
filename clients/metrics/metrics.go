@@ -48,6 +48,17 @@ const (
 	StatusWorkerGetJob Metric = "status_worker.get_job"
 	// Engine update run
 	EngineUpdateRun Metric = "engine.update_run"
+	// ARA metrics
+	EngineEKSARAEstimationAttempted Metric = "engine.eks.ara.estimation_attempted"
+	EngineEKSARAEstimationSucceeded Metric = "engine.eks.ara.estimation_succeeded"
+	EngineEKSARAEstimationFailed    Metric = "engine.eks.ara.estimation_failed"
+	EngineEKSARAMaxResourceHit      Metric = "engine.eks.ara.max_resource_hit"
+	EngineEKSARAMemoryIncrease      Metric = "engine.eks.ara.memory_increase"
+	EngineEKSARACPUIncrease         Metric = "engine.eks.ara.cpu_increase"
+	EngineEKSARADefaultMemory       Metric = "engine.eks.ara.default_memory"
+	EngineEKSARAARAMemory           Metric = "engine.eks.ara.ara_memory"
+	EngineEKSARADefaultCPU          Metric = "engine.eks.ara.default_cpu"
+	EngineEKSARAARACPU              Metric = "engine.eks.ara.ara_cpu"
 )
 
 type MetricTag string

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,12 +21,14 @@ type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
-type eksAdapter struct{}
+type eksAdapter struct {
+	logger flotillaLog.Logger
+}
 
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
-func NewEKSAdapter() (EKSAdapter, error) {
-	adapter := eksAdapter{}
+func NewEKSAdapter(logger flotillaLog.Logger) (EKSAdapter, error) {
+	adapter := eksAdapter{logger: logger}
 	return &adapter, nil
 }
 
@@ -358,11 +362,42 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
-	if !isGPUJob {
+	// Track default resources before ARA
+	defaultCPU := cpuRequest
+	defaultMem := memRequest
+
+	if !isGPUJob && araEnabled {
+		// Track ARA estimation attempt
+		_ = metrics.Increment(metrics.EngineEKSARAEstimationAttempted, []string{}, 1)
+
 		estimatedResources, err := manager.EstimateRunResources(ctx, *executable.GetExecutableID(), run.RunID)
 		if err == nil {
+			// Track successful estimation
+			_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, []string{}, 1)
+
 			cpuRequest = estimatedResources.Cpu
 			memRequest = estimatedResources.Memory
+
+			// Calculate resource increases
+			cpuIncrease := cpuRequest - defaultCPU
+			memIncrease := memRequest - defaultMem
+
+			// Emit default and ARA resource distributions
+			_ = metrics.Distribution(metrics.EngineEKSARADefaultCPU, float64(defaultCPU), []string{}, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARAARACPU, float64(cpuRequest), []string{}, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(defaultMem), []string{}, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(memRequest), []string{}, 1)
+
+			// Emit increase amounts
+			if cpuIncrease > 0 {
+				_ = metrics.Distribution(metrics.EngineEKSARACPUIncrease, float64(cpuIncrease), []string{}, 1)
+			}
+			if memIncrease > 0 {
+				_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(memIncrease), []string{}, 1)
+			}
+		} else {
+			// Track failed estimation
+			_ = metrics.Increment(metrics.EngineEKSARAEstimationFailed, []string{}, 1)
 		}
 
 		if cpuRequest > cpuLimit {
@@ -374,10 +409,67 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 		}
 	}
 
+	// Check bounds and detect max resource hits
+	cpuRequestBeforeBounds := cpuRequest
+	memRequestBeforeBounds := memRequest
 	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)
 	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit, isGPUJob)
 
+	// Detect if max bounds were hit
+	maxMemHit := false
+	maxCPUHit := false
+	maxMem := state.MaxMem
+	maxCPU := state.MaxCPU
+	if isGPUJob {
+		maxMem = state.MaxGPUMem
+		maxCPU = state.MaxGPUCPU
+	}
+
+	if memRequestBeforeBounds > maxMem {
+		maxMemHit = true
+		_ = metrics.Increment(metrics.EngineEKSARAMaxResourceHit, []string{"resource:memory"}, 1)
+	}
+	if cpuRequestBeforeBounds > maxCPU {
+		maxCPUHit = true
+		_ = metrics.Increment(metrics.EngineEKSARAMaxResourceHit, []string{"resource:cpu"}, 1)
+	}
+
+	// Emit structured log when max resources hit
+	if maxMemHit || maxCPUHit {
+		a.emitARAMetrics(run, defaultCPU, defaultMem, cpuRequest, memRequest, maxCPUHit, maxMemHit)
+	}
+
 	return cpuLimit, memLimit, cpuRequest, memRequest
+}
+
+// emitARAMetrics logs structured information when ARA hits max resource bounds
+func (a *eksAdapter) emitARAMetrics(run state.Run, defaultCPU int64, defaultMem int64, finalCPU int64, finalMem int64, maxCPUHit bool, maxMemHit bool) {
+	if a.logger == nil {
+		return
+	}
+
+	logFields := []interface{}{
+		"message", "ARA max resource bounds hit",
+		"run_id", run.RunID,
+		"default_cpu_millicores", defaultCPU,
+		"default_memory_mb", defaultMem,
+		"final_cpu_millicores", finalCPU,
+		"final_memory_mb", finalMem,
+		"max_cpu_hit", maxCPUHit,
+		"max_memory_hit", maxMemHit,
+	}
+
+	if run.DefinitionID != "" {
+		logFields = append(logFields, "definition_id", run.DefinitionID)
+	}
+	if run.ExecutableID != nil {
+		logFields = append(logFields, "executable_id", *run.ExecutableID)
+	}
+	if run.Command != nil {
+		logFields = append(logFields, "command", *run.Command)
+	}
+
+	_ = a.logger.Log(logFields...)
 }
 
 func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (int64, int64) {
