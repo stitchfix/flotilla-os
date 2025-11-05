@@ -3,15 +3,16 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type EKSAdapter interface {
@@ -273,6 +274,10 @@ func (a *eksAdapter) constructResourceRequirements(ctx context.Context, executab
 
 	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(ctx, executable, run, manager, araEnabled)
 
+	// Round CPU values to avoid systemd cgroup rounding issues.
+	cpuLimit = a.roundCPUMillicores(cpuLimit)
+	cpuRequest = a.roundCPUMillicores(cpuRequest)
+
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
 
@@ -511,4 +516,9 @@ func (a *eksAdapter) sanitizeLabel(key string) string {
 		key = key[:63]
 	}
 	return key
+}
+
+// roundCPUMillicores rounds CPU millicores to the nearest 250m (quarter core) to avoid systemd cgroup rounding issues. When CPU limits produce non-integer percentages
+func (a *eksAdapter) roundCPUMillicores(millicores int64) int64 {
+	return ((millicores + 125) / 250) * 250
 }
