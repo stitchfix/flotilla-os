@@ -273,6 +273,14 @@ func (a *eksAdapter) constructResourceRequirements(ctx context.Context, executab
 
 	cpuLimit, memLimit, cpuRequest, memRequest := a.adaptiveResources(ctx, executable, run, manager, araEnabled)
 
+	// Round CPU values to avoid systemd cgroup rounding issues.
+	// When CPU limits produce non-integer percentages (e.g., 1024m = 102.4%),
+	// systemd rounds them up (103%), which can exceed cgroup constraints and cause
+	// "invalid argument" errors when writing to cpu.cfs_quota_us.
+	// Rounding to 250m increments (quarter cores) prevents this issue.
+	cpuLimit = a.roundCPUMillicores(cpuLimit)
+	cpuRequest = a.roundCPUMillicores(cpuRequest)
+
 	cpuLimitQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuLimit))
 	cpuRequestQuantity := resource.MustParse(fmt.Sprintf("%dm", cpuRequest))
 
@@ -511,4 +519,14 @@ func (a *eksAdapter) sanitizeLabel(key string) string {
 		key = key[:63]
 	}
 	return key
+}
+
+// roundCPUMillicores rounds CPU millicores to the nearest 250m (quarter core) to avoid
+// systemd cgroup rounding issues. When CPU limits produce non-integer percentages
+// (e.g., 1024m = 102.4%), systemd rounds them to the nearest whole percent (103%),
+// which can cause "invalid argument" errors when writing to cpu.cfs_quota_us.
+// Examples: 1024m → 1000m, 1150m → 1250m, 1900m → 2000m
+func (a *eksAdapter) roundCPUMillicores(millicores int64) int64 {
+	// Round to nearest 250m (quarter core)
+	return ((millicores + 125) / 250) * 250
 }
