@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stitchfix/flotilla-os/config"
-	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
@@ -344,7 +343,7 @@ func TestAdaptiveResources_GPUJob_SkipsARA(t *testing.T) {
 
 	manager := &mockStateManager{}
 
-	cpuLimit, memLimit, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
+	_, _, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
 		context.Background(),
 		executable,
 		run,
@@ -388,7 +387,7 @@ func TestAdaptiveResources_EstimationFailed(t *testing.T) {
 		estimateResourcesError: errors.New("estimation failed"),
 	}
 
-	cpuLimit, memLimit, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
+	_, _, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
 		context.Background(),
 		executable,
 		run,
@@ -428,8 +427,9 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 	run := state.Run{
 		RunID:        "test-run",
 		ExecutableID: &executableID,
-		DefinitionID: &definitionID,
+		DefinitionID: definitionID,
 		Command:      &command,
+		ClusterName:  "test-cluster",
 	}
 
 	// Return resources that exceed max bounds
@@ -464,31 +464,51 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 	}
 
 	// Verify logger was called for max resource hit
-	if len(logger.logCalls) == 0 {
-		t.Error("Expected logger.Log to be called for max resource hit")
-	} else {
-		logCall := logger.logCalls[0]
-		// Verify log contains expected fields
-		foundMessage := false
-		foundRunID := false
+	// There should be two logs: one for ARA adjustment, one for max bounds hit
+	if len(logger.logCalls) < 2 {
+		t.Errorf("Expected at least 2 logger.Log calls (ARA adjustment + max bounds hit), got %d", len(logger.logCalls))
+		return
+	}
+	// Find the max bounds hit log (should have level:warn)
+	var maxBoundsLog []interface{}
+	for _, logCall := range logger.logCalls {
 		for i := 0; i < len(logCall); i += 2 {
-			if i+1 < len(logCall) {
-				key := logCall[i]
-				value := logCall[i+1]
-				if key == "message" && value == "ARA max resource bounds hit" {
-					foundMessage = true
-				}
-				if key == "run_id" && value == "test-run" {
-					foundRunID = true
-				}
+			if i+1 < len(logCall) && logCall[i] == "level" && logCall[i+1] == "warn" {
+				maxBoundsLog = logCall
+				break
 			}
 		}
-		if !foundMessage {
-			t.Error("Expected log to contain 'message: ARA max resource bounds hit'")
+		if maxBoundsLog != nil {
+			break
 		}
-		if !foundRunID {
-			t.Error("Expected log to contain 'run_id: test-run'")
+	}
+	if maxBoundsLog == nil {
+		t.Errorf("Expected log with level:warn for max bounds hit, got logCalls: %v", logger.logCalls)
+		return
+	}
+	// Verify log contains expected fields
+	foundMessage := false
+	foundRunID := false
+	for i := 0; i < len(maxBoundsLog); i += 2 {
+		if i+1 < len(maxBoundsLog) {
+			key := maxBoundsLog[i]
+			value := maxBoundsLog[i+1]
+			if key == "message" {
+				msg := value.(string)
+				if msg == "ARA resource allocation hit maximum limit" || msg == "ARA memory allocation hit maximum limit - potential over-provisioning" {
+					foundMessage = true
+				}
+			}
+			if key == "run_id" && value == "test-run" {
+				foundRunID = true
+			}
 		}
+	}
+	if !foundMessage {
+		t.Errorf("Expected log to contain message about max resource hit")
+	}
+	if !foundRunID {
+		t.Error("Expected log to contain 'run_id: test-run'")
 	}
 }
 
@@ -515,13 +535,12 @@ func TestAdaptiveResources_ARADisabled(t *testing.T) {
 
 	manager := &mockStateManager{}
 
-	cpuLimit, memLimit, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
+	_, _, cpuRequest, memRequest := adapter.(*eksAdapter).adaptiveResources(
 		context.Background(),
 		executable,
 		run,
 		manager,
 		false, // araEnabled = false
-		run,
 	)
 
 	// Verify defaults are used when ARA is disabled
@@ -550,9 +569,10 @@ func TestEmitARAMetrics_StructuredLog(t *testing.T) {
 		ExecutableID: &executableID,
 		DefinitionID: definitionID,
 		Command:      &command,
+		ClusterName:  "test-cluster",
 	}
 
-	adapter.(*eksAdapter).emitARAMetrics(run, 1000, 2000, 3000, 4000, true, true)
+	adapter.(*eksAdapter).emitARAMetrics(run, 1000, 2000, 3000, 4000, 5000, 6000, true, true)
 
 	// Verify logger was called
 	if len(logger.logCalls) == 0 {
@@ -562,17 +582,23 @@ func TestEmitARAMetrics_StructuredLog(t *testing.T) {
 
 	logCall := logger.logCalls[0]
 	expectedFields := map[string]interface{}{
-		"message":            "ARA max resource bounds hit",
-		"run_id":             "test-run",
+		"level":                  "warn",
+		"message":                "ARA memory allocation hit maximum limit - potential over-provisioning",
+		"run_id":                 "test-run",
+		"cluster":                 "test-cluster",
 		"default_cpu_millicores": int64(1000),
 		"default_memory_mb":       int64(2000),
-		"final_cpu_millicores":   int64(3000),
-		"final_memory_mb":         int64(4000),
+		"requested_cpu_millicores": int64(5000),
+		"requested_memory_mb":       int64(6000),
+		"final_cpu_millicores":     int64(3000),
+		"final_memory_mb":          int64(4000),
 		"max_cpu_hit":             true,
-		"max_memory_hit":          true,
+		"max_memory_hit":           true,
 		"definition_id":           "test-definition",
 		"executable_id":           "test-executable",
 		"command":                 "test-command",
+		"memory_overage_mb":       int64(2000), // 6000 - 4000
+		"cpu_overage_millicores":  int64(2000), // 5000 - 3000
 	}
 
 	// Verify all expected fields are present
@@ -601,7 +627,7 @@ func TestEmitARAMetrics_NilLogger(t *testing.T) {
 	}
 
 	// Should not panic
-	adapter.emitARAMetrics(run, 1000, 2000, 3000, 4000, true, true)
+	adapter.emitARAMetrics(run, 1000, 2000, 3000, 4000, 5000, 6000, true, true)
 }
 
 // Helper function
