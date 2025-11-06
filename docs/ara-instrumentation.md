@@ -61,19 +61,19 @@ All metrics use low-cardinality tags (`cluster` only) to avoid excessive volume.
 
 | Metric | Description | When to Alert |
 |--------|-------------|---------------|
-| `ara.resource_adjustment` | Incremented when ARA triggers resource changes | Track frequency of ARA usage |
-| `ara.no_historical_data` | Jobs with no ARA historical data (using defaults) | Monitor new job patterns |
-| `ara.hit_max_memory` | **Jobs hitting 350GB memory limit** | **Critical: indicates over-provisioning** |
-| `ara.hit_max_cpu` | Jobs hitting CPU limit | Monitor CPU exhaustion |
+| `engine.eks.ara.resource_adjustment` | Incremented when ARA triggers resource changes | Track frequency of ARA usage |
+| `engine.eks.ara.no_historical_data` | Jobs with no ARA historical data (using defaults) | Monitor new job patterns |
+| `engine.eks.ara.hit_max_memory` | **Jobs hitting 350GB memory limit** | **Critical: indicates over-provisioning** |
+| `engine.eks.ara.hit_max_cpu` | Jobs hitting CPU limit | Monitor CPU exhaustion |
 
 #### Histograms/Distributions
 
 | Metric | Description | Use Case |
 |--------|-------------|----------|
-| `ara.memory_increase_ratio` | Ratio of adjusted/original memory | Understand typical growth (e.g., 1.75 = 75% increase) |
-| `ara.cpu_increase_ratio` | Ratio of adjusted/original CPU | Understand CPU scaling patterns |
-| `ara.final_memory_mb` | Final memory allocated (after ARA + bounds) | Distribution of actual allocations |
-| `ara.final_cpu_millicores` | Final CPU allocated (after ARA + bounds) | Distribution of CPU allocations |
+| `engine.eks.ara.memory_increase_ratio` | Ratio of adjusted/original memory | Understand typical growth (e.g., 1.75 = 75% increase) |
+| `engine.eks.ara.cpu_increase_ratio` | Ratio of adjusted/original CPU | Understand CPU scaling patterns |
+| `engine.eks.ara.final_memory_mb` | Final memory allocated (after ARA + bounds) | Distribution of actual allocations |
+| `engine.eks.ara.final_cpu_millicores` | Final CPU allocated (after ARA + bounds) | Distribution of CPU allocations |
 
 ### Structured Logging
 
@@ -170,7 +170,7 @@ error: <error message>
 
 **DataDog Query:**
 ```
-sum:ara.resource_adjustment{*}.as_count()
+sum:engine.eks.ara.resource_adjustment{*}.as_count()
 ```
 
 Compare to total job submissions to get percentage.
@@ -179,7 +179,7 @@ Compare to total job submissions to get percentage.
 
 **DataDog Query:**
 ```
-sum:ara.hit_max_memory{*}.as_count()
+sum:engine.eks.ara.hit_max_memory{*}.as_count()
 ```
 
 **Log Query (to identify specific jobs):**
@@ -193,10 +193,10 @@ Group by `definition_id` to find which task definitions are affected.
 
 **DataDog Query:**
 ```
-avg:ara.memory_increase_ratio{*}
-p50:ara.memory_increase_ratio{*}
-p90:ara.memory_increase_ratio{*}
-p99:ara.memory_increase_ratio{*}
+avg:engine.eks.ara.memory_increase_ratio{*}
+p50:engine.eks.ara.memory_increase_ratio{*}
+p90:engine.eks.ara.memory_increase_ratio{*}
+p99:engine.eks.ara.memory_increase_ratio{*}
 ```
 
 A ratio of 1.75 means 75% increase, 3.0 means 200% increase, etc.
@@ -205,11 +205,11 @@ A ratio of 1.75 means 75% increase, 3.0 means 200% increase, etc.
 
 **DataDog Query:**
 ```
-avg:ara.final_memory_mb{*}
-p50:ara.final_memory_mb{*}
-p90:ara.final_memory_mb{*}
-p95:ara.final_memory_mb{*}
-p99:ara.final_memory_mb{*}
+avg:engine.eks.ara.final_memory_mb{*}
+p50:engine.eks.ara.final_memory_mb{*}
+p90:engine.eks.ara.final_memory_mb{*}
+p95:engine.eks.ara.final_memory_mb{*}
+p99:engine.eks.ara.final_memory_mb{*}
 ```
 
 Shows the actual memory being allocated across all jobs.
@@ -227,7 +227,7 @@ Extract `definition_id` and `memory_overage_mb` to prioritize which jobs need at
 
 #### Critical: Excessive Memory Limit Hits
 
-**Metric:** `ara.hit_max_memory`
+**Metric:** `engine.eks.ara.hit_max_memory`
 
 **Threshold:** Alert if > 10 hits per hour
 
@@ -237,7 +237,7 @@ Extract `definition_id` and `memory_overage_mb` to prioritize which jobs need at
 
 #### High CPU Limit Hits
 
-**Metric:** `ara.hit_max_cpu`
+**Metric:** `engine.eks.ara.hit_max_cpu`
 
 **Threshold:** Alert if > 5 hits per hour
 
@@ -245,7 +245,7 @@ Extract `definition_id` and `memory_overage_mb` to prioritize which jobs need at
 
 ### Investigation Workflow
 
-When you see high `ara.hit_max_memory` counts:
+When you see high `engine.eks.ara.hit_max_memory` counts:
 
 1. **Identify affected definitions:**
    ```

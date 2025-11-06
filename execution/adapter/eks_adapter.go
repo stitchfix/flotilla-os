@@ -20,12 +20,14 @@ type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
-type eksAdapter struct{}
+type eksAdapter struct {
+	logger flotillaLog.Logger
+}
 
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
-func NewEKSAdapter() (EKSAdapter, error) {
-	adapter := eksAdapter{}
+func NewEKSAdapter(logger flotillaLog.Logger) (EKSAdapter, error) {
+	adapter := eksAdapter{logger: logger}
 	return &adapter, nil
 }
 
@@ -371,20 +373,20 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 
 			if araTriggered {
 				// Track that ARA triggered
-				_ = metrics.Increment(metrics.ARAResourceAdjustment, metricTags, 1)
+				_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, metricTags, 1)
 
 				// Track the magnitude of adjustment as ratios
 				if defaultMemory > 0 {
 					memoryRatio := float64(estimatedResources.Memory) / float64(defaultMemory)
-					_ = metrics.Histogram(metrics.ARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
+					_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
 				}
 				if defaultCPU > 0 {
 					cpuRatio := float64(estimatedResources.Cpu) / float64(defaultCPU)
-					_ = metrics.Histogram(metrics.ARACPUIncreaseRatio, cpuRatio, metricTags, 1)
+					_ = metrics.Histogram(metrics.EngineEKSARACPUIncreaseRatio, cpuRatio, metricTags, 1)
 				}
 
 				// Log detailed information when ARA triggers
-				_ = flotillaLog.NewLogger(nil, nil).Log(
+				_ = a.logger.Log(
 					"message", "ARA adjusted resources",
 					"definition_id", *executable.GetExecutableID(),
 					"run_id", run.RunID,
@@ -402,7 +404,7 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 			memRequest = estimatedResources.Memory
 		} else {
 			// No historical data available
-			_ = metrics.Increment(metrics.ARANoHistoricalData, metricTags, 1)
+			_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
 		}
 
 		if cpuRequest > cpuLimit {
@@ -441,10 +443,10 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, ru
 	}
 	if cpu > maxCPU {
 		// Track hitting max CPU limit
-		_ = metrics.Increment(metrics.ARAHitMaxCPU, metricTags, 1)
+		_ = metrics.Increment(metrics.EngineEKSARAHitMaxCPU, metricTags, 1)
 
 		// Log detailed warning when hitting max CPU
-		_ = flotillaLog.NewLogger(nil, nil).Log(
+		_ = a.logger.Log(
 			"level", "warn",
 			"message", "ARA CPU allocation hit maximum limit",
 			"definition_id", *executable.GetExecutableID(),
@@ -465,10 +467,10 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, ru
 	}
 	if mem > maxMem {
 		// Track hitting max memory limit - THIS IS THE KEY METRIC for the 300GB issue
-		_ = metrics.Increment(metrics.ARAHitMaxMemory, metricTags, 1)
+		_ = metrics.Increment(metrics.EngineEKSARAHitMaxMemory, metricTags, 1)
 
 		// Log detailed warning when hitting max memory - CRITICAL for identifying over-provisioning
-		_ = flotillaLog.NewLogger(nil, nil).Log(
+		_ = a.logger.Log(
 			"level", "warn",
 			"message", "ARA memory allocation hit maximum limit - potential over-provisioning",
 			"definition_id", *executable.GetExecutableID(),
@@ -485,8 +487,8 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, ru
 	}
 
 	// Track final resource values (distribution to understand overall allocation patterns)
-	_ = metrics.Histogram(metrics.ARAFinalMemoryMB, float64(mem), metricTags, 1)
-	_ = metrics.Histogram(metrics.ARAFinalCPUMillicores, float64(cpu), metricTags, 1)
+	_ = metrics.Histogram(metrics.EngineEKSARAFinalMemoryMB, float64(mem), metricTags, 1)
+	_ = metrics.Histogram(metrics.EngineEKSARAFinalCPUMillicores, float64(cpu), metricTags, 1)
 
 	return cpu, mem
 }
