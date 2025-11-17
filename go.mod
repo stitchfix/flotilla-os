@@ -1,6 +1,6 @@
 module github.com/stitchfix/flotilla-os
 
-go 1.24.3
+go 1.25.4
 
 require (
 	github.com/DataDog/datadog-go/v5 v5.1.0
