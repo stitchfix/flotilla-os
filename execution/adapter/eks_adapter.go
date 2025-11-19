@@ -383,8 +383,12 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 			// Track successful estimation
 			_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, metricTags, 1)
 
+			// Extract int64 values from NullInt64 (we know they're valid because err == nil)
+			estimatedCPU := estimatedResources.Cpu.Int64
+			estimatedMemory := estimatedResources.Memory.Int64
+
 			// Detect if ARA actually triggered resource changes
-			araTriggered := (estimatedResources.Cpu != cpuRequest || estimatedResources.Memory != memRequest)
+			araTriggered := (estimatedCPU != cpuRequest || estimatedMemory != memRequest)
 
 			if araTriggered {
 				// Track that ARA triggered resource adjustment
@@ -392,11 +396,11 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 
 				// Track the magnitude of adjustment as ratios (better for understanding relative growth)
 				if defaultMem > 0 {
-					memoryRatio := float64(estimatedResources.Memory) / float64(defaultMem)
+					memoryRatio := float64(estimatedMemory) / float64(defaultMem)
 					_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
 				}
 				if defaultCPU > 0 {
-					cpuRatio := float64(estimatedResources.Cpu) / float64(defaultCPU)
+					cpuRatio := float64(estimatedCPU) / float64(defaultCPU)
 					_ = metrics.Histogram(metrics.EngineEKSARACPUIncreaseRatio, cpuRatio, metricTags, 1)
 				}
 
@@ -408,17 +412,17 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 						"run_id", run.RunID,
 						"cluster", run.ClusterName,
 						"default_cpu_millicores", defaultCPU,
-						"adjusted_cpu_millicores", estimatedResources.Cpu,
-						"cpu_ratio", float64(estimatedResources.Cpu)/float64(defaultCPU),
+						"adjusted_cpu_millicores", estimatedCPU,
+						"cpu_ratio", float64(estimatedCPU)/float64(defaultCPU),
 						"default_memory_mb", defaultMem,
-						"adjusted_memory_mb", estimatedResources.Memory,
-						"memory_ratio", float64(estimatedResources.Memory)/float64(defaultMem),
+						"adjusted_memory_mb", estimatedMemory,
+						"memory_ratio", float64(estimatedMemory)/float64(defaultMem),
 					)
 				}
 			}
 
-			cpuRequest = estimatedResources.Cpu
-			memRequest = estimatedResources.Memory
+			cpuRequest = estimatedCPU
+			memRequest = estimatedMemory
 
 			// Calculate resource increases for absolute tracking
 			cpuIncrease := cpuRequest - defaultCPU

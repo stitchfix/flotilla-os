@@ -153,14 +153,28 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 		}
 	}
 
+	// Check if the query returned NULL values (can happen when percentile_disc has no valid data)
+	if !taskResources.Memory.Valid || !taskResources.Cpu.Valid {
+		// NULL values mean no valid historical data - treat as missing resource
+		if sm.log != nil {
+			_ = sm.log.Log(
+				"message", "ARA: No historical resource data found (NULL values returned)",
+				"definition_id", executableID,
+				"command_hash", commandHash,
+			)
+		}
+		return taskResources, exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Resource usage with executable %s not found (NULL values)", executableID)}
+	}
+
 	// Successfully found historical data - log the values being returned
 	if sm.log != nil {
 		_ = sm.log.Log(
 			"message", "ARA: Historical resource data found",
 			"definition_id", executableID,
 			"command_hash", commandHash,
-			"estimated_memory_mb", taskResources.Memory,
-			"estimated_cpu_millicores", taskResources.Cpu,
+			"estimated_memory_mb", taskResources.Memory.Int64,
+			"estimated_cpu_millicores", taskResources.Cpu.Int64,
 		)
 	}
 
