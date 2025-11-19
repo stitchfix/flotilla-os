@@ -2,12 +2,16 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/exceptions"
+	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,12 +23,14 @@ type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
 	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
 }
-type eksAdapter struct{}
+type eksAdapter struct {
+	logger flotillaLog.Logger
+}
 
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
-func NewEKSAdapter() (EKSAdapter, error) {
-	adapter := eksAdapter{}
+func NewEKSAdapter(logger flotillaLog.Logger) (EKSAdapter, error) {
+	adapter := eksAdapter{logger: logger}
 	return &adapter, nil
 }
 
@@ -358,11 +364,89 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
 
-	if !isGPUJob {
+	// Track default resources before ARA
+	defaultCPU := cpuRequest
+	defaultMem := memRequest
+
+	// Create tags for metrics (cluster only to avoid high cardinality)
+	metricTags := []string{}
+	if run.ClusterName != "" {
+		metricTags = append(metricTags, fmt.Sprintf("cluster:%s", run.ClusterName))
+	}
+
+	if !isGPUJob && araEnabled {
+		// Track ARA estimation attempt
+		_ = metrics.Increment(metrics.EngineEKSARAEstimationAttempted, metricTags, 1)
+
 		estimatedResources, err := manager.EstimateRunResources(ctx, *executable.GetExecutableID(), run.RunID)
 		if err == nil {
+			// Track successful estimation
+			_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, metricTags, 1)
+
+			// Detect if ARA actually triggered resource changes
+			araTriggered := (estimatedResources.Cpu != cpuRequest || estimatedResources.Memory != memRequest)
+
+			if araTriggered {
+				// Track that ARA triggered resource adjustment
+				_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, metricTags, 1)
+
+				// Track the magnitude of adjustment as ratios (better for understanding relative growth)
+				if defaultMem > 0 {
+					memoryRatio := float64(estimatedResources.Memory) / float64(defaultMem)
+					_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
+				}
+				if defaultCPU > 0 {
+					cpuRatio := float64(estimatedResources.Cpu) / float64(defaultCPU)
+					_ = metrics.Histogram(metrics.EngineEKSARACPUIncreaseRatio, cpuRatio, metricTags, 1)
+				}
+
+				// Log detailed information when ARA triggers (INFO level)
+				if a.logger != nil {
+					_ = a.logger.Log(
+						"message", "ARA adjusted resources",
+						"definition_id", *executable.GetExecutableID(),
+						"run_id", run.RunID,
+						"cluster", run.ClusterName,
+						"default_cpu_millicores", defaultCPU,
+						"adjusted_cpu_millicores", estimatedResources.Cpu,
+						"cpu_ratio", float64(estimatedResources.Cpu)/float64(defaultCPU),
+						"default_memory_mb", defaultMem,
+						"adjusted_memory_mb", estimatedResources.Memory,
+						"memory_ratio", float64(estimatedResources.Memory)/float64(defaultMem),
+					)
+				}
+			}
+
 			cpuRequest = estimatedResources.Cpu
 			memRequest = estimatedResources.Memory
+
+			// Calculate resource increases for absolute tracking
+			cpuIncrease := cpuRequest - defaultCPU
+			memIncrease := memRequest - defaultMem
+
+			// Emit default and ARA resource distributions
+			_ = metrics.Distribution(metrics.EngineEKSARADefaultCPU, float64(defaultCPU), metricTags, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARAARACPU, float64(cpuRequest), metricTags, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(defaultMem), metricTags, 1)
+			_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(memRequest), metricTags, 1)
+
+			// Emit increase amounts
+			if cpuIncrease > 0 {
+				_ = metrics.Distribution(metrics.EngineEKSARACPUIncrease, float64(cpuIncrease), metricTags, 1)
+			}
+			if memIncrease > 0 {
+				_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(memIncrease), metricTags, 1)
+			}
+		} else {
+			// Check if this is a missing resource error (expected for new jobs) vs a real error
+			var missingResource *exceptions.MissingResource
+			if errors.As(err, &missingResource) {
+				// No historical data available - this is expected for new jobs or jobs that haven't OOM'd
+				_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
+			} else {
+				// Track failed estimation (actual error)
+				_ = metrics.Increment(metrics.EngineEKSARAEstimationFailed, metricTags, 1)
+			}
 		}
 
 		if cpuRequest > cpuLimit {
@@ -374,13 +458,73 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 		}
 	}
 
-	cpuRequest, memRequest = a.checkResourceBounds(cpuRequest, memRequest, isGPUJob)
-	cpuLimit, memLimit = a.checkResourceBounds(cpuLimit, memLimit, isGPUJob)
+	// Check bounds - this will also emit metrics/logs for max hits
+	cpuRequestBeforeBounds := cpuRequest
+	memRequestBeforeBounds := memRequest
+	cpuRequest, memRequest, maxCPUHit, maxMemHit := a.checkResourceBounds(cpuRequest, memRequest, isGPUJob, run, executable, defaultCPU, defaultMem)
+	cpuLimit, memLimit, _, _ = a.checkResourceBounds(cpuLimit, memLimit, isGPUJob, run, executable, defaultCPU, defaultMem)
+
+	// Emit final resource distributions
+	_ = metrics.Histogram(metrics.EngineEKSARAFinalMemoryMB, float64(memRequest), metricTags, 1)
+	_ = metrics.Histogram(metrics.EngineEKSARAFinalCPUMillicores, float64(cpuRequest), metricTags, 1)
+
+	// Emit structured log when max resources hit
+	if maxMemHit || maxCPUHit {
+		a.emitARAMetrics(run, defaultCPU, defaultMem, cpuRequest, memRequest, cpuRequestBeforeBounds, memRequestBeforeBounds, maxCPUHit, maxMemHit)
+	}
 
 	return cpuLimit, memLimit, cpuRequest, memRequest
 }
 
-func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (int64, int64) {
+// emitARAMetrics logs structured information when ARA hits max resource bounds
+func (a *eksAdapter) emitARAMetrics(run state.Run, defaultCPU int64, defaultMem int64, finalCPU int64, finalMem int64, requestedCPU int64, requestedMem int64, maxCPUHit bool, maxMemHit bool) {
+	if a.logger == nil {
+		return
+	}
+
+	logFields := []interface{}{
+		"level", "warn",
+		"message", "ARA resource allocation hit maximum limit",
+		"run_id", run.RunID,
+		"cluster", run.ClusterName,
+		"default_cpu_millicores", defaultCPU,
+		"default_memory_mb", defaultMem,
+		"requested_cpu_millicores", requestedCPU,
+		"requested_memory_mb", requestedMem,
+		"final_cpu_millicores", finalCPU,
+		"final_memory_mb", finalMem,
+		"max_cpu_hit", maxCPUHit,
+		"max_memory_hit", maxMemHit,
+	}
+
+	if run.DefinitionID != "" {
+		logFields = append(logFields, "definition_id", run.DefinitionID)
+	}
+	if run.ExecutableID != nil {
+		logFields = append(logFields, "executable_id", *run.ExecutableID)
+	}
+	if run.Command != nil {
+		logFields = append(logFields, "command", *run.Command)
+	}
+
+	// Add overage information for memory (critical for 300GB issue)
+	if maxMemHit {
+		overage := requestedMem - finalMem
+		logFields = append(logFields, "memory_overage_mb", overage)
+		// Critical message for memory over-provisioning
+		logFields[3] = "ARA memory allocation hit maximum limit - potential over-provisioning"
+	}
+	if maxCPUHit {
+		overage := requestedCPU - finalCPU
+		logFields = append(logFields, "cpu_overage_millicores", overage)
+	}
+
+	_ = a.logger.Log(logFields...)
+}
+
+// checkResourceBounds enforces resource limits and emits metrics/logs when limits are hit
+// Returns: adjusted CPU, adjusted memory, whether max CPU was hit, whether max memory was hit
+func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, run state.Run, executable state.Executable, defaultCPU int64, defaultMem int64) (int64, int64, bool, bool) {
 	maxMem := state.MaxMem
 	maxCPU := state.MaxCPU
 
@@ -389,10 +533,23 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (i
 		maxCPU = state.MaxGPUCPU
 	}
 
+	// Create tags for metrics (cluster only to avoid high cardinality)
+	metricTags := []string{}
+	if run.ClusterName != "" {
+		metricTags = append(metricTags, fmt.Sprintf("cluster:%s", run.ClusterName))
+	}
+
+	maxCPUHit := false
+	maxMemHit := false
+
 	if cpu < state.MinCPU {
 		cpu = state.MinCPU
 	}
 	if cpu > maxCPU {
+		maxCPUHit = true
+		// Track hitting max CPU limit
+		_ = metrics.Increment(metrics.EngineEKSARAHitMaxCPU, metricTags, 1)
+
 		cpu = maxCPU
 	}
 
@@ -400,10 +557,14 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool) (i
 		mem = state.MinMem
 	}
 	if mem > maxMem {
+		maxMemHit = true
+		// Track hitting max memory limit - THIS IS THE KEY METRIC for the 300GB issue
+		_ = metrics.Increment(metrics.EngineEKSARAHitMaxMemory, metricTags, 1)
+
 		mem = maxMem
 	}
 
-	return cpu, mem
+	return cpu, mem, maxCPUHit, maxMemHit
 }
 
 func (a *eksAdapter) getResourceDefaults(run state.Run, executable state.Executable) (int64, int64) {
