@@ -139,6 +139,25 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 			return taskResources, exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
 		} else {
+			// Check if this is a PostgreSQL recovery conflict (expected on read replicas)
+			errMsg := err.Error()
+			isRecoveryConflict := strings.Contains(errMsg, "conflict with recovery") ||
+				strings.Contains(errMsg, "canceling statement due to conflict")
+
+			if isRecoveryConflict {
+				// Recovery conflicts are expected on read replicas - treat as missing data
+				// Log at info level since this is expected behavior, not an error
+				if sm.log != nil {
+					_ = sm.log.Log(
+						"message", "ARA: Query canceled due to recovery conflict on read replica (using defaults)",
+						"definition_id", executableID,
+						"command_hash", commandHash,
+					)
+				}
+				return taskResources, exceptions.MissingResource{
+					ErrorString: fmt.Sprintf("Resource usage with executable %s not found (recovery conflict)", executableID)}
+			}
+
 			// Unexpected error querying historical data
 			if sm.log != nil {
 				_ = sm.log.Log(
