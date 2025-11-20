@@ -143,6 +143,7 @@ func (ep *endpoints) ListDefinitions(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem listing definitions",
 			"operation", "ListDefinitions",
 			"error", fmt.Sprintf("%+v", err))
@@ -169,6 +170,7 @@ func (ep *endpoints) GetDefinition(w http.ResponseWriter, r *http.Request) {
 	definition, err := ep.definitionService.Get(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting definitions",
 			"operation", "GetDefinition",
 			"error", fmt.Sprintf("%+v", err),
@@ -185,6 +187,7 @@ func (ep *endpoints) GetDefinitionByAlias(w http.ResponseWriter, r *http.Request
 	definition, err := ep.definitionService.GetByAlias(r.Context(), vars["alias"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting definition by alias",
 			"operation", "GetDefinitionByAlias",
 			"error", fmt.Sprintf("%+v", err),
@@ -207,6 +210,7 @@ func (ep *endpoints) CreateDefinition(w http.ResponseWriter, r *http.Request) {
 	created, err := ep.definitionService.Create(r.Context(), &definition)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating definition",
 			"operation", "CreateDefinition",
 			"error", fmt.Sprintf("%+v", err))
@@ -230,6 +234,7 @@ func (ep *endpoints) UpdateDefinition(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem updating definition",
 			"operation", "UpdateDefinition",
 			"error", fmt.Sprintf("%+v", err),
@@ -246,6 +251,7 @@ func (ep *endpoints) DeleteDefinition(w http.ResponseWriter, r *http.Request) {
 	err := ep.definitionService.Delete(r.Context(), vars["definition_id"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem deleting definition",
 			"operation", "DeleteDefinition",
 			"error", fmt.Sprintf("%+v", err),
@@ -263,6 +269,7 @@ func (ep *endpoints) ListRuns(w http.ResponseWriter, r *http.Request) {
 	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem listing runs",
 			"operation", "ListRuns",
 			"error", fmt.Sprintf("%+v", err))
@@ -296,6 +303,7 @@ func (ep *endpoints) ListDefinitionRuns(w http.ResponseWriter, r *http.Request) 
 	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem listing definition runs",
 			"operation", "ListDefinitionRuns",
 			"error", fmt.Sprintf("%+v", err))
@@ -319,6 +327,7 @@ func (ep *endpoints) ListTemplateRuns(w http.ResponseWriter, r *http.Request) {
 	runList, err := ep.executionService.List(r.Context(), lr.limit, lr.offset, lr.order, lr.sortBy, lr.filters, lr.envFilters)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem listing runs for template",
 			"operation", "ListTemplateRuns",
 			"error", fmt.Sprintf("%+v", err))
@@ -350,6 +359,7 @@ func (ep *endpoints) GetRun(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting run",
 			"operation", "GetRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -366,6 +376,7 @@ func (ep *endpoints) GetPayload(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.Get(r.Context(), vars["run_id"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting run",
 			"operation", "GetRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -408,6 +419,7 @@ func (ep *endpoints) CreateRun(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating run",
 			"operation", "CreateRun",
 			"error", fmt.Sprintf("%+v", err))
@@ -476,6 +488,7 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating V2 run",
 			"operation", "CreateRunV2",
 			"error", fmt.Sprintf("%+v", err))
@@ -551,6 +564,7 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.CreateDefinitionRunByDefinitionID(r.Context(), vars["definition_id"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating V4 run",
 			"operation", "CreateRunV4",
 			"error", fmt.Sprintf("%+v", err))
@@ -629,6 +643,7 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.CreateDefinitionRunByAlias(r.Context(), vars["alias"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating run alias",
 			"operation", "CreateRunByAlias",
 			"error", fmt.Sprintf("%+v", err),
@@ -646,6 +661,7 @@ func (ep *endpoints) StopRun(w http.ResponseWriter, r *http.Request) {
 	err := ep.executionService.Terminate(r.Context(), vars["run_id"], userInfo)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem stopping run",
 			"operation", "StopRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -686,6 +702,7 @@ func (ep *endpoints) UpdateRun(w http.ResponseWriter, r *http.Request) {
 	err = ep.executionService.UpdateStatus(r.Context(), vars["run_id"], run.Status, run.ExitCode, run.RunExceptions, run.ExitReason)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem updating run",
 			"operation", "UpdateRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -703,6 +720,7 @@ func (ep *endpoints) GetEvents(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting run",
 			"operation", "GetRun",
 			"error", fmt.Sprintf("%+v", err),
@@ -911,6 +929,7 @@ func (ep *endpoints) CreateTemplateRunByName(w http.ResponseWriter, r *http.Requ
 	run, err := ep.executionService.CreateTemplateRunByTemplateName(r.Context(), vars["template_name"], vars["template_version"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating template run",
 			"operation", "CreateTemplateRun",
 			"error", fmt.Sprintf("%+v", err))
@@ -953,6 +972,7 @@ func (ep *endpoints) CreateTemplateRun(w http.ResponseWriter, r *http.Request) {
 	run, err := ep.executionService.CreateTemplateRunByTemplateID(r.Context(), vars["template_id"], &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating template run",
 			"operation", "CreateTemplateRun",
 			"error", fmt.Sprintf("%+v", err))
@@ -984,6 +1004,7 @@ func (ep *endpoints) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem listing templates",
 			"operation", "ListTemplates",
 			"error", fmt.Sprintf("%+v", err))
@@ -1006,6 +1027,7 @@ func (ep *endpoints) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	tpl, err := ep.templateService.GetByID(r.Context(), vars["template_id"])
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting templates",
 			"operation", "GetTemplate",
 			"error", fmt.Sprintf("%+v", err),
@@ -1028,6 +1050,7 @@ func (ep *endpoints) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	created, err := ep.templateService.Create(r.Context(), &req)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem creating template",
 			"operation", "CreateTemplate",
 			"error", fmt.Sprintf("%+v", err))
@@ -1112,6 +1135,7 @@ func (ep *endpoints) GetRunStatus(w http.ResponseWriter, r *http.Request) {
 	status, err := ep.executionService.GetRunStatus(r.Context(), runID)
 	if err != nil {
 		ep.logger.Log(
+			"level", "error",
 			"message", "problem getting run status",
 			"operation", "GetRunStatus",
 			"error", fmt.Sprintf("%+v", err),

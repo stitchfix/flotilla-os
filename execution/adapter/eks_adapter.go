@@ -407,6 +407,7 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 				// Log detailed information when ARA triggers (INFO level)
 				if a.logger != nil {
 					_ = a.logger.Log(
+						"level", "info",
 						"message", "ARA adjusted resources",
 						"definition_id", *executable.GetExecutableID(),
 						"run_id", run.RunID,

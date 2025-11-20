@@ -113,7 +113,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
 	// Initialize all clusters (both static and dynamic)
 	if err := clusterManager.InitializeClusters(context.Background(), staticClusters); err != nil {
-		emr.log.Log("message", "failed to initialize clusters", "error", err.Error())
+		emr.log.Log("level", "error", "message", "failed to initialize clusters", "error", err.Error())
 	}
 
 	return nil
@@ -156,7 +156,7 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 		emrJobManifest = emr.writeStringToS3(emrJobManifest, obj)
 	}
 
-	emr.log.Log("message", "Start EMR JobRun", "ExecutionRoleArn", startJobRunInput.ExecutionRoleArn)
+	emr.log.Log("level", "info", "message", "Start EMR JobRun", "ExecutionRoleArn", startJobRunInput.ExecutionRoleArn)
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
 	startJobRunOutput, err := emr.emrContainersClient.StartJobRun(&startJobRunInput)
@@ -172,7 +172,7 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 		run.StartedAt = run.QueuedAt
 		run.FinishedAt = run.QueuedAt
 		run.Status = state.StatusStopped
-		_ = emr.log.Log("EMR job submission error", "error", err.Error())
+		_ = emr.log.Log("level", "error", "message", "EMR job submission error", "error", err.Error())
 		_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusFailure), tierTag}, 1)
 		return run, false, err
 	}
@@ -251,7 +251,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, 
 	}
 	dbClusters, err := emr.stateManager.ListClusterStates(ctx)
 	if err != nil {
-		emr.log.Log("message", "failed to get clusters from database", "error", err.Error())
+		emr.log.Log("level", "error", "message", "failed to get clusters from database", "error", err.Error())
 		return emrcontainers.StartJobRunInput{}, err
 	}
 	var clusterID string
@@ -475,7 +475,7 @@ func (emr *EMRExecutionEngine) writeK8ObjToS3(obj runtime.Object, key *string) *
 		}
 		_, err = emr.s3Client.PutObject(&putObject)
 		if err != nil {
-			_ = emr.log.Log("s3_upload_error", "error", err.Error())
+			_ = emr.log.Log("level", "error", "message", "s3_upload_error", "error", err.Error())
 		}
 	}
 

@@ -143,7 +143,7 @@ func (app *App) initializeEKSWorkers(
 	qm queue.Manager,
 	clusterManager *engine.DynamicClusterManager) error {
 	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, emr, sm, qm, clusterManager)
-	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	_ = app.logger.Log("level", "info", "message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
 	}
@@ -160,7 +160,7 @@ func (app *App) initializeEMRWorkers(
 	qm queue.Manager,
 	clusterManager *engine.DynamicClusterManager) error {
 	workerManager, err := worker.NewWorker("worker_manager", log, conf, ee, emr, sm, qm, clusterManager)
-	_ = app.logger.Log("message", "Starting worker", "name", "worker_manager")
+	_ = app.logger.Log("level", "info", "message", "Starting worker", "name", "worker_manager")
 	if err != nil {
 		return errors.Wrapf(err, "problem initializing worker with name [%s]", "worker_manager")
 	}

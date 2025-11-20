@@ -89,7 +89,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 
 	// Initialize all clusters (both static and dynamic)
 	if err := clusterManager.InitializeClusters(context.Background(), staticClusters); err != nil {
-		ee.log.Log("message", "failed to initialize clusters", "error", err.Error())
+		ee.log.Log("level", "error", "message", "failed to initialize clusters", "error", err.Error())
 	}
 
 	adapt, err := adapter.NewEKSAdapter(ee.log)
@@ -191,7 +191,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 		_, err = ee.s3Client.PutObject(&putObject)
 
 		if err != nil {
-			_ = ee.log.Log("s3_upload_error", "error", err.Error())
+			_ = ee.log.Log("level", "error", "s3_upload_error", "error", err.Error())
 		}
 	}
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess), tierTag}, 1)
@@ -303,7 +303,7 @@ func (ee *EKSExecutionEngine) Terminate(ctx context.Context, run state.Run) erro
 	utils.TagJobRun(span, run)
 	gracePeriod := int64(300)
 	deletionPropagation := metav1.DeletePropagationBackground
-	_ = ee.log.Log("terminating run=", run.RunID)
+	_ = ee.log.Log("level", "info", "message", "terminating run", "run_id", run.RunID)
 	deleteOptions := &metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &deletionPropagation,
@@ -373,7 +373,7 @@ func (ee *EKSExecutionEngine) PollRuns(ctx context.Context) ([]RunReceipt, error
 			continue
 		}
 		if runReceipt.TraceID != 0 && runReceipt.ParentID != 0 {
-			ee.log.Log("message", "Received run with trace context",
+			ee.log.Log("level", "info", "message", "Received run with trace context",
 				"run_id", runReceipt.Run.RunID,
 				"trace_id", runReceipt.TraceID,
 				"parent_id", runReceipt.ParentID)
