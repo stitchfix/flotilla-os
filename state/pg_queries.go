@@ -61,7 +61,10 @@ FROM (SELECT memory as max_memory_used, cpu as max_cpu_used
            AND (exit_code = 137 or exit_reason = 'OOMKilled')
            AND engine = 'eks'
            AND definition_id = $1
-           AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
+           AND (
+               (SELECT command_hash FROM task WHERE run_id = $2) IS NULL
+               OR command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
+           )
       LIMIT 30) A
 `
 
@@ -137,7 +140,10 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
         AND exit_code = 0
         AND engine = 'eks'
         AND queued_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
-        AND command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
+        AND (
+            (SELECT command_hash FROM task WHERE run_id = $2) IS NULL
+            OR command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
+        )
       LIMIT 30) A
 `
 
