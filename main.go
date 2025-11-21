@@ -29,9 +29,9 @@ func main() {
 	}
 
 	//
-	// Use go-kit for structured logging
+	// Use go-kit for structured logging (JSON format for DataDog compatibility)
 	//
-	l := gklog.NewLogfmtLogger(gklog.NewSyncWriter(os.Stderr))
+	l := gklog.NewJSONLogger(gklog.NewSyncWriter(os.Stderr))
 	l = gklog.With(l, "ts", gklog.DefaultTimestampUTC)
 	eventSinks := []flotillaLog.EventSink{flotillaLog.NewLocalEventSink()}
 	logger := flotillaLog.NewLogger(l, eventSinks)

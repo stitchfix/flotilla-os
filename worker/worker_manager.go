@@ -100,7 +100,7 @@ func (wm *workerManager) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-wm.t.Dying():
-			wm.log.Log("message", "Worker manager was terminated")
+			wm.log.Log("level", "info", "message", "Worker manager was terminated")
 			return nil
 		default:
 			ctx, span := utils.TraceJob(context.Background(), "worker_manager.run_once", "worker_manager")
@@ -126,6 +126,7 @@ func (wm *workerManager) runOnce(ctx context.Context) error {
 
 			if err := wm.updateWorkerCount(ctx, w.WorkerType, currentWorkerCount, w.CountPerInstance); err != nil {
 				wm.log.Log(
+					"level", "error",
 					"message", "problem updating worker count",
 					"error", err.Error())
 			}
@@ -146,7 +147,7 @@ func (wm *workerManager) updateWorkerCount(
 
 	if currentWorkerCount > desiredWorkerCount {
 		for i := desiredWorkerCount; i < currentWorkerCount; i++ {
-			wm.log.Log("message", fmt.Sprintf(
+			wm.log.Log("level", "info", "message", fmt.Sprintf(
 				"Scaling down %s workers from %d to %d", workerType, currentWorkerCount, desiredWorkerCount))
 			if err := wm.removeWorker(ctx, workerType); err != nil {
 				return err
@@ -154,7 +155,7 @@ func (wm *workerManager) updateWorkerCount(
 		}
 	} else if currentWorkerCount < desiredWorkerCount {
 		for i := currentWorkerCount; i < desiredWorkerCount; i++ {
-			wm.log.Log("message", fmt.Sprintf(
+			wm.log.Log("level", "info", "message", fmt.Sprintf(
 				"Scaling up %s workers from %d to %d", workerType, currentWorkerCount, desiredWorkerCount))
 			if err := wm.addWorker(ctx, workerType); err != nil {
 				return err
@@ -173,7 +174,7 @@ func (wm *workerManager) removeWorker(ctx context.Context, workerType string) er
 			toKill := workers[len(workers)-1]
 			toKill.GetTomb().Kill(nil)
 			wm.workers[workerType] = workers[:len(workers)-1]
-			wm.log.Log("message", "Removed worker", "type", workerType)
+			wm.log.Log("level", "info", "message", "Removed worker", "type", workerType)
 		}
 	} else {
 		return fmt.Errorf("invalid worker type %s", workerType)
@@ -197,6 +198,6 @@ func (wm *workerManager) addWorker(ctx context.Context, workerType string) error
 	} else {
 		return fmt.Errorf("invalid worker type %s", workerType)
 	}
-	wm.log.Log("message", "Added worker", "type", workerType)
+	wm.log.Log("level", "info", "message", "Added worker", "type", workerType)
 	return nil
 }

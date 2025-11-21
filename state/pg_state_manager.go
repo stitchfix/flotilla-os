@@ -131,6 +131,7 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 			// No historical data found - this is expected for new jobs or jobs that haven't OOM'd
 			if sm.log != nil {
 				_ = sm.log.Log(
+					"level", "info",
 					"message", "ARA: No historical resource data found",
 					"definition_id", executableID,
 					"command_hash", commandHash,
@@ -139,6 +140,26 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 			return taskResources, exceptions.MissingResource{
 				ErrorString: fmt.Sprintf("Resource usage with executable %s not found", executableID)}
 		} else {
+			// Check if this is a PostgreSQL recovery conflict (expected on read replicas)
+			errMsg := err.Error()
+			isRecoveryConflict := strings.Contains(errMsg, "conflict with recovery") ||
+				strings.Contains(errMsg, "canceling statement due to conflict")
+
+			if isRecoveryConflict {
+				// Recovery conflicts are expected on read replicas - treat as missing data
+				// Log at info level since this is expected behavior, not an error
+				if sm.log != nil {
+					_ = sm.log.Log(
+						"level", "info",
+						"message", "ARA: Query canceled due to recovery conflict on read replica (using defaults)",
+						"definition_id", executableID,
+						"command_hash", commandHash,
+					)
+				}
+				return taskResources, exceptions.MissingResource{
+					ErrorString: fmt.Sprintf("Resource usage with executable %s not found (recovery conflict)", executableID)}
+			}
+
 			// Unexpected error querying historical data
 			if sm.log != nil {
 				_ = sm.log.Log(
@@ -153,14 +174,30 @@ func (sm *SQLStateManager) EstimateRunResources(ctx context.Context, executableI
 		}
 	}
 
+	// Check if the query returned NULL values (can happen when percentile_disc has no valid data)
+	if !taskResources.Memory.Valid || !taskResources.Cpu.Valid {
+		// NULL values mean no valid historical data - treat as missing resource
+		if sm.log != nil {
+			_ = sm.log.Log(
+				"level", "info",
+				"message", "ARA: No historical resource data found (NULL values returned)",
+				"definition_id", executableID,
+				"command_hash", commandHash,
+			)
+		}
+		return taskResources, exceptions.MissingResource{
+			ErrorString: fmt.Sprintf("Resource usage with executable %s not found (NULL values)", executableID)}
+	}
+
 	// Successfully found historical data - log the values being returned
 	if sm.log != nil {
 		_ = sm.log.Log(
+			"level", "info",
 			"message", "ARA: Historical resource data found",
 			"definition_id", executableID,
 			"command_hash", commandHash,
-			"estimated_memory_mb", taskResources.Memory,
-			"estimated_cpu_millicores", taskResources.Cpu,
+			"estimated_memory_mb", taskResources.Memory.Int64,
+			"estimated_cpu_millicores", taskResources.Cpu.Int64,
 		)
 	}
 
@@ -1896,7 +1933,7 @@ func (sm *SQLStateManager) logStatusUpdate(update Run) {
 	}
 
 	if err != nil {
-		sm.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
+		sm.log.Log("level", "error", "message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
 }
 

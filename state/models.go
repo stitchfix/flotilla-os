@@ -2,6 +2,7 @@ package state
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -888,8 +889,8 @@ type UserInfo struct {
 
 // Internal object for tracking cpu / memory resources.
 type TaskResources struct {
-	Cpu    int64 `json:"cpu"`
-	Memory int64 `json:"memory"`
+	Cpu    sql.NullInt64 `json:"cpu" db:"cpu"`
+	Memory sql.NullInt64 `json:"memory" db:"memory"`
 }
 
 // SQS notification object for CloudTrail S3 files.

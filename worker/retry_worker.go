@@ -31,7 +31,7 @@ func (rw *retryWorker) Initialize(conf config.Config, sm state.Manager, eksEngin
 	rw.ee = eksEngine
 	rw.log = log
 	rw.clusterManager = clusterManager
-	rw.log.Log("message", "initialized a retry worker")
+	rw.log.Log("level", "info", "message", "initialized a retry worker")
 	return nil
 }
 
@@ -44,7 +44,7 @@ func (rw *retryWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-rw.t.Dying():
-			rw.log.Log("message", "A retry worker was terminated")
+			rw.log.Log("level", "info", "message", "A retry worker was terminated")
 			return nil
 		default:
 			rw.runOnce(ctx)
@@ -59,13 +59,13 @@ func (rw *retryWorker) runOnce(ctx context.Context) {
 	// List runs in the StatusNeedsRetry state and requeue them
 	runList, err := rw.sm.ListRuns(ctx, 25, 0, "started_at", "asc", map[string][]string{"status": {state.StatusNeedsRetry}}, nil, []string{state.EKSEngine})
 	if runList.Total > 0 {
-		rw.log.Log("message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
+		rw.log.Log("level", "info", "message", fmt.Sprintf("Got %v jobs to retry", runList.Total))
 	}
 
 	if err != nil {
 		span.SetTag("error", true)
 		span.SetTag("error.msg", err.Error())
-		rw.log.Log("message", "Error listing runs for retry", "error", fmt.Sprintf("%+v", err))
+		rw.log.Log("level", "error", "message", "Error listing runs for retry", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 
@@ -76,12 +76,12 @@ func (rw *retryWorker) runOnce(ctx context.Context) {
 			utils.TagJobRun(childSpan, run)
 
 			if _, err = rw.sm.UpdateRun(ctx, run.RunID, state.Run{Status: state.StatusQueued}); err != nil {
-				rw.log.Log("message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				rw.log.Log("level", "error", "message", "Error updating run status to StatusQueued", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}
 
 			if err = rw.ee.Enqueue(ctx, run); err != nil {
-				rw.log.Log("message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				rw.log.Log("level", "error", "message", "Error enqueuing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 				return
 			}
 		}()

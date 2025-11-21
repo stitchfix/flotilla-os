@@ -92,14 +92,14 @@ func (dcm *DynamicClusterManager) generateKubeconfig(clusterName, kubeconfigPath
 		"--kubeconfig", kubeconfigPath)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		dcm.log.Log("message", "Failed to generate kubeconfig",
+		dcm.log.Log("level", "error", "message", "Failed to generate kubeconfig",
 			"cluster", clusterName,
 			"error", err.Error(),
 			"output", string(output))
 		return errors.Wrapf(err, "failed to generate kubeconfig: %s", string(output))
 	}
 
-	dcm.log.Log("message", "Successfully generated kubeconfig",
+	dcm.log.Log("level", "info", "message", "Successfully generated kubeconfig",
 		"cluster", clusterName,
 		"path", kubeconfigPath)
 	return nil
@@ -167,7 +167,7 @@ func (dcm *DynamicClusterManager) InitializeClusters(ctx context.Context, static
 	for _, clusterName := range staticClusters {
 		kubeconfigPath := filepath.Join(kubeconfigBaseDir, clusterName)
 		if err := dcm.generateKubeconfig(clusterName, kubeconfigPath); err != nil {
-			dcm.log.Log("message", "Failed to initialize static cluster",
+			dcm.log.Log("level", "error", "message", "Failed to initialize static cluster",
 				"cluster", clusterName,
 				"error", err.Error())
 		}
@@ -183,7 +183,7 @@ func (dcm *DynamicClusterManager) InitializeClusters(ctx context.Context, static
 		if cluster.Status == state.StatusActive {
 			kubeconfigPath := filepath.Join(kubeconfigBaseDir, cluster.Name)
 			if err := dcm.generateKubeconfig(cluster.Name, kubeconfigPath); err != nil {
-				dcm.log.Log("message", "Failed to initialize dynamic cluster",
+				dcm.log.Log("level", "error", "message", "Failed to initialize dynamic cluster",
 					"cluster", cluster.Name,
 					"error", err.Error())
 			}

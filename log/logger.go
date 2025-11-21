@@ -37,7 +37,7 @@ func (l *logger) Event(keyvals ...interface{}) error {
 	if l.sinks != nil {
 		for _, sink := range l.sinks {
 			if err = sink.Receive(keyvals...); err != nil {
-				_ = l.Log("message", "error sending event", "sink", sink, "error", err)
+				_ = l.Log("level", "error", "message", "error sending event", "sink", sink, "error", err)
 			}
 		}
 	}

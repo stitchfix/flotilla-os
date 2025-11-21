@@ -69,7 +69,7 @@ func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	}
 
 	if err != nil {
-		_ = ew.log.Log("message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
+		_ = ew.log.Log("level", "error", "message", "Error receiving Kubernetes Event queue", "error", fmt.Sprintf("%+v", err))
 		return nil
 	}
 	ew.queue = eventsQueue
@@ -87,7 +87,7 @@ func (ew *eventsWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ew.t.Dying():
-			_ = ew.log.Log("message", "An events worker was terminated")
+			_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
 			return nil
 		default:
 			loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
@@ -104,7 +104,7 @@ func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
 	defer span.Finish()
 	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
 	if err != nil {
-		_ = ew.log.Log("message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
+		_ = ew.log.Log("level", "error", "message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	ew.processEventEMR(ctx, emrEvent)
@@ -186,7 +186,7 @@ func (ew *eventsWorker) runOnce(ctx context.Context) {
 	defer span.Finish()
 	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
 	if err != nil {
-		_ = ew.log.Log("message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
+		_ = ew.log.Log("level", "error", "message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	ew.processEvent(ctx, kubernetesEvent)
@@ -244,11 +244,11 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 							if containerStatus.State.Terminated.ExitCode == 137 {
 								if strings.Contains(containerStatus.Name, "driver") {
 									driverOOM = aws.Bool(true)
-									_ = ew.log.Log("message", "Detected driver OOM",
+									_ = ew.log.Log("level", "warn", "message", "Detected driver OOM",
 										"container", containerStatus.Name)
 								} else {
 									executorOOM = aws.Bool(true)
-									_ = ew.log.Log("message", "Detected executor OOM",
+									_ = ew.log.Log("level", "warn", "message", "Detected executor OOM",
 										"container", containerStatus.Name)
 								}
 							}
@@ -336,7 +336,7 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 
 				run, err = ew.sm.UpdateRun(ctx, run.RunID, run)
 				if err != nil {
-					_ = ew.log.Log("message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
+					_ = ew.log.Log("level", "error", "message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 					span.SetTag("error", true)
 					span.SetTag("error.msg", err.Error())
 				}
@@ -432,7 +432,7 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 		ew.setEKSMetricsUri(&run)
 		run, err = ew.sm.UpdateRun(ctx, runId, run)
 		if err != nil {
-			_ = ew.log.Log("message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
+			_ = ew.log.Log("level", "error", "message", "error saving kubernetes events", "run", runId, "error", fmt.Sprintf("%+v", err))
 		} else {
 			_ = kubernetesEvent.Done()
 		}
