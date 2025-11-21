@@ -191,7 +191,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 		_, err = ee.s3Client.PutObject(&putObject)
 
 		if err != nil {
-			_ = ee.log.Log("level", "error", "s3_upload_error", "error", err.Error())
+			_ = ee.log.Log("level", "error", "message", "s3_upload_error", "error", err.Error())
 		}
 	}
 	_ = metrics.Increment(metrics.EngineEKSExecute, []string{string(metrics.StatusSuccess), tierTag}, 1)
