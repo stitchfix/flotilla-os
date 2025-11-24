@@ -130,6 +130,116 @@ FROM (SELECT memory as max_memory_used FROM TASK
 
 **Result:** 3136 MB ← **Exactly what the Nov 24 run received**
 
+## Concrete Example #2: Catastrophic Case at 350GB Maximum
+
+### The Worst-Case Scenario: ML Training at the Limit
+
+**Definition:** `sf-base_pytorch2-24__5-py3-698fef2e-4bad-4e45-624c-c57fec2f2aa7`
+**Command Hash:** `b4c7adde0a3dc7dd13a8da282f1693c1`
+**Shared Description:** "CTSM PF ATRF Metrics SubSeqRefactor 12-2 Train Staging / Model Training"
+
+This case demonstrates the bug at its most destructive: **12 completely different machine learning training configurations** all sharing one command_hash and **starting at the 350GB maximum memory limit from day one**.
+
+### The Three Training Configurations
+
+All run PyTorch model training (`client_time_series_model/train.py`) but with **completely different parameters**:
+
+#### Configuration A: March 2 Data, Full Dataset
+```bash
+python3 train.py --as_of 20250302 --max_epochs 4 --pct_client_subset_dev 100
+```
+- **Runs:** 24
+- **OOMs:** 22 (92% OOM rate!)
+- **Training:** Full dataset (100% of clients), 4 epochs
+- **Memory:** 350GB (maximum limit)
+
+#### Configuration B: June 28 Data, 10% Subset
+```bash
+python3 train.py --as_of 20250628 --max_epochs 10 --pct_client_subset_dev 10
+```
+- **Runs:** 24
+- **OOMs:** 8 (33% OOM rate)
+- **Training:** 10% of data, 10 epochs
+- **Memory:** 350GB (maximum limit)
+
+#### Configuration C: May 17 Data, 1% Subset
+```bash
+python3 train.py --as_of 20250517 --max_epochs 10 --pct_client_subset_dev 1
+```
+- **Runs:** 18
+- **OOMs:** 2 (11% OOM rate)
+- **Training:** Only 1% of data, 10 epochs
+- **Memory:** 350GB (maximum limit)
+
+### The Cross-Contamination Timeline
+
+**August 14-September 4, 2025** - All runs execute at 350GB from the start:
+
+```
+Aug 14: Config C (1% data)  → OOM at 350GB
+Aug 14: Config A (100% data) → 18 OOMs at 350GB over 6 days
+Aug 19: Config A continues   → More OOMs at ceiling
+Aug 28: Config B (10% data)  → 8 OOMs at 350GB
+Aug 28: Configs A, B, C mix  → All hit 350GB ceiling
+Sep 1-4: Various configs     → Continue OOM'ing at maximum
+```
+
+### Why This is Catastrophic
+
+1. **No room to grow:** ARA wants to increase memory after OOMs, but all runs are already at the 350GB maximum limit
+
+2. **Massive over-provisioning for small jobs:** Configuration C trains on **1% of the data** but gets **350GB** because Configurations A and B OOM'd with full datasets
+
+3. **Trapped at the ceiling:** Once at max memory, ARA becomes useless:
+   - Jobs that need >350GB: Keep OOM'ing, can't grow further
+   - Jobs that need <<350GB: Massively over-allocated, wasting resources
+
+4. **Cross-training contamination:** Three completely different ML experiments share OOM history:
+   - Different months of training data (March, May, June)
+   - Different model hyperparameters (4 vs 10 epochs)
+   - Different data sizes (100% vs 10% vs 1% of clients)
+
+### The Numbers
+
+**Total Impact:**
+- **83 runs** across **12 different commands**
+- **32 OOMs** (39% OOM rate **at maximum memory**)
+- **All 83 runs allocated 350GB** regardless of actual needs
+
+**Configuration C alone** (1% subset):
+- Likely needs <50GB based on data size
+- Receives 350GB due to cross-contamination
+- **700% over-provisioned** (7x more memory than needed)
+
+### Root Cause
+
+All 12 commands share the same description:
+```
+"CTSM PF ATRF Metrics SubSeqRefactor 12-2 Train Staging / Model Training"
+```
+
+Therefore: `command_hash = MD5(description) = b4c7adde0a3dc7dd13a8da282f1693c1`
+
+ARA cannot distinguish between:
+- Training on March data vs June data (4 months apart)
+- 4 epochs vs 10 epochs (2.5x difference)
+- 100% data vs 10% vs 1% (100x difference!)
+
+### What Should Happen
+
+If `command_hash` were calculated from the actual command:
+
+- **Config A hash:** MD5("...as_of 20250302...max_epochs 4...pct_client_subset_dev 100...")
+- **Config B hash:** MD5("...as_of 20250628...max_epochs 10...pct_client_subset_dev 10...")
+- **Config C hash:** MD5("...as_of 20250517...max_epochs 10...pct_client_subset_dev 1...")
+
+Each would have **independent ARA history** based on its actual resource needs:
+- Config A might legitimately need 350GB (full dataset)
+- Config B might need ~50GB (10% subset)
+- Config C might need ~10GB (1% subset)
+
+Instead, all three get 350GB because they share a description.
+
 ## Why This Causes Over-Provisioning
 
 1. **Cross-contamination:** Jobs inherit OOM data from unrelated workloads
