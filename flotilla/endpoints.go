@@ -1,7 +1,6 @@
 package flotilla
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
 	"github.com/stitchfix/flotilla-os/clients/middleware"
 	"github.com/stitchfix/flotilla-os/exceptions"
@@ -460,10 +458,6 @@ func (ep *endpoints) CreateRunV2(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if lr.CommandHash == nil && lr.Description != nil {
-		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
-	}
-
 	req := state.DefinitionExecutionRequest{
 		ExecutionRequestCommon: &state.ExecutionRequestCommon{
 			Env:              lr.Env,
@@ -522,10 +516,6 @@ func (ep *endpoints) CreateRunV4(w http.ResponseWriter, r *http.Request) {
 		} else {
 			lr.Engine = &state.EKSEngine
 		}
-	}
-
-	if lr.CommandHash == nil && lr.Description != nil {
-		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}
 
 	if lr.NodeLifecycle != nil {
@@ -601,10 +591,6 @@ func (ep *endpoints) CreateRunByAlias(w http.ResponseWriter, r *http.Request) {
 		} else {
 			lr.Engine = &state.EKSEngine
 		}
-	}
-
-	if lr.CommandHash == nil && lr.Description != nil {
-		lr.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*lr.Description))))
 	}
 
 	if lr.NodeLifecycle != nil {
