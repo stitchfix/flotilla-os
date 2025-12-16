@@ -7,6 +7,11 @@
       "name": "cluster",
       "prefix": "cluster",
       "available_values": []
+    },
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": []
     }
   ],
   "widgets": [
@@ -21,7 +26,7 @@
         "legend_size": "0",
         "requests": [
           {
-            "q": "sum:engine.eks.ara.estimation_attempted{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_attempted{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "dog_classic",
@@ -30,7 +35,7 @@
             }
           },
           {
-            "q": "sum:engine.eks.ara.estimation_succeeded{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_succeeded{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "green",
@@ -39,7 +44,7 @@
             }
           },
           {
-            "q": "sum:engine.eks.ara.estimation_failed{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_failed{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "red",
@@ -48,7 +53,7 @@
             }
           },
           {
-            "q": "sum:engine.eks.ara.no_historical_data{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.no_historical_data{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "orange",
@@ -84,7 +89,7 @@
         "legend_size": "0",
         "requests": [
           {
-            "q": "sum:engine.eks.ara.resource_adjustment{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.resource_adjustment{$cluster,$env}.as_count()",
             "display_type": "bars",
             "style": {
               "palette": "blue",
@@ -120,7 +125,7 @@
         "legend_size": "0",
         "requests": [
           {
-            "q": "sum:engine.eks.ara.hit_max_memory{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "red",
@@ -129,7 +134,7 @@
             }
           },
           {
-            "q": "sum:engine.eks.ara.hit_max_cpu{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_cpu{$cluster,$env}.as_count()",
             "display_type": "line",
             "style": {
               "palette": "orange",
@@ -172,7 +177,7 @@
         "precision": 2,
         "requests": [
           {
-            "q": "(sum:engine.eks.ara.estimation_succeeded{$cluster}.as_count() / sum:engine.eks.ara.estimation_attempted{$cluster}.as_count()) * 100",
+            "q": "(sum:algo.flotilla.engine.eks.ara.estimation_succeeded{$cluster,$env}.as_count() / sum:algo.flotilla.engine.eks.ara.estimation_attempted{$cluster,$env}.as_count()) * 100",
             "aggregator": "last",
             "conditional_formats": [
               {
@@ -213,7 +218,7 @@
         "precision": 0,
         "requests": [
           {
-            "q": "sum:engine.eks.ara.hit_max_memory{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
             "aggregator": "sum",
             "conditional_formats": [
               {
@@ -253,7 +258,7 @@
         },
         "requests": [
           {
-            "q": "avg:engine.eks.ara.memory_increase_ratio{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.memory_increase_ratio{$cluster,$env} by {cluster}",
             "style": {
               "palette": "YlOrRd"
             }
@@ -283,7 +288,7 @@
         },
         "requests": [
           {
-            "q": "avg:engine.eks.ara.cpu_increase_ratio{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.cpu_increase_ratio{$cluster,$env} by {cluster}",
             "style": {
               "palette": "YlOrRd"
             }
@@ -306,7 +311,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "sum:engine.eks.ara.hit_max_memory{$cluster}.as_count()",
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
             "style": {
               "palette": "red"
             }
@@ -329,7 +334,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.default_memory{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.default_memory{$cluster,$env} by {cluster}",
             "style": {
               "palette": "blue"
             }
@@ -352,7 +357,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.ara_memory{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_memory{$cluster,$env} by {cluster}",
             "style": {
               "palette": "orange"
             }
@@ -375,7 +380,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.final_memory_mb{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.final_memory_mb{$cluster,$env} by {cluster}",
             "style": {
               "palette": "red"
             }
@@ -398,7 +403,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.memory_increase{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.memory_increase{$cluster,$env} by {cluster}",
             "style": {
               "palette": "purple"
             }
@@ -421,7 +426,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.default_cpu{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.default_cpu{$cluster,$env} by {cluster}",
             "style": {
               "palette": "blue"
             }
@@ -444,7 +449,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.ara_cpu{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_cpu{$cluster,$env} by {cluster}",
             "style": {
               "palette": "orange"
             }
@@ -467,7 +472,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.final_cpu_millicores{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.final_cpu_millicores{$cluster,$env} by {cluster}",
             "style": {
               "palette": "red"
             }
@@ -490,7 +495,7 @@
         "title_align": "left",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.cpu_increase{$cluster} by {cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.cpu_increase{$cluster,$env} by {cluster}",
             "style": {
               "palette": "purple"
             }
@@ -515,7 +520,7 @@
         "legend_size": "0",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.default_memory{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.default_memory{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "blue",
@@ -524,7 +529,7 @@
             }
           },
           {
-            "q": "avg:engine.eks.ara.ara_memory{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_memory{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "orange",
@@ -533,7 +538,7 @@
             }
           },
           {
-            "q": "avg:engine.eks.ara.final_memory_mb{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.final_memory_mb{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "red",
@@ -575,7 +580,7 @@
         "legend_size": "0",
         "requests": [
           {
-            "q": "avg:engine.eks.ara.default_cpu{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.default_cpu{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "blue",
@@ -584,7 +589,7 @@
             }
           },
           {
-            "q": "avg:engine.eks.ara.ara_cpu{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_cpu{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "orange",
@@ -593,7 +598,7 @@
             }
           },
           {
-            "q": "avg:engine.eks.ara.final_cpu_millicores{$cluster}",
+            "q": "avg:algo.flotilla.engine.eks.ara.final_cpu_millicores{$cluster,$env}",
             "display_type": "line",
             "style": {
               "palette": "red",
