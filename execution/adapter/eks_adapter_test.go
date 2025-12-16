@@ -281,9 +281,11 @@ func TestAdaptiveResources_NonGPUJob_ARAEnabled_Success(t *testing.T) {
 		},
 	}
 
+	commandHash := "test-command-hash"
 	run := state.Run{
 		RunID:        "test-run",
 		ExecutableID: &executableID,
+		CommandHash:  &commandHash,
 	}
 
 	manager := &mockStateManager{
@@ -417,6 +419,7 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 	executableID := "test-executable"
 	definitionID := "test-definition"
 	command := "test-command"
+	commandHash := "test-command-hash"
 	executable := &mockExecutable{
 		executableID: executableID,
 		resources: &state.ExecutableResources{
@@ -430,6 +433,7 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 		ExecutableID: &executableID,
 		DefinitionID: definitionID,
 		Command:      &command,
+		CommandHash:  &commandHash,
 		ClusterName:  "test-cluster",
 	}
 

@@ -375,91 +375,107 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 	}
 
 	if !isGPUJob && araEnabled {
-		// Track ARA estimation attempt
-		_ = metrics.Increment(metrics.EngineEKSARAEstimationAttempted, metricTags, 1)
-
-		estimatedResources, err := manager.EstimateRunResources(ctx, *executable.GetExecutableID(), run.RunID)
-		if err == nil {
-			// Track successful estimation
-			_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, metricTags, 1)
-
-			// Extract int64 values from NullInt64 (we know they're valid because err == nil)
-			estimatedCPU := estimatedResources.Cpu.Int64
-			estimatedMemory := estimatedResources.Memory.Int64
-
-			// Detect if ARA actually triggered resource changes
-			araTriggered := (estimatedCPU != cpuRequest || estimatedMemory != memRequest)
-
-			if araTriggered {
-				// Track that ARA triggered resource adjustment
-				_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, metricTags, 1)
-
-				// Track the magnitude of adjustment as ratios (better for understanding relative growth)
-				if defaultMem > 0 {
-					memoryRatio := float64(estimatedMemory) / float64(defaultMem)
-					_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
-				}
-				if defaultCPU > 0 {
-					cpuRatio := float64(estimatedCPU) / float64(defaultCPU)
-					_ = metrics.Histogram(metrics.EngineEKSARACPUIncreaseRatio, cpuRatio, metricTags, 1)
-				}
-
-				// Log detailed information when ARA triggers (INFO level)
-				if a.logger != nil {
-					_ = a.logger.Log(
-						"level", "info",
-						"message", "ARA adjusted resources",
-						"definition_id", *executable.GetExecutableID(),
-						"run_id", run.RunID,
-						"cluster", run.ClusterName,
-						"default_cpu_millicores", defaultCPU,
-						"adjusted_cpu_millicores", estimatedCPU,
-						"cpu_ratio", float64(estimatedCPU)/float64(defaultCPU),
-						"default_memory_mb", defaultMem,
-						"adjusted_memory_mb", estimatedMemory,
-						"memory_ratio", float64(estimatedMemory)/float64(defaultMem),
-					)
-				}
-			}
-
-			cpuRequest = estimatedCPU
-			memRequest = estimatedMemory
-
-			// Calculate resource increases for absolute tracking
-			cpuIncrease := cpuRequest - defaultCPU
-			memIncrease := memRequest - defaultMem
-
-			// Emit default and ARA resource distributions
-			_ = metrics.Distribution(metrics.EngineEKSARADefaultCPU, float64(defaultCPU), metricTags, 1)
-			_ = metrics.Distribution(metrics.EngineEKSARAARACPU, float64(cpuRequest), metricTags, 1)
-			_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(defaultMem), metricTags, 1)
-			_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(memRequest), metricTags, 1)
-
-			// Emit increase amounts
-			if cpuIncrease > 0 {
-				_ = metrics.Distribution(metrics.EngineEKSARACPUIncrease, float64(cpuIncrease), metricTags, 1)
-			}
-			if memIncrease > 0 {
-				_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(memIncrease), metricTags, 1)
+		// Check if command_hash is NULL (malformed job with no command)
+		if run.CommandHash == nil {
+			// Command hash is NULL - skip ARA for malformed jobs
+			_ = metrics.Increment(metrics.EngineEKSARANullCommandHash, metricTags, 1)
+			if a.logger != nil {
+				_ = a.logger.Log(
+					"level", "warn",
+					"message", "Skipping ARA - NULL command_hash",
+					"reason", "Job has no command (malformed definition)",
+					"run_id", run.RunID,
+					"definition_id", *executable.GetExecutableID(),
+				)
 			}
 		} else {
-			// Check if this is a missing resource error (expected for new jobs) vs a real error
-			var missingResource *exceptions.MissingResource
-			if errors.As(err, &missingResource) {
-				// No historical data available - this is expected for new jobs or jobs that haven't OOM'd
-				_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
+			// Track ARA estimation attempt
+			_ = metrics.Increment(metrics.EngineEKSARAEstimationAttempted, metricTags, 1)
+
+			// Pass command_hash directly instead of run_id (optimization)
+			estimatedResources, err := manager.EstimateRunResources(ctx, *executable.GetExecutableID(), *run.CommandHash)
+			if err == nil {
+				// Track successful estimation
+				_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, metricTags, 1)
+
+				// Extract int64 values from NullInt64 (we know they're valid because err == nil)
+				estimatedCPU := estimatedResources.Cpu.Int64
+				estimatedMemory := estimatedResources.Memory.Int64
+
+				// Detect if ARA actually triggered resource changes
+				araTriggered := (estimatedCPU != cpuRequest || estimatedMemory != memRequest)
+
+				if araTriggered {
+					// Track that ARA triggered resource adjustment
+					_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, metricTags, 1)
+
+					// Track the magnitude of adjustment as ratios (better for understanding relative growth)
+					if defaultMem > 0 {
+						memoryRatio := float64(estimatedMemory) / float64(defaultMem)
+						_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, memoryRatio, metricTags, 1)
+					}
+					if defaultCPU > 0 {
+						cpuRatio := float64(estimatedCPU) / float64(defaultCPU)
+						_ = metrics.Histogram(metrics.EngineEKSARACPUIncreaseRatio, cpuRatio, metricTags, 1)
+					}
+
+					// Log detailed information when ARA triggers (INFO level)
+					if a.logger != nil {
+						_ = a.logger.Log(
+							"level", "info",
+							"message", "ARA adjusted resources",
+							"definition_id", *executable.GetExecutableID(),
+							"run_id", run.RunID,
+							"cluster", run.ClusterName,
+							"default_cpu_millicores", defaultCPU,
+							"adjusted_cpu_millicores", estimatedCPU,
+							"cpu_ratio", float64(estimatedCPU)/float64(defaultCPU),
+							"default_memory_mb", defaultMem,
+							"adjusted_memory_mb", estimatedMemory,
+							"memory_ratio", float64(estimatedMemory)/float64(defaultMem),
+						)
+					}
+				}
+
+				cpuRequest = estimatedCPU
+				memRequest = estimatedMemory
+
+				// Calculate resource increases for absolute tracking
+				cpuIncrease := cpuRequest - defaultCPU
+				memIncrease := memRequest - defaultMem
+
+				// Emit default and ARA resource distributions
+				_ = metrics.Distribution(metrics.EngineEKSARADefaultCPU, float64(defaultCPU), metricTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARAARACPU, float64(cpuRequest), metricTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(defaultMem), metricTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(memRequest), metricTags, 1)
+
+				// Emit increase amounts
+				if cpuIncrease > 0 {
+					_ = metrics.Distribution(metrics.EngineEKSARACPUIncrease, float64(cpuIncrease), metricTags, 1)
+				}
+				if memIncrease > 0 {
+					_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(memIncrease), metricTags, 1)
+				}
 			} else {
-				// Track failed estimation (actual error)
-				_ = metrics.Increment(metrics.EngineEKSARAEstimationFailed, metricTags, 1)
+				// Check if this is a missing resource error (expected for new jobs) vs a real error
+				var missingResource *exceptions.MissingResource
+				if errors.As(err, &missingResource) {
+					// No historical data available - this is expected for new jobs or jobs that haven't OOM'd
+					_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
+				} else {
+					// Track failed estimation (actual error)
+					_ = metrics.Increment(metrics.EngineEKSARAEstimationFailed, metricTags, 1)
+				}
 			}
-		}
 
-		if cpuRequest > cpuLimit {
-			cpuLimit = cpuRequest
-		}
+			if cpuRequest > cpuLimit {
+				cpuLimit = cpuRequest
+			}
 
-		if memRequest > memLimit {
-			memLimit = memRequest
+			if memRequest > memLimit {
+				memLimit = memRequest
+			}
 		}
 	}
 

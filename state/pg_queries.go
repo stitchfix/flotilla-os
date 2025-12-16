@@ -61,10 +61,7 @@ FROM (SELECT memory as max_memory_used, cpu as max_cpu_used
            AND (exit_code = 137 or exit_reason = 'OOMKilled')
            AND engine = 'eks'
            AND definition_id = $1
-           AND (
-               (SELECT command_hash FROM task WHERE run_id = $2) IS NULL
-               OR command_hash = (SELECT command_hash FROM task WHERE run_id = $2)
-           )
+           AND command_hash = $2
       LIMIT 30) A
 `
 
