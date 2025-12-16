@@ -37,7 +37,7 @@ func (events byTimestamp) Less(i, j int) bool { return *(events[i].Timestamp) < 
 // NewLogsClient creates and initializes a run logs client
 //
 func NewLogsClient(conf config.Config, logger flotillaLog.Logger, name string) (Client, error) {
-	_ = logger.Log("message", "Initializing logs client", "client", name)
+	_ = logger.Log("level", "info", "message", "Initializing logs client", "client", name)
 	switch name {
 	case "eks":
 		// awslogs as an ecs log driver sends logs to AWS CloudWatch Logs service

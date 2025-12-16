@@ -2,9 +2,12 @@ package services
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
 	"log"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
 	"github.com/stitchfix/flotilla-os/testutils"
@@ -507,4 +510,311 @@ func TestExecutionService_GetRunStatus(t *testing.T) {
 		t.Errorf("Expected error message '%s', got '%s'", expectedErrorString, err.Error())
 	}
 
+}
+
+func TestExecutionService_CommandHashCalculatedFromCommand(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that command_hash is MD5 of command, not description
+	cmd := "python script.py --arg value"
+	desc := "Different description"
+	engine := state.DefaultEngine
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd,
+			Description: &desc,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Verify command_hash is MD5 of command
+	expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(cmd)))
+	if run.CommandHash == nil {
+		t.Errorf("Expected non-nil command_hash")
+	} else if *run.CommandHash != expectedHash {
+		t.Errorf("Expected command_hash to be MD5 of command '%s', got '%s'", expectedHash, *run.CommandHash)
+	}
+
+	// Verify it's NOT MD5 of description
+	descHash := fmt.Sprintf("%x", md5.Sum([]byte(desc)))
+	if run.CommandHash != nil && *run.CommandHash == descHash {
+		t.Errorf("command_hash should NOT be MD5 of description (that was the bug!)")
+	}
+}
+
+func TestExecutionService_CommandHashWithSameDescriptionDifferentCommands(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that different commands get different hashes even with same description
+	description := "Daily processing job"
+	cmd1 := "python process.py --date 2025-01-01"
+	cmd2 := "python process.py --date 2025-01-02"
+	engine := state.DefaultEngine
+
+	req1 := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd1,
+			Description: &description,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	req2 := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd2,
+			Description: &description,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	run1, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req1)
+	if err != nil {
+		t.Fatalf("Error creating run1: %s", err.Error())
+	}
+
+	run2, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req2)
+	if err != nil {
+		t.Fatalf("Error creating run2: %s", err.Error())
+	}
+
+	// Verify both have non-nil command_hash
+	if run1.CommandHash == nil {
+		t.Errorf("Expected run1 to have non-nil command_hash")
+	}
+	if run2.CommandHash == nil {
+		t.Errorf("Expected run2 to have non-nil command_hash")
+	}
+
+	// Verify hashes are different (critical for ARA fix)
+	if run1.CommandHash != nil && run2.CommandHash != nil {
+		if *run1.CommandHash == *run2.CommandHash {
+			t.Errorf("Different commands should have different hashes even with same description. "+
+				"Both got hash '%s'. This was the ARA bug!", *run1.CommandHash)
+		}
+	}
+
+	// Verify they match expected hashes
+	expectedHash1 := fmt.Sprintf("%x", md5.Sum([]byte(cmd1)))
+	expectedHash2 := fmt.Sprintf("%x", md5.Sum([]byte(cmd2)))
+
+	if run1.CommandHash != nil && *run1.CommandHash != expectedHash1 {
+		t.Errorf("run1 command_hash mismatch: expected '%s', got '%s'", expectedHash1, *run1.CommandHash)
+	}
+	if run2.CommandHash != nil && *run2.CommandHash != expectedHash2 {
+		t.Errorf("run2 command_hash mismatch: expected '%s', got '%s'", expectedHash2, *run2.CommandHash)
+	}
+}
+
+func TestExecutionService_CommandHashNullWhenCommandNull(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that NULL command results in NULL command_hash
+	// (This is a malformed job, but should not crash)
+	engine := state.DefaultEngine
+	desc := "A description without a command"
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     nil, // NULL command
+			Description: &desc,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Command should be set from definition's command (if any)
+	// But if definition also has no command, command_hash should be NULL
+	if run.Command == nil || len(*run.Command) == 0 {
+		// Command is NULL/empty, so command_hash should also be NULL
+		if run.CommandHash != nil {
+			t.Errorf("Expected NULL command_hash when command is NULL, got '%s'", *run.CommandHash)
+		}
+	}
+
+	// Even if command gets set from definition, command_hash should NOT be from description
+	if run.CommandHash != nil {
+		descHash := fmt.Sprintf("%x", md5.Sum([]byte(desc)))
+		if *run.CommandHash == descHash {
+			t.Errorf("command_hash should NOT be MD5 of description (that was the bug!)")
+		}
+	}
+}
+
+func TestExecutionService_CommandHashMatchesCommand(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test with various command strings to ensure consistent hashing
+	testCases := []struct {
+		name    string
+		command string
+	}{
+		{"Simple command", "echo hello"},
+		{"Command with args", "python train.py --epochs 10 --lr 0.001"},
+		{"Multi-line command", "set -e\necho 'Starting'\npython script.py\necho 'Done'"},
+		{"Command with special chars", "grep -r 'pattern' /path/to/files | sort | uniq"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			engine := state.DefaultEngine
+			cmd := tc.command
+
+			req := state.DefinitionExecutionRequest{
+				ExecutionRequestCommon: &state.ExecutionRequestCommon{
+					Command: &cmd,
+					OwnerID: "testuser",
+					Engine:  &engine,
+				},
+			}
+
+			run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+			if err != nil {
+				t.Fatalf("Error creating run: %s", err.Error())
+			}
+
+			expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(tc.command)))
+			if run.CommandHash == nil {
+				t.Errorf("Expected non-nil command_hash for command: %s", tc.command)
+			} else if *run.CommandHash != expectedHash {
+				t.Errorf("command_hash mismatch for '%s': expected '%s', got '%s'",
+					tc.command, expectedHash, *run.CommandHash)
+			}
+		})
+	}
+}
+
+func TestExecutionService_CommandHashStableAcrossRuns(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Verify same command always produces same hash (consistency check)
+	cmd := "python train.py --model resnet50"
+	engine := state.DefaultEngine
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command: &cmd,
+			OwnerID: "testuser",
+			Engine:  &engine,
+		},
+	}
+
+	// Create multiple runs with same command
+	run1, err1 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	run2, err2 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	run3, err3 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		t.Fatalf("Error creating runs")
+	}
+
+	// All should have same command_hash
+	if run1.CommandHash == nil || run2.CommandHash == nil || run3.CommandHash == nil {
+		t.Errorf("All runs should have non-nil command_hash")
+	}
+
+	if *run1.CommandHash != *run2.CommandHash || *run1.CommandHash != *run3.CommandHash {
+		t.Errorf("Same command should always produce same hash. Got: '%s', '%s', '%s'",
+			*run1.CommandHash, *run2.CommandHash, *run3.CommandHash)
+	}
+
+	// Verify it matches expected
+	expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(cmd)))
+	if *run1.CommandHash != expectedHash {
+		t.Errorf("Expected hash '%s', got '%s'", expectedHash, *run1.CommandHash)
+	}
+}
+
+func TestExecutionService_CommandHashNotSetInEndpoints(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that even if description is provided, command_hash comes from command
+	// This verifies the endpoints.go fix (removal of description-based hashing)
+	cmd := "python app.py"
+	desc := "This is a description"
+	engine := state.DefaultEngine
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd,
+			Description: &desc,
+			CommandHash: nil, // Explicitly NULL to verify it gets calculated
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Should be MD5 of command, not description
+	cmdHash := fmt.Sprintf("%x", md5.Sum([]byte(cmd)))
+	descHash := fmt.Sprintf("%x", md5.Sum([]byte(desc)))
+
+	if run.CommandHash == nil {
+		t.Errorf("Expected command_hash to be calculated")
+	} else {
+		if *run.CommandHash == descHash {
+			t.Errorf("BUG: command_hash is MD5 of description! This should have been fixed.")
+		}
+		if *run.CommandHash != cmdHash {
+			t.Errorf("Expected command_hash to be MD5 of command '%s', got '%s'", cmdHash, *run.CommandHash)
+		}
+	}
+}
+
+func TestExecutionService_CommandHashWithOverride(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that if API client explicitly provides a command_hash, it gets overwritten
+	// by the correct hash calculated from the command
+	cmd := "python script.py"
+	wrongHash := "this_is_wrong_hash"
+	engine := state.DefaultEngine
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd,
+			CommandHash: aws.String(wrongHash), // Wrong hash provided by client
+			OwnerID:     "testuser",
+			Engine:      &engine,
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Should be overwritten with correct hash
+	expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(cmd)))
+	if run.CommandHash == nil {
+		t.Errorf("Expected non-nil command_hash")
+	} else if *run.CommandHash == wrongHash {
+		t.Errorf("BUG: Wrong hash was not overwritten! Still has '%s'", wrongHash)
+	} else if *run.CommandHash != expectedHash {
+		t.Errorf("Expected command_hash '%s', got '%s'", expectedHash, *run.CommandHash)
+	}
 }

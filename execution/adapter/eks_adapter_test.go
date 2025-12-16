@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -280,15 +281,17 @@ func TestAdaptiveResources_NonGPUJob_ARAEnabled_Success(t *testing.T) {
 		},
 	}
 
+	commandHash := "test-command-hash"
 	run := state.Run{
 		RunID:        "test-run",
 		ExecutableID: &executableID,
+		CommandHash:  &commandHash,
 	}
 
 	manager := &mockStateManager{
 		estimateResourcesResult: state.TaskResources{
-			Cpu:    2000,
-			Memory: 3000,
+			Cpu:    sql.NullInt64{Int64: 2000, Valid: true},
+			Memory: sql.NullInt64{Int64: 3000, Valid: true},
 		},
 		estimateResourcesError: nil,
 	}
@@ -416,6 +419,7 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 	executableID := "test-executable"
 	definitionID := "test-definition"
 	command := "test-command"
+	commandHash := "test-command-hash"
 	executable := &mockExecutable{
 		executableID: executableID,
 		resources: &state.ExecutableResources{
@@ -429,14 +433,15 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 		ExecutableID: &executableID,
 		DefinitionID: definitionID,
 		Command:      &command,
+		CommandHash:  &commandHash,
 		ClusterName:  "test-cluster",
 	}
 
 	// Return resources that exceed max bounds
 	manager := &mockStateManager{
 		estimateResourcesResult: state.TaskResources{
-			Cpu:    state.MaxCPU + 10000, // Exceeds max
-			Memory: state.MaxMem + 50000, // Exceeds max
+			Cpu:    sql.NullInt64{Int64: state.MaxCPU + 10000, Valid: true}, // Exceeds max
+			Memory: sql.NullInt64{Int64: state.MaxMem + 50000, Valid: true}, // Exceeds max
 		},
 		estimateResourcesError: nil,
 	}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -356,6 +357,15 @@ func (es *executionService) constructBaseRunFromExecutable(ctx context.Context, 
 	if fields.NodeLifecycle == nil {
 		fields.NodeLifecycle = &state.SpotLifecycle
 	}
+
+	// Calculate command_hash from actual command (FIX for ARA bug)
+	// This ensures jobs with different commands have different hashes,
+	// even if they share the same description.
+	if fields.Command != nil && len(*fields.Command) > 0 {
+		fields.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*fields.Command))))
+	}
+	// If command is NULL/empty, command_hash remains NULL (malformed job)
+	// Do NOT fall back to description - that was the bug we're fixing
 
 	run = state.Run{
 		RunID:                 runID,

@@ -56,7 +56,7 @@ func (sw *statusWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 		sw.exceptionExtractorUrl = sw.conf.GetString("eks_exception_extractor_url")
 	}
 	sw.redisClient, _ = utils.SetupRedisClient(conf)
-	_ = sw.log.Log("message", "initialized a status worker")
+	_ = sw.log.Log("level", "info", "message", "initialized a status worker")
 	return nil
 }
 
@@ -69,7 +69,7 @@ func (sw *statusWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-sw.t.Dying():
-			sw.log.Log("message", "A status worker was terminated")
+			sw.log.Log("level", "info", "message", "A status worker was terminated")
 			return nil
 		default:
 			if *sw.engine == state.EKSEngine {
@@ -93,7 +93,7 @@ func (sw *statusWorker) runTimeouts(ctx context.Context) {
 	}, nil, state.Engines)
 
 	if err != nil {
-		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("level", "error", "message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	runs := rl.Runs
@@ -144,7 +144,7 @@ func (sw *statusWorker) runOnceEKS(ctx context.Context) {
 	}, nil, []string{state.EKSEngine})
 
 	if err != nil {
-		_ = sw.log.Log("message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("level", "error", "message", "unable to receive runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
 	runs := rl.Runs
@@ -196,7 +196,7 @@ func (sw *statusWorker) acquireLock(run state.Run, purpose string, expiration ti
 	}
 	set, err := sw.redisClient.SetNX(key, sw.workerId, expiration).Result()
 	if err != nil {
-		_ = sw.log.Log("message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("level", "error", "message", "unable to set lock", "error", fmt.Sprintf("%+v", err))
 		return true
 	}
 	_ = metrics.Timing(metrics.StatusWorkerAcquireLock, time.Since(start), []string{sw.workerId}, 1)
@@ -228,7 +228,7 @@ func (sw *statusWorker) processEKSRun(ctx context.Context, run state.Run) {
 
 	updatedRun, err := sw.ee.FetchUpdateStatus(statusCtx, reloadRun)
 	if err != nil {
-		_ = sw.log.Log("message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
+		_ = sw.log.Log("level", "error", "message", "fetch update status", "run", run.RunID, "error", fmt.Sprintf("%+v", err))
 
 		if strings.Contains(err.Error(), "not found") {
 			if run.Status == state.StatusPending || run.Status == state.StatusQueued {
@@ -277,7 +277,7 @@ func (sw *statusWorker) processEKSRun(ctx context.Context, run state.Run) {
 			}
 			_, err = sw.sm.UpdateRun(ctx, updatedRun.RunID, updatedRun)
 			if err != nil {
-				_ = sw.log.Log("message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
+				_ = sw.log.Log("level", "error", "message", "unable to save eks runs", "error", fmt.Sprintf("%+v", err))
 			}
 
 			if updatedRun.Status == state.StatusStopped {
@@ -434,7 +434,7 @@ func (sw *statusWorker) logStatusUpdate(update state.Run) {
 	}
 
 	if err != nil {
-		sw.log.Log("message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
+		sw.log.Log("level", "error", "message", "Failed to emit status event", "run_id", update.RunID, "error", err.Error())
 	}
 }
 

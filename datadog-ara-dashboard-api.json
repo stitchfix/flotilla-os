@@ -1,0 +1,691 @@
+{
+  "title": "Flotilla ARA (Auto Resource Adjustment) Metrics",
+  "description": "Dashboard tracking Auto Resource Adjustment behavior, resource growth patterns, and over-provisioning detection. Critical for monitoring jobs hitting 350GB memory limits.",
+  "layout_type": "free",
+  "template_variables": [
+    {
+      "name": "cluster",
+      "prefix": "cluster",
+      "available_values": []
+    },
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": []
+    }
+  ],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "title": "ARA Estimation Attempts vs Successes",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_size": "0",
+        "requests": [
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_attempted{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_succeeded{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.estimation_failed{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.no_historical_data{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "title": "ARA Resource Adjustments",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_size": "0",
+        "requests": [
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.resource_adjustment{$cluster,$env}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 48,
+        "y": 0,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "title": "Max Resource Limits Hit (Critical)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_size": "0",
+        "requests": [
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          },
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_cpu{$cluster,$env}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 0",
+            "display_type": "error dashed",
+            "label": "Alert Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 16,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "query_value",
+        "title": "Success Rate",
+        "title_size": "16",
+        "title_align": "left",
+        "custom_unit": "%",
+        "autoscale": true,
+        "precision": 2,
+        "requests": [
+          {
+            "q": "(sum:algo.flotilla.engine.eks.ara.estimation_succeeded{$cluster,$env}.as_count() / sum:algo.flotilla.engine.eks.ara.estimation_attempted{$cluster,$env}.as_count()) * 100",
+            "aggregator": "last",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 95,
+                "palette": "green_on_white"
+              },
+              {
+                "comparator": ">=",
+                "value": 80,
+                "palette": "yellow_on_white"
+              },
+              {
+                "comparator": "<",
+                "value": 80,
+                "palette": "red_on_white"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 48,
+        "y": 16,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "query_value",
+        "title": "Max Memory Hits (Last Hour)",
+        "title_size": "16",
+        "title_align": "left",
+        "custom_unit": "",
+        "autoscale": true,
+        "precision": 0,
+        "requests": [
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
+            "aggregator": "sum",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 0,
+                "palette": "red_on_white"
+              },
+              {
+                "comparator": "=",
+                "value": 0,
+                "palette": "green_on_white"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 72,
+        "y": 16,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "heatmap",
+        "title": "Memory Increase Ratio Distribution",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.memory_increase_ratio{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "YlOrRd"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 32,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "heatmap",
+        "title": "CPU Increase Ratio Distribution",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.cpu_increase_ratio{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "YlOrRd"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 32,
+        "y": 32,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "toplist",
+        "title": "Top Clusters by Max Memory Hits",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "sum:algo.flotilla.engine.eks.ara.hit_max_memory{$cluster,$env}.as_count()",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 64,
+        "y": 32,
+        "width": 31,
+        "height": 15
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "distribution",
+        "title": "Default Memory Distribution (Before ARA)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.default_memory{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "blue"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 48,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "type": "distribution",
+        "title": "ARA Memory Distribution (After ARA)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_memory{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "orange"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 24,
+        "y": 48,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "type": "distribution",
+        "title": "Final Memory Distribution (After Bounds)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.final_memory_mb{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 48,
+        "y": 48,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "type": "distribution",
+        "title": "Memory Increase (Absolute MB)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.memory_increase{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "purple"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 72,
+        "y": 48,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "type": "distribution",
+        "title": "Default CPU Distribution (Before ARA)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.default_cpu{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "blue"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 64,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "type": "distribution",
+        "title": "ARA CPU Distribution (After ARA)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_cpu{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "orange"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 24,
+        "y": 64,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "type": "distribution",
+        "title": "Final CPU Distribution (After Bounds)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.final_cpu_millicores{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 48,
+        "y": 64,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 16,
+      "definition": {
+        "type": "distribution",
+        "title": "CPU Increase (Absolute Millicores)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.cpu_increase{$cluster,$env} by {cluster}",
+            "style": {
+              "palette": "purple"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 72,
+        "y": 64,
+        "width": 23,
+        "height": 15
+      }
+    },
+    {
+      "id": 17,
+      "definition": {
+        "type": "timeseries",
+        "title": "Resource Growth Over Time",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_size": "0",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.default_memory{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_memory{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.final_memory_mb{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Memory (MB)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 350000",
+            "display_type": "error dashed",
+            "label": "350GB Limit"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 80,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 18,
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Growth Over Time",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_size": "0",
+        "requests": [
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.default_cpu{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.ara_cpu{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:algo.flotilla.engine.eks.ara.final_cpu_millicores{$cluster,$env}",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "CPU (millicores)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 60000",
+            "display_type": "error dashed",
+            "label": "60K Limit"
+          }
+        ]
+      },
+      "layout": {
+        "x": 48,
+        "y": 80,
+        "width": 47,
+        "height": 15
+      }
+    },
+    {
+      "id": 19,
+      "definition": {
+        "type": "log_stream",
+        "title": "ARA Logs - Resource Adjustments & Max Limits",
+        "title_size": "16",
+        "title_align": "left",
+        "query": "source:flotilla (\"ARA adjusted resources\" OR \"ARA resource allocation hit maximum limit\" OR \"ARA memory allocation hit maximum limit\" OR \"ARA CPU allocation hit maximum limit\")",
+        "columns": [
+          "core_host",
+          "core_service",
+          "tag_source",
+          "log_status"
+        ],
+        "show_date_column": true,
+        "show_message_column": true,
+        "message_display": "expanded-md",
+        "sort": {
+          "column": "time",
+          "order": "desc"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 96,
+        "width": 47,
+        "height": 30
+      }
+    },
+    {
+      "id": 20,
+      "definition": {
+        "type": "log_stream",
+        "title": "ARA Logs - Historical Data Lookups",
+        "title_size": "16",
+        "title_align": "left",
+        "query": "source:flotilla (\"ARA: Historical resource data found\" OR \"ARA: No historical resource data found\" OR \"ARA: Error querying historical resource data\")",
+        "columns": [
+          "core_host",
+          "core_service",
+          "tag_source",
+          "log_status"
+        ],
+        "show_date_column": true,
+        "show_message_column": true,
+        "message_display": "expanded-md",
+        "sort": {
+          "column": "time",
+          "order": "desc"
+        }
+      },
+      "layout": {
+        "x": 48,
+        "y": 96,
+        "width": 47,
+        "height": 30
+      }
+    }
+  ]
+}

@@ -66,6 +66,7 @@ const (
 	EngineEKSARAARACPU               Metric = "engine.eks.ara.ara_cpu"
 	EngineEKSARAMemoryIncrease       Metric = "engine.eks.ara.memory_increase"
 	EngineEKSARACPUIncrease          Metric = "engine.eks.ara.cpu_increase"
+	EngineEKSARANullCommandHash      Metric = "engine.eks.ara.null_command_hash"
 )
 
 type MetricTag string

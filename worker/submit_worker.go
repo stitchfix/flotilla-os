@@ -39,7 +39,7 @@ func (sw *submitWorker) Initialize(conf config.Config, sm state.Manager, eksEngi
 	sw.log = log
 	sw.redisClient, _ = utils.SetupRedisClient(conf)
 	sw.clusterManager = clusterManager
-	_ = sw.log.Log("message", "initialized a submit worker")
+	_ = sw.log.Log("level", "info", "message", "initialized a submit worker")
 	return nil
 }
 
@@ -52,7 +52,7 @@ func (sw *submitWorker) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-sw.t.Dying():
-			sw.log.Log("message", "A submit worker was terminated")
+			sw.log.Log("level", "info", "message", "A submit worker was terminated")
 			return nil
 		default:
 			sw.runOnce(ctx)
@@ -74,13 +74,13 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 	receiptsEMR, err := sw.emrEngine.PollRuns(ctx)
 	receipts = append(receipts, receiptsEMR...)
 	if err != nil {
-		sw.log.Log("message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
+		sw.log.Log("level", "error", "message", "Error receiving runs", "error", fmt.Sprintf("%+v", err))
 	}
 	for _, runReceipt := range receipts {
 		if runReceipt.Run == nil {
 			continue
 		}
-		sw.log.Log("message", "Processing run receipt",
+		sw.log.Log("level", "info", "message", "Processing run receipt",
 			"run_id", runReceipt.Run.RunID,
 			"has_trace_context", runReceipt.TraceID != 0 && runReceipt.ParentID != 0,
 			"trace_id", runReceipt.TraceID,
@@ -95,7 +95,7 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 			}
 			spanCtx, err := tracer.Extract(carrier)
 			if err != nil {
-				sw.log.Log("message", "Error extracting span context", "error", err.Error())
+				sw.log.Log("level", "error", "message", "Error extracting span context", "error", err.Error())
 				runCtx = ctx
 			} else {
 				bridgeSpan := tracer.StartSpan("flotilla.queue.sqs_receive", tracer.ChildOf(spanCtx))
@@ -115,9 +115,9 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 		//
 		run, err = sw.sm.GetRun(ctx, runReceipt.Run.RunID)
 		if err != nil {
-			sw.log.Log("message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
+			sw.log.Log("level", "error", "message", "Error fetching run from state, acking", "run_id", runReceipt.Run.RunID, "error", fmt.Sprintf("%+v", err))
 			if err = runReceipt.Done(); err != nil {
-				sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				sw.log.Log("level", "error", "message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
 			continue
 		}
@@ -154,7 +154,7 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
 					if err = runReceipt.Done(); err != nil {
-						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+						sw.log.Log("level", "error", "message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 					}
 					continue
 				}
@@ -174,24 +174,24 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 				if err != nil {
 					sw.logFailedToGetExecutableMessage(run, err)
 					if err = runReceipt.Done(); err != nil {
-						sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+						sw.log.Log("level", "error", "message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 					}
 					continue
 				}
 
 				// Execute the run using the execution engine.
-				sw.log.Log("message", "Submitting", "run_id", run.RunID)
+				sw.log.Log("level", "info", "message", "Submitting", "run_id", run.RunID)
 				launched, retryable, err = sw.eksEngine.Execute(runCtx, tpl, run, sw.sm)
 				break
 			default:
 				// If executable type is invalid; log message and continue processing
 				// other runs.
-				sw.log.Log("message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
+				sw.log.Log("level", "error", "message", "submit worker failed", "run_id", run.RunID, "error", "invalid executable type")
 				continue
 			}
 
 			if err != nil {
-				sw.log.Log("message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
+				sw.log.Log("level", "error", "message", "Error executing run", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err), "retryable", retryable)
 				if !retryable {
 					// Set status to StatusStopped, and ack
 					launched.Status = state.StatusStopped
@@ -200,7 +200,7 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 					continue
 				}
 			} else {
-				sw.log.Log("message", "Task submitted from SQS to the cluster", "run_id", run.RunID)
+				sw.log.Log("level", "info", "message", "Task submitted from SQS to the cluster", "run_id", run.RunID)
 			}
 
 			//
@@ -208,7 +208,7 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 			//
 			err = sw.log.Event("eventClassName", "FlotillaSubmitTask", "executable_id", *run.ExecutableID, "run_id", run.RunID)
 			if err != nil {
-				sw.log.Log("message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+				sw.log.Log("level", "error", "message", "Failed to emit event", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 			}
 
 			//
@@ -216,17 +216,17 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 			// either the run submitted successfully -or- it did not and is not retryable
 			//
 			if _, err = sw.sm.UpdateRun(runCtx, run.RunID, launched); err != nil {
-				sw.log.Log("message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", fmt.Sprintf("%+v", err))
+				sw.log.Log("level", "error", "message", "Failed to update run status", "run_id", run.RunID, "status", launched.Status, "error", fmt.Sprintf("%+v", err))
 			}
 		} else {
-			sw.log.Log("message", "Received run that is not runnable", "run_id", run.RunID, "status", run.Status)
+			sw.log.Log("level", "warn", "message", "Received run that is not runnable", "run_id", run.RunID, "status", run.Status)
 		}
 
 		if err = runReceipt.Done(); err != nil {
 			childSpan.SetTag("error", true)
 			childSpan.SetTag("error.msg", err.Error())
 			childSpan.SetTag("error.type", "sqs_ack")
-			sw.log.Log("message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
+			sw.log.Log("level", "error", "message", "Acking run failed", "run_id", run.RunID, "error", fmt.Sprintf("%+v", err))
 		} else {
 			childSpan.SetTag("sqs.ack_success", true)
 		}
@@ -236,6 +236,7 @@ func (sw *submitWorker) runOnce(ctx context.Context) {
 
 func (sw *submitWorker) logFailedToGetExecutableMessage(run state.Run, err error) {
 	sw.log.Log(
+		"level", "error",
 		"message", "Error fetching executable for run",
 		"run_id", run.RunID,
 		"executable_id", run.ExecutableID,
