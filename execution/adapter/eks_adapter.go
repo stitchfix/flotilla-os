@@ -359,7 +359,10 @@ func (a *eksAdapter) constructVolumeMounts(ctx context.Context, executable state
 }
 
 func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, araEnabled bool) (int64, int64, int64, int64) {
-	isGPUJob := run.Gpu != nil && *run.Gpu > 0
+	executableResources := executable.GetExecutableResources()
+	// Check both run.Gpu (from execution request) and executableResources.Gpu (from definition)
+	// This matches the GPU allocation logic in constructResourceRequirements (lines 300-308)
+	isGPUJob := (run.Gpu != nil && *run.Gpu > 0) || (executableResources.Gpu != nil && *executableResources.Gpu > 0)
 
 	cpuLimit, memLimit := a.getResourceDefaults(run, executable)
 	cpuRequest, memRequest := a.getResourceDefaults(run, executable)
