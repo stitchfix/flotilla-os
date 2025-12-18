@@ -582,7 +582,7 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, ru
 	}
 	if mem > maxMem {
 		maxMemHit = true
-		// Track hitting max memory limit - THIS IS THE KEY METRIC for the 300GB issue
+		// Track hitting max memory limit - THIS IS THE KEY METRIC
 		_ = metrics.Increment(metrics.EngineEKSARAHitMaxMemory, metricTags, 1)
 
 		mem = maxMem

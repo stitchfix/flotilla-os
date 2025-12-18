@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stitchfix/flotilla-os/utils"
 	"math/rand"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/stitchfix/flotilla-os/utils"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -362,10 +363,15 @@ func (es *executionService) constructBaseRunFromExecutable(ctx context.Context, 
 	// This ensures jobs with different commands have different hashes,
 	// even if they share the same description.
 	if fields.Command != nil && len(*fields.Command) > 0 {
+		// Regular EKS jobs: Hash the command
 		fields.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*fields.Command))))
+	} else if *fields.Engine == state.EKSSparkEngine && fields.Description != nil && len(*fields.Description) > 0 {
+		// Spark jobs: Fall back to description (Spark jobs don't have commands)
+		// The Spark "command" is in spark_extension, not the command field
+		// Description uniquely identifies the Spark job type for ARA tracking
+		fields.CommandHash = aws.String(fmt.Sprintf("%x", md5.Sum([]byte(*fields.Description))))
 	}
-	// If command is NULL/empty, command_hash remains NULL (malformed job)
-	// Do NOT fall back to description - that was the bug we're fixing
+	// If both command and description are NULL, command_hash remains NULL (malformed job)
 
 	run = state.Run{
 		RunID:                 runID,
