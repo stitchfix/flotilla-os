@@ -818,3 +818,196 @@ func TestExecutionService_CommandHashWithOverride(t *testing.T) {
 		t.Errorf("Expected command_hash '%s', got '%s'", expectedHash, *run.CommandHash)
 	}
 }
+
+func TestExecutionService_SparkCommandHashFromDescription(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that Spark jobs with NULL command get command_hash from description
+	// Spark jobs don't have a command field - they store config in spark_extension
+	desc := "Vmi Po Recon Data Extract / Run Snapshots"
+	engine := state.EKSSparkEngine
+	entryPoint := "s3://bucket/script.py"
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     nil, // Spark jobs have NULL command
+			Description: &desc,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+			SparkExtension: &state.SparkExtension{
+				SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+					EntryPoint: &entryPoint,
+				},
+			},
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Should have command_hash from description (for Spark jobs)
+	expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(desc)))
+	if run.CommandHash == nil {
+		t.Errorf("Expected non-nil command_hash for Spark job with description")
+	} else if *run.CommandHash != expectedHash {
+		t.Errorf("Expected Spark command_hash to be MD5 of description '%s', got '%s'", expectedHash, *run.CommandHash)
+	}
+}
+
+func TestExecutionService_SparkCommandHashConsistent(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that Spark jobs with same description get same hash (critical for ARA)
+	desc := "Vmi Po Recon Data Extract / Run Snapshots"
+	engine := state.EKSSparkEngine
+	entryPoint := "s3://bucket/script.py"
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     nil,
+			Description: &desc,
+			OwnerID:     "testuser",
+			Engine:      &engine,
+			SparkExtension: &state.SparkExtension{
+				SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+					EntryPoint: &entryPoint,
+				},
+			},
+		},
+	}
+
+	// Create multiple Spark runs with same description
+	run1, err1 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	run2, err2 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	run3, err3 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		t.Fatalf("Error creating Spark runs")
+	}
+
+	// All should have same command_hash for ARA tracking
+	if run1.CommandHash == nil || run2.CommandHash == nil || run3.CommandHash == nil {
+		t.Errorf("All Spark runs should have non-nil command_hash")
+	}
+
+	if *run1.CommandHash != *run2.CommandHash || *run1.CommandHash != *run3.CommandHash {
+		t.Errorf("Spark jobs with same description should always produce same hash. Got: '%s', '%s', '%s'",
+			*run1.CommandHash, *run2.CommandHash, *run3.CommandHash)
+	}
+
+	// Verify it matches expected
+	expectedHash := fmt.Sprintf("%x", md5.Sum([]byte(desc)))
+	if *run1.CommandHash != expectedHash {
+		t.Errorf("Expected Spark hash '%s', got '%s'", expectedHash, *run1.CommandHash)
+	}
+}
+
+func TestExecutionService_SparkVsRegularEKSHashing(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that Spark and regular EKS jobs use different hashing strategies
+	// This ensures no cross-contamination between Spark and regular jobs
+	description := "Process data files"
+	cmd := "python process.py"
+	entryPoint := "s3://bucket/script.py"
+
+	// Regular EKS job
+	regularEngine := state.DefaultEngine
+	regularReq := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     &cmd,
+			Description: &description,
+			OwnerID:     "testuser",
+			Engine:      &regularEngine,
+		},
+	}
+
+	// Spark job
+	sparkEngine := state.EKSSparkEngine
+	sparkReq := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     nil, // Spark has no command
+			Description: &description,
+			OwnerID:     "testuser",
+			Engine:      &sparkEngine,
+			SparkExtension: &state.SparkExtension{
+				SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+					EntryPoint: &entryPoint,
+				},
+			},
+		},
+	}
+
+	regularRun, err1 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &regularReq)
+	sparkRun, err2 := es.CreateDefinitionRunByDefinitionID(ctx, "A", &sparkReq)
+
+	if err1 != nil || err2 != nil {
+		t.Fatalf("Error creating runs")
+	}
+
+	// Verify both have command_hash
+	if regularRun.CommandHash == nil {
+		t.Errorf("Regular EKS job should have command_hash")
+	}
+	if sparkRun.CommandHash == nil {
+		t.Errorf("Spark job should have command_hash")
+	}
+
+	// Verify they use different hash sources
+	cmdHash := fmt.Sprintf("%x", md5.Sum([]byte(cmd)))
+	descHash := fmt.Sprintf("%x", md5.Sum([]byte(description)))
+
+	if regularRun.CommandHash != nil && *regularRun.CommandHash != cmdHash {
+		t.Errorf("Regular EKS job should hash from command, expected '%s', got '%s'", cmdHash, *regularRun.CommandHash)
+	}
+
+	if sparkRun.CommandHash != nil && *sparkRun.CommandHash != descHash {
+		t.Errorf("Spark job should hash from description, expected '%s', got '%s'", descHash, *sparkRun.CommandHash)
+	}
+
+	// Most importantly: they should have DIFFERENT hashes (no cross-contamination)
+	if regularRun.CommandHash != nil && sparkRun.CommandHash != nil {
+		if *regularRun.CommandHash == *sparkRun.CommandHash {
+			t.Errorf("Regular EKS and Spark jobs should have different hashes to prevent ARA cross-contamination. Both got '%s'", *regularRun.CommandHash)
+		}
+	}
+}
+
+func TestExecutionService_SparkNullDescriptionNullHash(t *testing.T) {
+	ctx := context.Background()
+	es, _ := setUp(t)
+
+	// Test that Spark jobs with NULL command AND NULL description get NULL hash
+	// (This is a malformed job, but should not crash)
+	engine := state.EKSSparkEngine
+	entryPoint := "s3://bucket/script.py"
+
+	req := state.DefinitionExecutionRequest{
+		ExecutionRequestCommon: &state.ExecutionRequestCommon{
+			Command:     nil, // Spark has no command
+			Description: nil, // Also no description (malformed)
+			OwnerID:     "testuser",
+			Engine:      &engine,
+			SparkExtension: &state.SparkExtension{
+				SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+					EntryPoint: &entryPoint,
+				},
+			},
+		},
+	}
+
+	run, err := es.CreateDefinitionRunByDefinitionID(ctx, "A", &req)
+	if err != nil {
+		t.Fatalf("Error creating run: %s", err.Error())
+	}
+
+	// Should have NULL command_hash (malformed job)
+	if run.CommandHash != nil {
+		t.Errorf("Expected NULL command_hash for Spark job with NULL description, got '%s'", *run.CommandHash)
+	}
+}
