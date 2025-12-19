@@ -37,7 +37,7 @@ var MaxGPUCPU = int64(94000)
 
 var MinMem = int64(512)
 
-var MaxMem = int64(248000)
+var MaxMem = int64(350000)
 
 var MaxGPUMem = int64(376000)
 
