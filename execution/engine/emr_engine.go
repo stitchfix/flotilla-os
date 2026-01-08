@@ -12,6 +12,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/exceptions"
 	"github.com/stitchfix/flotilla-os/utils"
 
 	"github.com/stitchfix/flotilla-os/config"
@@ -623,6 +624,15 @@ func (emr *EMRExecutionEngine) estimateExecutorCount(run state.Run, manager stat
 	return run
 }
 
+// buildMetricTags creates a standard set of tags for Spark ARA metrics
+func (emr *EMRExecutionEngine) buildMetricTags(run state.Run) []string {
+	tags := []string{"engine:eks-spark"}
+	if run.ClusterName != "" {
+		tags = append(tags, fmt.Sprintf("cluster:%s", run.ClusterName))
+	}
+	return tags
+}
+
 func setResourceSuffix(value string) string {
 	if strings.Contains(value, "g") || strings.Contains(value, "m") {
 		return strings.ToUpper(value)
@@ -634,23 +644,86 @@ func setResourceSuffix(value string) string {
 }
 
 func (emr *EMRExecutionEngine) estimateMemoryResources(ctx context.Context, run state.Run, manager state.Manager) state.Run {
+	// Early return for NULL command_hash
 	if run.CommandHash == nil {
+		metricTags := emr.buildMetricTags(run)
+		_ = metrics.Increment(metrics.EngineEKSARANullCommandHash, metricTags, 1)
+		if emr.log != nil {
+			_ = emr.log.Log(
+				"level", "warn",
+				"message", "Skipping Spark ARA - NULL command_hash",
+				"reason", "Spark job has no command_hash (malformed)",
+				"run_id", run.RunID,
+				"definition_id", run.DefinitionID,
+			)
+		}
 		return run
 	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	executorOOM, _ := manager.ExecutorOOM(ctx, run.DefinitionID, *run.CommandHash)
-	driverOOM, _ := manager.DriverOOM(ctx, run.DefinitionID, *run.CommandHash)
+
+	metricTags := emr.buildMetricTags(run)
+
+	// Track adjustment attempt
+	_ = metrics.Increment(metrics.EngineEKSARAEstimationAttempted, metricTags, 1)
+
+	// Query for OOMs
+	executorOOM, executorErr := manager.ExecutorOOM(ctx, run.DefinitionID, *run.CommandHash)
+	driverOOM, driverErr := manager.DriverOOM(ctx, run.DefinitionID, *run.CommandHash)
+
+	// Track query success/failure
+	if executorErr != nil || driverErr != nil {
+		var missingResource *exceptions.MissingResource
+		if errors.As(executorErr, &missingResource) || errors.As(driverErr, &missingResource) {
+			// No historical data - expected for new jobs
+			_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
+		} else {
+			// Query failed with real error
+			_ = metrics.Increment(metrics.EngineEKSARAEstimationFailed, metricTags, 1)
+		}
+	} else {
+		// Query succeeded
+		_ = metrics.Increment(metrics.EngineEKSARAEstimationSucceeded, metricTags, 1)
+	}
 
 	var sparkSubmitConf []state.Conf
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if *k.Name == "spark.executor.memory" && k.Value != nil {
 			// 1.25x executor memory - OOM in the last 30 days
 			if executorOOM {
-				quantity := resource.MustParse(setResourceSuffix(*k.Value))
+				originalValue := *k.Value
+				quantity := resource.MustParse(setResourceSuffix(originalValue))
+				originalMB := quantity.Value() / (1024 * 1024) // Convert to MB
 				quantity.Set(int64(float64(quantity.Value()) * 1.25))
+				adjustedMB := quantity.Value() / (1024 * 1024)
 				k.Value = aws.String(strings.ToLower(quantity.String()))
+
+				// Emit metrics with component:executor tag
+				executorTags := append(metricTags, "component:executor")
+				_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, executorTags, 1)
+				_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, 1.25, executorTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(originalMB), executorTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(adjustedMB), executorTags, 1)
+				increaseMB := adjustedMB - originalMB
+				_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(increaseMB), executorTags, 1)
+
+				// Log executor adjustment
+				if emr.log != nil {
+					_ = emr.log.Log(
+						"level", "info",
+						"message", "Spark ARA adjusted executor memory",
+						"definition_id", run.DefinitionID,
+						"run_id", run.RunID,
+						"cluster", run.ClusterName,
+						"component", "executor",
+						"default_memory_mb", originalMB,
+						"adjusted_memory_mb", adjustedMB,
+						"increase_ratio", 1.25,
+						"oom_detected", true,
+					)
+				}
 			} else {
 				quantity := resource.MustParse(setResourceSuffix(*k.Value))
 				minVal := resource.MustParse("1G")
@@ -661,11 +734,39 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(ctx context.Context, run 
 			}
 		}
 		if driverOOM {
-			//Bump up driver by 3x, jvm memory strings
+			// Bump up driver by 3x, jvm memory strings
 			if *k.Name == "spark.driver.memory" && k.Value != nil {
-				quantity := resource.MustParse(setResourceSuffix(*k.Value))
+				originalValue := *k.Value
+				quantity := resource.MustParse(setResourceSuffix(originalValue))
+				originalMB := quantity.Value() / (1024 * 1024)
 				quantity.Set(quantity.Value() * 3)
+				adjustedMB := quantity.Value() / (1024 * 1024)
 				k.Value = aws.String(strings.ToLower(quantity.String()))
+
+				// Emit metrics with component:driver tag
+				driverTags := append(metricTags, "component:driver")
+				_ = metrics.Increment(metrics.EngineEKSARAResourceAdjustment, driverTags, 1)
+				_ = metrics.Histogram(metrics.EngineEKSARAMemoryIncreaseRatio, 3.0, driverTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARADefaultMemory, float64(originalMB), driverTags, 1)
+				_ = metrics.Distribution(metrics.EngineEKSARAARAMemory, float64(adjustedMB), driverTags, 1)
+				increaseMB := adjustedMB - originalMB
+				_ = metrics.Distribution(metrics.EngineEKSARAMemoryIncrease, float64(increaseMB), driverTags, 1)
+
+				// Log driver adjustment
+				if emr.log != nil {
+					_ = emr.log.Log(
+						"level", "info",
+						"message", "Spark ARA adjusted driver memory",
+						"definition_id", run.DefinitionID,
+						"run_id", run.RunID,
+						"cluster", run.ClusterName,
+						"component", "driver",
+						"default_memory_mb", originalMB,
+						"adjusted_memory_mb", adjustedMB,
+						"increase_ratio", 3.0,
+						"oom_detected", true,
+					)
+				}
 			}
 		}
 		sparkSubmitConf = append(sparkSubmitConf, state.Conf{Name: k.Name, Value: k.Value})
