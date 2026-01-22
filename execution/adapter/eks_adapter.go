@@ -371,8 +371,8 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 	defaultCPU := cpuRequest
 	defaultMem := memRequest
 
-	// Create tags for metrics (cluster only to avoid high cardinality)
-	metricTags := []string{}
+	// Create tags for metrics (engine + cluster to avoid high cardinality)
+	metricTags := []string{"engine:eks"}
 	if run.ClusterName != "" {
 		metricTags = append(metricTags, fmt.Sprintf("cluster:%s", run.ClusterName))
 	}
@@ -557,8 +557,8 @@ func (a *eksAdapter) checkResourceBounds(cpu int64, mem int64, isGPUJob bool, ru
 		maxCPU = state.MaxGPUCPU
 	}
 
-	// Create tags for metrics (cluster only to avoid high cardinality)
-	metricTags := []string{}
+	// Create tags for metrics (engine + cluster to avoid high cardinality)
+	metricTags := []string{"engine:eks"}
 	if run.ClusterName != "" {
 		metricTags = append(metricTags, fmt.Sprintf("cluster:%s", run.ClusterName))
 	}
