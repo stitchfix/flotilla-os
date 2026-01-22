@@ -675,7 +675,7 @@ func (emr *EMRExecutionEngine) estimateMemoryResources(ctx context.Context, run 
 
 	// Track query success/failure
 	if executorErr != nil || driverErr != nil {
-		var missingResource *exceptions.MissingResource
+		var missingResource exceptions.MissingResource
 		if errors.As(executorErr, &missingResource) || errors.As(driverErr, &missingResource) {
 			// No historical data - expected for new jobs
 			_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
