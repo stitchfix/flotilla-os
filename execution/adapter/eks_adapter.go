@@ -462,7 +462,7 @@ func (a *eksAdapter) adaptiveResources(ctx context.Context, executable state.Exe
 				}
 			} else {
 				// Check if this is a missing resource error (expected for new jobs) vs a real error
-				var missingResource *exceptions.MissingResource
+				var missingResource exceptions.MissingResource
 				if errors.As(err, &missingResource) {
 					// No historical data available - this is expected for new jobs or jobs that haven't OOM'd
 					_ = metrics.Increment(metrics.EngineEKSARANoHistoricalData, metricTags, 1)
