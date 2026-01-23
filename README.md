@@ -279,3 +279,46 @@ Currently Flotilla is built using `go` 1.9.3 and uses the `go mod` to manage dep
 ```
 go get && go build
 ```
+
+### Testing
+
+Run all tests with:
+
+```
+go test ./...
+```
+
+#### Database Setup for Integration Tests
+
+Some tests in the `state` package require a PostgreSQL database. If you're using docker-compose, the database is already configured. For other setups:
+
+**Using an existing PostgreSQL container:**
+
+If you have a PostgreSQL container running (e.g., via a shared dev services setup), you'll need to create the flotilla database and user:
+
+```bash
+# Connect to your postgres container and create the flotilla user and database
+# Replace <superuser> with your PostgreSQL superuser (e.g., postgres, stitchfix_owner)
+psql -h localhost -U <superuser> -c "CREATE USER flotilla WITH PASSWORD 'flotilla' SUPERUSER;"
+psql -h localhost -U <superuser> -c "CREATE DATABASE flotilla OWNER flotilla;"
+
+# Apply the database migrations
+for f in .migrations/V*.sql; do
+  PGPASSWORD=flotilla psql -h localhost -U flotilla -d flotilla -f "$f"
+done
+```
+
+Then run tests with the `DATABASE_URL` environment variable:
+
+```bash
+DATABASE_URL="postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable" go test ./...
+```
+
+**Using docker-compose:**
+
+The included `docker-compose.yml` sets up PostgreSQL automatically:
+
+```bash
+docker-compose up -d
+go test ./...
+```
