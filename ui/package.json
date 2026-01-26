@@ -10,7 +10,7 @@
     "cookie": "0.7.0",
     "formik": "1.5.7",
     "localforage": "^1.7.3",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "moment": "2.29.4",
     "pretty-ms": "5.0.0",
     "qs": "6.7.3",
