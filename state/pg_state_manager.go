@@ -1403,7 +1403,7 @@ func (sm *SQLStateManager) UpdateWorker(ctx context.Context, workerType string, 
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&existing.WorkerType, &existing.CountPerInstance)
+		err = rows.Scan(&existing.WorkerType, &existing.CountPerInstance, &existing.Engine)
 	}
 	if err != nil {
 		return existing, errors.WithStack(err)

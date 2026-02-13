@@ -688,6 +688,53 @@ func TestSQLStateManager_UpdateRun(t *testing.T) {
 	}
 }
 
+func TestSQLStateManager_UpdateWorker(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// First, list workers to find an existing worker type created during init
+	workers, err := sm.ListWorkers(ctx, DefaultEngine)
+	if err != nil {
+		t.Fatalf("Error listing workers: %v", err)
+	}
+	if len(workers.Workers) == 0 {
+		t.Fatal("Expected at least one worker to exist after setUp")
+	}
+
+	originalWorker := workers.Workers[0]
+
+	// Update the worker's count to call row.Scan in UpdateWorker,
+	// which previously only scanned 2 of 3 columns (missing Engine), causing:
+	//   "sql: expected 2 destination arguments in Scan, not 3"
+	newCount := originalWorker.CountPerInstance + 5
+	updates := Worker{
+		CountPerInstance: newCount,
+	}
+
+	updated, err := sm.UpdateWorker(ctx, originalWorker.WorkerType, updates)
+	if err != nil {
+		t.Fatalf("UpdateWorker failed: %v", err)
+	}
+
+	if updated.CountPerInstance != newCount {
+		t.Errorf("Expected CountPerInstance to be %d, got %d", newCount, updated.CountPerInstance)
+	}
+
+	if updated.Engine != DefaultEngine {
+		t.Errorf("Expected Engine to be %s, got %s", DefaultEngine, updated.Engine)
+	}
+
+	// Verify via GetWorker that the update persisted
+	fetched, err := sm.GetWorker(ctx, originalWorker.WorkerType, DefaultEngine)
+	if err != nil {
+		t.Fatalf("GetWorker failed: %v", err)
+	}
+
+	if fetched.CountPerInstance != newCount {
+		t.Errorf("Expected persisted CountPerInstance to be %d, got %d", newCount, fetched.CountPerInstance)
+	}
+}
+
 func TestSQLStateManager_ListClusterStates(t *testing.T) {
 	defer tearDown()
 	sm := setUp()
