@@ -16,6 +16,7 @@ import (
 	"github.com/stitchfix/flotilla-os/utils"
 
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/execution/adapter"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
@@ -58,6 +59,7 @@ type EMRExecutionEngine struct {
 	clusterManager      *DynamicClusterManager
 	stateManager        state.Manager
 	redisClient         *redis.Client
+	priorityClassConfig adapter.PriorityClassConfig
 }
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
@@ -115,6 +117,23 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	// Initialize all clusters (both static and dynamic)
 	if err := clusterManager.InitializeClusters(context.Background(), staticClusters); err != nil {
 		emr.log.Log("level", "error", "message", "failed to initialize clusters", "error", err.Error())
+	}
+
+	// Initialize priority class configuration
+	emr.priorityClassConfig = adapter.PriorityClassConfig{
+		Enabled:      conf.GetBool("eks_priority_classes_enabled"),
+		TierMapping:  conf.GetStringMapString("eks_priority_classes"),
+		DefaultClass: conf.GetString("eks_priority_class_default"),
+	}
+
+	// Validate priority classes if enabled and validation is turned on
+	if emr.priorityClassConfig.Enabled && conf.GetBool("eks_priority_class_validation_enabled") {
+		if err := emr.validatePriorityClasses(conf); err != nil {
+			emr.log.Log("priority_class_validation_failed", "error", err.Error(), "action", "disabling_feature")
+			emr.priorityClassConfig.Enabled = false
+		} else {
+			emr.log.Log("priority_class_validation_success", "configured_classes", len(emr.priorityClassConfig.TierMapping))
+		}
 	}
 
 	return nil
@@ -363,10 +382,13 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 
 	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
 
+	priorityClassName := emr.constructPriorityClassName(run)
+
 	podSpec := v1.PodSpec{
 		TerminationGracePeriodSeconds: aws.Int64(90),
 		Volumes:                       volumes,
 		SchedulerName:                 emr.schedulerName,
+		PriorityClassName:             priorityClassName,
 		Containers: []v1.Container{
 			{
 				Name:         "spark-kubernetes-driver",
@@ -423,6 +445,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executab
 	// TODO Remove after migration
 	volumes, volumeMounts := generateVolumesForCluster(run.ClusterName, true)
 
+	priorityClassName := emr.constructPriorityClassName(run)
+
 	pod := v1.Pod{
 		Status: v1.PodStatus{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -435,6 +459,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executab
 			TerminationGracePeriodSeconds: aws.Int64(90),
 			Volumes:                       volumes,
 			SchedulerName:                 emr.schedulerName,
+			PriorityClassName:             priorityClassName,
 			Containers: []v1.Container{
 				{
 					Name:         "spark-kubernetes-executor",
@@ -1020,4 +1045,63 @@ func (emr *EMRExecutionEngine) constructCmdSlice(command *string) []string {
 	optLogin := "-l"
 	optStr := "-ce"
 	return []string{bashCmd, optLogin, optStr, cmdString}
+}
+
+// constructPriorityClassName determines the priority class name for a run based on its tier
+func (emr *EMRExecutionEngine) constructPriorityClassName(run state.Run) string {
+	if !emr.priorityClassConfig.Enabled {
+		return ""
+	}
+
+	priorityClass := state.GetPriorityClassForTier(run.Tier, emr.priorityClassConfig.DefaultClass, emr.priorityClassConfig.TierMapping)
+
+	if priorityClass != "" {
+		emr.log.Log("priority_class", "run_id", run.RunID, "tier", run.Tier, "priority_class", priorityClass)
+	}
+
+	return priorityClass
+}
+
+// validatePriorityClasses checks if configured priority classes exist in the cluster
+func (emr *EMRExecutionEngine) validatePriorityClasses(conf config.Config) error {
+	configuredClasses := conf.GetAllConfiguredPriorityClasses()
+	if len(configuredClasses) == 0 {
+		return errors.New("no priority classes configured")
+	}
+
+	// Get a k8s client for validation - use first available cluster
+	var kClient *kubernetes.Clientset
+	var err error
+
+	for clusterName := range emr.clusterManager.kubeClients {
+		kClient = emr.clusterManager.kubeClients[clusterName]
+		break
+	}
+
+	if kClient == nil {
+		return errors.New("no kubernetes client available for validation")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Check each configured priority class
+	missingClasses := []string{}
+	for _, className := range configuredClasses {
+		if className == "" {
+			continue
+		}
+
+		_, err = kClient.SchedulingV1().PriorityClasses().Get(ctx, className, metav1.GetOptions{})
+		if err != nil {
+			emr.log.Log("priority_class_not_found", "class", className, "error", err.Error())
+			missingClasses = append(missingClasses, className)
+		}
+	}
+
+	if len(missingClasses) > 0 {
+		return errors.Errorf("priority classes not found in cluster: %v", missingClasses)
+	}
+
+	return nil
 }

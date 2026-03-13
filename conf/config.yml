@@ -6,6 +6,15 @@ eks_clusters: 'clusta, cupcake'
 eks_cluster_default: 'clusta'
 eks_gpu_cluster_default: 'clusta'
 eks_tier_default: '4'
+# Priority Class Configuration
+eks_priority_classes_enabled: false
+eks_priority_classes:
+  "1": "flotilla-tier-1"
+  "2": "flotilla-tier-2"
+  "3": "flotilla-tier-3"
+  "4": "flotilla-tier-4"
+eks_priority_class_default: "flotilla-tier-4"
+eks_priority_class_validation_enabled: true
 eks_log_driver_name: awslogs
 eks_log_driver_options_awslogs-group: flotilla-eks-namespace
 eks_log_driver_options_awslogs-region: us-east-1

@@ -208,3 +208,35 @@ func TestGetLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPriorityClassForTier(t *testing.T) {
+	tierMapping := map[string]string{
+		"1": "flotilla-tier-1",
+		"2": "flotilla-tier-2",
+		"3": "flotilla-tier-3",
+		"4": "flotilla-tier-4",
+	}
+	defaultClass := "flotilla-tier-4"
+
+	testCases := []struct {
+		name          string
+		tier          Tier
+		expectedClass string
+	}{
+		{"numeric tier 1", Tier("1"), "flotilla-tier-1"},
+		{"numeric tier 4", Tier("4"), "flotilla-tier-4"},
+		{"string tier1", Tier("tier1"), "flotilla-tier-1"},
+		{"string tier3", Tier("tier3"), "flotilla-tier-3"},
+		{"empty tier", Tier(""), "flotilla-tier-4"},
+		{"unknown tier", Tier("99"), "flotilla-tier-4"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := GetPriorityClassForTier(tc.tier, defaultClass, tierMapping)
+			if result != tc.expectedClass {
+				t.Errorf("Expected %s, got %s", tc.expectedClass, result)
+			}
+		})
+	}
+}

@@ -265,6 +265,10 @@ The variables in `conf/config.yml` are sensible defaults. Most should be left al
 | `eks_job_ttl` | default job ttl in seconds |
 | `eks_job_queue` | SQS job queue - the api places the jobs on this queue and the submit worker asynchronously submits it to Kubernetes/EKS |
 | `eks.service_account` | Kubernetes service account to use for jobs. |
+| `eks_priority_classes_enabled` | Enable/disable priority class feature (default: false) |
+| `eks_priority_classes` | Map of tier to priority class name (e.g., "1": "flotilla-tier-1") |
+| `eks_priority_class_default` | Default priority class when tier is not specified |
+| `eks_priority_class_validation_enabled` | Validate priority classes at startup (default: true) |
 
 ## Development
 

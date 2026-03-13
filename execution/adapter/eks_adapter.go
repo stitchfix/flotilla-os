@@ -21,8 +21,16 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool, priorityClassConfig PriorityClassConfig) (batchv1.Job, error)
 }
+
+// PriorityClassConfig holds priority class configuration
+type PriorityClassConfig struct {
+	Enabled      bool
+	TierMapping  map[string]string
+	DefaultClass string
+}
+
 type eksAdapter struct {
 	logger flotillaLog.Logger
 }
@@ -100,7 +108,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 4. Port mappings.
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool, priorityClassConfig PriorityClassConfig) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -136,6 +144,9 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, exe
 
 	labels := state.GetLabels(run)
 
+	// Construct priority class name if feature is enabled
+	priorityClassName := a.constructPriorityClassName(run, priorityClassConfig)
+
 	jobSpec := batchv1.JobSpec{
 		TTLSecondsAfterFinished: &state.TTLSecondsAfterFinished,
 		ActiveDeadlineSeconds:   run.ActiveDeadlineSeconds,
@@ -153,6 +164,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, exe
 				ServiceAccountName: *run.ServiceAccount,
 				Affinity:           affinity,
 				Tolerations:        tolerations,
+				PriorityClassName:  priorityClassName,
 			},
 		},
 	}
@@ -706,4 +718,19 @@ func (a *eksAdapter) sanitizeLabel(key string) string {
 // roundCPUMillicores rounds CPU millicores to the nearest 250m (quarter core) to avoid systemd cgroup rounding issues. When CPU limits produce non-integer percentages
 func (a *eksAdapter) roundCPUMillicores(millicores int64) int64 {
 	return ((millicores + 125) / 250) * 250
+}
+
+// constructPriorityClassName determines the priority class name for a run based on its tier
+func (a *eksAdapter) constructPriorityClassName(run state.Run, config PriorityClassConfig) string {
+	if !config.Enabled {
+		return ""
+	}
+
+	priorityClass := state.GetPriorityClassForTier(run.Tier, config.DefaultClass, config.TierMapping)
+
+	if priorityClass != "" {
+		a.logger.Log("priority_class", "run_id", run.RunID, "tier", run.Tier, "priority_class", priorityClass)
+	}
+
+	return priorityClass
 }

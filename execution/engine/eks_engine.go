@@ -31,26 +31,27 @@ import (
 
 // EKSExecutionEngine submits runs to EKS.
 type EKSExecutionEngine struct {
-	kClients        map[string]kubernetes.Clientset
-	metricsClients  map[string]metricsv.Clientset
-	adapter         adapter.EKSAdapter
-	qm              queue.Manager
-	log             flotillaLog.Logger
-	jobQueue        string
-	jobNamespace    string
-	jobTtl          int
-	jobSA           string
-	jobARAEnabled   bool
-	schedulerName   string
-	serializer      *k8sJson.Serializer
-	s3Client        *s3.S3
-	s3Bucket        string
-	s3BucketRootDir string
-	statusQueue     string
-	clusters        []string
-	clusterManager  *DynamicClusterManager
-	stateManager    state.Manager
-	redisClient     *redis.Client
+	kClients            map[string]kubernetes.Clientset
+	metricsClients      map[string]metricsv.Clientset
+	adapter             adapter.EKSAdapter
+	qm                  queue.Manager
+	log                 flotillaLog.Logger
+	jobQueue            string
+	jobNamespace        string
+	jobTtl              int
+	jobSA               string
+	jobARAEnabled       bool
+	schedulerName       string
+	serializer          *k8sJson.Serializer
+	s3Client            *s3.S3
+	s3Bucket            string
+	s3BucketRootDir     string
+	statusQueue         string
+	clusters            []string
+	clusterManager      *DynamicClusterManager
+	stateManager        state.Manager
+	redisClient         *redis.Client
+	priorityClassConfig adapter.PriorityClassConfig
 }
 
 // Initialize configures the EKSExecutionEngine and initializes internal clients
@@ -114,6 +115,24 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 	ee.s3BucketRootDir = conf.GetString("eks_manifest_storage_options_s3_bucket_root_dir")
 
 	ee.adapter = adapt
+
+	// Initialize priority class configuration
+	ee.priorityClassConfig = adapter.PriorityClassConfig{
+		Enabled:      conf.GetBool("eks_priority_classes_enabled"),
+		TierMapping:  conf.GetStringMapString("eks_priority_classes"),
+		DefaultClass: conf.GetString("eks_priority_class_default"),
+	}
+
+	// Validate priority classes if enabled and validation is turned on
+	if ee.priorityClassConfig.Enabled && conf.GetBool("eks_priority_class_validation_enabled") {
+		if err := ee.validatePriorityClasses(conf); err != nil {
+			ee.log.Log("priority_class_validation_failed", "error", err.Error(), "action", "disabling_feature")
+			ee.priorityClassConfig.Enabled = false
+		} else {
+			ee.log.Log("priority_class_validation_success", "configured_classes", len(ee.priorityClassConfig.TierMapping))
+		}
+	}
+
 	return nil
 }
 
@@ -145,7 +164,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 	}
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled, ee.priorityClassConfig)
 	if err != nil {
 		exitReason := fmt.Sprintf("Error creating k8s manigest - %s", err.Error())
 		run.ExitReason = &exitReason
@@ -659,4 +678,48 @@ func (ee *EKSExecutionEngine) FetchUpdateStatus(ctx context.Context, run state.R
 	}
 
 	return ee.adapter.AdaptJobToFlotillaRun(job, run, mostRecentPod)
+}
+
+// validatePriorityClasses checks if configured priority classes exist in the cluster
+func (ee *EKSExecutionEngine) validatePriorityClasses(conf config.Config) error {
+	configuredClasses := conf.GetAllConfiguredPriorityClasses()
+	if len(configuredClasses) == 0 {
+		return errors.New("no priority classes configured")
+	}
+
+	// Get a k8s client for validation - use first available cluster
+	var kClient *kubernetes.Clientset
+	var err error
+
+	for clusterName := range ee.clusterManager.kubeClients {
+		kClient = ee.clusterManager.kubeClients[clusterName]
+		break
+	}
+
+	if kClient == nil {
+		return errors.New("no kubernetes client available for validation")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Check each configured priority class
+	missingClasses := []string{}
+	for _, className := range configuredClasses {
+		if className == "" {
+			continue
+		}
+
+		_, err = kClient.SchedulingV1().PriorityClasses().Get(ctx, className, metav1.GetOptions{})
+		if err != nil {
+			ee.log.Log("priority_class_not_found", "class", className, "error", err.Error())
+			missingClasses = append(missingClasses, className)
+		}
+	}
+
+	if len(missingClasses) > 0 {
+		return errors.Errorf("priority classes not found in cluster: %v", missingClasses)
+	}
+
+	return nil
 }

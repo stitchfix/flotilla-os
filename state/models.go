@@ -1345,6 +1345,37 @@ func GetLabels(run Run) map[string]string {
 	return labels
 }
 
+// GetPriorityClassForTier returns the priority class name for a given tier
+// It normalizes tier values (e.g., "tier1" -> "1") for consistent mapping
+func GetPriorityClassForTier(tier Tier, defaultPriorityClass string, tierMapping map[string]string) string {
+	if tier == "" {
+		return defaultPriorityClass
+	}
+
+	tierStr := string(tier)
+
+	// Try direct lookup first
+	if priorityClass, ok := tierMapping[tierStr]; ok {
+		return priorityClass
+	}
+
+	// Try normalizing "tier1" -> "1" format
+	normalizedTier := strings.TrimPrefix(strings.ToLower(tierStr), "tier")
+	if priorityClass, ok := tierMapping[normalizedTier]; ok {
+		return priorityClass
+	}
+
+	// Try normalizing "1" -> "tier1" format
+	if !strings.HasPrefix(strings.ToLower(tierStr), "tier") {
+		withPrefix := "tier" + tierStr
+		if priorityClass, ok := tierMapping[withPrefix]; ok {
+			return priorityClass
+		}
+	}
+
+	return defaultPriorityClass
+}
+
 func SanitizeLabel(key string) string {
 	key = strings.TrimSpace(key)
 	key = regexp.MustCompile(`[^-a-z0-9A-Z_.]+`).ReplaceAllString(key, "_")

@@ -81,3 +81,41 @@ func (c *conf) GetStringSlice(key string) []string {
 func (c *conf) IsSet(key string) bool {
 	return c.v.IsSet(key)
 }
+
+// GetPriorityClassesEnabled returns whether priority class feature is enabled
+func (c *conf) GetPriorityClassesEnabled() bool {
+	return c.GetBool("eks_priority_classes_enabled")
+}
+
+// GetPriorityClassValidationEnabled returns whether to validate priority classes at startup
+func (c *conf) GetPriorityClassValidationEnabled() bool {
+	return c.GetBool("eks_priority_class_validation_enabled")
+}
+
+// GetPriorityClassForTier returns the priority class name for a given tier
+func (c *conf) GetPriorityClassForTier(tier string) string {
+	mapping := c.GetStringMapString("eks_priority_classes")
+	if priorityClass, ok := mapping[tier]; ok {
+		return priorityClass
+	}
+	return c.GetString("eks_priority_class_default")
+}
+
+// GetDefaultPriorityClass returns the default priority class
+func (c *conf) GetDefaultPriorityClass() string {
+	return c.GetString("eks_priority_class_default")
+}
+
+// GetAllConfiguredPriorityClasses returns all configured priority class names
+func (c *conf) GetAllConfiguredPriorityClasses() []string {
+	mapping := c.GetStringMapString("eks_priority_classes")
+	classes := make([]string, 0, len(mapping))
+	for _, class := range mapping {
+		classes = append(classes, class)
+	}
+	defaultClass := c.GetDefaultPriorityClass()
+	if defaultClass != "" {
+		classes = append(classes, defaultClass)
+	}
+	return classes
+}

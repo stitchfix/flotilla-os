@@ -639,3 +639,74 @@ func TestEmitARAMetrics_NilLogger(t *testing.T) {
 func int64Ptr(i int64) *int64 {
 	return &i
 }
+
+func TestEKSAdapter_ConstructPriorityClassName(t *testing.T) {
+	logger := &mockLogger{}
+	adapter, _ := NewEKSAdapter(logger)
+	eksAdapter := adapter.(*eksAdapter)
+
+	tierMapping := map[string]string{
+		"1": "flotilla-tier-1",
+		"2": "flotilla-tier-2",
+		"3": "flotilla-tier-3",
+		"4": "flotilla-tier-4",
+	}
+
+	testCases := []struct {
+		name          string
+		run           state.Run
+		config        PriorityClassConfig
+		expectedClass string
+	}{
+		{
+			name: "feature disabled",
+			run:  state.Run{Tier: state.Tier("1")},
+			config: PriorityClassConfig{
+				Enabled:      false,
+				TierMapping:  tierMapping,
+				DefaultClass: "flotilla-tier-4",
+			},
+			expectedClass: "",
+		},
+		{
+			name: "tier 1 with feature enabled",
+			run:  state.Run{Tier: state.Tier("1"), RunID: "test-run-1"},
+			config: PriorityClassConfig{
+				Enabled:      true,
+				TierMapping:  tierMapping,
+				DefaultClass: "flotilla-tier-4",
+			},
+			expectedClass: "flotilla-tier-1",
+		},
+		{
+			name: "empty tier uses default",
+			run:  state.Run{Tier: state.Tier(""), RunID: "test-run-2"},
+			config: PriorityClassConfig{
+				Enabled:      true,
+				TierMapping:  tierMapping,
+				DefaultClass: "flotilla-tier-4",
+			},
+			expectedClass: "flotilla-tier-4",
+		},
+		{
+			name: "tier 2 with feature enabled",
+			run:  state.Run{Tier: state.Tier("2"), RunID: "test-run-3"},
+			config: PriorityClassConfig{
+				Enabled:      true,
+				TierMapping:  tierMapping,
+				DefaultClass: "flotilla-tier-4",
+			},
+			expectedClass: "flotilla-tier-2",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger.reset()
+			result := eksAdapter.constructPriorityClassName(tc.run, tc.config)
+			if result != tc.expectedClass {
+				t.Errorf("Expected %s, got %s", tc.expectedClass, result)
+			}
+		})
+	}
+}
