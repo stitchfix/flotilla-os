@@ -888,15 +888,6 @@ func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run sta
 		}
 	}
 
-	res = append(res, v1.EnvVar{
-		Name: "SPARK_APPLICATION_ID",
-		ValueFrom: &v1.EnvVarSource{
-			FieldRef: &v1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.labels['spark-app-selector']",
-			},
-		},
-	})
 	return res
 }
 
