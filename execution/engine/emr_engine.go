@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -888,16 +889,41 @@ func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run sta
 		}
 	}
 
-	res = append(res, v1.EnvVar{
-		Name: "SPARK_APPLICATION_ID",
-		ValueFrom: &v1.EnvVarSource{
-			FieldRef: &v1.ObjectFieldSelector{
-				APIVersion: "v1",
-				FieldPath:  "metadata.labels['spark-app-selector']",
+	if emr.emrReleaseBeforeVersion(run.SparkExtension, 7, 9, 0) {
+		res = append(res, v1.EnvVar{
+			Name: "SPARK_APPLICATION_ID",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.labels['spark-app-selector']",
+				},
 			},
-		},
-	})
+		})
+	}
 	return res
+}
+
+// emrReleaseBeforeVersion returns true if the run's EMR release label represents
+// a version strictly before major.minor.patch. Returns true (inject the var) when
+// the label is absent or unparseable, so we default to the safe/legacy behaviour.
+func (emr *EMRExecutionEngine) emrReleaseBeforeVersion(ext *state.SparkExtension, major, minor, patch int) bool {
+	if ext == nil || ext.EMRReleaseLabel == nil {
+		return true
+	}
+	matches := regexp.MustCompile(`emr-(\d+)\.(\d+)\.(\d+)`).FindStringSubmatch(*ext.EMRReleaseLabel)
+	if len(matches) != 4 {
+		return true
+	}
+	rMajor, _ := strconv.Atoi(matches[1])
+	rMinor, _ := strconv.Atoi(matches[2])
+	rPatch, _ := strconv.Atoi(matches[3])
+	if rMajor != major {
+		return rMajor < major
+	}
+	if rMinor != minor {
+		return rMinor < minor
+	}
+	return rPatch < patch
 }
 
 func (emr *EMRExecutionEngine) sanitizeEnvVar(key string) string {
