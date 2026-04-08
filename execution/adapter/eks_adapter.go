@@ -224,18 +224,11 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 	nodeLifecycleKey := "karpenter.sh/capacity-type"
 	nodeArchKey := "kubernetes.io/arch"
 
-	//todo remove post migration
-	switch run.ClusterName {
-	case "flotilla-eks-infra-c":
-		nodeLifecycleKey = "node.kubernetes.io/lifecycle"
-		nodeArchKey = "kubernetes.io/arch"
-	}
-
 	var nodeLifecycle []string
 	if run.NodeLifecycle != nil && *run.NodeLifecycle == state.OndemandLifecycle {
-		nodeLifecycle = append(nodeLifecycle, "on-demand", "normal")
+		nodeLifecycle = append(nodeLifecycle, "on-demand")
 	} else {
-		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand", "normal")
+		nodeLifecycle = append(nodeLifecycle, "spot", "on-demand")
 	}
 
 	//todo move to config
