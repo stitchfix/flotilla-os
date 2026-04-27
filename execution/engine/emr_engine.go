@@ -370,7 +370,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 		Containers: []v1.Container{
 			{
 				Name:         "spark-kubernetes-driver",
-				Env:          emr.envOverrides(executable, run),
+				Env:          append(emr.envOverrides(executable, run), emr.lakekeeperSecretEnvVars()...),
 				VolumeMounts: volumeMounts,
 				WorkingDir:   workingDir,
 			},
@@ -959,6 +959,65 @@ func (emr *EMRExecutionEngine) FetchUpdateStatus(ctx context.Context, run state.
 	utils.TagJobRun(span, run)
 	return run, nil
 }
+func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
+	return []v1.EnvVar{
+		{
+			Name: "OAUTH2_CLIENT_ID",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "client_id",
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_CLIENT_SECRET",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "client_secret",
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SERVER_URI",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "token_url",
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SCOPE",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "scope",
+				},
+			},
+		},
+		{
+			Name: "CATALOG_URI",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "uri",
+				},
+			},
+		},
+		{
+			Name: "WAREHOUSE",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: "client-credentials"},
+					Key:                  "warehouse",
+				},
+			},
+		},
+	}
+}
+
 func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run state.Run) []v1.EnvVar {
 	pairs := make(map[string]string)
 	resources := executable.GetExecutableResources()
