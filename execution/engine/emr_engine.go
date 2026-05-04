@@ -972,6 +972,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "client_id",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
@@ -981,6 +982,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "client_secret",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
@@ -990,6 +992,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "token_url",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
@@ -999,6 +1002,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "scope",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
@@ -1008,6 +1012,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "uri",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
@@ -1017,6 +1022,7 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				SecretKeyRef: &v1.SecretKeySelector{
 					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
 					Key:                  "warehouse",
+					Optional:             aws.Bool(true),
 				},
 			},
 		},
