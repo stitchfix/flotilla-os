@@ -58,6 +58,7 @@ type EMRExecutionEngine struct {
 	clusterManager      *DynamicClusterManager
 	stateManager        state.Manager
 	redisClient         *redis.Client
+	lakekeeperSecretName string
 }
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
@@ -78,6 +79,7 @@ func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 	emr.emrJobSA = conf.GetString("emr_default_service_account")
 	emr.schedulerName = conf.GetString("eks_scheduler_name")
 	emr.driverInstanceType = conf.GetString("emr_driver_instance_type")
+	emr.lakekeeperSecretName = conf.GetString("emr_lakekeeper_secret_name")
 	awsConfig := &aws.Config{Region: aws.String(emr.awsRegion)}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{Config: *awsConfig}))
 	sess = awstrace.WrapSession(sess)
@@ -370,7 +372,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 		Containers: []v1.Container{
 			{
 				Name:         "spark-kubernetes-driver",
-				Env:          emr.envOverrides(executable, run),
+				Env:          append(emr.envOverrides(executable, run), emr.lakekeeperSecretEnvVars()...),
 				VolumeMounts: volumeMounts,
 				WorkingDir:   workingDir,
 			},
@@ -959,6 +961,74 @@ func (emr *EMRExecutionEngine) FetchUpdateStatus(ctx context.Context, run state.
 	utils.TagJobRun(span, run)
 	return run, nil
 }
+func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
+	if emr.lakekeeperSecretName == "" {
+		return nil
+	}
+	return []v1.EnvVar{
+		{
+			Name: "OAUTH2_CLIENT_ID",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "client_id",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_CLIENT_SECRET",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "client_secret",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SERVER_URI",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "token_url",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SCOPE",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "scope",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "CATALOG_URI",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "uri",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "WAREHOUSE",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "warehouse",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+	}
+}
+
 func (emr *EMRExecutionEngine) envOverrides(executable state.Executable, run state.Run) []v1.EnvVar {
 	pairs := make(map[string]string)
 	resources := executable.GetExecutableResources()
