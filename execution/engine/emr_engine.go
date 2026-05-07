@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -590,6 +591,13 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 			Operator: v1.NodeSelectorOpIn,
 			Values:   []string{team},
 		})
+		if env := os.Getenv("FLOTILLA_MODE"); env != "" {
+			requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+				Key:      "environment",
+				Operator: v1.NodeSelectorOpIn,
+				Values:   []string{env},
+			})
+		}
 	}
 
 	//todo remove conditional after migration
