@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -269,6 +270,13 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 			Operator: corev1.NodeSelectorOpIn,
 			Values:   []string{team},
 		})
+		if env := os.Getenv("FLOTILLA_MODE"); env != "" {
+			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+				Key:      "environment",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   []string{env},
+			})
+		}
 	}
 
 	affinity = &corev1.Affinity{
