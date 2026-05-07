@@ -204,15 +204,26 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 	executableResources := executable.GetExecutableResources()
 	tolerations := []corev1.Toleration{}
 
-	if (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0) {
-		toleration := corev1.Toleration{
+	isGPU := (executableResources.Gpu != nil && *executableResources.Gpu > 0) || (run.Gpu != nil && *run.Gpu > 0)
+	if isGPU {
+		tolerations = append(tolerations, corev1.Toleration{
 			Key:      "nvidia.com/gpu",
 			Operator: "Equal",
 			Value:    "true",
 			Effect:   "NoSchedule",
-		}
-		tolerations = append(tolerations, toleration)
+		})
 	}
+
+	isWaitForData := run.Labels["kube_task_type"] == "wait_for_data"
+	if team, ok := run.Labels["team"]; ok && team != "" && !isGPU && !isWaitForData {
+		tolerations = append(tolerations, corev1.Toleration{
+			Key:      team,
+			Operator: "Equal",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		})
+	}
+
 	return tolerations
 }
 
@@ -248,6 +259,17 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 		Operator: corev1.NodeSelectorOpIn,
 		Values:   arch,
 	})
+
+	executableResources := executable.GetExecutableResources()
+	isGPU := (run.Gpu != nil && *run.Gpu > 0) || (executableResources.Gpu != nil && *executableResources.Gpu > 0)
+	isWaitForData := run.Labels["kube_task_type"] == "wait_for_data"
+	if team, ok := run.Labels["team"]; ok && team != "" && !isGPU && !isWaitForData {
+		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+			Key:      "team",
+			Operator: corev1.NodeSelectorOpIn,
+			Values:   []string{team},
+		})
+	}
 
 	affinity = &corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{

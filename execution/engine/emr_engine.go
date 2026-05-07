@@ -35,29 +35,29 @@ import (
 
 // EMRExecutionEngine submits runs to EMR-EKS.
 type EMRExecutionEngine struct {
-	sqsQueueManager     queue.Manager
-	log                 flotillaLog.Logger
-	emrJobQueue         string
-	emrJobNamespace     string
-	emrJobRoleArn       map[string]string
-	emrJobSA            string
-	emrVirtualClusters  map[string]string
-	emrContainersClient *emrcontainers.EMRContainers
-	schedulerName       string
-	s3Client            *s3.S3
-	awsRegion           string
-	s3LogsBucket        string
-	s3EventLogPath      string
-	s3LogsBasePath      string
-	s3ManifestBucket    string
-	s3ManifestBasePath  string
-	serializer          *k8sJson.Serializer
-	clusters            []string
-	driverInstanceType  string
-	kClients            map[string]kubernetes.Clientset
-	clusterManager      *DynamicClusterManager
-	stateManager        state.Manager
-	redisClient         *redis.Client
+	sqsQueueManager      queue.Manager
+	log                  flotillaLog.Logger
+	emrJobQueue          string
+	emrJobNamespace      string
+	emrJobRoleArn        map[string]string
+	emrJobSA             string
+	emrVirtualClusters   map[string]string
+	emrContainersClient  *emrcontainers.EMRContainers
+	schedulerName        string
+	s3Client             *s3.S3
+	awsRegion            string
+	s3LogsBucket         string
+	s3EventLogPath       string
+	s3LogsBasePath       string
+	s3ManifestBucket     string
+	s3ManifestBasePath   string
+	serializer           *k8sJson.Serializer
+	clusters             []string
+	driverInstanceType   string
+	kClients             map[string]kubernetes.Clientset
+	clusterManager       *DynamicClusterManager
+	stateManager         state.Manager
+	redisClient          *redis.Client
 	lakekeeperSecretName string
 }
 
@@ -527,6 +527,15 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 		Effect:   "NoSchedule",
 	})
 
+	if team, ok := run.Labels["team"]; ok && team != "" {
+		tolerations = append(tolerations, v1.Toleration{
+			Key:      team,
+			Operator: "Equal",
+			Value:    "true",
+			Effect:   "NoSchedule",
+		})
+	}
+
 	return tolerations
 }
 
@@ -574,6 +583,14 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		Operator: v1.NodeSelectorOpIn,
 		Values:   arch,
 	})
+
+	if team, ok := run.Labels["team"]; ok && team != "" {
+		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+			Key:      "team",
+			Operator: v1.NodeSelectorOpIn,
+			Values:   []string{team},
+		})
+	}
 
 	//todo remove conditional after migration
 	if newCluster {
