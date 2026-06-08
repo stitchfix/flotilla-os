@@ -393,7 +393,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 		}},
 		RestartPolicy: v1.RestartPolicyNever,
 		Affinity:      emr.constructAffinity(ctx, executable, run, manager, true),
-		Tolerations:   emr.constructTolerations(executable, run),
+		Tolerations:   emr.constructTolerations(executable, run, true),
 	}
 
 	if emr.driverInstanceType != "" {
@@ -461,7 +461,7 @@ func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executab
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Affinity:      emr.constructAffinity(ctx, executable, run, manager, false),
-			Tolerations:   emr.constructTolerations(executable, run),
+			Tolerations:   emr.constructTolerations(executable, run, false),
 		},
 	}
 
@@ -524,7 +524,7 @@ func (emr *EMRExecutionEngine) constructEviction(ctx context.Context, run state.
 	return "true"
 }
 
-func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run) []v1.Toleration {
+func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run, driver bool) []v1.Toleration {
 	tolerations := []v1.Toleration{}
 
 	tolerations = append(tolerations, v1.Toleration{
@@ -549,6 +549,9 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 		}
 		if run.Memory != nil && *run.Memory != 0 {
 			mem = *run.Memory
+		}
+		if !driver && run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory != nil && *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory > mem {
+			mem = *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory
 		}
 		tier := state.PoolTier(cpu, mem)
 		tolerations = append(tolerations, v1.Toleration{
@@ -621,6 +624,9 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		}
 		if run.Memory != nil && *run.Memory != 0 {
 			mem = *run.Memory
+		}
+		if !driver && run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory != nil && *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory > mem {
+			mem = *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory
 		}
 		tier := state.PoolTier(cpu, mem)
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
