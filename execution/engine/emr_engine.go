@@ -153,6 +153,12 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 		}
 	}
 
+	if team := run.Labels["team"]; team != "" {
+		if kClient, err := emr.getKClient(run); err == nil {
+			go ensureTeamRegistryConfigMap(context.Background(), kClient, emr.emrJobNamespace, team)
+		}
+	}
+
 	startJobRunInput, err := emr.generateEMRStartJobRunInput(ctx, executable, run, manager)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
