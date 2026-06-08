@@ -1254,7 +1254,7 @@ type Tiers []string
 type Capability string
 type Capabilities []string
 
-const CapSizeTieredPools = "size-tiered-pools"
+const CapPoolSizing = "pool-sizing"
 
 func (c Capabilities) Has(cap string) bool {
 	for _, v := range c {

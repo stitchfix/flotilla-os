@@ -223,7 +223,7 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 			Effect:   "NoSchedule",
 		})
 
-		if capabilities.Has(state.CapSizeTieredPools) {
+		if capabilities.Has(state.CapPoolSizing) {
 			cpu, mem := a.getResourceDefaults(run, executable)
 			size := state.PoolSize(cpu, mem)
 			tolerations = append(tolerations, corev1.Toleration{
@@ -281,7 +281,7 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 			Values:   []string{team},
 		})
 
-		if capabilities.Has(state.CapSizeTieredPools) {
+		if capabilities.Has(state.CapPoolSizing) {
 			cpu, mem := a.getResourceDefaults(run, executable)
 			size := state.PoolSize(cpu, mem)
 			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{

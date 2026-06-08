@@ -156,7 +156,7 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 
 	_, capabilities, _ := emr.resolveCluster(ctx, run)
 
-	if team := run.Labels["team"]; team != "" && capabilities.Has(state.CapSizeTieredPools) {
+	if team := run.Labels["team"]; team != "" && capabilities.Has(state.CapPoolSizing) {
 		if kClient, err := emr.getKClient(run); err == nil {
 			go ensureTeamRegistryConfigMap(context.Background(), &kClient, emr.emrJobNamespace, team)
 		}
@@ -549,7 +549,7 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 			Effect:   "NoSchedule",
 		})
 
-		if capabilities.Has(state.CapSizeTieredPools) {
+		if capabilities.Has(state.CapPoolSizing) {
 			cpu := state.MinCPU
 			mem := state.MinMem
 			if run.Cpu != nil && *run.Cpu != 0 {
@@ -628,7 +628,7 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 			Values:   []string{team},
 		})
 
-		if capabilities.Has(state.CapSizeTieredPools) {
+		if capabilities.Has(state.CapPoolSizing) {
 			cpu := state.MinCPU
 			mem := state.MinMem
 			if run.Cpu != nil && *run.Cpu != 0 {
