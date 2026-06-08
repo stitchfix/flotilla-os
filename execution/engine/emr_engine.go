@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/kubernetes/scheme"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -710,13 +711,47 @@ func executorMemoryMiB(run state.Run) int64 {
 	}
 	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
 		if k.Name != nil && *k.Name == "spark.executor.memory" && k.Value != nil {
-			quantity, err := resource.ParseQuantity(setResourceSuffix(*k.Value))
-			if err == nil {
-				return quantity.Value() / (1024 * 1024)
-			}
+			return parseSparkMemoryMiB(*k.Value)
 		}
 	}
 	return 0
+}
+
+func parseSparkMemoryMiB(value string) int64 {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if strings.HasSuffix(value, "t") {
+		n, err := strconv.ParseInt(strings.TrimSuffix(value, "t"), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n * 1024 * 1024
+	}
+	if strings.HasSuffix(value, "g") {
+		n, err := strconv.ParseInt(strings.TrimSuffix(value, "g"), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n * 1024
+	}
+	if strings.HasSuffix(value, "m") {
+		n, err := strconv.ParseInt(strings.TrimSuffix(value, "m"), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n
+	}
+	if strings.HasSuffix(value, "k") {
+		n, err := strconv.ParseInt(strings.TrimSuffix(value, "k"), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n / 1024
+	}
+	n, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n / (1024 * 1024)
 }
 
 func setResourceSuffix(value string) string {
