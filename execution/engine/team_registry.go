@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func ensureTeamRegistryConfigMap(ctx context.Context, client kubernetes.Clientset, namespace string, team string) error {
+func ensureTeamRegistryConfigMap(ctx context.Context, client kubernetes.Interface, namespace string, team string) error {
 	if team == "" {
 		return nil
 	}
