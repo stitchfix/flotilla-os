@@ -143,9 +143,20 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 	if run.ServiceAccount == nil {
 		run.ServiceAccount = aws.String(ee.jobSA)
 	}
+
+	var capabilities state.Capabilities
+	if clusters, err := manager.ListClusterStates(ctx); err == nil {
+		for _, cluster := range clusters {
+			if cluster.Name == run.ClusterName {
+				capabilities = cluster.Capabilities
+				break
+			}
+		}
+	}
+
 	tierTag := fmt.Sprintf("tier:%s", run.Tier)
 
-	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled)
+	job, err := ee.adapter.AdaptFlotillaDefinitionAndRunToJob(ctx, executable, run, ee.schedulerName, manager, ee.jobARAEnabled, capabilities)
 	if err != nil {
 		exitReason := fmt.Sprintf("Error creating k8s manigest - %s", err.Error())
 		run.ExitReason = &exitReason

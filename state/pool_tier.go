@@ -1,6 +1,6 @@
 package state
 
-func PoolTier(cpuMillis, memoryMiB int64) string {
+func PoolSize(cpuMillis, memoryMiB int64) string {
 	switch {
 	case cpuMillis >= 30000 || memoryMiB >= 200000:
 		return "xl"

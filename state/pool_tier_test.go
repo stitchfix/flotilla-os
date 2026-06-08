@@ -2,7 +2,7 @@ package state
 
 import "testing"
 
-func TestPoolTier(t *testing.T) {
+func TestPoolSize(t *testing.T) {
 	tests := []struct {
 		name     string
 		cpu      int64
@@ -24,9 +24,9 @@ func TestPoolTier(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := PoolTier(tt.cpu, tt.mem)
+			got := PoolSize(tt.cpu, tt.mem)
 			if got != tt.expected {
-				t.Errorf("PoolTier(%d, %d) = %q, want %q", tt.cpu, tt.mem, got, tt.expected)
+				t.Errorf("PoolSize(%d, %d) = %q, want %q", tt.cpu, tt.mem, got, tt.expected)
 			}
 		})
 	}

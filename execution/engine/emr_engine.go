@@ -154,13 +154,15 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 		}
 	}
 
-	if team := run.Labels["team"]; team != "" {
+	_, capabilities, _ := emr.resolveCluster(ctx, run)
+
+	if team := run.Labels["team"]; team != "" && capabilities.Has(state.CapSizeTieredPools) {
 		if kClient, err := emr.getKClient(run); err == nil {
 			go ensureTeamRegistryConfigMap(context.Background(), &kClient, emr.emrJobNamespace, team)
 		}
 	}
 
-	startJobRunInput, err := emr.generateEMRStartJobRunInput(ctx, executable, run, manager)
+	startJobRunInput, err := emr.generateEMRStartJobRunInput(ctx, executable, run, manager, capabilities)
 	emrJobManifest := aws.String(fmt.Sprintf("%s/%s/%s.json", emr.s3ManifestBasePath, run.RunID, "start-job-run-input"))
 	obj, err := json.MarshalIndent(startJobRunInput, "", "\t")
 	if err == nil {
@@ -198,13 +200,13 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 	return run, false, nil
 }
 
-func (emr *EMRExecutionEngine) generateApplicationConf(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) []*emrcontainers.Configuration {
+func (emr *EMRExecutionEngine) generateApplicationConf(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, capabilities state.Capabilities) []*emrcontainers.Configuration {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	sparkDefaults := map[string]*string{
-		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(ctx, executable, run, manager),
-		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(ctx, executable, run, manager),
+		"spark.kubernetes.driver.podTemplateFile":   emr.driverPodTemplate(ctx, executable, run, manager, capabilities),
+		"spark.kubernetes.executor.podTemplateFile": emr.executorPodTemplate(ctx, executable, run, manager, capabilities),
 		"spark.kubernetes.container.image":          &run.Image,
 		"spark.eventLog.dir":                        aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
 		"spark.history.fs.logDirectory":             aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3EventLogPath)),
@@ -255,30 +257,34 @@ func (emr *EMRExecutionEngine) generateApplicationConf(ctx context.Context, exec
 	}
 }
 
-func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) (emrcontainers.StartJobRunInput, error) {
+func (emr *EMRExecutionEngine) resolveCluster(ctx context.Context, run state.Run) (string, state.Capabilities, error) {
+	dbClusters, err := emr.stateManager.ListClusterStates(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	for _, cluster := range dbClusters {
+		if cluster.Namespace == emr.emrJobNamespace && cluster.Name == run.ClusterName {
+			if cluster.SparkServerURI != "" && run.SparkExtension != nil {
+				run.SparkExtension.SparkServerURI = aws.String(cluster.SparkServerURI)
+			}
+			return cluster.EMRVirtualCluster, cluster.Capabilities, nil
+		}
+	}
+	if id := emr.emrVirtualClusters[run.ClusterName]; id != "" {
+		return id, nil, nil
+	}
+	return "", nil, fmt.Errorf("EMR virtual cluster ID not found for EKS cluster: %s", run.ClusterName)
+}
+
+func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, capabilities state.Capabilities) (emrcontainers.StartJobRunInput, error) {
 	roleArn := emr.emrJobRoleArn[*run.ServiceAccount]
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	dbClusters, err := emr.stateManager.ListClusterStates(ctx)
+	clusterID, _, err := emr.resolveCluster(ctx, run)
 	if err != nil {
 		emr.log.Log("level", "error", "message", "failed to get clusters from database", "error", err.Error())
 		return emrcontainers.StartJobRunInput{}, err
-	}
-	var clusterID string
-	clusterFound := false
-	for _, cluster := range dbClusters {
-		if cluster.Namespace == emr.emrJobNamespace && cluster.Name == run.ClusterName {
-			clusterID = cluster.EMRVirtualCluster
-			if cluster.SparkServerURI != "" {
-				run.SparkExtension.SparkServerURI = aws.String(cluster.SparkServerURI)
-			}
-			clusterFound = true
-			break
-		}
-	}
-	if !clusterFound {
-		clusterID = emr.emrVirtualClusters[run.ClusterName]
 	}
 
 	if clusterID == "" {
@@ -293,7 +299,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, 
 					LogUri: aws.String(fmt.Sprintf("s3://%s/%s", emr.s3LogsBucket, emr.s3LogsBasePath)),
 				},
 			},
-			ApplicationConfiguration: emr.generateApplicationConf(ctx, executable, run, manager),
+			ApplicationConfiguration: emr.generateApplicationConf(ctx, executable, run, manager, capabilities),
 		},
 		ExecutionRoleArn: &roleArn,
 		JobDriver: &emrcontainers.JobDriver{
@@ -360,7 +366,7 @@ func generateVolumesForCluster(clusterName string, isEmptyDir bool) ([]v1.Volume
 	return volumes, volumeMounts
 }
 
-func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) *string {
+func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, capabilities state.Capabilities) *string {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -393,8 +399,8 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 			Command:      emr.constructCmdSlice(run.SparkExtension.DriverInitCommand),
 		}},
 		RestartPolicy: v1.RestartPolicyNever,
-		Affinity:      emr.constructAffinity(ctx, executable, run, manager, true),
-		Tolerations:   emr.constructTolerations(executable, run, true),
+		Affinity:      emr.constructAffinity(ctx, executable, run, manager, true, capabilities),
+		Tolerations:   emr.constructTolerations(executable, run, true, capabilities),
 	}
 
 	if emr.driverInstanceType != "" {
@@ -419,7 +425,7 @@ func (emr *EMRExecutionEngine) driverPodTemplate(ctx context.Context, executable
 	return emr.writeK8ObjToS3(&pod, key)
 }
 
-func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) *string {
+func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, capabilities state.Capabilities) *string {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -461,8 +467,8 @@ func (emr *EMRExecutionEngine) executorPodTemplate(ctx context.Context, executab
 				Command:      emr.constructCmdSlice(run.SparkExtension.ExecutorInitCommand),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
-			Affinity:      emr.constructAffinity(ctx, executable, run, manager, false),
-			Tolerations:   emr.constructTolerations(executable, run, false),
+			Affinity:      emr.constructAffinity(ctx, executable, run, manager, false, capabilities),
+			Tolerations:   emr.constructTolerations(executable, run, false, capabilities),
 		},
 	}
 
@@ -525,7 +531,7 @@ func (emr *EMRExecutionEngine) constructEviction(ctx context.Context, run state.
 	return "true"
 }
 
-func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run, driver bool) []v1.Toleration {
+func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable, run state.Run, driver bool, capabilities state.Capabilities) []v1.Toleration {
 	tolerations := []v1.Toleration{}
 
 	tolerations = append(tolerations, v1.Toleration{
@@ -543,32 +549,34 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 			Effect:   "NoSchedule",
 		})
 
-		cpu := state.MinCPU
-		mem := state.MinMem
-		if run.Cpu != nil && *run.Cpu != 0 {
-			cpu = *run.Cpu
-		}
-		if run.Memory != nil && *run.Memory != 0 {
-			mem = *run.Memory
-		}
-		if !driver {
-			if execMem := executorMemoryMiB(run); execMem > mem {
-				mem = execMem
+		if capabilities.Has(state.CapSizeTieredPools) {
+			cpu := state.MinCPU
+			mem := state.MinMem
+			if run.Cpu != nil && *run.Cpu != 0 {
+				cpu = *run.Cpu
 			}
+			if run.Memory != nil && *run.Memory != 0 {
+				mem = *run.Memory
+			}
+			if !driver {
+				if execMem := executorMemoryMiB(run); execMem > mem {
+					mem = execMem
+				}
+			}
+			size := state.PoolSize(cpu, mem)
+			tolerations = append(tolerations, v1.Toleration{
+				Key:      "flotilla-pool",
+				Operator: "Equal",
+				Value:    size,
+				Effect:   "NoSchedule",
+			})
 		}
-		tier := state.PoolTier(cpu, mem)
-		tolerations = append(tolerations, v1.Toleration{
-			Key:      "flotilla-pool",
-			Operator: "Equal",
-			Value:    tier,
-			Effect:   "NoSchedule",
-		})
 	}
 
 	return tolerations
 }
 
-func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, driver bool) *v1.Affinity {
+func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, driver bool, capabilities state.Capabilities) *v1.Affinity {
 	affinity := &v1.Affinity{}
 	if ctx == nil {
 		ctx = context.Background()
@@ -620,25 +628,27 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 			Values:   []string{team},
 		})
 
-		cpu := state.MinCPU
-		mem := state.MinMem
-		if run.Cpu != nil && *run.Cpu != 0 {
-			cpu = *run.Cpu
-		}
-		if run.Memory != nil && *run.Memory != 0 {
-			mem = *run.Memory
-		}
-		if !driver {
-			if execMem := executorMemoryMiB(run); execMem > mem {
-				mem = execMem
+		if capabilities.Has(state.CapSizeTieredPools) {
+			cpu := state.MinCPU
+			mem := state.MinMem
+			if run.Cpu != nil && *run.Cpu != 0 {
+				cpu = *run.Cpu
 			}
+			if run.Memory != nil && *run.Memory != 0 {
+				mem = *run.Memory
+			}
+			if !driver {
+				if execMem := executorMemoryMiB(run); execMem > mem {
+					mem = execMem
+				}
+			}
+			size := state.PoolSize(cpu, mem)
+			requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+				Key:      "flotilla-pool",
+				Operator: v1.NodeSelectorOpIn,
+				Values:   []string{size},
+			})
 		}
-		tier := state.PoolTier(cpu, mem)
-		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-			Key:      "flotilla-pool",
-			Operator: v1.NodeSelectorOpIn,
-			Values:   []string{tier},
-		})
 	}
 
 	//todo remove conditional after migration
