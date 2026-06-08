@@ -155,7 +155,7 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 
 	if team := run.Labels["team"]; team != "" {
 		if kClient, err := emr.getKClient(run); err == nil {
-			go ensureTeamRegistryConfigMap(context.Background(), kClient, emr.emrJobNamespace, team)
+			go ensureTeamRegistryConfigMap(context.Background(), &kClient, emr.emrJobNamespace, team)
 		}
 	}
 

@@ -160,7 +160,7 @@ func (ee *EKSExecutionEngine) Execute(ctx context.Context, executable state.Exec
 	}
 
 	if team := run.Labels["team"]; team != "" {
-		go ensureTeamRegistryConfigMap(context.Background(), kClient, ee.jobNamespace, team)
+		go ensureTeamRegistryConfigMap(context.Background(), &kClient, ee.jobNamespace, team)
 	}
 
 	result, err := kClient.BatchV1().Jobs(ee.jobNamespace).Create(ctx, &job, metav1.CreateOptions{})
