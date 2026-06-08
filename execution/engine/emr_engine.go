@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/emrcontainers"
@@ -535,6 +535,22 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 			Value:    "true",
 			Effect:   "NoSchedule",
 		})
+
+		cpu := state.MinCPU
+		mem := state.MinMem
+		if run.Cpu != nil && *run.Cpu != 0 {
+			cpu = *run.Cpu
+		}
+		if run.Memory != nil && *run.Memory != 0 {
+			mem = *run.Memory
+		}
+		tier := state.PoolTier(cpu, mem)
+		tolerations = append(tolerations, v1.Toleration{
+			Key:      "flotilla-pool",
+			Operator: "Equal",
+			Value:    tier,
+			Effect:   "NoSchedule",
+		})
 	}
 
 	return tolerations
@@ -591,13 +607,21 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 			Operator: v1.NodeSelectorOpIn,
 			Values:   []string{team},
 		})
-		if env := os.Getenv("FLOTILLA_MODE"); env != "" {
-			requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
-				Key:      "environment",
-				Operator: v1.NodeSelectorOpIn,
-				Values:   []string{env},
-			})
+
+		cpu := state.MinCPU
+		mem := state.MinMem
+		if run.Cpu != nil && *run.Cpu != 0 {
+			cpu = *run.Cpu
 		}
+		if run.Memory != nil && *run.Memory != 0 {
+			mem = *run.Memory
+		}
+		tier := state.PoolTier(cpu, mem)
+		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
+			Key:      "flotilla-pool",
+			Operator: v1.NodeSelectorOpIn,
+			Values:   []string{tier},
+		})
 	}
 
 	//todo remove conditional after migration
