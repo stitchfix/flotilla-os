@@ -550,8 +550,10 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 		if run.Memory != nil && *run.Memory != 0 {
 			mem = *run.Memory
 		}
-		if !driver && run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory != nil && *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory > mem {
-			mem = *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory
+		if !driver {
+			if execMem := executorMemoryMiB(run); execMem > mem {
+				mem = execMem
+			}
 		}
 		tier := state.PoolTier(cpu, mem)
 		tolerations = append(tolerations, v1.Toleration{
@@ -625,8 +627,10 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		if run.Memory != nil && *run.Memory != 0 {
 			mem = *run.Memory
 		}
-		if !driver && run.SparkExtension != nil && run.SparkExtension.SparkSubmitJobDriver != nil && run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory != nil && *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory > mem {
-			mem = *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory
+		if !driver {
+			if execMem := executorMemoryMiB(run); execMem > mem {
+				mem = execMem
+			}
 		}
 		tier := state.PoolTier(cpu, mem)
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
@@ -695,6 +699,24 @@ func (emr *EMRExecutionEngine) buildMetricTags(run state.Run) []string {
 		tags = append(tags, fmt.Sprintf("cluster:%s", run.ClusterName))
 	}
 	return tags
+}
+
+func executorMemoryMiB(run state.Run) int64 {
+	if run.SparkExtension == nil || run.SparkExtension.SparkSubmitJobDriver == nil {
+		return 0
+	}
+	if run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory != nil {
+		return *run.SparkExtension.SparkSubmitJobDriver.ExecutorMemory
+	}
+	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
+		if k.Name != nil && *k.Name == "spark.executor.memory" && k.Value != nil {
+			quantity, err := resource.ParseQuantity(setResourceSuffix(*k.Value))
+			if err == nil {
+				return quantity.Value() / (1024 * 1024)
+			}
+		}
+	}
+	return 0
 }
 
 func setResourceSuffix(value string) string {
