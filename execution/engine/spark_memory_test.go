@@ -116,6 +116,130 @@ func TestExecutorMemoryMiB(t *testing.T) {
 	}
 }
 
+func TestDriverCPUMillis(t *testing.T) {
+	tests := []struct {
+		name     string
+		run      state.Run
+		expected int64
+	}{
+		{
+			name:     "nil spark extension",
+			run:      state.Run{},
+			expected: 0,
+		},
+		{
+			name: "no spark.driver.cores in conf",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.executor.cores"), Value: aws.String("4")},
+						},
+					},
+				},
+			},
+			expected: 0,
+		},
+		{
+			name: "spark.driver.cores 4",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.driver.cores"), Value: aws.String("4")},
+						},
+					},
+				},
+			},
+			expected: 4000,
+		},
+		{
+			name: "spark.driver.cores 1",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.driver.cores"), Value: aws.String("1")},
+						},
+					},
+				},
+			},
+			expected: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := driverCPUMillis(tt.run)
+			if got != tt.expected {
+				t.Errorf("driverCPUMillis() = %d, want %d", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExecutorCPUMillis(t *testing.T) {
+	tests := []struct {
+		name     string
+		run      state.Run
+		expected int64
+	}{
+		{
+			name:     "nil spark extension",
+			run:      state.Run{},
+			expected: 0,
+		},
+		{
+			name: "no spark.executor.cores in conf",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.driver.cores"), Value: aws.String("2")},
+						},
+					},
+				},
+			},
+			expected: 0,
+		},
+		{
+			name: "spark.executor.cores 3",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.executor.cores"), Value: aws.String("3")},
+						},
+					},
+				},
+			},
+			expected: 3000,
+		},
+		{
+			name: "spark.executor.cores 8",
+			run: state.Run{
+				SparkExtension: &state.SparkExtension{
+					SparkSubmitJobDriver: &state.SparkSubmitJobDriver{
+						SparkSubmitConf: []state.Conf{
+							{Name: aws.String("spark.executor.cores"), Value: aws.String("8")},
+						},
+					},
+				},
+			},
+			expected: 8000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := executorCPUMillis(tt.run)
+			if got != tt.expected {
+				t.Errorf("executorCPUMillis() = %d, want %d", got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestParseSparkMemoryMiB(t *testing.T) {
 	tests := []struct {
 		input    string
