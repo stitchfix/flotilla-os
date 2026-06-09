@@ -558,7 +558,11 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 			if run.Memory != nil && *run.Memory != 0 {
 				mem = *run.Memory
 			}
-			if !driver {
+			if driver {
+				if drvMem := driverMemoryMiB(run); drvMem > mem {
+					mem = drvMem
+				}
+			} else {
 				if execMem := executorMemoryMiB(run); execMem > mem {
 					mem = execMem
 				}
@@ -637,7 +641,11 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 			if run.Memory != nil && *run.Memory != 0 {
 				mem = *run.Memory
 			}
-			if !driver {
+			if driver {
+				if drvMem := driverMemoryMiB(run); drvMem > mem {
+					mem = drvMem
+				}
+			} else {
 				if execMem := executorMemoryMiB(run); execMem > mem {
 					mem = execMem
 				}
@@ -710,6 +718,18 @@ func (emr *EMRExecutionEngine) buildMetricTags(run state.Run) []string {
 		tags = append(tags, fmt.Sprintf("cluster:%s", run.ClusterName))
 	}
 	return tags
+}
+
+func driverMemoryMiB(run state.Run) int64 {
+	if run.SparkExtension == nil || run.SparkExtension.SparkSubmitJobDriver == nil {
+		return 0
+	}
+	for _, k := range run.SparkExtension.SparkSubmitJobDriver.SparkSubmitConf {
+		if k.Name != nil && *k.Name == "spark.driver.memory" && k.Value != nil {
+			return parseSparkMemoryMiB(*k.Value)
+		}
+	}
+	return 0
 }
 
 func executorMemoryMiB(run state.Run) int64 {
