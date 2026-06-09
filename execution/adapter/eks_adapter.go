@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -22,7 +21,7 @@ import (
 
 type EKSAdapter interface {
 	AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod *corev1.Pod) (state.Run, error)
-	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error)
+	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool, capabilities state.Capabilities) (batchv1.Job, error)
 }
 type eksAdapter struct {
 	logger flotillaLog.Logger
@@ -101,7 +100,7 @@ func (a *eksAdapter) AdaptJobToFlotillaRun(job *batchv1.Job, run state.Run, pod 
 // 4. Port mappings.
 // 5. Node lifecycle.
 // 6. Node affinity and anti-affinity
-func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool) (batchv1.Job, error) {
+func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool, capabilities state.Capabilities) (batchv1.Job, error) {
 	cmd := ""
 
 	if run.Command != nil && len(*run.Command) > 0 {
@@ -128,8 +127,8 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, exe
 	if volumeMounts != nil {
 		container.VolumeMounts = volumeMounts
 	}
-	affinity := a.constructAffinity(ctx, executable, run, manager)
-	tolerations := a.constructTolerations(executable, run)
+	affinity := a.constructAffinity(ctx, executable, run, manager, capabilities)
+	tolerations := a.constructTolerations(executable, run, capabilities)
 
 	annotations := map[string]string{}
 	annotations["prometheus.io/port"] = "9090"
@@ -201,7 +200,7 @@ func (a *eksAdapter) constructContainerPorts(executable state.Executable) []core
 	return containerPorts
 }
 
-func (a *eksAdapter) constructTolerations(executable state.Executable, run state.Run) []corev1.Toleration {
+func (a *eksAdapter) constructTolerations(executable state.Executable, run state.Run, capabilities state.Capabilities) []corev1.Toleration {
 	executableResources := executable.GetExecutableResources()
 	tolerations := []corev1.Toleration{}
 
@@ -223,12 +222,23 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 			Value:    "true",
 			Effect:   "NoSchedule",
 		})
+
+		if capabilities.Has(state.CapPoolSizing) {
+			cpu, mem := a.getResourceDefaults(run, executable)
+			size := state.PoolSize(cpu, mem)
+			tolerations = append(tolerations, corev1.Toleration{
+				Key:      "flotilla-pool",
+				Operator: "Equal",
+				Value:    size,
+				Effect:   "NoSchedule",
+			})
+		}
 	}
 
 	return tolerations
 }
 
-func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager) *corev1.Affinity {
+func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Executable, run state.Run, manager state.Manager, capabilities state.Capabilities) *corev1.Affinity {
 	affinity := &corev1.Affinity{}
 	var requiredMatch []corev1.NodeSelectorRequirement
 	var preferredMatches []corev1.PreferredSchedulingTerm
@@ -270,11 +280,14 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 			Operator: corev1.NodeSelectorOpIn,
 			Values:   []string{team},
 		})
-		if env := os.Getenv("FLOTILLA_MODE"); env != "" {
+
+		if capabilities.Has(state.CapPoolSizing) {
+			cpu, mem := a.getResourceDefaults(run, executable)
+			size := state.PoolSize(cpu, mem)
 			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-				Key:      "environment",
+				Key:      "flotilla-pool",
 				Operator: corev1.NodeSelectorOpIn,
-				Values:   []string{env},
+				Values:   []string{size},
 			})
 		}
 	}

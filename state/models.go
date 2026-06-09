@@ -1254,6 +1254,17 @@ type Tiers []string
 type Capability string
 type Capabilities []string
 
+const CapPoolSizing = "pool-sizing"
+
+func (c Capabilities) Has(cap string) bool {
+	for _, v := range c {
+		if v == cap {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	StatusActive      ClusterStatus = "active"
 	StatusMaintenance ClusterStatus = "maintenance"
