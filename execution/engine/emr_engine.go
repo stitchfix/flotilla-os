@@ -541,7 +541,34 @@ func (emr *EMRExecutionEngine) constructTolerations(executable state.Executable,
 		Effect:   "NoSchedule",
 	})
 
-	if team, ok := run.Labels["team"]; ok && team != "" {
+	if capabilities.Has(state.CapSharedPool) {
+		cpu := state.MinCPU
+		mem := state.MinMem
+		if run.Cpu != nil && *run.Cpu != 0 {
+			cpu = *run.Cpu
+		}
+		if run.Memory != nil && *run.Memory != 0 {
+			mem = *run.Memory
+		}
+		if driver {
+			if drvCPU := driverCPUMillis(run); drvCPU > cpu {
+				cpu = drvCPU
+			}
+			if drvMem := driverMemoryMiB(run); drvMem > mem {
+				mem = drvMem
+			}
+		} else {
+			if execCPU := executorCPUMillis(run); execCPU > cpu {
+				cpu = execCPU
+			}
+			if execMem := executorMemoryMiB(run); execMem > mem {
+				mem = execMem
+			}
+		}
+		size := state.PoolSize(cpu, mem)
+		routing := state.SharedPoolRouting(size)
+		tolerations = append(tolerations, routing.Tolerations...)
+	} else if team, ok := run.Labels["team"]; ok && team != "" {
 		tolerations = append(tolerations, v1.Toleration{
 			Key:      team,
 			Operator: "Equal",
@@ -592,6 +619,7 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		ctx = context.Background()
 	}
 	var requiredMatch []v1.NodeSelectorRequirement
+	var preferredMatches []v1.PreferredSchedulingTerm
 	//todo move to config
 	nodeLifecycleKey := "karpenter.sh/capacity-type"
 	nodeArchKey := "kubernetes.io/arch"
@@ -631,7 +659,39 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		Values:   arch,
 	})
 
-	if team, ok := run.Labels["team"]; ok && team != "" {
+	if capabilities.Has(state.CapSharedPool) {
+		cpu := state.MinCPU
+		mem := state.MinMem
+		if run.Cpu != nil && *run.Cpu != 0 {
+			cpu = *run.Cpu
+		}
+		if run.Memory != nil && *run.Memory != 0 {
+			mem = *run.Memory
+		}
+		if driver {
+			if drvCPU := driverCPUMillis(run); drvCPU > cpu {
+				cpu = drvCPU
+			}
+			if drvMem := driverMemoryMiB(run); drvMem > mem {
+				mem = drvMem
+			}
+		} else {
+			if execCPU := executorCPUMillis(run); execCPU > cpu {
+				cpu = execCPU
+			}
+			if execMem := executorMemoryMiB(run); execMem > mem {
+				mem = execMem
+			}
+		}
+		size := state.PoolSize(cpu, mem)
+		routing := state.SharedPoolRouting(size)
+		if routing.RequiredAffinity != nil {
+			requiredMatch = append(requiredMatch, *routing.RequiredAffinity)
+		}
+		if routing.PreferredAffinity != nil {
+			preferredMatches = append(preferredMatches, *routing.PreferredAffinity)
+		}
+	} else if team, ok := run.Labels["team"]; ok && team != "" {
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 			Key:      "team",
 			Operator: v1.NodeSelectorOpIn,
@@ -681,6 +741,17 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 		})
 	}
 
+	preferredMatches = append(preferredMatches, v1.PreferredSchedulingTerm{
+		Weight: 50,
+		Preference: v1.NodeSelectorTerm{
+			MatchExpressions: []v1.NodeSelectorRequirement{{
+				Key:      nodeLifecycleKey,
+				Operator: v1.NodeSelectorOpIn,
+				Values:   []string{nodePreference},
+			}},
+		},
+	})
+
 	affinity = &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
@@ -690,16 +761,7 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 					},
 				},
 			},
-			PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{{
-				Weight: 50,
-				Preference: v1.NodeSelectorTerm{
-					MatchExpressions: []v1.NodeSelectorRequirement{{
-						Key:      nodeLifecycleKey,
-						Operator: v1.NodeSelectorOpIn,
-						Values:   []string{nodePreference},
-					}},
-				},
-			}},
+			PreferredDuringSchedulingIgnoredDuringExecution: preferredMatches,
 		},
 		PodAffinity: &v1.PodAffinity{
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
