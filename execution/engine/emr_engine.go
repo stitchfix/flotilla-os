@@ -733,7 +733,7 @@ func (emr *EMRExecutionEngine) constructAffinity(ctx context.Context, executable
 
 	//todo remove conditional after migration
 	_, hasTeam := run.Labels["team"]
-	if newCluster && !hasTeam {
+	if newCluster && !hasTeam && !capabilities.Has(state.CapSharedPool) {
 		requiredMatch = append(requiredMatch, v1.NodeSelectorRequirement{
 			Key:      "emr",
 			Operator: v1.NodeSelectorOpIn,
