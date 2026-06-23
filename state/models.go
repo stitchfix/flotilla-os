@@ -1255,6 +1255,7 @@ type Capability string
 type Capabilities []string
 
 const CapPoolSizing = "pool-sizing"
+const CapSharedPool = "shared-pool"
 
 func (c Capabilities) Has(cap string) bool {
 	for _, v := range c {
