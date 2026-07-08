@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/clients/metrics"
+	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/exceptions"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
 	"github.com/stitchfix/flotilla-os/state"
@@ -24,13 +25,17 @@ type EKSAdapter interface {
 	AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, executable state.Executable, run state.Run, schedulerName string, manager state.Manager, araEnabled bool, capabilities state.Capabilities) (batchv1.Job, error)
 }
 type eksAdapter struct {
-	logger flotillaLog.Logger
+	logger               flotillaLog.Logger
+	lakekeeperSecretName string
 }
 
 // NewEKSAdapter configures and returns an eks adapter for translating
 // from EKS api specific objects to our representation
-func NewEKSAdapter(logger flotillaLog.Logger) (EKSAdapter, error) {
-	adapter := eksAdapter{logger: logger}
+func NewEKSAdapter(conf config.Config, logger flotillaLog.Logger) (EKSAdapter, error) {
+	adapter := eksAdapter{
+		logger:               logger,
+		lakekeeperSecretName: conf.GetString("eks_lakekeeper_secret_name"),
+	}
 	return &adapter, nil
 }
 
@@ -119,7 +124,7 @@ func (a *eksAdapter) AdaptFlotillaDefinitionAndRunToJob(ctx context.Context, exe
 		Image:           run.Image,
 		Command:         cmdSlice,
 		Resources:       resourceRequirements,
-		Env:             a.envOverrides(executable, run),
+		Env:             append(a.envOverrides(executable, run), a.lakekeeperSecretEnvVars()...),
 		Ports:           a.constructContainerPorts(executable),
 		ImagePullPolicy: corev1.PullAlways,
 	}
@@ -735,6 +740,74 @@ func (a *eksAdapter) envOverrides(executable state.Executable, run state.Run) []
 		}
 	}
 	return res
+}
+
+func (a *eksAdapter) lakekeeperSecretEnvVars() []corev1.EnvVar {
+	if a.lakekeeperSecretName == "" {
+		return nil
+	}
+	return []corev1.EnvVar{
+		{
+			Name: "OAUTH2_CLIENT_ID",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "client_id",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_CLIENT_SECRET",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "client_secret",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SERVER_URI",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "token_url",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "OAUTH2_SCOPE",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "scope",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "CATALOG_URI",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "uri",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+		{
+			Name: "WAREHOUSE",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "warehouse",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
+	}
 }
 
 func (a *eksAdapter) sanitizeEnvVar(key string) string {

@@ -97,6 +97,18 @@ func TestRoundCPUAvoidsCgroupIssue(t *testing.T) {
 }
 
 // mockLogger implements flotillaLog.Logger for testing
+type mockConfig struct {
+	values map[string]string
+}
+
+func (m *mockConfig) GetString(key string) string            { return m.values[key] }
+func (m *mockConfig) GetStringSlice(key string) []string     { return nil }
+func (m *mockConfig) GetStringMapString(key string) map[string]string { return nil }
+func (m *mockConfig) GetInt(key string) int                  { return 0 }
+func (m *mockConfig) GetBool(key string) bool                { return false }
+func (m *mockConfig) GetFloat64(key string) float64          { return 0 }
+func (m *mockConfig) IsSet(key string) bool                  { _, ok := m.values[key]; return ok }
+
 type mockLogger struct {
 	logCalls   [][]interface{}
 	eventCalls [][]interface{}
@@ -267,7 +279,7 @@ func (m *mockExecutable) GetExecutableResourceName() string {
 
 func TestAdaptiveResources_NonGPUJob_ARAEnabled_Success(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
@@ -323,7 +335,7 @@ func TestAdaptiveResources_NonGPUJob_ARAEnabled_Success(t *testing.T) {
 
 func TestAdaptiveResources_GPUJob_SkipsARA(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
@@ -367,7 +379,7 @@ func TestAdaptiveResources_GPUJob_SkipsARA(t *testing.T) {
 
 func TestAdaptiveResources_EstimationFailed(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
@@ -411,7 +423,7 @@ func TestAdaptiveResources_EstimationFailed(t *testing.T) {
 
 func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
@@ -519,7 +531,7 @@ func TestAdaptiveResources_MaxResourceBoundsHit(t *testing.T) {
 
 func TestAdaptiveResources_ARADisabled(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
@@ -561,7 +573,7 @@ func TestAdaptiveResources_ARADisabled(t *testing.T) {
 
 func TestEmitARAMetrics_StructuredLog(t *testing.T) {
 	logger := &mockLogger{}
-	adapter, err := NewEKSAdapter(logger)
+	adapter, err := NewEKSAdapter(&mockConfig{values: map[string]string{}}, logger)
 	if err != nil {
 		t.Fatalf("Failed to create adapter: %v", err)
 	}
