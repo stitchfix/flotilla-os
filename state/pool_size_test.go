@@ -16,10 +16,10 @@ func TestPoolSize(t *testing.T) {
 		{"max medium cpu", 13999, 99999, "m"},
 		{"cpu triggers large", 14000, 512, "l"},
 		{"mem triggers large", 256, 100000, "l"},
-		{"max large cpu", 29999, 199999, "l"},
+		{"max large cpu", 29999, 233999, "l"},
 		{"cpu triggers xl", 30000, 512, "xl"},
-		{"mem triggers xl", 256, 200000, "xl"},
-		{"both large", 60000, 350000, "xl"},
+		{"mem triggers xl", 256, 234000, "xl"},
+		{"both xl", 60000, 350000, "xl"},
 	}
 
 	for _, tt := range tests {

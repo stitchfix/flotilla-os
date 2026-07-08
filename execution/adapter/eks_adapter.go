@@ -221,14 +221,21 @@ func (a *eksAdapter) constructTolerations(executable state.Executable, run state
 
 	isWaitForData := run.Labels["kube_task_type"] == "wait_for_data"
 	if team, ok := run.Labels["team"]; ok && team != "" && !isGPU && !isWaitForData {
-		tolerations = append(tolerations, corev1.Toleration{
-			Key:      team,
-			Operator: "Equal",
-			Value:    "true",
-			Effect:   "NoSchedule",
-		})
+		if !capabilities.Has(state.CapSharedPool) {
+			tolerations = append(tolerations, corev1.Toleration{
+				Key:      team,
+				Operator: "Equal",
+				Value:    "true",
+				Effect:   "NoSchedule",
+			})
+		}
 
-		if capabilities.Has(state.CapPoolSizing) {
+		if capabilities.Has(state.CapSharedPool) {
+			cpu, mem := a.getResourceDefaults(run, executable)
+			size := state.PoolSize(cpu, mem)
+			routing := state.SharedPoolRouting(size)
+			tolerations = append(tolerations, routing.Tolerations...)
+		} else if capabilities.Has(state.CapPoolSizing) {
 			cpu, mem := a.getResourceDefaults(run, executable)
 			size := state.PoolSize(cpu, mem)
 			tolerations = append(tolerations, corev1.Toleration{
@@ -280,13 +287,25 @@ func (a *eksAdapter) constructAffinity(ctx context.Context, executable state.Exe
 	isGPU := (run.Gpu != nil && *run.Gpu > 0) || (executableResources.Gpu != nil && *executableResources.Gpu > 0)
 	isWaitForData := run.Labels["kube_task_type"] == "wait_for_data"
 	if team, ok := run.Labels["team"]; ok && team != "" && !isGPU && !isWaitForData {
-		requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
-			Key:      "team",
-			Operator: corev1.NodeSelectorOpIn,
-			Values:   []string{team},
-		})
+		if !capabilities.Has(state.CapSharedPool) {
+			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{
+				Key:      "team",
+				Operator: corev1.NodeSelectorOpIn,
+				Values:   []string{team},
+			})
+		}
 
-		if capabilities.Has(state.CapPoolSizing) {
+		if capabilities.Has(state.CapSharedPool) {
+			cpu, mem := a.getResourceDefaults(run, executable)
+			size := state.PoolSize(cpu, mem)
+			routing := state.SharedPoolRouting(size)
+			if routing.RequiredAffinity != nil {
+				requiredMatch = append(requiredMatch, *routing.RequiredAffinity)
+			}
+			if routing.PreferredAffinity != nil {
+				preferredMatches = append(preferredMatches, *routing.PreferredAffinity)
+			}
+		} else if capabilities.Has(state.CapPoolSizing) {
 			cpu, mem := a.getResourceDefaults(run, executable)
 			size := state.PoolSize(cpu, mem)
 			requiredMatch = append(requiredMatch, corev1.NodeSelectorRequirement{

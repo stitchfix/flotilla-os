@@ -2,7 +2,7 @@ package state
 
 func PoolSize(cpuMillis, memoryMiB int64) string {
 	switch {
-	case cpuMillis >= 30000 || memoryMiB >= 200000:
+	case cpuMillis >= 30000 || memoryMiB >= 234000:
 		return "xl"
 	case cpuMillis >= 14000 || memoryMiB >= 100000:
 		return "l"
