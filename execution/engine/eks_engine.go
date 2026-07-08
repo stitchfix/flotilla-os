@@ -92,7 +92,7 @@ func (ee *EKSExecutionEngine) Initialize(conf config.Config) error {
 		ee.log.Log("level", "error", "message", "failed to initialize clusters", "error", err.Error())
 	}
 
-	adapt, err := adapter.NewEKSAdapter(ee.log)
+	adapt, err := adapter.NewEKSAdapter(conf, ee.log)
 	if err != nil {
 		return err
 	}
