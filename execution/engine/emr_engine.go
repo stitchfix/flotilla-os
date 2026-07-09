@@ -63,6 +63,12 @@ type EMRExecutionEngine struct {
 	lakekeeperSecretName string
 }
 
+const (
+	emrContainersDefaultsClassification = "emr-containers-defaults"
+	loggingRequestMemoryKey             = "logging.request.memory"
+	loggingRequestMemoryDefault         = "1Gi"
+)
+
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
 
@@ -253,6 +259,16 @@ func (emr *EMRExecutionEngine) generateApplicationConf(ctx context.Context, exec
 		{
 			Classification: aws.String("spark-hive-site"),
 			Properties:     hiveDefaults,
+		},
+		emrContainersDefaultsConf(),
+	}
+}
+
+func emrContainersDefaultsConf() *emrcontainers.Configuration {
+	return &emrcontainers.Configuration{
+		Classification: aws.String(emrContainersDefaultsClassification),
+		Properties: map[string]*string{
+			loggingRequestMemoryKey: aws.String(loggingRequestMemoryDefault),
 		},
 	}
 }
