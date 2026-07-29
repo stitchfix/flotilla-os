@@ -1297,6 +1297,17 @@ func (emr *EMRExecutionEngine) lakekeeperSecretEnvVars() []v1.EnvVar {
 				},
 			},
 		},
+		{
+			// DataHub PAT, used by sfs3 to read PD metadata for fumigation.
+			Name: "DATAHUB_TOKEN",
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: emr.lakekeeperSecretName},
+					Key:                  "DATAHUB_TOKEN",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
 	}
 }
 

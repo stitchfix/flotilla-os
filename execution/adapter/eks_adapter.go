@@ -807,6 +807,17 @@ func (a *eksAdapter) lakekeeperSecretEnvVars() []corev1.EnvVar {
 				},
 			},
 		},
+		{
+			// DataHub PAT, used by sfs3 to read PD metadata for fumigation.
+			Name: "DATAHUB_TOKEN",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: a.lakekeeperSecretName},
+					Key:                  "DATAHUB_TOKEN",
+					Optional:             aws.Bool(true),
+				},
+			},
+		},
 	}
 }
 
