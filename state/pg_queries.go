@@ -152,7 +152,7 @@ FROM (
             node_lifecycle = 'spot') A
 `
 
-// RunSelect postgres specific query for runs
+// RunSelect postgres specific query for runs (single-run fetches)
 const RunSelect = `
 select t.run_id                          as runid,
        coalesce(t.definition_id, '')     as definitionid,
@@ -205,6 +205,60 @@ select t.run_id                          as runid,
      coalesce(tier::text, 'Tier4')   as tier
 from task t
 `
+
+// RunListSelect excludes pod_events from list queries to avoid transferring
+// the large JSONB column for every row.
+const RunListSelect = `
+select t.run_id                          as runid,
+       coalesce(t.definition_id, '')     as definitionid,
+       coalesce(t.alias, '')             as alias,
+       coalesce(t.image, '')             as image,
+       coalesce(t.cluster_name, '')      as clustername,
+       t.exit_code                       as exitcode,
+       t.exit_reason                     as exitreason,
+       coalesce(t.status, '')            as status,
+       queued_at                         as queuedat,
+       started_at                        as startedat,
+       finished_at                       as finishedat,
+       coalesce(t.instance_id, '')       as instanceid,
+       coalesce(t.instance_dns_name, '') as instancednsname,
+       coalesce(t.group_name, '')        as groupname,
+       coalesce(t.task_type, '')         as tasktype,
+       env::TEXT                         as env,
+       command,
+       memory,
+       cpu,
+       gpu,
+       engine,
+       ephemeral_storage                 as ephemeral_storage,
+       node_lifecycle                    as nodelifecycle,
+       pod_name                          as podname,
+       namespace,
+       max_cpu_used                      as maxcpuused,
+       max_memory_used                   as maxmemoryused,
+       command_hash                      as commandhash,
+       cloudtrail_notifications::TEXT    as cloudtrailnotifications,
+       coalesce(executable_id, '')       as executableid,
+       coalesce(executable_type, '')     as executabletype,
+       execution_request_custom::TEXT    as executionrequestcustom,
+       cpu_limit                         as cpulimit,
+       memory_limit                      as memorylimit,
+       attempt_count                     as attemptcount,
+       spawned_runs::TEXT                as spawnedruns,
+       run_exceptions::TEXT              as runexceptions,
+       active_deadline_seconds           as activedeadlineseconds,
+       spark_extension::TEXT             as sparkextension,
+       metrics_uri                       as metricsuri,
+       description                       as description,
+	   idempotence_key                   as idempotencekey,
+       coalesce("user", '')              as user,
+	   coalesce(arch, '')                as arch,
+	   labels::TEXT                      as labels,
+	   coalesce(requires_docker,false)   as requires_docker,
+	   service_account 				 	 as service_account,
+     coalesce(tier::text, 'Tier4')   as tier
+from task t
+`
 const GetRunStatusSQL = `
 SELECT 
     run_id, 
@@ -223,7 +277,7 @@ WHERE run_id = $1
 `
 
 // ListRunsSQL postgres specific query for listing runs
-const ListRunsSQL = RunSelect + "\n%s %s limit $1 offset $2"
+const ListRunsSQL = RunListSelect + "\n%s %s limit $1 offset $2"
 
 // GetRunSQL postgres specific query for getting a single run
 const GetRunSQL = RunSelect + "\nwhere run_id = $1"
