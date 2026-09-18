@@ -105,12 +105,6 @@ func (iatt *ImplementsAllTheThings) Cleanup() error {
 	return nil
 }
 
-func (iatt *ImplementsAllTheThings) ListFailingNodes(ctx context.Context) (state.NodeList, error) {
-	var nodeList state.NodeList
-	iatt.Calls = append(iatt.Calls, "ListFailingNodes")
-	return nodeList, nil
-}
-
 func (iatt *ImplementsAllTheThings) GetPodReAttemptRate(ctx context.Context) (float32, error) {
 	iatt.Calls = append(iatt.Calls, "GetPodReAttemptRate")
 	return 1.0, nil

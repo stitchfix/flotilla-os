@@ -213,9 +213,6 @@ func (m *mockStateManager) ListTemplatesLatestOnly(ctx context.Context, limit in
 	return state.TemplateList{}, nil
 }
 func (m *mockStateManager) CreateTemplate(ctx context.Context, t state.Template) error { return nil }
-func (m *mockStateManager) ListFailingNodes(ctx context.Context) (state.NodeList, error) {
-	return state.NodeList{}, nil
-}
 func (m *mockStateManager) GetPodReAttemptRate(ctx context.Context) (float32, error) {
 	return 0, nil
 }

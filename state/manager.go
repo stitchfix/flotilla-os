@@ -51,7 +51,6 @@ type Manager interface {
 	ListTemplatesLatestOnly(ctx context.Context, limit int, offset int, sortBy string, order string) (TemplateList, error)
 	CreateTemplate(ctx context.Context, t Template) error
 
-	ListFailingNodes(ctx context.Context) (NodeList, error)
 	GetPodReAttemptRate(ctx context.Context) (float32, error)
 	GetNodeLifecycle(ctx context.Context, executableID string, commandHash string) (string, error)
 	GetTaskHistoricalRuntime(ctx context.Context, executableID string, runId string) (float32, error)

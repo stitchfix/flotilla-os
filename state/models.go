@@ -141,8 +141,6 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
-type NodeList []string
-
 // Tags wraps a list of strings
 //   - abstraction to make it easier to read
 //     and write to db
