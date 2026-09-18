@@ -157,6 +157,9 @@ func (m *mockStateManager) UpdateDefinition(ctx context.Context, definitionID st
 }
 func (m *mockStateManager) CreateDefinition(ctx context.Context, d state.Definition) error { return nil }
 func (m *mockStateManager) DeleteDefinition(ctx context.Context, definitionID string) error { return nil }
+func (m *mockStateManager) DeleteOldRuns(ctx context.Context, cutoffDays int) (int64, error) {
+	return 0, nil
+}
 func (m *mockStateManager) ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (state.RunList, error) {
 	return state.RunList{}, nil
 }
