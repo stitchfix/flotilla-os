@@ -141,24 +141,6 @@ FROM (SELECT EXTRACT(epoch from finished_at - started_at) / 60 as minutes
       LIMIT 30) A
 `
 
-const ListFailingNodesSQL = `
-SELECT instance_dns_name
-FROM (
-         SELECT instance_dns_name, count(*) as c
-         FROM TASK
-         WHERE (exit_code = 128 OR
-                pod_events @> '[{"reason": "Failed"}]' OR
-                pod_events @> '[{"reason": "FailedSync"}]' OR
-                pod_events @> '[{"reason": "FailedCreatePodSandBox"}]' OR
-                pod_events @> '[{"reason": "OutOfmemory"}]')
-           AND engine = 'eks'
-           AND queued_at >= NOW() - INTERVAL '1 HOURS'
-           AND instance_dns_name like 'ip-%'
-         GROUP BY 1
-         order by 2 desc) AS all_nodes
-WHERE c >= 5
-`
-
 const PodReAttemptRate = `
 SELECT (multiple_attempts / (CASE WHEN single_attempts = 0 THEN 1 ELSE single_attempts END)) AS attempts
 FROM (
