@@ -379,3 +379,26 @@ const ListTemplatesLatestOnlySQL = `
 // GetTemplateLatestOnlySQL get the latest version of a specific template name.
 const GetTemplateLatestOnlySQL = TemplateSelect + "\nWHERE template_name = $1 ORDER BY version DESC LIMIT 1;"
 const GetTemplateByVersionSQL = TemplateSelect + "\nWHERE template_name = $1 AND version = $2 ORDER BY version DESC LIMIT 1;"
+
+// DeleteOldRunsSQL deletes task rows with queued_at older than the cutoff, in batches.
+const DeleteOldRunsSQL = `
+DELETE FROM task
+WHERE run_id IN (
+  SELECT run_id FROM task
+  WHERE queued_at < NOW() - $1 * INTERVAL '1 day'
+  LIMIT $2
+)
+`
+
+// DeleteOrphanedTaskStatusSQL deletes task_status rows whose task_arn
+// no longer exists in the task table.
+const DeleteOrphanedTaskStatusSQL = `
+DELETE FROM task_status
+WHERE task_arn IN (
+  SELECT ts.task_arn
+  FROM task_status ts
+  LEFT JOIN task t ON t.task_arn = ts.task_arn
+  WHERE t.task_arn IS NULL
+  LIMIT $1
+)
+`

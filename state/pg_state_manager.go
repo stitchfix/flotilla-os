@@ -701,6 +701,54 @@ func (sm *SQLStateManager) DeleteDefinition(ctx context.Context, definitionID st
 	return nil
 }
 
+func (sm *SQLStateManager) DeleteOldRuns(ctx context.Context, cutoffDays int) (int64, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_old_runs", "")
+	defer span.Finish()
+
+	const batchSize = 50000
+	var totalDeleted int64
+
+	for {
+		result, err := sm.db.ExecContext(ctx, DeleteOldRunsSQL, cutoffDays, batchSize)
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+			return totalDeleted, errors.Wrap(err, "issue deleting old task rows")
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return totalDeleted, errors.Wrap(err, "issue getting rows affected")
+		}
+
+		totalDeleted += rowsAffected
+
+		if rowsAffected < batchSize {
+			break
+		}
+	}
+
+	for {
+		result, err := sm.db.ExecContext(ctx, DeleteOrphanedTaskStatusSQL, batchSize)
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+			return totalDeleted, errors.Wrap(err, "issue deleting orphaned task_status rows")
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return totalDeleted, errors.Wrap(err, "issue getting rows affected for task_status")
+		}
+
+		if rowsAffected < batchSize {
+			break
+		}
+	}
+
+	return totalDeleted, nil
+}
+
 // ListRuns returns a RunList
 // limit: limit the result to this many runs
 // offset: start the results at this offset

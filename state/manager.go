@@ -23,6 +23,7 @@ type Manager interface {
 	UpdateDefinition(ctx context.Context, definitionID string, updates Definition) (Definition, error)
 	CreateDefinition(ctx context.Context, d Definition) error
 	DeleteDefinition(ctx context.Context, definitionID string) error
+	DeleteOldRuns(ctx context.Context, cutoffDays int) (int64, error)
 
 	ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (RunList, error)
 	EstimateRunResources(ctx context.Context, executableID string, commandHash string) (TaskResources, error)
