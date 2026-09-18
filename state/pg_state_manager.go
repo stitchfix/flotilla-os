@@ -1348,6 +1348,11 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 		VALUES ('retry', $1, $4), ('submit', $2, $4), ('status', $3, $4);
 	`
 
+		retentionInsert := `
+		INSERT INTO worker (worker_type, count_per_instance, engine)
+		VALUES ('retention', 1, $1);
+	`
+
 		tx, err := sm.db.Begin()
 		if err != nil {
 			return errors.WithStack(err)
@@ -1356,6 +1361,11 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 		if _, err = tx.Exec(insert, retryCount, submitCount, statusCount, engine); err != nil {
 			tx.Rollback()
 			return errors.Wrapf(err, "issue populating worker table")
+		}
+
+		if _, err = tx.Exec(retentionInsert, engine); err != nil {
+			tx.Rollback()
+			return errors.Wrapf(err, "issue populating worker table with retention worker")
 		}
 
 		err = tx.Commit()

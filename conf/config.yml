@@ -12,6 +12,7 @@ eks_log_driver_options_awslogs-region: us-east-1
 eks_log_namespace: flotilla-eks-namespace
 eks_log_retention_days: 90
 task_retention_days: 90
+worker_retention_interval: 24h
 enabled_workers:
   - retry
   - submit
