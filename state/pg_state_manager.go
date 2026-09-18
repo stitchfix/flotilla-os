@@ -737,7 +737,7 @@ func (sm *SQLStateManager) ListRuns(ctx context.Context, limit int, offset int, 
 
 	sql := fmt.Sprintf(ListRunsSQL, whereClause, orderQuery)
 	// Count against the bare filtered table rather than wrapping the full
-	// RunSelect (with its JSONB->TEXT casts) in an unbounded subquery. Same
+	// RunListSelect (with its JSONB->TEXT casts) in an unbounded subquery. Same
 	// filters, same exact total, but the existing task indexes can satisfy
 	// this directly instead of materializing every matching row's full
 	// column set just to count them.
