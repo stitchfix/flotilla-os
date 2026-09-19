@@ -1189,9 +1189,6 @@ func TestSQLStateManager_DeleteOldRuns(t *testing.T) {
 	old := now.Add(-120 * 24 * time.Hour) // 120 days ago
 	recent := now.Add(-30 * 24 * time.Hour) // 30 days ago
 
-	// Insert runs with explicit queued_at and task_arn timestamps.
-	// The fixture runs from setUp() have nil queued_at, so they won't match the cutoff.
-	// task_arn must be set so the task_status orphan cleanup join works correctly.
 	insertWithQueuedAt := `
 		INSERT INTO task (
 			run_id, definition_id, cluster_name, alias, image, status,
@@ -1201,13 +1198,6 @@ func TestSQLStateManager_DeleteOldRuns(t *testing.T) {
 	db.MustExec(insertWithQueuedAt, "old_run_1", "A", "aliasA", old, "arn:old_1")
 	db.MustExec(insertWithQueuedAt, "old_run_2", "A", "aliasA", old.Add(time.Hour), "arn:old_2")
 	db.MustExec(insertWithQueuedAt, "recent_run_1", "A", "aliasA", recent, "arn:recent_1")
-
-	// Insert task_status rows keyed by task_arn: two for old runs, one for recent, one truly orphaned
-	statusInsert := `INSERT INTO task_status (task_arn, status_version, status) VALUES ($1, 1, 'STOPPED')`
-	db.MustExec(statusInsert, "arn:old_1")
-	db.MustExec(statusInsert, "arn:old_2")
-	db.MustExec(statusInsert, "arn:recent_1")
-	db.MustExec(statusInsert, "arn:already_orphaned")
 
 	deleted, err := sm.DeleteOldRuns(ctx, 90)
 	if err != nil {
@@ -1229,19 +1219,6 @@ func TestSQLStateManager_DeleteOldRuns(t *testing.T) {
 	db.Get(&count, "SELECT count(*) FROM task WHERE run_id IN ('old_run_1', 'old_run_2')")
 	if count != 0 {
 		t.Errorf("expected old runs to be deleted, count=%d", count)
-	}
-
-	// Verify orphaned task_status rows were cleaned up
-	// arn:old_1, arn:old_2, and arn:already_orphaned should all be gone
-	db.Get(&count, "SELECT count(*) FROM task_status WHERE task_arn IN ('arn:old_1', 'arn:old_2', 'arn:already_orphaned')")
-	if count != 0 {
-		t.Errorf("expected orphaned task_status rows to be deleted, count=%d", count)
-	}
-
-	// Verify recent_run_1's task_status still exists
-	db.Get(&count, "SELECT count(*) FROM task_status WHERE task_arn = 'arn:recent_1'")
-	if count != 1 {
-		t.Errorf("expected recent_run_1 task_status to still exist, count=%d", count)
 	}
 }
 

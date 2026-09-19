@@ -390,15 +390,3 @@ WHERE run_id IN (
 )
 `
 
-// DeleteOrphanedTaskStatusSQL deletes task_status rows whose task_arn
-// no longer exists in the task table.
-const DeleteOrphanedTaskStatusSQL = `
-DELETE FROM task_status
-WHERE task_arn IN (
-  SELECT ts.task_arn
-  FROM task_status ts
-  LEFT JOIN task t ON t.task_arn = ts.task_arn
-  WHERE t.task_arn IS NULL
-  LIMIT $1
-)
-`

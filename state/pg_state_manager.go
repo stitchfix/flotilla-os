@@ -728,24 +728,6 @@ func (sm *SQLStateManager) DeleteOldRuns(ctx context.Context, cutoffDays int) (i
 		}
 	}
 
-	for {
-		result, err := sm.db.ExecContext(ctx, DeleteOrphanedTaskStatusSQL, batchSize)
-		if err != nil {
-			span.SetTag("error", true)
-			span.SetTag("error.msg", err.Error())
-			return totalDeleted, errors.Wrap(err, "issue deleting orphaned task_status rows")
-		}
-
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return totalDeleted, errors.Wrap(err, "issue getting rows affected for task_status")
-		}
-
-		if rowsAffected < batchSize {
-			break
-		}
-	}
-
 	return totalDeleted, nil
 }
 
