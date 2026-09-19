@@ -36,6 +36,8 @@ func NewWorker(workerType string, log flotillaLog.Logger, conf config.Config, ek
 		worker = &workerManager{}
 	case "events":
 		worker = &eventsWorker{}
+	case "retention":
+		worker = &retentionWorker{}
 	default:
 		return nil, errors.Errorf("no workerType [%s] exists", workerType)
 	}

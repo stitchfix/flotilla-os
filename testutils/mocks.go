@@ -179,6 +179,11 @@ func (iatt *ImplementsAllTheThings) DeleteDefinition(ctx context.Context, defini
 	return nil
 }
 
+func (iatt *ImplementsAllTheThings) DeleteOldRuns(ctx context.Context, cutoffDays int) (int64, error) {
+	iatt.Calls = append(iatt.Calls, "DeleteOldRuns")
+	return 0, nil
+}
+
 // ListRuns - StateManager
 func (iatt *ImplementsAllTheThings) ListRuns(ctx context.Context, limit int, offset int, sortBy string, order string, filters map[string][]string, envFilters map[string]string, engines []string) (state.RunList, error) {
 	iatt.Calls = append(iatt.Calls, "ListRuns")
