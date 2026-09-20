@@ -387,6 +387,7 @@ WHERE run_id IN (
   SELECT run_id FROM task
   WHERE queued_at < NOW() - $1 * INTERVAL '1 day'
   LIMIT $2
+  FOR UPDATE SKIP LOCKED
 )
 `
 
