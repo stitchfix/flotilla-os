@@ -55,9 +55,16 @@ func (rw *retentionWorker) runOnce(ctx context.Context) {
 
 	start := time.Now()
 
-	retentionDays := 90
+	const minRetentionDays = 90
+
+	retentionDays := minRetentionDays
 	if rw.conf.IsSet("task_retention_days") {
 		retentionDays = rw.conf.GetInt("task_retention_days")
+	}
+	if retentionDays < minRetentionDays {
+		rw.log.Log("level", "warn", "message",
+			fmt.Sprintf("task_retention_days=%d is below minimum, using %d", retentionDays, minRetentionDays))
+		retentionDays = minRetentionDays
 	}
 
 	tags := []string{fmt.Sprintf("retention_days:%d", retentionDays)}
