@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/stitchfix/flotilla-os/clients/metrics"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/execution/engine"
 	flotillaLog "github.com/stitchfix/flotilla-os/log"
@@ -52,18 +53,27 @@ func (rw *retentionWorker) runOnce(ctx context.Context) {
 	ctx, span := utils.TraceJob(ctx, "flotilla.retention_worker.poll", "retention_worker")
 	defer span.Finish()
 
+	start := time.Now()
+
 	retentionDays := 90
 	if rw.conf.IsSet("task_retention_days") {
 		retentionDays = rw.conf.GetInt("task_retention_days")
 	}
 
+	tags := []string{fmt.Sprintf("retention_days:%d", retentionDays)}
+
 	deleted, err := rw.sm.DeleteOldRuns(ctx, retentionDays)
+	_ = metrics.Timing(metrics.RetentionWorkerRunDuration, time.Since(start), tags, 1)
+
 	if err != nil {
 		span.SetTag("error", true)
 		span.SetTag("error.msg", err.Error())
+		_ = metrics.Increment(metrics.RetentionWorkerErrors, tags, 1)
 		rw.log.Log("level", "error", "message", "Error deleting old runs", "error", fmt.Sprintf("%+v", err))
 		return
 	}
+
+	_ = metrics.Histogram(metrics.RetentionWorkerDeletedRuns, float64(deleted), tags, 1)
 
 	if deleted > 0 {
 		rw.log.Log("level", "info", "message", fmt.Sprintf("Deleted %d old task rows (retention: %d days)", deleted, retentionDays))
