@@ -80,7 +80,7 @@ func (rw *retentionWorker) runOnce(ctx context.Context) {
 		return
 	}
 
-	_ = metrics.Histogram(metrics.RetentionWorkerDeletedRuns, float64(deleted), tags, 1)
+	_ = metrics.Distribution(metrics.RetentionWorkerDeletedRuns, float64(deleted), tags, 1)
 
 	if deleted > 0 {
 		rw.log.Log("level", "info", "message", fmt.Sprintf("Deleted %d old task rows (retention: %d days)", deleted, retentionDays))
