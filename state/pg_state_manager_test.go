@@ -1178,3 +1178,61 @@ func TestSQLStateManager_DeleteClusterMetadata(t *testing.T) {
 	}
 	tearDown()
 }
+
+func TestSQLStateManager_DeleteOldRuns(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+	conf, _ := config.NewConfig(nil)
+	db := getDB(conf)
+
+	now := time.Now().UTC()
+	old := now.Add(-120 * 24 * time.Hour) // 120 days ago
+	recent := now.Add(-30 * 24 * time.Hour) // 30 days ago
+
+	insertWithQueuedAt := `
+		INSERT INTO task (
+			run_id, definition_id, cluster_name, alias, image, status,
+			queued_at, task_arn, group_name, engine, "user", service_account, tier
+		) VALUES ($1, $2, 'clusta', $3, 'img', 'STOPPED', $4, $5, 'groupZ', 'eks', 'foo', 'flotilla', 4)
+	`
+	db.MustExec(insertWithQueuedAt, "old_run_1", "A", "aliasA", old, "arn:old_1")
+	db.MustExec(insertWithQueuedAt, "old_run_2", "A", "aliasA", old.Add(time.Hour), "arn:old_2")
+	db.MustExec(insertWithQueuedAt, "recent_run_1", "A", "aliasA", recent, "arn:recent_1")
+
+	deleted, err := sm.DeleteOldRuns(ctx, 90)
+	if err != nil {
+		t.Fatalf("DeleteOldRuns returned error: %v", err)
+	}
+
+	if deleted != 2 {
+		t.Errorf("expected 2 old task rows deleted, got %d", deleted)
+	}
+
+	// Verify recent run still exists
+	var count int
+	db.Get(&count, "SELECT count(*) FROM task WHERE run_id = 'recent_run_1'")
+	if count != 1 {
+		t.Errorf("expected recent_run_1 to still exist, count=%d", count)
+	}
+
+	// Verify old runs are gone
+	db.Get(&count, "SELECT count(*) FROM task WHERE run_id IN ('old_run_1', 'old_run_2')")
+	if count != 0 {
+		t.Errorf("expected old runs to be deleted, count=%d", count)
+	}
+}
+
+func TestSQLStateManager_DeleteOldRuns_NothingToDelete(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// No rows have queued_at set in the default fixtures, so nothing matches
+	deleted, err := sm.DeleteOldRuns(ctx, 90)
+	if err != nil {
+		t.Fatalf("DeleteOldRuns returned error: %v", err)
+	}
+
+	if deleted != 0 {
+		t.Errorf("expected 0 rows deleted when nothing is old enough, got %d", deleted)
+	}
+}

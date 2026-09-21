@@ -701,6 +701,36 @@ func (sm *SQLStateManager) DeleteDefinition(ctx context.Context, definitionID st
 	return nil
 }
 
+func (sm *SQLStateManager) DeleteOldRuns(ctx context.Context, cutoffDays int) (int64, error) {
+	ctx, span := tracing.TraceJob(ctx, "flotilla.state.delete_old_runs", "")
+	defer span.Finish()
+
+	const batchSize = 50000
+	var totalDeleted int64
+
+	for {
+		result, err := sm.db.ExecContext(ctx, DeleteOldRunsSQL, cutoffDays, batchSize)
+		if err != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+			return totalDeleted, errors.Wrap(err, "issue deleting old task rows")
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return totalDeleted, errors.Wrap(err, "issue getting rows affected")
+		}
+
+		totalDeleted += rowsAffected
+
+		if rowsAffected < batchSize {
+			break
+		}
+	}
+
+	return totalDeleted, nil
+}
+
 // ListRuns returns a RunList
 // limit: limit the result to this many runs
 // offset: start the results at this offset
@@ -1300,6 +1330,11 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 		VALUES ('retry', $1, $4), ('submit', $2, $4), ('status', $3, $4);
 	`
 
+		retentionInsert := `
+		INSERT INTO worker (worker_type, count_per_instance, engine)
+		VALUES ('retention', 1, $1);
+	`
+
 		tx, err := sm.db.Begin()
 		if err != nil {
 			return errors.WithStack(err)
@@ -1308,6 +1343,11 @@ func (sm *SQLStateManager) initWorkerTable(c config.Config) error {
 		if _, err = tx.Exec(insert, retryCount, submitCount, statusCount, engine); err != nil {
 			tx.Rollback()
 			return errors.Wrapf(err, "issue populating worker table")
+		}
+
+		if _, err = tx.Exec(retentionInsert, engine); err != nil {
+			tx.Rollback()
+			return errors.Wrapf(err, "issue populating worker table with retention worker")
 		}
 
 		err = tx.Commit()
