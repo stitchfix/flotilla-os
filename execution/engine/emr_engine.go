@@ -331,15 +331,15 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, 
 			}},
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
-		Tags:             emr.emrJobRunTags(run.Labels),
+		Tags:             emr.emrJobRunTags(run.Labels, run.Env),
 		VirtualClusterId: &clusterID,
 	}
 	return startJobRunInput, nil
 }
 
-func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels) map[string]*string {
+func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels, env *state.EnvList) map[string]*string {
 	if len(labels) == 0 {
-		return nil
+		return emr.emrJobRunTagsFromEnv(env)
 	}
 
 	keys := make([]string, 0, len(labels))
@@ -369,6 +369,32 @@ func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels) map[string]*st
 		tags[k] = aws.String(v)
 	}
 
+	if len(tags) == 0 {
+		return nil
+	}
+	return tags
+}
+
+// emrJobRunTagsFromEnv is a backwards-compat fallback for runs without labels.
+func (emr *EMRExecutionEngine) emrJobRunTagsFromEnv(env *state.EnvList) map[string]*string {
+	if env == nil || len(*env) == 0 {
+		return nil
+	}
+	whitespace := regexp.MustCompile(`\s+`)
+	tags := make(map[string]*string)
+	for _, ev := range *env {
+		if len(tags) >= emrMaxTags {
+			break
+		}
+		if !awsTagKeyRegex.MatchString(ev.Name) || strings.HasPrefix(ev.Name, "aws:") {
+			continue
+		}
+		v := whitespace.ReplaceAllString(ev.Value, "")
+		if len(v) > emrMaxTagValueLen {
+			continue
+		}
+		tags[ev.Name] = aws.String(v)
+	}
 	if len(tags) == 0 {
 		return nil
 	}

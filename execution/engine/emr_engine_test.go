@@ -27,7 +27,7 @@ func TestEmrJobRunTags_ValidLabels(t *testing.T) {
 		"service":        "futura",
 		"creator":        "jane.doe",
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != len(labels) {
 		t.Fatalf("tag count = %d, want %d", len(tags), len(labels))
 	}
@@ -45,14 +45,14 @@ func TestEmrJobRunTags_ValidLabels(t *testing.T) {
 
 func TestEmrJobRunTags_NilLabels(t *testing.T) {
 	emr := newTestEMREngine()
-	if tags := emr.emrJobRunTags(nil); tags != nil {
+	if tags := emr.emrJobRunTags(nil, nil); tags != nil {
 		t.Fatalf("expected nil for nil labels, got %v", tags)
 	}
 }
 
 func TestEmrJobRunTags_EmptyLabels(t *testing.T) {
 	emr := newTestEMREngine()
-	if tags := emr.emrJobRunTags(state.Labels{}); tags != nil {
+	if tags := emr.emrJobRunTags(state.Labels{}, nil); tags != nil {
 		t.Fatalf("expected nil for empty labels, got %v", tags)
 	}
 }
@@ -65,7 +65,7 @@ func TestEmrJobRunTags_InvalidKeyDropped(t *testing.T) {
 		"also invalid!":  "bad",
 		"":               "empty-key",
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != 1 {
 		t.Fatalf("tag count = %d, want 1", len(tags))
 	}
@@ -84,7 +84,7 @@ func TestEmrJobRunTags_ValueTooLongDropped(t *testing.T) {
 		"good": "ok",
 		"bad":  string(longValue),
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != 1 {
 		t.Fatalf("tag count = %d, want 1", len(tags))
 	}
@@ -100,7 +100,7 @@ func TestEmrJobRunTags_ExactlyMaxValueLength(t *testing.T) {
 		exactValue[i] = 'x'
 	}
 	labels := state.Labels{"key": string(exactValue)}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != 1 {
 		t.Fatalf("tag count = %d, want 1", len(tags))
 	}
@@ -112,7 +112,7 @@ func TestEmrJobRunTags_CapAt50(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		labels[fmt.Sprintf("key_%03d", i)] = "val"
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != 50 {
 		t.Fatalf("tag count = %d, want 50", len(tags))
 	}
@@ -131,7 +131,7 @@ func TestEmrJobRunTags_AllInvalidReturnsNil(t *testing.T) {
 		"bad\x00key": "val",
 		"also\nbad":  "val",
 	}
-	if tags := emr.emrJobRunTags(labels); tags != nil {
+	if tags := emr.emrJobRunTags(labels, nil); tags != nil {
 		t.Fatalf("expected nil when all tags are invalid, got %v", tags)
 	}
 }
@@ -144,7 +144,7 @@ func TestEmrJobRunTags_SpecialCharsInKeyAllowed(t *testing.T) {
 		"key with spaces": "ok",
 		"a+b=c":           "math",
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != len(labels) {
 		t.Fatalf("tag count = %d, want %d", len(tags), len(labels))
 	}
@@ -157,12 +157,74 @@ func TestEmrJobRunTags_AWSPrefixDropped(t *testing.T) {
 		"aws:foo":       "bar",
 		"team":          "data-platform",
 	}
-	tags := emr.emrJobRunTags(labels)
+	tags := emr.emrJobRunTags(labels, nil)
 	if len(tags) != 1 {
 		t.Fatalf("tag count = %d, want 1", len(tags))
 	}
 	if _, ok := tags["team"]; !ok {
 		t.Error("expected 'team' to survive")
+	}
+}
+
+func TestEmrJobRunTags_EnvFallbackWhenNoLabels(t *testing.T) {
+	emr := newTestEMREngine()
+	env := &state.EnvList{
+		{Name: "team", Value: "portal"},
+		{Name: "cost_center", Value: "eng"},
+		{Name: "SOME_SECRET", Value: "should still appear"},
+	}
+	tags := emr.emrJobRunTags(nil, env)
+	if len(tags) != 3 {
+		t.Fatalf("tag count = %d, want 3", len(tags))
+	}
+	if *tags["team"] != "portal" {
+		t.Errorf("team = %q, want %q", *tags["team"], "portal")
+	}
+}
+
+func TestEmrJobRunTags_EnvFallbackStripsWhitespace(t *testing.T) {
+	emr := newTestEMREngine()
+	env := &state.EnvList{
+		{Name: "key", Value: "hello world"},
+	}
+	tags := emr.emrJobRunTags(nil, env)
+	if len(tags) != 1 {
+		t.Fatalf("tag count = %d, want 1", len(tags))
+	}
+	if *tags["key"] != "helloworld" {
+		t.Errorf("value = %q, want %q", *tags["key"], "helloworld")
+	}
+}
+
+func TestEmrJobRunTags_EnvFallbackSkipsInvalidKeys(t *testing.T) {
+	emr := newTestEMREngine()
+	env := &state.EnvList{
+		{Name: "good_key", Value: "ok"},
+		{Name: "bad\tkey", Value: "skip"},
+		{Name: "aws:internal", Value: "skip"},
+	}
+	tags := emr.emrJobRunTags(nil, env)
+	if len(tags) != 1 {
+		t.Fatalf("tag count = %d, want 1", len(tags))
+	}
+	if _, ok := tags["good_key"]; !ok {
+		t.Error("expected good_key to survive")
+	}
+}
+
+func TestEmrJobRunTags_LabelsPreferredOverEnv(t *testing.T) {
+	emr := newTestEMREngine()
+	labels := state.Labels{"team": "from-labels"}
+	env := &state.EnvList{
+		{Name: "team", Value: "from-env"},
+		{Name: "extra", Value: "from-env"},
+	}
+	tags := emr.emrJobRunTags(labels, env)
+	if len(tags) != 1 {
+		t.Fatalf("tag count = %d, want 1 (labels only)", len(tags))
+	}
+	if *tags["team"] != "from-labels" {
+		t.Errorf("team = %q, want %q", *tags["team"], "from-labels")
 	}
 }
 
