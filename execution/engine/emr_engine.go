@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/kubernetes/scheme"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -67,7 +68,12 @@ const (
 	emrContainersDefaultsClassification = "emr-containers-defaults"
 	loggingRequestMemoryKey             = "logging.request.memory"
 	loggingRequestMemoryDefault         = "1Gi"
+	emrMaxTags                          = 50
+	emrMaxTagKeyLen                     = 128
+	emrMaxTagValueLen                   = 256
 )
+
+var awsTagKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9 _.:/=+\-]{1,128}$`)
 
 // Initialize configures the EMRExecutionEngine and initializes internal clients
 func (emr *EMRExecutionEngine) Initialize(conf config.Config) error {
@@ -326,6 +332,7 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, 
 			}},
 		Name:             &run.RunID,
 		ReleaseLabel:     run.SparkExtension.EMRReleaseLabel,
+		Tags:             emr.emrJobRunTags(run.Labels),
 		VirtualClusterId: &clusterID,
 	}
 	return startJobRunInput, nil
@@ -341,6 +348,44 @@ func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
 				tags[name] = aws.String(space.ReplaceAllString(ev.Value, ""))
 			}
 		}
+	}
+	return tags
+}
+
+func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels) map[string]*string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	tags := make(map[string]*string, len(keys))
+	for _, k := range keys {
+		if len(tags) >= emrMaxTags {
+			_ = metrics.Increment(metrics.EngineEMRTagDropped, []string{"reason:over_limit"}, 1)
+			_ = emr.log.Log("level", "warn", "message", "EMR tag dropped: over 50-tag limit", "key", k)
+			continue
+		}
+		v := labels[k]
+		if !awsTagKeyRegex.MatchString(k) {
+			_ = metrics.Increment(metrics.EngineEMRTagDropped, []string{"reason:invalid_key"}, 1)
+			_ = emr.log.Log("level", "warn", "message", "EMR tag dropped: invalid key", "key", k)
+			continue
+		}
+		if len(v) > emrMaxTagValueLen {
+			_ = metrics.Increment(metrics.EngineEMRTagDropped, []string{"reason:value_too_long"}, 1)
+			_ = emr.log.Log("level", "warn", "message", "EMR tag dropped: value exceeds 256 chars", "key", k)
+			continue
+		}
+		tags[k] = aws.String(v)
+	}
+
+	if len(tags) == 0 {
+		return nil
 	}
 	return tags
 }
