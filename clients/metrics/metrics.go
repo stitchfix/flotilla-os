@@ -68,6 +68,8 @@ const (
 	EngineEKSARACPUIncrease          Metric = "engine.eks.ara.cpu_increase"
 	EngineEKSARANullCommandHash      Metric = "engine.eks.ara.null_command_hash"
 
+	EngineEMRTagDropped Metric = "engine.emr.tag_dropped"
+
 	RetentionWorkerDeletedRuns  Metric = "retention_worker.deleted_runs"
 	RetentionWorkerRunDuration  Metric = "retention_worker.run_duration"
 	RetentionWorkerErrors       Metric = "retention_worker.errors"
