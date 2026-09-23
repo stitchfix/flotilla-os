@@ -139,15 +139,30 @@ func TestEmrJobRunTags_AllInvalidReturnsNil(t *testing.T) {
 func TestEmrJobRunTags_SpecialCharsInKeyAllowed(t *testing.T) {
 	emr := newTestEMREngine()
 	labels := state.Labels{
-		"aws:createdBy":    "flotilla",
-		"cost/center":      "eng",
-		"env.name":         "prod",
-		"key with spaces":  "ok",
-		"a+b=c":            "math",
+		"cost/center":     "eng",
+		"env.name":        "prod",
+		"key with spaces": "ok",
+		"a+b=c":           "math",
 	}
 	tags := emr.emrJobRunTags(labels)
 	if len(tags) != len(labels) {
 		t.Fatalf("tag count = %d, want %d", len(tags), len(labels))
+	}
+}
+
+func TestEmrJobRunTags_AWSPrefixDropped(t *testing.T) {
+	emr := newTestEMREngine()
+	labels := state.Labels{
+		"aws:createdBy": "flotilla",
+		"aws:foo":       "bar",
+		"team":          "data-platform",
+	}
+	tags := emr.emrJobRunTags(labels)
+	if len(tags) != 1 {
+		t.Fatalf("tag count = %d, want 1", len(tags))
+	}
+	if _, ok := tags["team"]; !ok {
+		t.Error("expected 'team' to survive")
 	}
 }
 

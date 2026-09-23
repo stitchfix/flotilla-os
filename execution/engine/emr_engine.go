@@ -68,9 +68,8 @@ const (
 	emrContainersDefaultsClassification = "emr-containers-defaults"
 	loggingRequestMemoryKey             = "logging.request.memory"
 	loggingRequestMemoryDefault         = "1Gi"
-	emrMaxTags                          = 50
-	emrMaxTagKeyLen                     = 128
-	emrMaxTagValueLen                   = 256
+	emrMaxTags        = 50
+	emrMaxTagValueLen = 256
 )
 
 var awsTagKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9 _.:/=+\-]{1,128}$`)
@@ -338,20 +337,6 @@ func (emr *EMRExecutionEngine) generateEMRStartJobRunInput(ctx context.Context, 
 	return startJobRunInput, nil
 }
 
-func (emr *EMRExecutionEngine) generateTags(run state.Run) map[string]*string {
-	tags := make(map[string]*string)
-	if run.Env != nil && len(*run.Env) > 0 {
-		for _, ev := range *run.Env {
-			name := emr.sanitizeEnvVar(ev.Name)
-			space := regexp.MustCompile(`\s+`)
-			if len(ev.Value) < 256 && len(name) < 128 {
-				tags[name] = aws.String(space.ReplaceAllString(ev.Value, ""))
-			}
-		}
-	}
-	return tags
-}
-
 func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels) map[string]*string {
 	if len(labels) == 0 {
 		return nil
@@ -371,7 +356,7 @@ func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels) map[string]*st
 			continue
 		}
 		v := labels[k]
-		if !awsTagKeyRegex.MatchString(k) {
+		if !awsTagKeyRegex.MatchString(k) || strings.HasPrefix(k, "aws:") {
 			_ = metrics.Increment(metrics.EngineEMRTagDropped, []string{"reason:invalid_key"}, 1)
 			_ = emr.log.Log("level", "warn", "message", "EMR tag dropped: invalid key", "key", k)
 			continue
