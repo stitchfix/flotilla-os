@@ -171,44 +171,62 @@ func TestEmrJobRunTags_EnvFallbackWhenNoLabels(t *testing.T) {
 	env := &state.EnvList{
 		{Name: "team", Value: "portal"},
 		{Name: "cost_center", Value: "eng"},
-		{Name: "SOME_SECRET", Value: "should still appear"},
+		{Name: "SOME_SECRET", Value: "should-not-appear"},
 	}
 	tags := emr.emrJobRunTags(nil, env)
-	if len(tags) != 3 {
-		t.Fatalf("tag count = %d, want 3", len(tags))
+	if len(tags) != 2 {
+		t.Fatalf("tag count = %d, want 2", len(tags))
 	}
 	if *tags["team"] != "portal" {
 		t.Errorf("team = %q, want %q", *tags["team"], "portal")
 	}
+	if *tags["cost_center"] != "eng" {
+		t.Errorf("cost_center = %q, want %q", *tags["cost_center"], "eng")
+	}
+	if _, ok := tags["SOME_SECRET"]; ok {
+		t.Error("SOME_SECRET should not be included in fallback tags")
+	}
 }
 
-func TestEmrJobRunTags_EnvFallbackStripsWhitespace(t *testing.T) {
+func TestEmrJobRunTags_EnvFallbackOnlyAllowedKeys(t *testing.T) {
 	emr := newTestEMREngine()
 	env := &state.EnvList{
-		{Name: "key", Value: "hello world"},
+		{Name: "team", Value: "data-platform"},
+		{Name: "cost_center", Value: "CC-1234"},
+		{Name: "env", Value: "production"},
+		{Name: "product_line", Value: "algorithms"},
+		{Name: "DATABASE_URL", Value: "postgres://secret"},
+		{Name: "API_KEY", Value: "sk-12345"},
 	}
 	tags := emr.emrJobRunTags(nil, env)
-	if len(tags) != 1 {
-		t.Fatalf("tag count = %d, want 1", len(tags))
+	if len(tags) != 4 {
+		t.Fatalf("tag count = %d, want 4", len(tags))
 	}
-	if *tags["key"] != "helloworld" {
-		t.Errorf("value = %q, want %q", *tags["key"], "helloworld")
+	for _, k := range []string{"team", "cost_center", "env", "product_line"} {
+		if _, ok := tags[k]; !ok {
+			t.Errorf("expected %q in fallback tags", k)
+		}
+	}
+	for _, k := range []string{"DATABASE_URL", "API_KEY"} {
+		if _, ok := tags[k]; ok {
+			t.Errorf("%q should not be in fallback tags", k)
+		}
 	}
 }
 
-func TestEmrJobRunTags_EnvFallbackSkipsInvalidKeys(t *testing.T) {
+func TestEmrJobRunTags_EnvFallbackSkipsNonAllowedKeys(t *testing.T) {
 	emr := newTestEMREngine()
 	env := &state.EnvList{
-		{Name: "good_key", Value: "ok"},
-		{Name: "bad\tkey", Value: "skip"},
+		{Name: "team", Value: "ok"},
+		{Name: "random_key", Value: "skip"},
 		{Name: "aws:internal", Value: "skip"},
 	}
 	tags := emr.emrJobRunTags(nil, env)
 	if len(tags) != 1 {
 		t.Fatalf("tag count = %d, want 1", len(tags))
 	}
-	if _, ok := tags["good_key"]; !ok {
-		t.Error("expected good_key to survive")
+	if _, ok := tags["team"]; !ok {
+		t.Error("expected team to survive")
 	}
 }
 
