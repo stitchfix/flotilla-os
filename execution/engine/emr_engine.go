@@ -167,9 +167,9 @@ func (emr *EMRExecutionEngine) Execute(ctx context.Context, executable state.Exe
 
 	_, capabilities, _ := emr.resolveCluster(ctx, run)
 
-	if team := run.Labels["team"]; team != "" && capabilities.Has(state.CapPoolSizing) {
+	if run.Labels["team"] != "" && capabilities.Has(state.CapPoolSizing) {
 		if kClient, err := emr.getKClient(run); err == nil {
-			go ensureTeamRegistryConfigMap(context.Background(), &kClient, emr.emrJobNamespace, team)
+			go ensureTeamRegistryConfigMap(context.Background(), &kClient, emr.emrJobNamespace, run.Labels)
 		}
 	}
 
