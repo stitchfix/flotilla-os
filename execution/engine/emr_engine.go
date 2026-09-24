@@ -375,25 +375,28 @@ func (emr *EMRExecutionEngine) emrJobRunTags(labels state.Labels, env *state.Env
 	return tags
 }
 
+var emrFallbackTagKeys = map[string]bool{
+	"team":         true,
+	"cost_center":  true,
+	"env":          true,
+	"product_line": true,
+}
+
 // emrJobRunTagsFromEnv is a backwards-compat fallback for runs without labels.
+// Only known attribution keys are extracted to avoid leaking secrets into tags.
 func (emr *EMRExecutionEngine) emrJobRunTagsFromEnv(env *state.EnvList) map[string]*string {
 	if env == nil || len(*env) == 0 {
 		return nil
 	}
-	whitespace := regexp.MustCompile(`\s+`)
 	tags := make(map[string]*string)
 	for _, ev := range *env {
-		if len(tags) >= emrMaxTags {
-			break
-		}
-		if !awsTagKeyRegex.MatchString(ev.Name) || strings.HasPrefix(ev.Name, "aws:") {
+		if !emrFallbackTagKeys[ev.Name] {
 			continue
 		}
-		v := whitespace.ReplaceAllString(ev.Value, "")
-		if len(v) > emrMaxTagValueLen {
+		if len(ev.Value) > emrMaxTagValueLen {
 			continue
 		}
-		tags[ev.Name] = aws.String(v)
+		tags[ev.Name] = aws.String(ev.Value)
 	}
 	if len(tags) == 0 {
 		return nil
