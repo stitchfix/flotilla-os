@@ -16,7 +16,9 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/exceptions"
 )
 
 func getDB(conf config.Config) *sqlx.DB {
@@ -196,6 +198,44 @@ func TestSQLStateManager_ListDefinitions(t *testing.T) {
 		t.Errorf(
 			`Expected environment variable filters (E_B1:V_B1 AND E_B2:V_B2) to yield
             definition B, but was %s`, dl.Definitions[0].DefinitionID)
+	}
+}
+
+// Regression for DP-5721: a filter value containing a single quote must be
+// escaped into a valid literal rather than producing
+// `pq: syntax error at or near "..."`.
+func TestSQLStateManager_ListDefinitions_FilterValueWithQuote(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	// like-field path (alias) and equality path (definition_id), both with an
+	// embedded single quote. The queries must execute without error.
+	cases := map[string][]string{
+		"alias":         {"o'brien"},
+		"definition_id": {"x'y"},
+	}
+	for field, value := range cases {
+		_, err := sm.ListDefinitions(ctx, 10, 0, "alias", "asc",
+			map[string][]string{field: value}, nil)
+		if err != nil {
+			t.Errorf("filter %s=%v should execute cleanly, got error: %v", field, value, err)
+		}
+	}
+}
+
+// Invalid filter field names cannot be bound as parameters, so they are
+// rejected as malformed input rather than interpolated into the query.
+func TestSQLStateManager_ListDefinitions_InvalidFilterFieldRejected(t *testing.T) {
+	defer tearDown()
+	sm := setUp()
+
+	_, err := sm.ListDefinitions(ctx, 10, 0, "alias", "asc",
+		map[string][]string{"1=1) UNION SELECT": {"x"}}, nil)
+	if err == nil {
+		t.Fatal("expected an error for an invalid filter field name, got nil")
+	}
+	if _, ok := errors.Cause(err).(exceptions.MalformedInput); !ok {
+		t.Errorf("expected MalformedInput cause, got %T: %v", errors.Cause(err), err)
 	}
 }
 
@@ -1186,7 +1226,7 @@ func TestSQLStateManager_DeleteOldRuns(t *testing.T) {
 	db := getDB(conf)
 
 	now := time.Now().UTC()
-	old := now.Add(-120 * 24 * time.Hour) // 120 days ago
+	old := now.Add(-120 * 24 * time.Hour)   // 120 days ago
 	recent := now.Add(-30 * 24 * time.Hour) // 30 days ago
 
 	insertWithQueuedAt := `

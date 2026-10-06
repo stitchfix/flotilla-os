@@ -16,6 +16,7 @@ import (
 	// Pull in postgres specific drivers
 	"database/sql"
 	"math"
+	"regexp"
 	"strings"
 
 	"github.com/lib/pq"
@@ -323,42 +324,70 @@ func (sm *SQLStateManager) Initialize(conf config.Config) error {
 	return nil
 }
 
-func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) []string {
+// validFieldName matches a bare SQL identifier (column name). Filter field
+// names come straight from request query-string keys and cannot be bound as
+// parameters, so they are validated against this pattern before being
+// interpolated. A valid identifier cannot contain quotes, whitespace,
+// parentheses, or semicolons, which closes the field-name injection vector.
+var validFieldName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func safeFieldName(field string) (string, error) {
+	if !validFieldName.MatchString(field) {
+		return "", exceptions.MalformedInput{
+			ErrorString: fmt.Sprintf("invalid filter field [%s]", field)}
+	}
+	return field, nil
+}
+
+func (sm *SQLStateManager) makeWhereClause(filters map[string][]string) ([]string, error) {
 
 	// These will be joined with "AND"
 	wc := []string{}
 	for k, v := range filters {
 		if len(v) > 1 {
 			// No like queries for multiple filters with same key
+			fieldName, err := safeFieldName(k)
+			if err != nil {
+				return nil, err
+			}
 			quoted := make([]string, len(v))
 			for i, filterVal := range v {
-				quoted[i] = fmt.Sprintf("'%s'", filterVal)
+				quoted[i] = pq.QuoteLiteral(filterVal)
 			}
-			wc = append(wc, fmt.Sprintf("%s in (%s)", k, strings.Join(quoted, ",")))
+			wc = append(wc, fmt.Sprintf("%s in (%s)", fieldName, strings.Join(quoted, ",")))
 		} else if len(v) == 1 {
-			fmtString := "%s='%s'"
+			fmtString := "%s=%s"
 			fieldName := k
+			value := v[0]
 			if likeFields[k] {
-				fmtString = "%s like '%%%s%%'"
+				fmtString = "%s like %s"
+				value = fmt.Sprintf("%%%s%%", v[0])
 			} else if strings.HasSuffix(k, "_since") {
 				fieldName = strings.Replace(k, "_since", "", -1)
-				fmtString = "%s > '%s'"
+				fmtString = "%s > %s"
 			} else if strings.HasSuffix(k, "_until") {
 				fieldName = strings.Replace(k, "_until", "", -1)
-				fmtString = "%s < '%s'"
+				fmtString = "%s < %s"
 			}
-			wc = append(wc, fmt.Sprintf(fmtString, fieldName, v[0]))
+			fieldName, err := safeFieldName(fieldName)
+			if err != nil {
+				return nil, err
+			}
+			wc = append(wc, fmt.Sprintf(fmtString, fieldName, pq.QuoteLiteral(value)))
 		}
 	}
-	return wc
+	return wc, nil
 }
 
 func (sm *SQLStateManager) makeEnvWhereClause(filters map[string]string) []string {
 	wc := make([]string, len(filters))
 	i := 0
 	for k, v := range filters {
-		fmtString := `env @> '[{"name":"%s","value":"%s"}]'`
-		wc[i] = fmt.Sprintf(fmtString, k, v)
+		// Build the JSONB containment operand as real JSON (which escapes the
+		// key/value) and quote the whole literal with pq.QuoteLiteral so a
+		// quote in either field cannot break out of the SQL string.
+		operand, _ := json.Marshal([]map[string]string{{"name": k, "value": v}})
+		wc[i] = fmt.Sprintf("env @> %s", pq.QuoteLiteral(string(operand)))
 		i++
 	}
 
@@ -396,7 +425,11 @@ func (sm *SQLStateManager) ListDefinitions(
 	var err error
 	var result DefinitionList
 	var whereClause, orderQuery string
-	where := append(sm.makeWhereClause(filters), sm.makeEnvWhereClause(envFilters)...)
+	filterClauses, err := sm.makeWhereClause(filters)
+	if err != nil {
+		return result, errors.WithStack(err)
+	}
+	where := append(filterClauses, sm.makeEnvWhereClause(envFilters)...)
 	if len(where) > 0 {
 		whereClause = fmt.Sprintf("where %s", strings.Join(where, " and "))
 	}
@@ -755,7 +788,11 @@ func (sm *SQLStateManager) ListRuns(ctx context.Context, limit int, offset int, 
 		filters["engine"] = []string{DefaultEngine}
 	}
 
-	where := append(sm.makeWhereClause(filters), sm.makeEnvWhereClause(envFilters)...)
+	filterClauses, err := sm.makeWhereClause(filters)
+	if err != nil {
+		return result, errors.WithStack(err)
+	}
+	where := append(filterClauses, sm.makeEnvWhereClause(envFilters)...)
 	if len(where) > 0 {
 		whereClause = fmt.Sprintf("where %s", strings.Join(where, " and "))
 	}
@@ -1255,8 +1292,11 @@ func (sm *SQLStateManager) ListGroups(ctx context.Context, limit int, offset int
 		whereClause string
 	)
 	if name != nil && len(*name) > 0 {
-		whereClause = fmt.Sprintf("where %s", strings.Join(
-			sm.makeWhereClause(map[string][]string{"group_name": {*name}}), " and "))
+		filterClauses, err := sm.makeWhereClause(map[string][]string{"group_name": {*name}})
+		if err != nil {
+			return result, errors.WithStack(err)
+		}
+		whereClause = fmt.Sprintf("where %s", strings.Join(filterClauses, " and "))
 	}
 
 	sql := fmt.Sprintf(ListGroupsSQL, whereClause)
@@ -1284,8 +1324,11 @@ func (sm *SQLStateManager) ListTags(ctx context.Context, limit int, offset int, 
 		whereClause string
 	)
 	if name != nil && len(*name) > 0 {
-		whereClause = fmt.Sprintf("where %s", strings.Join(
-			sm.makeWhereClause(map[string][]string{"text": {*name}}), " and "))
+		filterClauses, err := sm.makeWhereClause(map[string][]string{"text": {*name}})
+		if err != nil {
+			return result, errors.WithStack(err)
+		}
+		whereClause = fmt.Sprintf("where %s", strings.Join(filterClauses, " and "))
 	}
 
 	sql := fmt.Sprintf(ListTagsSQL, whereClause)
