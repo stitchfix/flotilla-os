@@ -34,6 +34,7 @@ queue_manager: sqs
 queue_namespace: dev-flotilla
 queue_process_time: 45
 queue_retention_seconds: 604800
+queue_wait_time_seconds: 20
 queue_status: flotilla-status-updates-dev
 queue_status_rule: flotilla-task-status
 readonly_database_url: postgresql://flotilla:flotilla@localhost/flotilla?sslmode=disable

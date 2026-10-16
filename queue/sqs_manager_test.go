@@ -100,6 +100,11 @@ func (qc *testSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.Re
 	if *input.MaxNumberOfMessages != 1 {
 		qc.t.Errorf("Expected MaxNumberOfMessages to be 1, was %v", *input.MaxNumberOfMessages)
 	}
+	if input.WaitTimeSeconds == nil {
+		qc.t.Errorf("Expected non-nil WaitTimeSeconds")
+	} else if *input.WaitTimeSeconds != 20 {
+		qc.t.Errorf("Expected WaitTimeSeconds to be 20, was %v", *input.WaitTimeSeconds)
+	}
 	if input.QueueUrl == nil {
 		qc.t.Errorf("Expected non-nil QueueUrl")
 	}
