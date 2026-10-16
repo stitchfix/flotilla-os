@@ -20,6 +20,7 @@ type SQSManager struct {
 	namespace         string
 	retentionSeconds  string
 	visibilityTimeout string
+	waitTimeSeconds   int64
 	qc                sqsClient
 	qurlCache         map[string]string
 }
@@ -52,6 +53,15 @@ func (qm *SQSManager) Initialize(conf config.Config, engine string) error {
 	qm.visibilityTimeout = "45"
 	if conf.IsSet("queue_process_time") {
 		qm.visibilityTimeout = conf.GetString("queue_process_time")
+	}
+
+	qm.waitTimeSeconds = 20
+	if conf.IsSet("queue_wait_time_seconds") {
+		qm.waitTimeSeconds = int64(conf.GetInt("queue_wait_time_seconds"))
+	}
+	if qm.waitTimeSeconds < 0 || qm.waitTimeSeconds > 20 {
+		return errors.Errorf(
+			"queue_wait_time_seconds must be between 0 and 20, got %d", qm.waitTimeSeconds)
 	}
 
 	if !conf.IsSet("queue_namespace") {
@@ -217,6 +227,7 @@ func (qm *SQSManager) ReceiveRun(ctx context.Context, qURL string) (RunReceipt, 
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 		MessageAttributeNames: []*string{
 			aws.String("dd-trace-id"),
 			aws.String("dd-parent-id"),
@@ -279,6 +290,7 @@ func (qm *SQSManager) ReceiveStatus(qURL string) (StatusReceipt, error) {
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
 	var err error
@@ -316,6 +328,7 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
 	var err error
@@ -348,6 +361,7 @@ func (qm *SQSManager) ReceiveEMREvent(qURL string) (state.EmrEvent, error) {
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
 	var err error
@@ -382,6 +396,7 @@ func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
 	var err error
@@ -417,6 +432,7 @@ func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {
 		QueueUrl:            &qURL,
 		MaxNumberOfMessages: &maxMessages,
 		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
 	response, err := qm.qc.ReceiveMessage(&rmi)
