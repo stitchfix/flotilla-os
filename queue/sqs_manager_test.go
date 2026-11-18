@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/state"
@@ -250,4 +251,116 @@ func TestSQSManager_ReceiveStatus(t *testing.T) {
 	qm := setUp(t)
 	receipt, _ := qm.ReceiveStatus("statusQ")
 	receipt.Done()
+}
+
+type batchSQSClient struct {
+	testSQSClient
+	inputs  []*sqs.ReceiveMessageInput
+	bodies  []string
+	deleted []string
+}
+
+func (qc *batchSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+	qc.inputs = append(qc.inputs, input)
+	out := &sqs.ReceiveMessageOutput{}
+	for i, body := range qc.bodies {
+		handle := fmt.Sprintf("handle-%d", i)
+		out.Messages = append(out.Messages, &sqs.Message{Body: &body, ReceiptHandle: &handle})
+	}
+	return out, nil
+}
+
+func (qc *batchSQSClient) DeleteMessage(input *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+	qc.deleted = append(qc.deleted, *input.ReceiptHandle)
+	return &sqs.DeleteMessageOutput{}, nil
+}
+
+func assertBatchReceive(t *testing.T, client *batchSQSClient) {
+	t.Helper()
+	if len(client.inputs) != 1 {
+		t.Fatalf("Expected 1 ReceiveMessage call, got %d", len(client.inputs))
+	}
+	input := client.inputs[0]
+	if input.MaxNumberOfMessages == nil || *input.MaxNumberOfMessages != 10 {
+		t.Errorf("Expected MaxNumberOfMessages to be 10, was %v", input.MaxNumberOfMessages)
+	}
+	if input.WaitTimeSeconds == nil || *input.WaitTimeSeconds != 20 {
+		t.Errorf("Expected WaitTimeSeconds to be 20, was %v", input.WaitTimeSeconds)
+	}
+	if input.QueueUrl == nil || *input.QueueUrl != "eventsQ" {
+		t.Errorf("Expected QueueUrl eventsQ, was %v", input.QueueUrl)
+	}
+}
+
+func TestSQSManager_ReceiveKubernetesEvents(t *testing.T) {
+	qm := setUp(t)
+	client := &batchSQSClient{bodies: []string{
+		`{"reason":"Scheduled","involvedObject":{"name":"pod-a"}}`,
+		`{"reason":"Completed","involvedObject":{"name":"pod-b"}}`,
+		`{"reason":"Started","involvedObject":{"name":"pod-c"}}`,
+	}}
+	qm.qc = client
+
+	events, err := qm.ReceiveKubernetesEvents("eventsQ")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	assertBatchReceive(t, client)
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %d", len(events))
+	}
+	expectedNames := []string{"pod-a", "pod-b", "pod-c"}
+	for i, e := range events {
+		if e.InvolvedObject.Name != expectedNames[i] {
+			t.Errorf("Expected event %d to be %s, got %s", i, expectedNames[i], e.InvolvedObject.Name)
+		}
+	}
+	_ = events[2].Done()
+	_ = events[0].Done()
+	if len(client.deleted) != 2 || client.deleted[0] != "handle-2" || client.deleted[1] != "handle-0" {
+		t.Errorf("Expected Done to ack its own receipt handle, deleted %v", client.deleted)
+	}
+}
+
+func TestSQSManager_ReceiveKubernetesEvents_Empty(t *testing.T) {
+	qm := setUp(t)
+	client := &batchSQSClient{}
+	qm.qc = client
+
+	events, err := qm.ReceiveKubernetesEvents("eventsQ")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(events) != 0 {
+		t.Errorf("Expected no events, got %d", len(events))
+	}
+
+	if _, err := qm.ReceiveKubernetesEvents(""); err == nil {
+		t.Errorf("Expected empty queue url to result in error")
+	}
+}
+
+func TestSQSManager_ReceiveEMREvents(t *testing.T) {
+	qm := setUp(t)
+	client := &batchSQSClient{bodies: []string{
+		`{"id":"evt-1","detail":{"id":"job-1","state":"RUNNING"}}`,
+		`{"id":"evt-2","detail":{"id":"job-2","state":"COMPLETED"}}`,
+	}}
+	qm.qc = client
+
+	events, err := qm.ReceiveEMREvents("eventsQ")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	assertBatchReceive(t, client)
+	if len(events) != 2 {
+		t.Fatalf("Expected 2 events, got %d", len(events))
+	}
+	if *events[0].ID != "evt-1" || *events[1].ID != "evt-2" {
+		t.Errorf("Unexpected event ids %v %v", *events[0].ID, *events[1].ID)
+	}
+	_ = events[1].Done()
+	if len(client.deleted) != 1 || client.deleted[0] != "handle-1" {
+		t.Errorf("Expected Done to ack its own receipt handle, deleted %v", client.deleted)
+	}
 }

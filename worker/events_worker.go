@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,12 +21,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var (
+	sparkDriverServicePattern = regexp.MustCompile(`.*@(.*-svc).*`)
+	eksPodNamePattern         = regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
+)
+
 type eventsWorker struct {
 	sm                state.Manager
 	qm                queue.Manager
 	conf              config.Config
 	log               flotillaLog.Logger
 	pollInterval      time.Duration
+	maxBackoff        time.Duration
 	t                 tomb.Tomb
 	queue             string
 	emrJobStatusQueue string
@@ -43,6 +50,17 @@ type eventsWorker struct {
 
 func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	ew.pollInterval = pollInterval
+	ew.maxBackoff = 5 * time.Second
+	if conf.IsSet("worker_events_max_backoff") {
+		maxBackoff, err := time.ParseDuration(conf.GetString("worker_events_max_backoff"))
+		if err != nil {
+			return errors.Wrap(err, "problem parsing worker_events_max_backoff")
+		}
+		ew.maxBackoff = maxBackoff
+	}
+	if ew.maxBackoff < pollInterval {
+		ew.maxBackoff = pollInterval
+	}
 	ew.conf = conf
 	ew.sm = sm
 	ew.qm = qm
@@ -84,30 +102,73 @@ func (ew *eventsWorker) GetTomb() *tomb.Tomb {
 }
 
 func (ew *eventsWorker) Run(ctx context.Context) error {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		ew.pollLoop(ctx, ew.runOnce)
+	}()
+	go func() {
+		defer wg.Done()
+		ew.pollLoop(ctx, ew.runOnceEMR)
+	}()
+	wg.Wait()
+	_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
+	return nil
+}
+
+func (ew *eventsWorker) pollLoop(ctx context.Context, receive func(context.Context) (int, error)) {
+	backoff := ew.pollInterval
 	for {
 		select {
 		case <-ew.t.Dying():
-			_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
-			return nil
+			return
 		default:
-			loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
-			ew.runOnce(loopCtx)
-			ew.runOnceEMR(loopCtx)
-			span.Finish()
-			time.Sleep(ew.pollInterval)
 		}
+
+		received, err := receive(ctx)
+		if err == nil && received > 0 {
+			backoff = ew.pollInterval
+			continue
+		}
+		if !ew.sleepUnlessDying(backoff) {
+			return
+		}
+		backoff = ew.nextBackoff(backoff)
 	}
 }
 
-func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
+func (ew *eventsWorker) nextBackoff(current time.Duration) time.Duration {
+	next := current * 2
+	if next > ew.maxBackoff {
+		return ew.maxBackoff
+	}
+	return next
+}
+
+func (ew *eventsWorker) sleepUnlessDying(d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ew.t.Dying():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func (ew *eventsWorker) runOnceEMR(ctx context.Context) (int, error) {
 	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_emr", "events_worker")
 	defer span.Finish()
-	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
+	emrEvents, err := ew.qm.ReceiveEMREvents(ew.emrJobStatusQueue)
 	if err != nil {
 		_ = ew.log.Log("level", "error", "message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
-		return
+		return 0, err
 	}
-	ew.processEventEMR(ctx, emrEvent)
+	for _, emrEvent := range emrEvents {
+		ew.processEventEMR(ctx, emrEvent)
+	}
+	return len(emrEvents), nil
 }
 
 func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrEvent) {
@@ -123,73 +184,73 @@ func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrE
 		if err != nil {
 			timestamp = time.Now()
 		}
+		updates := state.Run{}
 		switch *emrEvent.Detail.State {
 		case "COMPLETED":
-			run.ExitCode = aws.Int64(0)
-			run.Status = state.StatusStopped
-			run.FinishedAt = &timestamp
-			if run.StartedAt == nil || run.StartedAt.After(*run.FinishedAt) {
-				run.StartedAt = run.QueuedAt
+			updates.ExitCode = aws.Int64(0)
+			updates.Status = state.StatusStopped
+			updates.FinishedAt = &timestamp
+			if run.StartedAt == nil || run.StartedAt.After(*updates.FinishedAt) {
+				updates.StartedAt = run.QueuedAt
 			}
-			run.ExitReason = emrEvent.Detail.StateDetails
+			updates.ExitReason = emrEvent.Detail.StateDetails
 			// var events state.PodEvents
 			// Pod Events are verbose and should be only stored for failed or running jobs.
 			// run.PodEvents = &events
 		case "RUNNING":
-			run.Status = state.StatusRunning
-			run.StartedAt = &timestamp
+			updates.Status = state.StatusRunning
+			updates.StartedAt = &timestamp
 		case "FAILED":
-			run.ExitCode = aws.Int64(-1)
-			run.Status = state.StatusStopped
-			run.FinishedAt = &timestamp
-			if run.StartedAt == nil || run.StartedAt.After(*run.FinishedAt) {
-				run.StartedAt = run.QueuedAt
+			updates.ExitCode = aws.Int64(-1)
+			updates.Status = state.StatusStopped
+			updates.FinishedAt = &timestamp
+			if run.StartedAt == nil || run.StartedAt.After(*updates.FinishedAt) {
+				updates.StartedAt = run.QueuedAt
 			}
 
-			run.ExitReason = aws.String("Job failed, please look at Driver Init and/or Driver Stdout logs.")
+			updates.ExitReason = aws.String("Job failed, please look at Driver Init and/or Driver Stdout logs.")
 
 			if emrEvent.Detail != nil {
 				if emrEvent.Detail.StateDetails != nil && !strings.Contains(*emrEvent.Detail.StateDetails, "JobRun failed. Please refer logs uploaded") {
 					exitReason := strings.Replace(*emrEvent.Detail.StateDetails, "Please refer logs uploaded to S3/CloudWatch based on your monitoring configuration.", "", -1)
-					run.ExitReason = aws.String(exitReason)
+					updates.ExitReason = aws.String(exitReason)
 				} else {
 					if emrEvent.Detail.FailureReason != nil && !strings.Contains(*emrEvent.Detail.FailureReason, "USER_ERROR") {
 						exitReason := strings.Replace(*emrEvent.Detail.FailureReason, "Please refer logs uploaded to S3/CloudWatch based on your monitoring configuration.", "", -1)
-						run.ExitReason = aws.String(exitReason)
+						updates.ExitReason = aws.String(exitReason)
 					}
 				}
 			}
 
-			if run.SparkExtension.DriverOOM != nil && *run.SparkExtension.DriverOOM == true {
-				run.ExitReason = aws.String("Driver OOMKilled, retry with more driver memory.")
-				run.ExitCode = aws.Int64(137)
-			}
-
-			if run.SparkExtension.ExecutorOOM != nil && *run.SparkExtension.ExecutorOOM == true {
-				run.ExitReason = aws.String("Executor OOMKilled, retry with more executor memory.")
-				run.ExitCode = aws.Int64(137)
-			}
-
 		case "SUBMITTED":
-			run.Status = state.StatusPending
+			updates.Status = state.StatusPending
 		}
 
-		ew.setEMRMetricsUri(&run)
-		_, err = ew.sm.UpdateRun(ctx, run.RunID, run)
-		if err == nil {
-			_ = emrEvent.Done()
+		updates.MetricsUri = ew.emrMetricsUri(&run)
+		merged, err := ew.sm.UpdateRun(ctx, run.RunID, updates)
+		if err != nil {
+			return
 		}
+		if follow := oomExitUpdates(merged); follow != nil {
+			if _, err = ew.sm.UpdateRun(ctx, run.RunID, *follow); err != nil {
+				return
+			}
+		}
+		_ = emrEvent.Done()
 	}
 }
-func (ew *eventsWorker) runOnce(ctx context.Context) {
+func (ew *eventsWorker) runOnce(ctx context.Context) (int, error) {
 	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_eks", "events_worker")
 	defer span.Finish()
-	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
+	kubernetesEvents, err := ew.qm.ReceiveKubernetesEvents(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("level", "error", "message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
-		return
+		return 0, err
 	}
-	ew.processEvent(ctx, kubernetesEvent)
+	for _, kubernetesEvent := range kubernetesEvents {
+		ew.processEvent(ctx, kubernetesEvent)
+	}
+	return len(kubernetesEvents), nil
 }
 
 func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
@@ -227,8 +288,7 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				for _, container := range pod.Spec.Containers {
 					for _, v := range container.Env {
 						if v.Name == "SPARK_DRIVER_URL" {
-							pat := regexp.MustCompile(`.*@(.*-svc).*`)
-							matches := pat.FindAllStringSubmatch(v.Value, -1)
+							matches := sparkDriverServicePattern.FindAllStringSubmatch(v.Value, -1)
 							for _, match := range matches {
 								if len(match) == 2 {
 									driverServiceName = &match[1]
@@ -266,75 +326,9 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				utils.TagJobRun(span, run)
 				span.SetTag("emr.job_id", *emrJobId)
 
-				// Only store events that are used to determine the list of executors in models.go Run.MarshalJSON.
-				// We don't care about other events as they are no longer shown in the UI.
-				if strings.Contains(kubernetesEvent.InvolvedObject.Name, "-exec-") {
-					layout := "2006-01-02T15:04:05Z"
-					timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
-					if err != nil {
-						timestamp = time.Now()
-					}
+				updates := ew.emrPodEventUpdates(run, kubernetesEvent, sparkAppId, driverServiceName, executorOOM, driverOOM)
 
-					event := state.PodEvent{
-						Timestamp:    &timestamp,
-						EventType:    kubernetesEvent.Type,
-						Reason:       kubernetesEvent.Reason,
-						SourceObject: kubernetesEvent.InvolvedObject.Name,
-						Message:      kubernetesEvent.Message,
-					}
-
-					var events state.PodEvents
-					if run.PodEvents != nil {
-						// de-dupe: only record this event if it's a unique SourceObject (executor name), which
-						// is used in the UI to show the list of executors.
-						found := false
-						for _, e := range *run.PodEvents {
-							if e.SourceObject == event.SourceObject {
-								found = true
-								break
-							}
-						}
-						if !found {
-							events = append(*run.PodEvents, event)
-						} else {
-							events = *run.PodEvents
-						}
-
-					} else {
-						events = state.PodEvents{event}
-					}
-					run.PodEvents = &events
-				}
-
-				if executorOOM != nil && *executorOOM == true {
-					run.SparkExtension.ExecutorOOM = executorOOM
-				}
-				if driverOOM != nil && *driverOOM == true {
-					run.SparkExtension.DriverOOM = driverOOM
-				}
-
-				if sparkAppId != nil {
-					sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
-					run.SparkExtension.SparkAppId = sparkAppId
-					run.SparkExtension.HistoryUri = &sparkHistoryUri
-
-					if driverServiceName != nil {
-						appUri := ""
-						if run.SparkExtension.SparkServerURI != nil {
-							appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
-						} else if serverURI, ok := ew.emrAppServer[run.ClusterName]; ok {
-							appUri = fmt.Sprintf("%s/job/%s", serverURI, *driverServiceName)
-						}
-
-						if appUri != "" {
-							run.SparkExtension.AppUri = &appUri
-						}
-					}
-				}
-
-				ew.setEMRMetricsUri(&run)
-
-				run, err = ew.sm.UpdateRun(ctx, run.RunID, run)
+				run, err = ew.applyEMRPodEventUpdates(ctx, run.RunID, updates)
 				if err != nil {
 					_ = ew.log.Log("level", "error", "message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 					span.SetTag("error", true)
@@ -351,7 +345,112 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 	}
 }
 
-func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
+func (ew *eventsWorker) emrPodEventUpdates(run state.Run, kubernetesEvent state.KubernetesEvent, sparkAppId *string, driverServiceName *string, executorOOM *bool, driverOOM *bool) state.Run {
+	// Only store events that are used to determine the list of executors in models.go Run.MarshalJSON.
+	// We don't care about other events as they are no longer shown in the UI.
+	if strings.Contains(kubernetesEvent.InvolvedObject.Name, "-exec-") {
+		layout := "2006-01-02T15:04:05Z"
+		timestamp, err := time.Parse(layout, kubernetesEvent.FirstTimestamp)
+		if err != nil {
+			timestamp = time.Now()
+		}
+
+		event := state.PodEvent{
+			Timestamp:    &timestamp,
+			EventType:    kubernetesEvent.Type,
+			Reason:       kubernetesEvent.Reason,
+			SourceObject: kubernetesEvent.InvolvedObject.Name,
+			Message:      kubernetesEvent.Message,
+		}
+
+		var events state.PodEvents
+		if run.PodEvents != nil {
+			// de-dupe: only record this event if it's a unique SourceObject (executor name), which
+			// is used in the UI to show the list of executors.
+			found := false
+			for _, e := range *run.PodEvents {
+				if e.SourceObject == event.SourceObject {
+					found = true
+					break
+				}
+			}
+			if !found {
+				events = append(*run.PodEvents, event)
+			} else {
+				events = *run.PodEvents
+			}
+
+		} else {
+			events = state.PodEvents{event}
+		}
+		run.PodEvents = &events
+	}
+
+	if executorOOM != nil && *executorOOM == true {
+		run.SparkExtension.ExecutorOOM = executorOOM
+	}
+	if driverOOM != nil && *driverOOM == true {
+		run.SparkExtension.DriverOOM = driverOOM
+	}
+
+	if sparkAppId != nil {
+		sparkHistoryUri := fmt.Sprintf("%s/%s/jobs/", ew.emrHistoryServer, *sparkAppId)
+		run.SparkExtension.SparkAppId = sparkAppId
+		run.SparkExtension.HistoryUri = &sparkHistoryUri
+
+		if driverServiceName != nil {
+			appUri := ""
+			if run.SparkExtension.SparkServerURI != nil {
+				appUri = fmt.Sprintf("%s/job/%s", *run.SparkExtension.SparkServerURI, *driverServiceName)
+			} else if serverURI, ok := ew.emrAppServer[run.ClusterName]; ok {
+				appUri = fmt.Sprintf("%s/job/%s", serverURI, *driverServiceName)
+			}
+
+			if appUri != "" {
+				run.SparkExtension.AppUri = &appUri
+			}
+		}
+	}
+
+	return state.Run{
+		SparkExtension: run.SparkExtension,
+		PodEvents:      run.PodEvents,
+		MetricsUri:     ew.emrMetricsUri(&run),
+	}
+}
+
+func (ew *eventsWorker) applyEMRPodEventUpdates(ctx context.Context, runID string, updates state.Run) (state.Run, error) {
+	run, err := ew.sm.UpdateRun(ctx, runID, updates)
+	if err != nil {
+		return run, err
+	}
+	follow := oomExitUpdates(run)
+	if follow == nil {
+		return run, nil
+	}
+	reconciled, err := ew.sm.UpdateRun(ctx, runID, *follow)
+	if err != nil {
+		return run, err
+	}
+	return reconciled, nil
+}
+
+func oomExitUpdates(run state.Run) *state.Run {
+	if run.Status != state.StatusStopped || run.ExitCode == nil || *run.ExitCode == 0 || *run.ExitCode == 137 || run.SparkExtension == nil {
+		return nil
+	}
+	var reason string
+	if run.SparkExtension.DriverOOM != nil && *run.SparkExtension.DriverOOM {
+		reason = "Driver OOMKilled, retry with more driver memory."
+	} else if run.SparkExtension.ExecutorOOM != nil && *run.SparkExtension.ExecutorOOM {
+		reason = "Executor OOMKilled, retry with more executor memory."
+	} else {
+		return nil
+	}
+	return &state.Run{ExitCode: aws.Int64(137), ExitReason: aws.String(reason)}
+}
+
+func (ew *eventsWorker) emrMetricsUri(run *state.Run) *string {
 	if run != nil && run.SparkExtension != nil && run.SparkExtension.SparkAppId != nil {
 		// https://production-stitchfix.datadoghq.com/data-jobs?query=%40app_id%3Aspark-000000035ee16lm6uri
 		metricsUri :=
@@ -359,8 +458,9 @@ func (ew *eventsWorker) setEMRMetricsUri(run *state.Run) {
 				ew.emrMetricsServer,
 				*run.SparkExtension.SparkAppId,
 			)
-		run.MetricsUri = &metricsUri
+		return &metricsUri
 	}
+	return nil
 }
 
 func (ew *eventsWorker) setEKSMetricsUri(run *state.Run) {
@@ -444,8 +544,7 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 }
 
 func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (string, error) {
-	expression := regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
-	matches := expression.FindStringSubmatch(kubernetesEvent.Message)
+	matches := eksPodNamePattern.FindStringSubmatch(kubernetesEvent.Message)
 	if matches != nil && len(matches) >= 1 {
 		return matches[0], nil
 	}

@@ -1,10 +1,15 @@
 package worker
 
 import (
+	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/stitchfix/flotilla-os/config"
+	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
 )
 
@@ -106,4 +111,575 @@ func TestEventsWorker_applySlidingWindow(t *testing.T) {
 			t.Errorf("Expected oldest kept event 'Event 2', got %s", events[19].Message)
 		}
 	})
+}
+
+type nopLogger struct{}
+
+func (nopLogger) Log(keyvals ...interface{}) error   { return nil }
+func (nopLogger) Event(keyvals ...interface{}) error { return nil }
+
+type fakeEventsQueueManager struct {
+	queue.Manager
+	receiveKubernetes func() ([]state.KubernetesEvent, error)
+	receiveEMR        func() ([]state.EmrEvent, error)
+}
+
+func (f *fakeEventsQueueManager) QurlFor(name string, prefixed bool) (string, error) {
+	return name, nil
+}
+
+func (f *fakeEventsQueueManager) Initialize(conf config.Config, engine string) error {
+	return nil
+}
+
+func (f *fakeEventsQueueManager) ReceiveKubernetesEvents(qURL string) ([]state.KubernetesEvent, error) {
+	return f.receiveKubernetes()
+}
+
+func (f *fakeEventsQueueManager) ReceiveEMREvents(qURL string) ([]state.EmrEvent, error) {
+	return f.receiveEMR()
+}
+
+func ackablePodEvent(acked *int64) state.KubernetesEvent {
+	return state.KubernetesEvent{
+		InvolvedObject: state.InvolvedObject{Kind: "Pod"},
+		Done: func() error {
+			atomic.AddInt64(acked, 1)
+			return nil
+		},
+	}
+}
+
+func runWorker(ew *eventsWorker) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		_ = ew.Run(context.Background())
+		close(done)
+	}()
+	return done
+}
+
+func waitFor(t *testing.T, cond func() bool, msg string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal(msg)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func stopWorker(t *testing.T, ew *eventsWorker, done <-chan struct{}) {
+	t.Helper()
+	ew.t.Kill(nil)
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not exit after tomb was killed")
+	}
+}
+
+func TestEventsWorker_SlowEMRReceiveDoesNotStallKubernetesEvents(t *testing.T) {
+	var acked int64
+	release := make(chan struct{})
+	var calls int64
+	qm := &fakeEventsQueueManager{
+		receiveKubernetes: func() ([]state.KubernetesEvent, error) {
+			if atomic.AddInt64(&calls, 1) > 5 {
+				return nil, nil
+			}
+			return []state.KubernetesEvent{ackablePodEvent(&acked), ackablePodEvent(&acked)}, nil
+		},
+		receiveEMR: func() ([]state.EmrEvent, error) {
+			<-release
+			return nil, nil
+		},
+	}
+	ew := &eventsWorker{qm: qm, log: nopLogger{}, pollInterval: time.Millisecond, maxBackoff: 5 * time.Millisecond}
+	done := runWorker(ew)
+
+	waitFor(t, func() bool { return atomic.LoadInt64(&acked) >= 10 }, "Kubernetes events stalled behind EMR receive")
+
+	close(release)
+	stopWorker(t, ew, done)
+}
+
+func TestEventsWorker_ProcessesEveryEventInBatch(t *testing.T) {
+	var acked int64
+	var k8sCalls int64
+	qm := &fakeEventsQueueManager{
+		receiveKubernetes: func() ([]state.KubernetesEvent, error) {
+			if atomic.AddInt64(&k8sCalls, 1) == 1 {
+				batch := make([]state.KubernetesEvent, 10)
+				for i := range batch {
+					batch[i] = ackablePodEvent(&acked)
+				}
+				return batch, nil
+			}
+			return nil, nil
+		},
+		receiveEMR: func() ([]state.EmrEvent, error) { return nil, nil },
+	}
+	ew := &eventsWorker{qm: qm, log: nopLogger{}, pollInterval: time.Millisecond, maxBackoff: 5 * time.Millisecond}
+	done := runWorker(ew)
+
+	waitFor(t, func() bool { return atomic.LoadInt64(&acked) >= 10 }, "Expected all 10 events in the batch to be processed")
+	stopWorker(t, ew, done)
+	if atomic.LoadInt64(&acked) != 10 {
+		t.Errorf("Expected exactly 10 acked events, got %d", atomic.LoadInt64(&acked))
+	}
+}
+
+func TestEventsWorker_RunExitsWhenTombKilled(t *testing.T) {
+	qm := &fakeEventsQueueManager{
+		receiveKubernetes: func() ([]state.KubernetesEvent, error) { return nil, nil },
+		receiveEMR:        func() ([]state.EmrEvent, error) { return nil, nil },
+	}
+	ew := &eventsWorker{qm: qm, log: nopLogger{}, pollInterval: 50 * time.Millisecond, maxBackoff: time.Hour}
+	done := runWorker(ew)
+
+	time.Sleep(20 * time.Millisecond)
+	stopWorker(t, ew, done)
+}
+
+func TestEventsWorker_NextBackoff(t *testing.T) {
+	ms := time.Millisecond
+	ew := &eventsWorker{pollInterval: 100 * ms, maxBackoff: 500 * ms}
+	cases := []struct{ current, expected time.Duration }{
+		{100 * ms, 200 * ms},
+		{200 * ms, 400 * ms},
+		{400 * ms, 500 * ms},
+		{500 * ms, 500 * ms},
+	}
+	for _, c := range cases {
+		if got := ew.nextBackoff(c.current); got != c.expected {
+			t.Errorf("nextBackoff(%v): expected %v, got %v", c.current, c.expected, got)
+		}
+	}
+}
+
+func TestEventsWorker_InitializeMaxBackoff(t *testing.T) {
+	confDir := "../conf"
+	c, _ := config.NewConfig(&confDir)
+	ew := &eventsWorker{}
+	_ = ew.Initialize(c, nil, nil, nil, nopLogger{}, 100*time.Millisecond, &fakeEventsQueueManager{}, nil)
+	if ew.maxBackoff != 5*time.Second {
+		t.Errorf("Expected default max backoff 5s, got %v", ew.maxBackoff)
+	}
+}
+
+type fakeEventsStateManager struct {
+	state.Manager
+	snapshot state.Run
+	stored   *state.Run
+	updates  []state.Run
+}
+
+func (f *fakeEventsStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string) (state.Run, error) {
+	return f.snapshot, nil
+}
+
+func (f *fakeEventsStateManager) UpdateRun(ctx context.Context, runID string, updates state.Run) (state.Run, error) {
+	f.updates = append(f.updates, updates)
+	if f.stored == nil {
+		return updates, nil
+	}
+	f.stored.UpdateWith(updates)
+	return *f.stored, nil
+}
+
+func emrStatusEvent(status string, acked *int64) state.EmrEvent {
+	return state.EmrEvent{
+		Time: aws.String("2026-11-18T10:00:00Z"),
+		Detail: &state.Detail{
+			ID:           aws.String("emr-job-1"),
+			State:        aws.String(status),
+			StateDetails: aws.String("details"),
+		},
+		Done: func() error {
+			atomic.AddInt64(acked, 1)
+			return nil
+		},
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRCompletedSendsOnlyStatusFields(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	cases := []struct {
+		name          string
+		sparkAppId    *string
+		expectMetrics bool
+	}{
+		{"with spark app id", aws.String("spark-123"), true},
+		{"without spark app id", nil, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			podEvents := state.PodEvents{{SourceObject: "exec-1"}}
+			sm := &fakeEventsStateManager{snapshot: state.Run{
+				RunID:          "run-1",
+				Status:         state.StatusRunning,
+				QueuedAt:       &queued,
+				PodEvents:      &podEvents,
+				SparkExtension: &state.SparkExtension{SparkAppId: c.sparkAppId},
+			}}
+			var acked int64
+			ew := &eventsWorker{sm: sm, log: nopLogger{}, emrMetricsServer: "https://metrics"}
+			ew.processEventEMR(context.Background(), emrStatusEvent("COMPLETED", &acked))
+
+			if len(sm.updates) != 1 {
+				t.Fatalf("Expected 1 UpdateRun call, got %d", len(sm.updates))
+			}
+			u := sm.updates[0]
+			if u.SparkExtension != nil {
+				t.Errorf("Expected no SparkExtension in update, got %+v", u.SparkExtension)
+			}
+			if u.PodEvents != nil {
+				t.Errorf("Expected no PodEvents in update, got %+v", u.PodEvents)
+			}
+			if u.Status != state.StatusStopped {
+				t.Errorf("Expected status %s, got %s", state.StatusStopped, u.Status)
+			}
+			if u.ExitCode == nil || *u.ExitCode != 0 {
+				t.Errorf("Expected exit code 0, got %v", u.ExitCode)
+			}
+			if u.FinishedAt == nil {
+				t.Errorf("Expected FinishedAt to be set")
+			}
+			if u.StartedAt == nil || !u.StartedAt.Equal(queued) {
+				t.Errorf("Expected StartedAt to fall back to QueuedAt %v, got %v", queued, u.StartedAt)
+			}
+			if c.expectMetrics {
+				if u.MetricsUri == nil || *u.MetricsUri != "https://metrics?query=%40app_id%3Aspark-123" {
+					t.Errorf("Unexpected MetricsUri %v", u.MetricsUri)
+				}
+			} else if u.MetricsUri != nil {
+				t.Errorf("Expected no MetricsUri, got %s", *u.MetricsUri)
+			}
+			if atomic.LoadInt64(&acked) != 1 {
+				t.Errorf("Expected event to be acked")
+			}
+		})
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRFailedDriverOOM(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	stored := state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)},
+	}
+	sm := &fakeEventsStateManager{stored: &stored, snapshot: state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)},
+	}}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("FAILED", &acked))
+
+	if len(sm.updates) != 2 {
+		t.Fatalf("Expected 2 UpdateRun calls, got %d", len(sm.updates))
+	}
+	u := sm.updates[0]
+	if u.ExitCode == nil || *u.ExitCode != -1 {
+		t.Errorf("Expected first update exit code -1, got %v", u.ExitCode)
+	}
+	if u.SparkExtension != nil {
+		t.Errorf("Expected no SparkExtension in update, got %+v", u.SparkExtension)
+	}
+	if u.Status != state.StatusStopped {
+		t.Errorf("Expected status %s, got %s", state.StatusStopped, u.Status)
+	}
+	if stored.ExitCode == nil || *stored.ExitCode != 137 {
+		t.Errorf("Expected stored exit code 137, got %v", stored.ExitCode)
+	}
+	if stored.ExitReason == nil || *stored.ExitReason != driverOOMReason {
+		t.Errorf("Unexpected stored exit reason %v", stored.ExitReason)
+	}
+	if atomic.LoadInt64(&acked) != 1 {
+		t.Errorf("Expected event to be acked")
+	}
+}
+
+const driverOOMReason = "Driver OOMKilled, retry with more driver memory."
+const executorOOMReason = "Executor OOMKilled, retry with more executor memory."
+
+func TestOOMExitUpdates(t *testing.T) {
+	cases := []struct {
+		name       string
+		run        state.Run
+		wantReason string
+	}{
+		{"driver oom", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(-1), SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)}}, driverOOMReason},
+		{"executor oom", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(-1), SparkExtension: &state.SparkExtension{ExecutorOOM: aws.Bool(true)}}, executorOOMReason},
+		{"both oom", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(-1), SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true), ExecutorOOM: aws.Bool(true)}}, driverOOMReason},
+		{"oom flags false", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(-1), SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(false), ExecutorOOM: aws.Bool(false)}}, ""},
+		{"completed", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(0), SparkExtension: &state.SparkExtension{ExecutorOOM: aws.Bool(true)}}, ""},
+		{"already 137", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(137), SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)}}, ""},
+		{"running", state.Run{Status: state.StatusRunning, ExitCode: aws.Int64(-1), SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)}}, ""},
+		{"no exit code", state.Run{Status: state.StatusStopped, SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)}}, ""},
+		{"nil spark extension", state.Run{Status: state.StatusStopped, ExitCode: aws.Int64(-1)}, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := oomExitUpdates(c.run)
+			if c.wantReason == "" {
+				if got != nil {
+					t.Fatalf("Expected nil, got %+v", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("Expected an update, got nil")
+			}
+			if got.ExitCode == nil || *got.ExitCode != 137 {
+				t.Errorf("Expected exit code 137, got %v", got.ExitCode)
+			}
+			if got.ExitReason == nil || *got.ExitReason != c.wantReason {
+				t.Errorf("Expected reason %q, got %v", c.wantReason, got.ExitReason)
+			}
+			if got.Status != "" || got.SparkExtension != nil || got.PodEvents != nil || got.FinishedAt != nil || got.StartedAt != nil {
+				t.Errorf("Expected only exit fields, got %+v", got)
+			}
+		})
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRFailedReconcilesOOMStoredAfterSnapshot(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	stored := state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)},
+	}
+	sm := &fakeEventsStateManager{stored: &stored, snapshot: state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{},
+	}}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("FAILED", &acked))
+
+	if len(sm.updates) != 2 {
+		t.Fatalf("Expected 2 UpdateRun calls, got %d", len(sm.updates))
+	}
+	follow := sm.updates[1]
+	if follow.ExitCode == nil || *follow.ExitCode != 137 || follow.ExitReason == nil || *follow.ExitReason != driverOOMReason {
+		t.Errorf("Unexpected follow-up update %+v", follow)
+	}
+	if follow.Status != "" || follow.SparkExtension != nil || follow.FinishedAt != nil || follow.StartedAt != nil || follow.MetricsUri != nil || follow.PodEvents != nil {
+		t.Errorf("Expected follow-up to carry only ExitCode and ExitReason, got %+v", follow)
+	}
+	if stored.ExitCode == nil || *stored.ExitCode != 137 {
+		t.Errorf("Expected stored exit code 137, got %v", stored.ExitCode)
+	}
+	if stored.ExitReason == nil || *stored.ExitReason != driverOOMReason {
+		t.Errorf("Unexpected stored exit reason %v", stored.ExitReason)
+	}
+	if atomic.LoadInt64(&acked) != 1 {
+		t.Errorf("Expected event to be acked")
+	}
+}
+
+func TestEventsWorker_PodOOMReconcilesAlreadyStoppedRun(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	finished := time.Now()
+	stored := state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusStopped,
+		QueuedAt:       &queued,
+		StartedAt:      &queued,
+		FinishedAt:     &finished,
+		ExitCode:       aws.Int64(-1),
+		ExitReason:     aws.String("Job failed, please look at Driver Init and/or Driver Stdout logs."),
+		SparkExtension: &state.SparkExtension{},
+	}
+	snapshot := stored
+	snapshot.SparkExtension = &state.SparkExtension{}
+	sm := &fakeEventsStateManager{stored: &stored}
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	event := state.KubernetesEvent{InvolvedObject: state.InvolvedObject{Kind: "Pod", Name: "job-driver"}}
+
+	updates := ew.emrPodEventUpdates(snapshot, event, nil, nil, nil, aws.Bool(true))
+	run, err := ew.applyEMRPodEventUpdates(context.Background(), snapshot.RunID, updates)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	if len(sm.updates) != 2 {
+		t.Fatalf("Expected 2 UpdateRun calls, got %d", len(sm.updates))
+	}
+	if stored.ExitCode == nil || *stored.ExitCode != 137 {
+		t.Errorf("Expected stored exit code 137, got %v", stored.ExitCode)
+	}
+	if stored.ExitReason == nil || *stored.ExitReason != driverOOMReason {
+		t.Errorf("Unexpected stored exit reason %v", stored.ExitReason)
+	}
+	if run.ExitCode == nil || *run.ExitCode != 137 {
+		t.Errorf("Expected returned run exit code 137, got %v", run.ExitCode)
+	}
+}
+
+func TestEventsWorker_PodOOMDoesNotReclassifyCompletedRun(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	stored := state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusStopped,
+		QueuedAt:       &queued,
+		ExitCode:       aws.Int64(0),
+		ExitReason:     aws.String("done"),
+		SparkExtension: &state.SparkExtension{},
+	}
+	snapshot := stored
+	snapshot.SparkExtension = &state.SparkExtension{}
+	sm := &fakeEventsStateManager{stored: &stored}
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	event := state.KubernetesEvent{InvolvedObject: state.InvolvedObject{Kind: "Pod", Name: "job-exec-1"}}
+
+	updates := ew.emrPodEventUpdates(snapshot, event, nil, nil, aws.Bool(true), nil)
+	if _, err := ew.applyEMRPodEventUpdates(context.Background(), snapshot.RunID, updates); err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	if len(sm.updates) != 1 {
+		t.Fatalf("Expected 1 UpdateRun call, got %d", len(sm.updates))
+	}
+	if stored.ExitCode == nil || *stored.ExitCode != 0 {
+		t.Errorf("Expected stored exit code to stay 0, got %v", stored.ExitCode)
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRCompletedWithExecutorOOMKeepsExitZero(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	stored := state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{ExecutorOOM: aws.Bool(true)},
+	}
+	sm := &fakeEventsStateManager{stored: &stored, snapshot: state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{ExecutorOOM: aws.Bool(true)},
+	}}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("COMPLETED", &acked))
+
+	if len(sm.updates) != 1 {
+		t.Fatalf("Expected 1 UpdateRun call, got %d", len(sm.updates))
+	}
+	if stored.ExitCode == nil || *stored.ExitCode != 0 {
+		t.Errorf("Expected stored exit code to stay 0, got %v", stored.ExitCode)
+	}
+	if atomic.LoadInt64(&acked) != 1 {
+		t.Errorf("Expected event to be acked")
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRDoesNotEraseConcurrentPodEventWrites(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	podEvents := state.PodEvents{{SourceObject: "exec-1"}}
+	stored := state.Run{
+		RunID:     "run-1",
+		Status:    state.StatusRunning,
+		QueuedAt:  &queued,
+		PodEvents: &podEvents,
+		SparkExtension: &state.SparkExtension{
+			SparkAppId: aws.String("spark-123"),
+			HistoryUri: aws.String("https://history/spark-123/jobs/"),
+			DriverOOM:  aws.Bool(true),
+		},
+	}
+	sm := &fakeEventsStateManager{
+		stored: &stored,
+		snapshot: state.Run{
+			RunID:          "run-1",
+			Status:         state.StatusRunning,
+			QueuedAt:       &queued,
+			SparkExtension: &state.SparkExtension{},
+		},
+	}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("COMPLETED", &acked))
+
+	if stored.SparkExtension == nil || stored.SparkExtension.SparkAppId == nil || *stored.SparkExtension.SparkAppId != "spark-123" {
+		t.Errorf("Expected stored SparkAppId to survive the EMR status update, got %+v", stored.SparkExtension)
+	}
+	if stored.SparkExtension == nil || stored.SparkExtension.DriverOOM == nil || !*stored.SparkExtension.DriverOOM {
+		t.Errorf("Expected stored DriverOOM to survive the EMR status update")
+	}
+	if stored.PodEvents == nil || len(*stored.PodEvents) != 1 {
+		t.Errorf("Expected stored PodEvents to survive the EMR status update, got %v", stored.PodEvents)
+	}
+	if stored.Status != state.StatusStopped {
+		t.Errorf("Expected stored status %s, got %s", state.StatusStopped, stored.Status)
+	}
+}
+
+func TestEventsWorker_EMRPodEventUpdatesSendsOnlyPodFields(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	finished := time.Now()
+	snapshot := state.Run{
+		RunID:          "run-1",
+		ClusterName:    "cluster-a",
+		Status:         state.StatusStopped,
+		QueuedAt:       &queued,
+		StartedAt:      &queued,
+		FinishedAt:     &finished,
+		ExitCode:       aws.Int64(0),
+		ExitReason:     aws.String("done"),
+		SparkExtension: &state.SparkExtension{},
+	}
+	ew := &eventsWorker{
+		log:              nopLogger{},
+		emrHistoryServer: "https://history",
+		emrMetricsServer: "https://metrics",
+		emrAppServer:     map[string]string{"cluster-a": "https://app"},
+	}
+	event := state.KubernetesEvent{
+		FirstTimestamp: "2026-11-18T10:00:00Z",
+		Type:           "Normal",
+		Reason:         "Scheduled",
+		Message:        "scheduled",
+		InvolvedObject: state.InvolvedObject{Kind: "Pod", Name: "job-exec-1"},
+	}
+
+	u := ew.emrPodEventUpdates(snapshot, event, aws.String("spark-123"), aws.String("driver-svc"), aws.Bool(true), aws.Bool(true))
+
+	if u.Status != "" || u.ExitCode != nil || u.ExitReason != nil || u.StartedAt != nil || u.FinishedAt != nil || u.QueuedAt != nil {
+		t.Errorf("Expected no status fields in pod event update, got %+v", u)
+	}
+	if u.PodEvents == nil || len(*u.PodEvents) != 1 || (*u.PodEvents)[0].SourceObject != "job-exec-1" {
+		t.Errorf("Unexpected PodEvents %v", u.PodEvents)
+	}
+	se := u.SparkExtension
+	if se == nil {
+		t.Fatal("Expected SparkExtension in update")
+	}
+	if se.SparkAppId == nil || *se.SparkAppId != "spark-123" {
+		t.Errorf("Unexpected SparkAppId %v", se.SparkAppId)
+	}
+	if se.HistoryUri == nil || *se.HistoryUri != "https://history/spark-123/jobs/" {
+		t.Errorf("Unexpected HistoryUri %v", se.HistoryUri)
+	}
+	if se.AppUri == nil || *se.AppUri != "https://app/job/driver-svc" {
+		t.Errorf("Unexpected AppUri %v", se.AppUri)
+	}
+	if se.DriverOOM == nil || !*se.DriverOOM || se.ExecutorOOM == nil || !*se.ExecutorOOM {
+		t.Errorf("Expected OOM flags set, got driver=%v executor=%v", se.DriverOOM, se.ExecutorOOM)
+	}
+	if u.MetricsUri == nil || *u.MetricsUri != "https://metrics?query=%40app_id%3Aspark-123" {
+		t.Errorf("Unexpected MetricsUri %v", u.MetricsUri)
+	}
 }
