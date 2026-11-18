@@ -222,25 +222,21 @@ func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrE
 				}
 			}
 
-			if run.SparkExtension.DriverOOM != nil && *run.SparkExtension.DriverOOM == true {
-				updates.ExitReason = aws.String("Driver OOMKilled, retry with more driver memory.")
-				updates.ExitCode = aws.Int64(137)
-			}
-
-			if run.SparkExtension.ExecutorOOM != nil && *run.SparkExtension.ExecutorOOM == true {
-				updates.ExitReason = aws.String("Executor OOMKilled, retry with more executor memory.")
-				updates.ExitCode = aws.Int64(137)
-			}
-
 		case "SUBMITTED":
 			updates.Status = state.StatusPending
 		}
 
 		updates.MetricsUri = ew.emrMetricsUri(&run)
-		_, err = ew.sm.UpdateRun(ctx, run.RunID, updates)
-		if err == nil {
-			_ = emrEvent.Done()
+		merged, err := ew.sm.UpdateRun(ctx, run.RunID, updates)
+		if err != nil {
+			return
 		}
+		if follow := oomExitUpdates(merged); follow != nil {
+			if _, err = ew.sm.UpdateRun(ctx, run.RunID, *follow); err != nil {
+				return
+			}
+		}
+		_ = emrEvent.Done()
 	}
 }
 func (ew *eventsWorker) runOnce(ctx context.Context) (int, error) {
@@ -332,7 +328,7 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 
 				updates := ew.emrPodEventUpdates(run, kubernetesEvent, sparkAppId, driverServiceName, executorOOM, driverOOM)
 
-				run, err = ew.sm.UpdateRun(ctx, run.RunID, updates)
+				run, err = ew.applyEMRPodEventUpdates(ctx, run.RunID, updates)
 				if err != nil {
 					_ = ew.log.Log("level", "error", "message", "error saving kubernetes events", "emrJobId", emrJobId, "error", fmt.Sprintf("%+v", err))
 					span.SetTag("error", true)
@@ -421,6 +417,37 @@ func (ew *eventsWorker) emrPodEventUpdates(run state.Run, kubernetesEvent state.
 		PodEvents:      run.PodEvents,
 		MetricsUri:     ew.emrMetricsUri(&run),
 	}
+}
+
+func (ew *eventsWorker) applyEMRPodEventUpdates(ctx context.Context, runID string, updates state.Run) (state.Run, error) {
+	run, err := ew.sm.UpdateRun(ctx, runID, updates)
+	if err != nil {
+		return run, err
+	}
+	follow := oomExitUpdates(run)
+	if follow == nil {
+		return run, nil
+	}
+	reconciled, err := ew.sm.UpdateRun(ctx, runID, *follow)
+	if err != nil {
+		return run, err
+	}
+	return reconciled, nil
+}
+
+func oomExitUpdates(run state.Run) *state.Run {
+	if run.Status != state.StatusStopped || run.ExitCode == nil || *run.ExitCode == 0 || *run.ExitCode == 137 || run.SparkExtension == nil {
+		return nil
+	}
+	var reason string
+	if run.SparkExtension.DriverOOM != nil && *run.SparkExtension.DriverOOM {
+		reason = "Driver OOMKilled, retry with more driver memory."
+	} else if run.SparkExtension.ExecutorOOM != nil && *run.SparkExtension.ExecutorOOM {
+		reason = "Executor OOMKilled, retry with more executor memory."
+	} else {
+		return nil
+	}
+	return &state.Run{ExitCode: aws.Int64(137), ExitReason: aws.String(reason)}
 }
 
 func (ew *eventsWorker) emrMetricsUri(run *state.Run) *string {
