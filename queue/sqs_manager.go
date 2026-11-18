@@ -367,12 +367,13 @@ func (qm *SQSManager) receiveBatch(qURL string) ([]*sqs.Message, error) {
 		return nil, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
-	var messages []*sqs.Message
-	if response != nil {
-		for _, message := range response.Messages {
-			if message != nil && message.Body != nil {
-				messages = append(messages, message)
-			}
+	if response == nil {
+		return nil, nil
+	}
+	messages := make([]*sqs.Message, 0, len(response.Messages))
+	for _, message := range response.Messages {
+		if message != nil && message.Body != nil {
+			messages = append(messages, message)
 		}
 	}
 	return messages, nil

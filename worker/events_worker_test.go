@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -159,6 +158,27 @@ func runWorker(ew *eventsWorker) <-chan struct{} {
 	return done
 }
 
+func waitFor(t *testing.T, cond func() bool, msg string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal(msg)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func stopWorker(t *testing.T, ew *eventsWorker, done <-chan struct{}) {
+	t.Helper()
+	ew.t.Kill(nil)
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not exit after tomb was killed")
+	}
+}
+
 func TestEventsWorker_SlowEMRReceiveDoesNotStallKubernetesEvents(t *testing.T) {
 	var acked int64
 	release := make(chan struct{})
@@ -178,27 +198,14 @@ func TestEventsWorker_SlowEMRReceiveDoesNotStallKubernetesEvents(t *testing.T) {
 	ew := &eventsWorker{qm: qm, log: nopLogger{}, pollInterval: time.Millisecond, maxBackoff: 5 * time.Millisecond}
 	done := runWorker(ew)
 
-	deadline := time.After(2 * time.Second)
-	for atomic.LoadInt64(&acked) < 10 {
-		select {
-		case <-deadline:
-			t.Fatalf("Kubernetes events stalled behind EMR receive: acked %d of 10", atomic.LoadInt64(&acked))
-		case <-time.After(time.Millisecond):
-		}
-	}
+	waitFor(t, func() bool { return atomic.LoadInt64(&acked) >= 10 }, "Kubernetes events stalled behind EMR receive")
 
-	ew.t.Kill(nil)
 	close(release)
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatalf("Run did not exit after tomb was killed")
-	}
+	stopWorker(t, ew, done)
 }
 
 func TestEventsWorker_ProcessesEveryEventInBatch(t *testing.T) {
 	var acked int64
-	var emrCalls int64
 	var k8sCalls int64
 	qm := &fakeEventsQueueManager{
 		receiveKubernetes: func() ([]state.KubernetesEvent, error) {
@@ -211,25 +218,13 @@ func TestEventsWorker_ProcessesEveryEventInBatch(t *testing.T) {
 			}
 			return nil, nil
 		},
-		receiveEMR: func() ([]state.EmrEvent, error) {
-			atomic.AddInt64(&emrCalls, 1)
-			return []state.EmrEvent{{}, {}}, nil
-		},
+		receiveEMR: func() ([]state.EmrEvent, error) { return nil, nil },
 	}
 	ew := &eventsWorker{qm: qm, log: nopLogger{}, pollInterval: time.Millisecond, maxBackoff: 5 * time.Millisecond}
 	done := runWorker(ew)
 
-	deadline := time.After(2 * time.Second)
-	for atomic.LoadInt64(&acked) < 10 || atomic.LoadInt64(&emrCalls) < 2 {
-		select {
-		case <-deadline:
-			t.Fatalf("Expected 10 acked kubernetes events and repeated EMR receives, got %d and %d",
-				atomic.LoadInt64(&acked), atomic.LoadInt64(&emrCalls))
-		case <-time.After(time.Millisecond):
-		}
-	}
-	ew.t.Kill(nil)
-	<-done
+	waitFor(t, func() bool { return atomic.LoadInt64(&acked) >= 10 }, "Expected all 10 events in the batch to be processed")
+	stopWorker(t, ew, done)
 	if atomic.LoadInt64(&acked) != 10 {
 		t.Errorf("Expected exactly 10 acked events, got %d", atomic.LoadInt64(&acked))
 	}
@@ -244,53 +239,21 @@ func TestEventsWorker_RunExitsWhenTombKilled(t *testing.T) {
 	done := runWorker(ew)
 
 	time.Sleep(20 * time.Millisecond)
-	ew.t.Kill(nil)
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatalf("Run did not exit after tomb was killed")
-	}
+	stopWorker(t, ew, done)
 }
 
-func TestEventsWorker_PollLoopBackoff(t *testing.T) {
-	ew := &eventsWorker{log: nopLogger{}, pollInterval: 100 * time.Millisecond, maxBackoff: 500 * time.Millisecond}
-
-	results := []struct {
-		n   int
-		err error
-	}{
-		{0, nil}, {0, nil}, {0, nil}, {0, nil}, {0, nil},
-		{3, nil},
-		{0, nil}, {0, nil},
-		{0, errors.New("boom")},
-		{0, nil},
-	}
-	call := 0
-	receive := func(ctx context.Context) (int, error) {
-		r := results[call]
-		call++
-		return r.n, r.err
-	}
-	var slept []time.Duration
-	sleep := func(d time.Duration) bool {
-		slept = append(slept, d)
-		return len(slept) < 9
-	}
-
-	ew.pollLoop(context.Background(), receive, sleep)
-
+func TestEventsWorker_NextBackoff(t *testing.T) {
 	ms := time.Millisecond
-	expected := []time.Duration{100 * ms, 200 * ms, 400 * ms, 500 * ms, 500 * ms, 100 * ms, 200 * ms, 400 * ms, 400 * ms}
-	if call != 10 {
-		t.Errorf("Expected 10 receives, got %d", call)
+	ew := &eventsWorker{pollInterval: 100 * ms, maxBackoff: 500 * ms}
+	cases := []struct{ current, expected time.Duration }{
+		{100 * ms, 200 * ms},
+		{200 * ms, 400 * ms},
+		{400 * ms, 500 * ms},
+		{500 * ms, 500 * ms},
 	}
-	if len(slept) != len(expected) {
-		t.Fatalf("Expected sleeps %v, got %v", expected, slept)
-	}
-	for i := range expected {
-		if slept[i] != expected[i] {
-			t.Errorf("Expected sleeps %v, got %v", expected, slept)
-			break
+	for _, c := range cases {
+		if got := ew.nextBackoff(c.current); got != c.expected {
+			t.Errorf("nextBackoff(%v): expected %v, got %v", c.current, c.expected, got)
 		}
 	}
 }

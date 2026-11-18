@@ -21,6 +21,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var (
+	sparkDriverServicePattern = regexp.MustCompile(`.*@(.*-svc).*`)
+	eksPodNamePattern         = regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
+)
+
 type eventsWorker struct {
 	sm                state.Manager
 	qm                queue.Manager
@@ -101,18 +106,18 @@ func (ew *eventsWorker) Run(ctx context.Context) error {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		ew.pollLoop(ctx, ew.runOnce, ew.sleepUnlessDying)
+		ew.pollLoop(ctx, ew.runOnce)
 	}()
 	go func() {
 		defer wg.Done()
-		ew.pollLoop(ctx, ew.runOnceEMR, ew.sleepUnlessDying)
+		ew.pollLoop(ctx, ew.runOnceEMR)
 	}()
 	wg.Wait()
 	_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
 	return nil
 }
 
-func (ew *eventsWorker) pollLoop(ctx context.Context, receive func(context.Context) (int, error), sleep func(time.Duration) bool) {
+func (ew *eventsWorker) pollLoop(ctx context.Context, receive func(context.Context) (int, error)) {
 	backoff := ew.pollInterval
 	for {
 		select {
@@ -121,20 +126,15 @@ func (ew *eventsWorker) pollLoop(ctx context.Context, receive func(context.Conte
 		default:
 		}
 
-		loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
-		received, err := receive(loopCtx)
-		span.Finish()
-
+		received, err := receive(ctx)
 		if err == nil && received > 0 {
 			backoff = ew.pollInterval
 			continue
 		}
-		if !sleep(backoff) {
+		if !ew.sleepUnlessDying(backoff) {
 			return
 		}
-		if err == nil {
-			backoff = ew.nextBackoff(backoff)
-		}
+		backoff = ew.nextBackoff(backoff)
 	}
 }
 
@@ -291,8 +291,7 @@ func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent
 				for _, container := range pod.Spec.Containers {
 					for _, v := range container.Env {
 						if v.Name == "SPARK_DRIVER_URL" {
-							pat := regexp.MustCompile(`.*@(.*-svc).*`)
-							matches := pat.FindAllStringSubmatch(v.Value, -1)
+							matches := sparkDriverServicePattern.FindAllStringSubmatch(v.Value, -1)
 							for _, match := range matches {
 								if len(match) == 2 {
 									driverServiceName = &match[1]
@@ -508,8 +507,7 @@ func (ew *eventsWorker) processEvent(ctx context.Context, kubernetesEvent state.
 }
 
 func (ew *eventsWorker) parsePodName(kubernetesEvent state.KubernetesEvent) (string, error) {
-	expression := regexp.MustCompile(`(eks-\w+-\w+-\w+-\w+-\w+-\w+)`)
-	matches := expression.FindStringSubmatch(kubernetesEvent.Message)
+	matches := eksPodNamePattern.FindStringSubmatch(kubernetesEvent.Message)
 	if matches != nil && len(matches) >= 1 {
 		return matches[0], nil
 	}

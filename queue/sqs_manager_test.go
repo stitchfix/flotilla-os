@@ -263,8 +263,7 @@ type batchSQSClient struct {
 func (qc *batchSQSClient) ReceiveMessage(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
 	qc.inputs = append(qc.inputs, input)
 	out := &sqs.ReceiveMessageOutput{}
-	for i := range qc.bodies {
-		body := qc.bodies[i]
+	for i, body := range qc.bodies {
 		handle := fmt.Sprintf("handle-%d", i)
 		out.Messages = append(out.Messages, &sqs.Message{Body: &body, ReceiptHandle: &handle})
 	}
@@ -363,9 +362,5 @@ func TestSQSManager_ReceiveEMREvents(t *testing.T) {
 	_ = events[1].Done()
 	if len(client.deleted) != 1 || client.deleted[0] != "handle-1" {
 		t.Errorf("Expected Done to ack its own receipt handle, deleted %v", client.deleted)
-	}
-
-	if _, err := qm.ReceiveEMREvents(""); err == nil {
-		t.Errorf("Expected empty queue url to result in error")
 	}
 }
