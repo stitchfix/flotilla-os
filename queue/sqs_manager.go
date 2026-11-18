@@ -348,14 +348,12 @@ func (qm *SQSManager) ReceiveCloudTrail(qURL string) (state.CloudTrailS3File, er
 	return receipt, nil
 }
 
-func (qm *SQSManager) ReceiveEMREvent(qURL string) (state.EmrEvent, error) {
-	var emrEvent state.EmrEvent
-
+func (qm *SQSManager) receiveBatch(qURL string) ([]*sqs.Message, error) {
 	if len(qURL) == 0 {
-		return emrEvent, errors.Errorf("no queue url specified, can't dequeue")
+		return nil, errors.Errorf("no queue url specified, can't dequeue")
 	}
 
-	maxMessages := int64(1)
+	maxMessages := int64(10)
 	visibilityTimeout := int64(45)
 	rmi := sqs.ReceiveMessageInput{
 		QueueUrl:            &qURL,
@@ -364,58 +362,58 @@ func (qm *SQSManager) ReceiveEMREvent(qURL string) (state.EmrEvent, error) {
 		WaitTimeSeconds:     &qm.waitTimeSeconds,
 	}
 
-	var err error
-
 	response, err := qm.qc.ReceiveMessage(&rmi)
 	if err != nil {
-		return emrEvent, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
+		return nil, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
 	}
 
-	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
-		body := response.Messages[0].Body
-
-		err = json.Unmarshal([]byte(*body), &emrEvent)
-		emrEvent.Done = func() error {
-			return qm.ack(qURL, response.Messages[0].ReceiptHandle)
+	var messages []*sqs.Message
+	if response != nil {
+		for _, message := range response.Messages {
+			if message != nil && message.Body != nil {
+				messages = append(messages, message)
+			}
 		}
-
 	}
-	return emrEvent, nil
+	return messages, nil
 }
 
-func (qm *SQSManager) ReceiveKubernetesEvent(qURL string) (state.KubernetesEvent, error) {
-	var kubernetesEvent state.KubernetesEvent
-
-	if len(qURL) == 0 {
-		return kubernetesEvent, errors.Errorf("no queue url specified, can't dequeue")
-	}
-
-	maxMessages := int64(1)
-	visibilityTimeout := int64(45)
-	rmi := sqs.ReceiveMessageInput{
-		QueueUrl:            &qURL,
-		MaxNumberOfMessages: &maxMessages,
-		VisibilityTimeout:   &visibilityTimeout,
-		WaitTimeSeconds:     &qm.waitTimeSeconds,
-	}
-
-	var err error
-
-	response, err := qm.qc.ReceiveMessage(&rmi)
+func (qm *SQSManager) ReceiveEMREvents(qURL string) ([]state.EmrEvent, error) {
+	messages, err := qm.receiveBatch(qURL)
 	if err != nil {
-		return kubernetesEvent, errors.Wrapf(err, "problem receiving sqs message from queue url [%s]", qURL)
+		return nil, err
 	}
 
-	if response != nil && response.Messages != nil && len(response.Messages) > 0 && response.Messages[0].Body != nil {
-		body := response.Messages[0].Body
-
-		err = json.Unmarshal([]byte(*body), &kubernetesEvent)
-		kubernetesEvent.Done = func() error {
-			return qm.ack(qURL, response.Messages[0].ReceiptHandle)
+	emrEvents := make([]state.EmrEvent, 0, len(messages))
+	for _, message := range messages {
+		var emrEvent state.EmrEvent
+		_ = json.Unmarshal([]byte(*message.Body), &emrEvent)
+		receiptHandle := message.ReceiptHandle
+		emrEvent.Done = func() error {
+			return qm.ack(qURL, receiptHandle)
 		}
-
+		emrEvents = append(emrEvents, emrEvent)
 	}
-	return kubernetesEvent, nil
+	return emrEvents, nil
+}
+
+func (qm *SQSManager) ReceiveKubernetesEvents(qURL string) ([]state.KubernetesEvent, error) {
+	messages, err := qm.receiveBatch(qURL)
+	if err != nil {
+		return nil, err
+	}
+
+	kubernetesEvents := make([]state.KubernetesEvent, 0, len(messages))
+	for _, message := range messages {
+		var kubernetesEvent state.KubernetesEvent
+		_ = json.Unmarshal([]byte(*message.Body), &kubernetesEvent)
+		receiptHandle := message.ReceiptHandle
+		kubernetesEvent.Done = func() error {
+			return qm.ack(qURL, receiptHandle)
+		}
+		kubernetesEvents = append(kubernetesEvents, kubernetesEvent)
+	}
+	return kubernetesEvents, nil
 }
 
 func (qm *SQSManager) ReceiveKubernetesRun(queue string) (string, error) {

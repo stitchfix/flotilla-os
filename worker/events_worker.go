@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -26,6 +27,7 @@ type eventsWorker struct {
 	conf              config.Config
 	log               flotillaLog.Logger
 	pollInterval      time.Duration
+	maxBackoff        time.Duration
 	t                 tomb.Tomb
 	queue             string
 	emrJobStatusQueue string
@@ -43,6 +45,17 @@ type eventsWorker struct {
 
 func (ew *eventsWorker) Initialize(conf config.Config, sm state.Manager, eksEngine engine.Engine, emrEngine engine.Engine, log flotillaLog.Logger, pollInterval time.Duration, qm queue.Manager, clusterManager *engine.DynamicClusterManager) error {
 	ew.pollInterval = pollInterval
+	ew.maxBackoff = 5 * time.Second
+	if conf.IsSet("worker_events_max_backoff") {
+		maxBackoff, err := time.ParseDuration(conf.GetString("worker_events_max_backoff"))
+		if err != nil {
+			return errors.Wrap(err, "problem parsing worker_events_max_backoff")
+		}
+		ew.maxBackoff = maxBackoff
+	}
+	if ew.maxBackoff < pollInterval {
+		ew.maxBackoff = pollInterval
+	}
 	ew.conf = conf
 	ew.sm = sm
 	ew.qm = qm
@@ -84,30 +97,78 @@ func (ew *eventsWorker) GetTomb() *tomb.Tomb {
 }
 
 func (ew *eventsWorker) Run(ctx context.Context) error {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		ew.pollLoop(ctx, ew.runOnce, ew.sleepUnlessDying)
+	}()
+	go func() {
+		defer wg.Done()
+		ew.pollLoop(ctx, ew.runOnceEMR, ew.sleepUnlessDying)
+	}()
+	wg.Wait()
+	_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
+	return nil
+}
+
+func (ew *eventsWorker) pollLoop(ctx context.Context, receive func(context.Context) (int, error), sleep func(time.Duration) bool) {
+	backoff := ew.pollInterval
 	for {
 		select {
 		case <-ew.t.Dying():
-			_ = ew.log.Log("level", "info", "message", "An events worker was terminated")
-			return nil
+			return
 		default:
-			loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
-			ew.runOnce(loopCtx)
-			ew.runOnceEMR(loopCtx)
-			span.Finish()
-			time.Sleep(ew.pollInterval)
+		}
+
+		loopCtx, span := utils.TraceJob(ctx, "events_worker.run_loop", "events_worker")
+		received, err := receive(loopCtx)
+		span.Finish()
+
+		if err == nil && received > 0 {
+			backoff = ew.pollInterval
+			continue
+		}
+		if !sleep(backoff) {
+			return
+		}
+		if err == nil {
+			backoff = ew.nextBackoff(backoff)
 		}
 	}
 }
 
-func (ew *eventsWorker) runOnceEMR(ctx context.Context) {
+func (ew *eventsWorker) nextBackoff(current time.Duration) time.Duration {
+	next := current * 2
+	if next > ew.maxBackoff {
+		return ew.maxBackoff
+	}
+	return next
+}
+
+func (ew *eventsWorker) sleepUnlessDying(d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ew.t.Dying():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func (ew *eventsWorker) runOnceEMR(ctx context.Context) (int, error) {
 	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_emr", "events_worker")
 	defer span.Finish()
-	emrEvent, err := ew.qm.ReceiveEMREvent(ew.emrJobStatusQueue)
+	emrEvents, err := ew.qm.ReceiveEMREvents(ew.emrJobStatusQueue)
 	if err != nil {
 		_ = ew.log.Log("level", "error", "message", "Error receiving EMR Events", "error", fmt.Sprintf("%+v", err))
-		return
+		return 0, err
 	}
-	ew.processEventEMR(ctx, emrEvent)
+	for _, emrEvent := range emrEvents {
+		ew.processEventEMR(ctx, emrEvent)
+	}
+	return len(emrEvents), nil
 }
 
 func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrEvent) {
@@ -181,15 +242,18 @@ func (ew *eventsWorker) processEventEMR(ctx context.Context, emrEvent state.EmrE
 		}
 	}
 }
-func (ew *eventsWorker) runOnce(ctx context.Context) {
+func (ew *eventsWorker) runOnce(ctx context.Context) (int, error) {
 	ctx, span := utils.TraceJob(ctx, "events_worker.run_once_eks", "events_worker")
 	defer span.Finish()
-	kubernetesEvent, err := ew.qm.ReceiveKubernetesEvent(ew.queue)
+	kubernetesEvents, err := ew.qm.ReceiveKubernetesEvents(ew.queue)
 	if err != nil {
 		_ = ew.log.Log("level", "error", "message", "Error receiving Kubernetes Events", "error", fmt.Sprintf("%+v", err))
-		return
+		return 0, err
 	}
-	ew.processEvent(ctx, kubernetesEvent)
+	for _, kubernetesEvent := range kubernetesEvents {
+		ew.processEvent(ctx, kubernetesEvent)
+	}
+	return len(kubernetesEvents), nil
 }
 
 func (ew *eventsWorker) processEMRPodEvents(ctx context.Context, kubernetesEvent state.KubernetesEvent) {
