@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stitchfix/flotilla-os/config"
 	"github.com/stitchfix/flotilla-os/queue"
 	"github.com/stitchfix/flotilla-os/state"
@@ -265,5 +266,228 @@ func TestEventsWorker_InitializeMaxBackoff(t *testing.T) {
 	_ = ew.Initialize(c, nil, nil, nil, nopLogger{}, 100*time.Millisecond, &fakeEventsQueueManager{}, nil)
 	if ew.maxBackoff != 5*time.Second {
 		t.Errorf("Expected default max backoff 5s, got %v", ew.maxBackoff)
+	}
+}
+
+type fakeEventsStateManager struct {
+	state.Manager
+	snapshot state.Run
+	stored   *state.Run
+	updates  []state.Run
+}
+
+func (f *fakeEventsStateManager) GetRunByEMRJobId(ctx context.Context, emrJobId string) (state.Run, error) {
+	return f.snapshot, nil
+}
+
+func (f *fakeEventsStateManager) UpdateRun(ctx context.Context, runID string, updates state.Run) (state.Run, error) {
+	f.updates = append(f.updates, updates)
+	if f.stored == nil {
+		return updates, nil
+	}
+	f.stored.UpdateWith(updates)
+	return *f.stored, nil
+}
+
+func emrStatusEvent(status string, acked *int64) state.EmrEvent {
+	return state.EmrEvent{
+		Time: aws.String("2026-11-18T10:00:00Z"),
+		Detail: &state.Detail{
+			ID:           aws.String("emr-job-1"),
+			State:        aws.String(status),
+			StateDetails: aws.String("details"),
+		},
+		Done: func() error {
+			atomic.AddInt64(acked, 1)
+			return nil
+		},
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRCompletedSendsOnlyStatusFields(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	cases := []struct {
+		name          string
+		sparkAppId    *string
+		expectMetrics bool
+	}{
+		{"with spark app id", aws.String("spark-123"), true},
+		{"without spark app id", nil, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			podEvents := state.PodEvents{{SourceObject: "exec-1"}}
+			sm := &fakeEventsStateManager{snapshot: state.Run{
+				RunID:          "run-1",
+				Status:         state.StatusRunning,
+				QueuedAt:       &queued,
+				PodEvents:      &podEvents,
+				SparkExtension: &state.SparkExtension{SparkAppId: c.sparkAppId},
+			}}
+			var acked int64
+			ew := &eventsWorker{sm: sm, log: nopLogger{}, emrMetricsServer: "https://metrics"}
+			ew.processEventEMR(context.Background(), emrStatusEvent("COMPLETED", &acked))
+
+			if len(sm.updates) != 1 {
+				t.Fatalf("Expected 1 UpdateRun call, got %d", len(sm.updates))
+			}
+			u := sm.updates[0]
+			if u.SparkExtension != nil {
+				t.Errorf("Expected no SparkExtension in update, got %+v", u.SparkExtension)
+			}
+			if u.PodEvents != nil {
+				t.Errorf("Expected no PodEvents in update, got %+v", u.PodEvents)
+			}
+			if u.Status != state.StatusStopped {
+				t.Errorf("Expected status %s, got %s", state.StatusStopped, u.Status)
+			}
+			if u.ExitCode == nil || *u.ExitCode != 0 {
+				t.Errorf("Expected exit code 0, got %v", u.ExitCode)
+			}
+			if u.FinishedAt == nil {
+				t.Errorf("Expected FinishedAt to be set")
+			}
+			if u.StartedAt == nil || !u.StartedAt.Equal(queued) {
+				t.Errorf("Expected StartedAt to fall back to QueuedAt %v, got %v", queued, u.StartedAt)
+			}
+			if c.expectMetrics {
+				if u.MetricsUri == nil || *u.MetricsUri != "https://metrics?query=%40app_id%3Aspark-123" {
+					t.Errorf("Unexpected MetricsUri %v", u.MetricsUri)
+				}
+			} else if u.MetricsUri != nil {
+				t.Errorf("Expected no MetricsUri, got %s", *u.MetricsUri)
+			}
+			if atomic.LoadInt64(&acked) != 1 {
+				t.Errorf("Expected event to be acked")
+			}
+		})
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRFailedDriverOOM(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	sm := &fakeEventsStateManager{snapshot: state.Run{
+		RunID:          "run-1",
+		Status:         state.StatusRunning,
+		QueuedAt:       &queued,
+		SparkExtension: &state.SparkExtension{DriverOOM: aws.Bool(true)},
+	}}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("FAILED", &acked))
+
+	if len(sm.updates) != 1 {
+		t.Fatalf("Expected 1 UpdateRun call, got %d", len(sm.updates))
+	}
+	u := sm.updates[0]
+	if u.ExitCode == nil || *u.ExitCode != 137 {
+		t.Errorf("Expected exit code 137, got %v", u.ExitCode)
+	}
+	if u.ExitReason == nil || *u.ExitReason != "Driver OOMKilled, retry with more driver memory." {
+		t.Errorf("Unexpected exit reason %v", u.ExitReason)
+	}
+	if u.SparkExtension != nil {
+		t.Errorf("Expected no SparkExtension in update, got %+v", u.SparkExtension)
+	}
+	if u.Status != state.StatusStopped {
+		t.Errorf("Expected status %s, got %s", state.StatusStopped, u.Status)
+	}
+}
+
+func TestEventsWorker_ProcessEventEMRDoesNotEraseConcurrentPodEventWrites(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	podEvents := state.PodEvents{{SourceObject: "exec-1"}}
+	stored := state.Run{
+		RunID:     "run-1",
+		Status:    state.StatusRunning,
+		QueuedAt:  &queued,
+		PodEvents: &podEvents,
+		SparkExtension: &state.SparkExtension{
+			SparkAppId: aws.String("spark-123"),
+			HistoryUri: aws.String("https://history/spark-123/jobs/"),
+			DriverOOM:  aws.Bool(true),
+		},
+	}
+	sm := &fakeEventsStateManager{
+		stored: &stored,
+		snapshot: state.Run{
+			RunID:          "run-1",
+			Status:         state.StatusRunning,
+			QueuedAt:       &queued,
+			SparkExtension: &state.SparkExtension{},
+		},
+	}
+	var acked int64
+	ew := &eventsWorker{sm: sm, log: nopLogger{}}
+	ew.processEventEMR(context.Background(), emrStatusEvent("COMPLETED", &acked))
+
+	if stored.SparkExtension == nil || stored.SparkExtension.SparkAppId == nil || *stored.SparkExtension.SparkAppId != "spark-123" {
+		t.Errorf("Expected stored SparkAppId to survive the EMR status update, got %+v", stored.SparkExtension)
+	}
+	if stored.SparkExtension == nil || stored.SparkExtension.DriverOOM == nil || !*stored.SparkExtension.DriverOOM {
+		t.Errorf("Expected stored DriverOOM to survive the EMR status update")
+	}
+	if stored.PodEvents == nil || len(*stored.PodEvents) != 1 {
+		t.Errorf("Expected stored PodEvents to survive the EMR status update, got %v", stored.PodEvents)
+	}
+	if stored.Status != state.StatusStopped {
+		t.Errorf("Expected stored status %s, got %s", state.StatusStopped, stored.Status)
+	}
+}
+
+func TestEventsWorker_EMRPodEventUpdatesSendsOnlyPodFields(t *testing.T) {
+	queued := time.Now().Add(-time.Hour)
+	finished := time.Now()
+	snapshot := state.Run{
+		RunID:          "run-1",
+		ClusterName:    "cluster-a",
+		Status:         state.StatusStopped,
+		QueuedAt:       &queued,
+		StartedAt:      &queued,
+		FinishedAt:     &finished,
+		ExitCode:       aws.Int64(0),
+		ExitReason:     aws.String("done"),
+		SparkExtension: &state.SparkExtension{},
+	}
+	ew := &eventsWorker{
+		log:              nopLogger{},
+		emrHistoryServer: "https://history",
+		emrMetricsServer: "https://metrics",
+		emrAppServer:     map[string]string{"cluster-a": "https://app"},
+	}
+	event := state.KubernetesEvent{
+		FirstTimestamp: "2026-11-18T10:00:00Z",
+		Type:           "Normal",
+		Reason:         "Scheduled",
+		Message:        "scheduled",
+		InvolvedObject: state.InvolvedObject{Kind: "Pod", Name: "job-exec-1"},
+	}
+
+	u := ew.emrPodEventUpdates(snapshot, event, aws.String("spark-123"), aws.String("driver-svc"), aws.Bool(true), aws.Bool(true))
+
+	if u.Status != "" || u.ExitCode != nil || u.ExitReason != nil || u.StartedAt != nil || u.FinishedAt != nil || u.QueuedAt != nil {
+		t.Errorf("Expected no status fields in pod event update, got %+v", u)
+	}
+	if u.PodEvents == nil || len(*u.PodEvents) != 1 || (*u.PodEvents)[0].SourceObject != "job-exec-1" {
+		t.Errorf("Unexpected PodEvents %v", u.PodEvents)
+	}
+	se := u.SparkExtension
+	if se == nil {
+		t.Fatal("Expected SparkExtension in update")
+	}
+	if se.SparkAppId == nil || *se.SparkAppId != "spark-123" {
+		t.Errorf("Unexpected SparkAppId %v", se.SparkAppId)
+	}
+	if se.HistoryUri == nil || *se.HistoryUri != "https://history/spark-123/jobs/" {
+		t.Errorf("Unexpected HistoryUri %v", se.HistoryUri)
+	}
+	if se.AppUri == nil || *se.AppUri != "https://app/job/driver-svc" {
+		t.Errorf("Unexpected AppUri %v", se.AppUri)
+	}
+	if se.DriverOOM == nil || !*se.DriverOOM || se.ExecutorOOM == nil || !*se.ExecutorOOM {
+		t.Errorf("Expected OOM flags set, got driver=%v executor=%v", se.DriverOOM, se.ExecutorOOM)
+	}
+	if u.MetricsUri == nil || *u.MetricsUri != "https://metrics?query=%40app_id%3Aspark-123" {
+		t.Errorf("Unexpected MetricsUri %v", u.MetricsUri)
 	}
 }
